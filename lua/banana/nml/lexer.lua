@@ -4,7 +4,8 @@ local function getNextI()
     i = i + 1
     return i
 end
----@enum BananaTokenType
+
+---@enum Banana.TokenType
 M.TokenType = {
     --- The "<div" part of an opening tag
     StartTagOpen = "StartTagOpen",
@@ -27,7 +28,7 @@ M.TokenType = {
     --- The end of the file
     EndOfFile = "EndOfFile",
 }
----@enum BananaLexerContext
+---@enum Banana.LexerContext
 M.LexerContext = {
     --- The lexer is currently parsing a opening tag
     OpenTag = getNextI(),
@@ -39,8 +40,8 @@ M.LexerContext = {
     ScriptOpen = getNextI(),
 }
 
----@class (exact) BananaToken
----@field type BananaTokenType
+---@class (exact) Banana.Token
+---@field private type Banana.TokenType
 ---@field text string
 ---@field lineStart integer
 ---@field lineEnd integer
@@ -70,12 +71,17 @@ function Token:new(tp, text, lineStart, lineEnd, colStart, colEnd, file)
     return token
 end
 
----@class (exact) BananaLexer
----@field currentToken BananaToken
+---@param tp Banana.TokenType
+function Token:isType(tp)
+    return self.type == tp
+end
+
+---@class (exact) Banana.Lexer
+---@field currentToken Banana.Token
 ---@field currentLine integer
 ---@field currentCol integer
 ---@field program string[]
----@field context BananaLexerContext
+---@field context Banana.LexerContext
 ---@field file string
 local Lexer = {
     currentToken = Token:new(M.TokenType.EndOfFile, "", 1, 1, 1, 1, ""),
@@ -112,7 +118,7 @@ function Lexer:nextPosition()
     return self.currentLine, self.currentCol
 end
 
----@return BananaToken
+---@return Banana.Token
 function Lexer:readStartTagOpen()
     local lineStart = self.currentLine
     local colStart = self.currentCol
@@ -210,7 +216,7 @@ function Lexer:isDone()
         (self.currentLine == #self.program and self.currentCol > #self.program[self.currentLine])
 end
 
----@return BananaToken
+---@return Banana.Token
 function Lexer:_getNextToken()
     if self:isDone() then
         return Token:new(M.TokenType.EndOfFile, "", self.currentLine, self.currentLine, self.currentCol,
@@ -239,7 +245,7 @@ function Lexer:_getNextToken()
     if isAlpha(currentChar) and isOpenTag then
         return self:parseAttribute()
     end
-    if currentChar == "\"" and isOpenTag and self.currentToken.type == M.TokenType.AttributeLeft then
+    if currentChar == "\"" and isOpenTag and self.currentToken:isType(M.TokenType.AttributeLeft) then
         return self:parseAttributeRight()
     end
     if currentChar == ">" and isOpenTag then
@@ -283,19 +289,38 @@ function Lexer:_getNextToken()
     return Token:new(M.TokenType.Text, str, startLine, self.currentLine, startCol, self.currentCol, self.file)
 end
 
----@return BananaToken
+---@return Banana.Token
 function Lexer:getNextToken()
     local token = self:_getNextToken()
     self.currentToken = token
     return token
 end
 
+---@param left integer[]
+---@param right integer[]
+---@return string
+function Lexer:getStrFromRange(left, right)
+    local row = left[1] + 1
+    local col = left[2] + 1
+    local ret = ""
+    while row < right[1] + 1 or col < right[2] + 1 do
+        ret = ret .. self.program[row]:sub(col, col)
+        col = col + 1
+        if col > #self.program[row] then
+            row = row + 1
+            col = 1
+        end
+    end
+
+    return ret
+end
+
 ---@param file string
----@return BananaLexer?
+---@return Banana.Lexer?
 function M.fromPath(file)
     ---@type file*?
     local f = io.open(file, "r")
-    if not f then
+    if f == nil then
         return nil
     end
     local program = {}
