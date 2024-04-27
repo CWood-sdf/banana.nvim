@@ -4,10 +4,11 @@ local t = require('banana.nml.tags')
 ---@param ast Banana.Ast
 ---@return Banana.RenderRet
 local function pRenderer(self, ast)
+    ---@type Banana.RenderRet
     local ret = {}
 
     -- Add the newline
-    table.insert(ret, {})
+    -- table.insert(ret, {})
     local currentLine = {}
     for _, v in ipairs(ast.nodes) do
         if type(v) == 'string' then
@@ -34,7 +35,7 @@ end
 ---@type Banana.TagInfo
 local M = {
     name = 'p',
-    inline = t.Type.Block,
+    formatType = t.FormatType.BlockInline,
     selfClosing = false,
     render = pRenderer
 }

@@ -1,6 +1,7 @@
 /**
  * @file HTML grammar for tree-sitter
  * @author Max Brunsfeld
+ * @auther CWood-sdf
  * @license MIT
  */
 
@@ -13,18 +14,6 @@ module.exports = grammar({
     name: "nml",
 
     extras: ($) => [$.comment, /\s+/],
-
-    // externals: ($) => [
-    //   $._start_tag_name,
-    //   $._script_start_tag_name,
-    //   $._style_start_tag_name,
-    //   $._end_tag_name,
-    //   $.erroneous_end_tag_name,
-    //   "/>",
-    //   $._implicit_end_tag,
-    //   $.raw_text,
-    //   $.comment,
-    // ],
 
     rules: {
         source_file: ($) => repeat($._node),
@@ -40,7 +29,6 @@ module.exports = grammar({
                 /h[1-6]/,
                 /(\w+-)+\w+/,
             ),
-        // _implicit_end_tag: (_) => /<\/[a-zA-Z][a-zA-Z0-9-]*>/,
         raw_text: (_) => /[^<]+/,
         _script_start_tag_name: (_) => "script",
         _style_start_tag_name: (_) => "style",
@@ -154,6 +142,6 @@ module.exports = grammar({
                 seq('"', optional(alias(/[^"]+/, $.attribute_value)), '"'),
             ),
 
-        text: (_) => /[^<>&\s]([^<>&]*[^<>&\s])?/,
+        text: (_) => /[^<>&]*[^<>&\s][^<>&]*/,
     },
 });

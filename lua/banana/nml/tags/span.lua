@@ -35,7 +35,7 @@ end
 ---@type Banana.TagInfo
 local M = {
     name = 'span',
-    inline = t.Type.Inline,
+    formatType = t.FormatType.Inline,
     selfClosing = false,
     render = renderer
 }

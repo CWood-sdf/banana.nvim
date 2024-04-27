@@ -1,27 +1,27 @@
--- This file defines what kind of tags are allowed in the Banana language.
-
 local M = {}
 
----@enum Banana.InlineType
-M.Type = {
+---@enum Banana.Nml.FormatType
+M.FormatType = {
     Inline = 1,
     Block = 2,
     InlineBlock = 3,
+    BlockInline = 4,
+    Script = 5,
 }
 
----@alias Banana.RenderRet Banana.Word[][]
+---@alias Banana.RenderRet Banana.Line[]
 
 ---@alias Banana.Renderer fun(self: Banana.TagInfo, ast: Banana.Ast):Banana.RenderRet
 
 
 ---@class (exact) Banana.TagInfo
 ---@field name string
----@field inline Banana.InlineType
+---@field formatType Banana.Nml.FormatType
 ---@field selfClosing boolean
 ---@field render Banana.Renderer
 local TagInfo = {
     name = '',
-    inline = M.Type.Inline,
+    formatType = M.FormatType.Inline,
     selfClosing = false,
     render = function(_) return {} end,
 }
@@ -29,14 +29,14 @@ local TagInfo = {
 
 
 ---@param name string
----@param inline Banana.InlineType
+---@param inline Banana.Nml.FormatType
 ---@param selfClosing boolean
 ---@param renderer Banana.Renderer
 function M.newTag(name, inline, selfClosing, renderer)
     ---@type Banana.TagInfo
     local tag = {
         name = name,
-        inline = inline,
+        formatType = inline,
         selfClosing = selfClosing,
         render = renderer
     }
@@ -78,31 +78,109 @@ end
 function M.makeTag(name)
     local ok, mgr = pcall(require, 'banana.nml.tags.' .. name)
     if not ok then
-        error('Unknown tag: ' .. name)
+        error("Error while trying to load tag '" .. name .. "'")
     end
     return mgr
+end
+
+---@param str string
+---@param clearFirst boolean
+---@return string, boolean
+local function formatInlineText(str, clearFirst)
+    str = str:gsub('%s+', ' ')
+    if clearFirst and str:sub(1, 1) == ' ' then
+        str = str:sub(2, #str)
+    end
+    local lastChar = str:sub(#str, #str)
+    clearFirst = lastChar == ' '
+    return str, clearFirst
+end
+
+---Reference for this function:
+--https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_display/Block_formatting_context
+---@param ast Banana.Ast
+function M.formatBlockContext(ast)
+    local i = 1
+    local inc = true
+    local clearFirst = true
+    while i <= #ast.nodes do
+        local node = ast.nodes[i]
+        if type(node) == 'string' then
+            ---@cast node string
+            node, clearFirst = formatInlineText(node, clearFirst)
+            if node == "" then
+                table.remove(ast.nodes, i)
+                inc = false
+            else
+                ast.nodes[i] = node
+            end
+        else
+            ---@cast node Banana.Ast
+            if node.actualTag.formatType == M.FormatType.InlineBlock or node.actualTag.formatType == M.FormatType.Block then
+                M.formatBlockContext(node)
+            elseif node.actualTag.formatType == M.FormatType.BlockInline then
+                M.formatInlineContext(node, true)
+            elseif node.actualTag.formatType == M.FormatType.Inline then
+                clearFirst = M.formatInlineContext(node, clearFirst)
+            end
+        end
+        if inc then
+            i = i + 1
+        end
+        inc = true
+    end
+end
+
+---Reference:
+---https://developer.mozilla.org/en-US/docs/Web/API/Document_Object_Model/Whitespace
+---https://developer.mozilla.org/en-US/docs/Web/CSS/Inline_formatting_context
+---@param ast Banana.Ast
+---@param clearFirst boolean
+---@return boolean
+function M.formatInlineContext(ast, clearFirst)
+    local i = 1
+    local inc = true
+    while i <= #ast.nodes do
+        local node = ast.nodes[i]
+        if type(node) == 'string' then
+            node, clearFirst = formatInlineText(node, clearFirst)
+            if node == "" then
+                table.remove(ast.nodes, i)
+                inc = false
+            else
+                ast.nodes[i] = node
+            end
+        else
+            ---@cast node Banana.Ast
+            if node.actualTag.formatType == M.FormatType.Block or node.actualTag.formatType == M.FormatType.BlockInline then
+                error("A Block or BlockInline format type element is nested in an inline formatting context")
+            end
+            if node.actualTag.formatType == M.FormatType.Inline then
+                clearFirst = M.formatInlineContext(node, clearFirst)
+            elseif node.actualTag.formatType == M.FormatType.InlineBlock then
+                M.formatBlockContext(node)
+            end
+        end
+        if inc then
+            i = i + 1
+        end
+        inc = true
+    end
+    return clearFirst
 end
 
 ---@param ast Banana.Ast
 --- Removes all empty text nodes, and cleans up all whitespace.
 function M.cleanAst(ast)
-    for i = #ast.nodes, 1, -1 do
-        local node = ast.nodes[i]
-        if type(node) == 'string' then
-            if node:match('^%s*$') then
-                table.remove(ast.nodes, i)
-            else
-                ast.nodes[i] = node:gsub('%s+', ' ')
-                node = ast.nodes[i]
-                ---@cast node string
-                --- If last char is whitespace, and first char of next node is whitespace, remove it.
-                if i < #ast.nodes and node:match('%s$') and M.firstChar(ast.nodes[i + 1]):match('%s') then
-                    ast.nodes[i] = node:gsub('%s$', '')
-                end
-            end
-        else
-            M.cleanAst(node)
-        end
+    if ast.actualTag.formatType == M.FormatType.Block or ast.actualTag.formatType == M.FormatType.InlineBlock then
+        M.formatBlockContext(ast)
+    elseif ast.actualTag.formatType == M.FormatType.Inline then
+        M.formatInlineContext(ast, false)
+    elseif ast.actualTag.formatType == M.FormatType.BlockInline then
+        M.formatInlineContext(ast, true)
+    elseif ast.actualTag.formatType == M.FormatType.Script then
+    else
+        error("Unreachable")
     end
 end
 

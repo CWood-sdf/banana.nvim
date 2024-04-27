@@ -6,6 +6,7 @@ M.ts_types = {
     source_file = "source_file",
     doctype = "doctype",
     element = "element",
+    entity = "entity",
     start_tag = "start_tag",
     end_tag = "end_tag",
     tag_name = "tag_name",
@@ -27,10 +28,11 @@ M.Attribute = {
 }
 
 ---@param name string
-function M.Attribute:new(name)
+---@param value string?
+function M.Attribute:new(name, value)
     local attr = {
         name = name,
-        value = nil,
+        value = value,
     }
     setmetatable(attr, { __index = M.Attribute })
     return attr
@@ -40,6 +42,7 @@ end
 ---@field nodes (string|Banana.Ast)[]
 ---@field tag string
 ---@field attributes Banana.Attribute[]
+---@field actualTag Banana.TagInfo
 M.Ast = {
     nodes = {},
     tag = "",
@@ -47,11 +50,14 @@ M.Ast = {
 }
 
 ---@param tag string
+---@return Banana.Ast
 function M.Ast:new(tag)
+    ---@type Banana.Ast
     local ast = {
         nodes = {},
         tag = tag,
         actualTag = require("banana.nml.tags").makeTag(tag),
+        attributes = {},
     }
     setmetatable(ast, { __index = M.Ast })
     return ast
@@ -86,72 +92,100 @@ function Parser:new(lex, tree)
     return parser
 end
 
----@return Banana.Ast
-function Parser:parseBlock()
-    local token = self.lexer.currentToken
-    if not token:isType(lexer.TokenType.StartTagOpen) then
-        error("Expected start tag")
+---@param tree TSNode
+---@return string
+function Parser:getStrFromNode(tree)
+    return self.lexer:getStrFromRange({ tree:start() }, { tree:end_() })
+end
+
+---@param tree TSNode
+---@return Banana.Attribute
+function Parser:parseAttribute(tree)
+    local name = tree:child(0)
+    if name == nil then
+        error("Unreachable")
     end
-    local tagName = token.text
-    ---@type Banana.Ast
-    local ret = M.Ast:new(tagName)
-    token = self.lexer:getNextToken()
-    while not token:isType(lexer.TokenType.StartTagClose) and not token:isType(lexer.TokenType.StartTagSelfClose) do
-        if token:isType(lexer.TokenType.AttributeNoValue) then
-            local attr = M.Attribute:new(token.text)
-            table.insert(ret.attributes, attr)
-            token = self.lexer:getNextToken()
-        elseif token:isType(lexer.TokenType.AttributeLeft) then
-            local attr = M.Attribute:new(token.text)
-            token = self.lexer:getNextToken()
-            if token:isType(lexer.TokenType.AttributeRight) then
-                attr.value = token.text
-            else
-                attr.value = ""
-                error("Expected attribute value")
-            end
-            table.insert(ret.attributes, attr)
-            token = self.lexer:getNextToken()
-        else
-            error("Expected attribute")
+    if name:type() ~= M.ts_types.attribute_name then
+        error("Unreachable")
+    end
+    local nameStr = self:getStrFromNode(name)
+    local value = nil
+    if tree:child_count() >= 3 then
+        local val = tree:child(2)
+        ::top::
+        if val == nil then
+            error("Unreachable")
+        end
+        if val:type() == M.ts_types.attribute_value then
+            value = self:getStrFromNode(val)
+        elseif val:type() == M.ts_types.quoted_attribute_value then
+            val = val:child(1)
+            goto top
         end
     end
-    if token:isType(lexer.TokenType.StartTagSelfClose) then
-        return ret
+
+    return M.Attribute:new(nameStr, value)
+end
+
+---@param tree TSNode
+---@return Banana.Attribute[]
+function Parser:parseAttributes(tree)
+    if tree:type() ~= M.ts_types.start_tag and tree:type() ~= M.ts_types.self_closing_tag then
+        error("Must pass in a start_tag or self_closing_tag tree to parseAttributes")
     end
-    token = self.lexer:getNextToken()
-    while not token:isType(lexer.TokenType.EndTag) do
-        if token:isType(lexer.TokenType.Text) then
-            ret:appendTextNode(token.text)
-        elseif token:isType(lexer.TokenType.StartTagOpen) then
-            local node = self:parseBlock()
-            if node ~= nil then
-                ret:appendNode(node)
-            end
+    ---@type Banana.Attribute[]
+    local ret = {}
+    local i = 2
+    while i < tree:child_count() - 1 do
+        local attr = tree:child(i)
+        if attr == nil then
+            error("Unreachable")
         end
-        if token:isType(lexer.TokenType.EndOfFile) then
-            error("Unexpected end of file")
+        if attr:type() ~= M.ts_types.attribute then
+            error("An attribute was not given")
         end
-        token = self.lexer:getNextToken()
+        local a = self:parseAttribute(attr)
+        table.insert(ret, a)
+        i = i + 1
     end
-    if token:isType(lexer.TokenType.EndTag) then
-        if token.text ~= tagName then
-            error("Expected end tag for " .. tagName .. " but got " .. token.text)
-        end
-    end
+
     return ret
 end
 
 ---@param tree TSNode
 ---@return Banana.Ast?
-function Parser:parseElement(tree)
-    if tree:type() ~= M.ts_types.element then
-        error("Did not pass an element into parseElement()")
+function Parser:parseSelfClosingTag(tree)
+    local child = tree:child(0)
+    if child == nil then
+        error("Unreachable")
     end
-    --TODO: Account for self closing tags
-    if tree:child_count() < 2 then
-        error("Somehow an element does not have 2 children")
+    local nameEl = child:child(1)
+    if nameEl == nil then
+        error("Unreachable")
     end
+    if nameEl:type() ~= M.ts_types.tag_name then
+        error("Unreachable")
+    end
+    local name = self.lexer:getStrFromRange({ nameEl:start() }, { nameEl:end_() })
+    local ret = M.Ast:new(name)
+
+    local attrs = self:parseAttributes(child)
+    ret.attributes = attrs
+
+    return ret
+end
+
+---@param str string
+---@return string
+function Parser:resolveEntity(str)
+    local stripped = str:sub(2, #str)
+    ---TODO: process entity string
+    return stripped
+end
+
+---@param tree TSNode
+---@return Banana.Ast?
+function Parser:parseTag(tree)
     local firstChild = tree:child(0)
     local lastChild = tree:child(tree:child_count() - 1)
     if firstChild == nil or lastChild == nil then
@@ -185,11 +219,51 @@ function Parser:parseElement(tree)
     end
     local ret = M.Ast:new(tagNameStr)
 
+    local attrs = self:parseAttributes(firstChild)
+    ret.attributes = attrs
+
+    local i = 1
+    while i < tree:child_count() - 1 do
+        local child = tree:child(i)
+        if child == nil then
+            error("Unreachable")
+        end
+        if child:type() == M.ts_types.text then
+            ret:appendTextNode(self:getStrFromNode(child))
+        elseif child:type() == M.ts_types.element then
+            local element = self:parseElement(child)
+            if element == nil then
+                error("Error generating ast from treesitter element")
+            end
+            ret:appendNode(element)
+        elseif child:type() == M.ts_types.entity then
+            ret:appendTextNode(self:resolveEntity(self:getStrFromNode(child)))
+        else
+            error("Node type " .. child:type() .. " not allowed when parsing tag body")
+        end
+        i = i + 1
+    end
+
     return ret
 end
 
+---@param tree TSNode
 ---@return Banana.Ast?
-function Parser:parse2()
+function Parser:parseElement(tree)
+    if tree:type() ~= M.ts_types.element then
+        error("Did not pass an element into parseElement()")
+    end
+    if tree:child_count() == 0 then
+        error("Somehow an element does not have a child")
+    end
+    if tree:child_count() == 1 then
+        return self:parseSelfClosingTag(tree)
+    end
+    return self:parseTag(tree)
+end
+
+---@return Banana.Ast?
+function Parser:parse()
     if self.tree == nil then
         return nil
     end
@@ -218,45 +292,24 @@ function Parser:parse2()
     if not fullDocMode and parsed:child(0):type() ~= M.ts_types.element then
         error("A partial nml document should contain an element as the root node")
     end
+    local child = nil
     if fullDocMode then
-        local child = parsed:child(1)
+        child = parsed:child(1)
         if child == nil then
             error("Unreachable: parsed child is 0 in fullDocMode")
         end
-        return self:parseElement(child)
     else
-        local child = parsed:child(0)
+        child = parsed:child(0)
         if child == nil then
             error("Unreachable: parsed child is 0 in not fullDocMode")
         end
-        return self:parseElement(child)
     end
-end
-
----@return Banana.Ast?
-function Parser:parse()
-    self:parse2()
-    local token = self.lexer:getNextToken()
-    if token:isType(lexer.TokenType.EndOfFile) then
-        return nil
-    end
-    while token:isType(lexer.TokenType.Text) do
-        token = self.lexer:getNextToken()
-    end
-    --- basically, the whole file is supposed to be in a block
-    if token:isType(lexer.TokenType.StartTagOpen) then
-        return self:parseBlock()
-    end
-    if not token:isType(lexer.TokenType.EndOfFile) then
-        error("Unexpected token " .. token.text)
-    end
-    return nil
+    return self:parseElement(child)
 end
 
 function Parser:reset()
     self.lexer.currentLine = 1
     self.lexer.currentCol = 1
-    self.lexer.currentToken = nil
 end
 
 ---@type TSTree?
@@ -294,11 +347,7 @@ M.fromFile = function(path)
     -- delete the buffer
     vim.api.nvim_buf_delete(buf, { force = true })
 
-    local lex = lexer.fromPath(path)
-    if lex == nil then
-        print("Failed to open code file")
-        return nil
-    end
+    local lex = lexer.fromString(content)
 
     local parser = Parser:new(lex, tree)
     return parser
