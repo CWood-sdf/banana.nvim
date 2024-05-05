@@ -13,6 +13,8 @@ local function renderer(self, ast, parentHl)
     ---@type "inline"|"block"|"text"
     local lastTag = "inline"
 
+    local count = 1
+
     -- Add the newline
     ---@type Banana.Box
     local currentLine = b.Box:new(ret.hlgroup)
@@ -32,6 +34,14 @@ local function renderer(self, ast, parentHl)
                 ret:appendBoxBelow(currentLine)
                 currentLine = b.Box:new(ret.hlgroup)
             end
+            if tag.name == 'li' then
+                local str = count .. ". "
+                currentLine:appendStr("", nil)
+                currentLine:expandWidthTo(5 - #str)
+                currentLine:appendStr(count .. ". ", nil)
+                count = count + 1
+            end
+            currentLine:expandWidthTo(5)
             currentLine:append(rendered, b.MergeStrategy.Bottom)
             if isBlock then
                 lastTag = "block"
@@ -45,7 +55,7 @@ local function renderer(self, ast, parentHl)
 end
 ---@type Banana.TagInfo
 local M = {
-    name = 'div',
+    name = 'ol',
     formatType = t.FormatType.Block,
     selfClosing = false,
     render = renderer

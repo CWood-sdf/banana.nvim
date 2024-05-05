@@ -9,9 +9,9 @@ M.FormatType = {
     Script = 5,
 }
 
----@alias Banana.RenderRet Banana.Line[]
+---@alias Banana.RenderRet Banana.Box
 
----@alias Banana.Renderer fun(self: Banana.TagInfo, ast: Banana.Ast):Banana.RenderRet
+---@alias Banana.Renderer fun(self: Banana.TagInfo, ast: Banana.Ast, parentHl: Banana.Highlight?): Banana.RenderRet
 
 
 ---@class (exact) Banana.TagInfo

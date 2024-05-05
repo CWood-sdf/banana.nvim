@@ -26,7 +26,7 @@ local function renderer(self, ast, parentHl)
 end
 ---@type Banana.TagInfo
 local M = {
-    name = 'p',
+    name = 'li',
     formatType = t.FormatType.BlockInline,
     selfClosing = false,
     render = renderer

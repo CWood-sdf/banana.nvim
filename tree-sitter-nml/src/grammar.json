@@ -40,6 +40,14 @@
           "value": "a"
         },
         {
+          "type": "STRING",
+          "value": "ol"
+        },
+        {
+          "type": "STRING",
+          "value": "li"
+        },
+        {
           "type": "PATTERN",
           "value": "h[1-6]"
         },

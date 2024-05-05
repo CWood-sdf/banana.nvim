@@ -2,33 +2,23 @@ local t = require('banana.nml.tags')
 
 ---@param self Banana.Ast
 ---@param ast Banana.Ast
+---@param parentHl Banana.Highlight?
 ---@return Banana.RenderRet
-local function renderer(self, ast)
-    local ret = {}
+local function renderer(self, ast, parentHl)
+    local b = require('banana.box')
+    ---@type Banana.Box
+    local ret = b.Box:new();
+    ret.hlgroup = ast.hl or parentHl
 
-    local currentLine = {}
     for _, v in ipairs(ast.nodes) do
         if type(v) == 'string' then
-            table.insert(currentLine, { word = v })
+            ret:appendStr(v, b.MergeStrategy.Bottom)
         else
             ---@cast v Banana.Ast
             local tag = require('banana.nml.tags').makeTag(v.tag)
-            local rendered = tag:render(v)
-            for _, line in ipairs(rendered[1]) do
-                table.insert(currentLine, { word = line.word })
-            end
-            if #rendered > 1 then
-                table.insert(ret, currentLine)
-                currentLine = {}
-                for i = 2, #rendered do
-                    table.insert(ret, rendered[i])
-                end
-            end
+            local rendered = tag:render(v, ret.hlgroup)
+            ret:append(rendered, b.MergeStrategy.Bottom)
         end
-    end
-    if #currentLine > 0 then
-        table.insert(ret, currentLine)
-        currentLine = {}
     end
     return ret
 end

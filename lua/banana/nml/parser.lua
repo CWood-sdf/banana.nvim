@@ -19,30 +19,22 @@ M.ts_types = {
     self_closing_tag = "self_closing_tag"
 }
 
----@class (exact) Banana.Attribute
----@field name string
----@field value string?
-M.Attribute = {
-    name = "",
-    value = nil,
-}
+---@class (exact) Banana.Highlight
+---@field [string] string?
 
----@param name string
----@param value string?
-function M.Attribute:new(name, value)
-    local attr = {
-        name = name,
-        value = value,
-    }
-    setmetatable(attr, { __index = M.Attribute })
-    return attr
-end
+---@class (exact) Banana.Nss.Style
+---@field [string] string?
+
+---@class (exact) Banana.Attributes
+---@field [string] string?
 
 ---@class (exact) Banana.Ast
 ---@field nodes (string|Banana.Ast)[]
 ---@field tag string
----@field attributes Banana.Attribute[]
+---@field attributes Banana.Attributes
 ---@field actualTag Banana.TagInfo
+---@field style Banana.Nss.Style?
+---@field hl Banana.Highlight?
 M.Ast = {
     nodes = {},
     tag = "",
@@ -58,6 +50,7 @@ function M.Ast:new(tag)
         tag = tag,
         actualTag = require("banana.nml.tags").makeTag(tag),
         attributes = {},
+        style = nil
     }
     setmetatable(ast, { __index = M.Ast })
     return ast
@@ -99,7 +92,7 @@ function Parser:getStrFromNode(tree)
 end
 
 ---@param tree TSNode
----@return Banana.Attribute
+---@return string[]
 function Parser:parseAttribute(tree)
     local name = tree:child(0)
     if name == nil then
@@ -124,16 +117,16 @@ function Parser:parseAttribute(tree)
         end
     end
 
-    return M.Attribute:new(nameStr, value)
+    return { nameStr, value }
 end
 
 ---@param tree TSNode
----@return Banana.Attribute[]
+---@return Banana.Attributes
 function Parser:parseAttributes(tree)
     if tree:type() ~= M.ts_types.start_tag and tree:type() ~= M.ts_types.self_closing_tag then
         error("Must pass in a start_tag or self_closing_tag tree to parseAttributes")
     end
-    ---@type Banana.Attribute[]
+    ---@type Banana.Attributes
     local ret = {}
     local i = 2
     while i < tree:child_count() - 1 do
@@ -145,7 +138,7 @@ function Parser:parseAttributes(tree)
             error("An attribute was not given")
         end
         local a = self:parseAttribute(attr)
-        table.insert(ret, a)
+        ret[a[1]] = a[2]
         i = i + 1
     end
 
