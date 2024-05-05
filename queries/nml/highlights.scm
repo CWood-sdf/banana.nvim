@@ -1,4 +1,4 @@
-; inherits: html_tags
+; inherits: nml_tags
 
 (doctype) @constant
 

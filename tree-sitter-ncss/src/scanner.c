@@ -8,21 +8,37 @@ enum TokenType {
     ERROR_RECOVERY,
 };
 
-static inline void advance(TSLexer *lexer) { lexer->advance(lexer, false); }
+static inline void advance(TSLexer* lexer) {
+    lexer->advance(lexer, false);
+}
 
-static inline void skip(TSLexer *lexer) { lexer->advance(lexer, true); }
+static inline void skip(TSLexer* lexer) {
+    lexer->advance(lexer, true);
+}
 
-void *tree_sitter_css_external_scanner_create() { return NULL; }
+void* tree_sitter_ncss_external_scanner_create() {
+    return NULL;
+}
 
-void tree_sitter_css_external_scanner_destroy(void *payload) {}
+void tree_sitter_ncss_external_scanner_destroy(void* payload) {
+}
 
-void tree_sitter_css_external_scanner_reset(void *payload) {}
+void tree_sitter_ncss_external_scanner_reset(void* payload) {
+}
 
-unsigned tree_sitter_css_external_scanner_serialize(void *payload, char *buffer) { return 0; }
+unsigned
+tree_sitter_ncss_external_scanner_serialize(void* payload, char* buffer) {
+    return 0;
+}
 
-void tree_sitter_css_external_scanner_deserialize(void *payload, const char *buffer, unsigned length) {}
+void tree_sitter_ncss_external_scanner_deserialize(
+    void* payload, const char* buffer, unsigned length
+) {
+}
 
-bool tree_sitter_css_external_scanner_scan(void *payload, TSLexer *lexer, const bool *valid_symbols) {
+bool tree_sitter_ncss_external_scanner_scan(
+    void* payload, TSLexer* lexer, const bool* valid_symbols
+) {
     if (valid_symbols[ERROR_RECOVERY]) {
         return false;
     }
@@ -36,7 +52,8 @@ bool tree_sitter_css_external_scanner_scan(void *payload, TSLexer *lexer, const 
         }
         lexer->mark_end(lexer);
 
-        if (lexer->lookahead == '#' || lexer->lookahead == '.' || lexer->lookahead == '[' || lexer->lookahead == '-' ||
+        if (lexer->lookahead == '#' || lexer->lookahead == '.' ||
+            lexer->lookahead == '[' || lexer->lookahead == '-' ||
             lexer->lookahead == '*' || iswalnum(lexer->lookahead)) {
             return true;
         }
@@ -47,7 +64,8 @@ bool tree_sitter_css_external_scanner_scan(void *payload, TSLexer *lexer, const 
                 return false;
             }
             for (;;) {
-                if (lexer->lookahead == ';' || lexer->lookahead == '}' || lexer->eof(lexer)) {
+                if (lexer->lookahead == ';' || lexer->lookahead == '}' ||
+                    lexer->eof(lexer)) {
                     return false;
                 }
                 if (lexer->lookahead == '{') {
@@ -68,8 +86,10 @@ bool tree_sitter_css_external_scanner_scan(void *payload, TSLexer *lexer, const 
                 return false;
             }
             lexer->mark_end(lexer);
-            // We need a { to be a pseudo class selector, a ; indicates a property
-            while (lexer->lookahead != ';' && lexer->lookahead != '}' && !lexer->eof(lexer)) {
+            // We need a { to be a pseudo class selector, a ; indicates a
+            // property
+            while (lexer->lookahead != ';' && lexer->lookahead != '}' &&
+                   !lexer->eof(lexer)) {
                 advance(lexer);
                 if (lexer->lookahead == '{') {
                     lexer->result_symbol = PSEUDO_CLASS_SELECTOR_COLON;

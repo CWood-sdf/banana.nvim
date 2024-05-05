@@ -1,5 +1,5 @@
 {
-  "name": "css",
+  "name": "ncss",
   "rules": {
     "stylesheet": {
       "type": "REPEAT",
@@ -1969,3 +1969,4 @@
   ],
   "supertypes": []
 }
+
