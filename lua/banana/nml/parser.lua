@@ -167,7 +167,7 @@ function Parser:getStrFromNode(tree)
 end
 
 ---@param tree TSNode
----@return string[]
+---@return string,string?,Banana.Ncss.StyleDeclaration[]?
 function Parser:parseAttribute(tree)
     local name = tree:child(0)
     if name == nil then
@@ -178,7 +178,19 @@ function Parser:parseAttribute(tree)
     end
     local nameStr = self:getStrFromNode(name)
     local value = nil
-    if tree:child_count() >= 3 then
+    if tree:child_count() >= 3 and nameStr == "style" then
+        local ncssTree = self:getNextNcssParser()
+        local ncssParser = require('banana.ncss.parser').newParseData(self.lexer.program)
+        local rules = require('banana.ncss.parser').parse(ncssTree, ncssParser)
+        ---@type Banana.Ncss.StyleDeclaration[]
+        local ret = {}
+        for _, rule in ipairs(rules) do
+            for _, decl in ipairs(rule.declarations) do
+                table.insert(ret, decl)
+            end
+        end
+        return nameStr, nil, ret
+    elseif tree:child_count() >= 3 then
         local val = tree:child(2)
         ::top::
         if val == nil then
@@ -192,11 +204,11 @@ function Parser:parseAttribute(tree)
         end
     end
 
-    return { nameStr, value }
+    return nameStr, value, nil
 end
 
 ---@param tree TSNode
----@return Banana.Attributes
+---@return Banana.Attributes, Banana.Ncss.StyleDeclaration[]
 function Parser:parseAttributes(tree)
     if tree:type() ~= M.ts_types.start_tag and tree:type() ~= M.ts_types.self_closing_tag then
         error("Must pass in a start_tag or self_closing_tag tree to parseAttributes")
@@ -204,6 +216,8 @@ function Parser:parseAttributes(tree)
     ---@type Banana.Attributes
     local ret = {}
     local i = 2
+    ---@type Banana.Ncss.StyleDeclaration[]
+    local decls = {}
     while i < tree:child_count() - 1 do
         local attr = tree:child(i)
         if attr == nil then
@@ -212,12 +226,18 @@ function Parser:parseAttributes(tree)
         if attr:type() ~= M.ts_types.attribute then
             error("An attribute was not given")
         end
-        local a = self:parseAttribute(attr)
-        ret[a[1]] = a[2]
+        local name, val, d = self:parseAttribute(attr)
+        if d ~= nil then
+            for _, v in ipairs(d) do
+                table.insert(decls, v)
+            end
+        else
+            ret[name] = val
+        end
         i = i + 1
     end
 
-    return ret
+    return ret, decls
 end
 
 ---@param tree TSNode
@@ -237,7 +257,8 @@ function Parser:parseSelfClosingTag(tree)
     local name = self.lexer:getStrFromRange({ nameEl:start() }, { nameEl:end_() })
     local ret = M.Ast:new(name)
 
-    local attrs = self:parseAttributes(child)
+    local attrs, decls = self:parseAttributes(child)
+    ret:applyStyleDeclarations(decls)
     ret.attributes = attrs
 
     return ret
@@ -307,9 +328,10 @@ function Parser:parseTag(tree, isSpecial)
         ret = M.Ast:new(tagNameStr)
     end
 
-    local attrs = self:parseAttributes(firstChild)
+    local attrs, decls = self:parseAttributes(firstChild)
     if ret ~= nil then
         ret.attributes = attrs
+        ret:applyStyleDeclarations(decls)
     end
 
     local i = 1

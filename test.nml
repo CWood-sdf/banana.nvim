@@ -35,7 +35,7 @@
         <span> p.span</span>
     </p>
     <br>
-    <ol style="color: red; asdf: blue">
+    <ol style="hl-bg: black;">
         <li> asdf </li>
         <li> asdf 2 </li>
     </ol>
