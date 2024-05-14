@@ -92,6 +92,8 @@ function Instance:render()
 
         ::continue::
     end
+    local styleTime = vim.loop.hrtime() - startTime
+    startTime = vim.loop.hrtime()
     local stuffToRender = self:virtualRender(ast)
     local renderTime = vim.loop.hrtime() - startTime
     if self.bufnr == nil or not vim.api.nvim_buf_is_valid(self.bufnr) then
@@ -139,6 +141,7 @@ function Instance:render()
     local extraLines = {
         "",
         astTime / 1e3 .. "μs to parse",
+        styleTime / 1e3 .. "μs to style",
         renderTime / 1e3 .. "μs to render",
         reductionTime / 1e3 .. "μs to reduce",
         hlTime / 1e3 .. "μs to highlight",

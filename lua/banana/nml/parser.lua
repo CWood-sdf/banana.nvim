@@ -133,19 +133,28 @@ end
 ---@field tree TSTree?
 ---@field styleSets Banana.Ncss.RuleSet[]
 ---@field scripts string[]
+---@field ncssParsers TSTree[]
+---@field ncssIndex number
 local Parser = {
     lexer = nil,
     tree = nil,
     styleSets = {},
     scripts = {},
+    ncssIndex = 1,
 }
 
 ---@param lex Banana.Lexer
 ---@param tree TSTree
-function Parser:new(lex, tree)
+---@param ncssParsers TSTree[]
+function Parser:new(lex, tree, ncssParsers)
+    ---@type Banana.Parser
     local parser = {
         lexer = lex,
         tree = tree,
+        styleSets = {},
+        scripts = {},
+        ncssParsers = ncssParsers,
+        ncssIndex = 1,
     }
     setmetatable(parser, { __index = Parser })
     return parser
@@ -232,6 +241,13 @@ function Parser:parseSelfClosingTag(tree)
     ret.attributes = attrs
 
     return ret
+end
+
+---@return TSNode
+function Parser:getNextNcssParser()
+    local node = self.ncssParsers[self.ncssIndex]:root()
+    self.ncssIndex = self.ncssIndex + 1
+    return node
 end
 
 ---@param str string
@@ -331,9 +347,11 @@ function Parser:parseTag(tree, isSpecial)
             -- if stylesheet:type() ~= "stylesheet" then
             --     error("Expected type 'stylesheet', got '" .. stylesheet:type() .. "'")
             -- end
-            local str = self:getStrFromNode(child)
+            local ncssTree = self:getNextNcssParser()
+            -- local str = self:getStrFromNode(child)
             -- local ncssParser = require('banana.ncss.parser').newParseData(self.lexer.program)
-            local rules = require('banana.ncss.parser').parseText(str)
+            local ncssParser = require('banana.ncss.parser').newParseData(self.lexer.program)
+            local rules = require('banana.ncss.parser').parse(ncssTree, ncssParser)
             for _, rule in ipairs(rules) do
                 table.insert(self.styleSets, rule)
             end
@@ -443,7 +461,10 @@ M.fromFile = function(path)
     vim.api.nvim_set_option_value("buflisted", false, { buf = buf })
     vim.api.nvim_set_option_value("swapfile", false, { buf = buf })
     vim.treesitter.start(buf, "nml")
-    tree = vim.treesitter.get_parser(buf, "nml"):parse(true)[1]
+    local langTree = vim.treesitter.get_parser(buf, "nml")
+    local arr = langTree:parse(true)
+    local ncssParsers = langTree:children().ncss:parse(true)
+    tree = arr[1]
     local parsed = tree:root()
     local children = parsed:child(0)
     if children == nil then
@@ -455,7 +476,7 @@ M.fromFile = function(path)
 
     local lex = lexer.fromString(content)
 
-    local parser = Parser:new(lex, tree)
+    local parser = Parser:new(lex, tree, ncssParsers)
     return parser
 end
 
