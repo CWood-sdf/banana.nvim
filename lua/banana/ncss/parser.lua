@@ -6,6 +6,7 @@ local q = require('banana.ncss.query')
 M.ts_types = {
     function_name = "function_name",
     class_name = "class_name",
+    id_name = "id_name",
     property_name = "property_name",
     tag_name = "tag_name",
     charset_statement = "charset_statement",
@@ -187,6 +188,11 @@ M.queryParsers = {
     end,
     [M.ts_types.class_selector] = function(node, parser)
         local nameTag = node:child(2)
+        local isSel = false
+        if nameTag == nil then
+            isSel = true
+            nameTag = node:child(1)
+        end
         if nameTag == nil then
             error("Expected class_name to not be nil")
         end
@@ -195,10 +201,30 @@ M.queryParsers = {
         end
 
         local name = parser:getStringFromRange({ nameTag:start() }, { nameTag:end_() })
-
-
-        return q.newWhere(function(ast)
+        local fn = function(ast)
             return ast:hasClass(name)
+        end
+
+
+        if isSel then
+            return q.newSelector(fn)
+        end
+        return q.newWhere(fn)
+    end,
+    [M.ts_types.id_selector] = function(node, parser)
+        local nameTag = node:child(1)
+        if nameTag == nil then
+            error("Expected id_name to not be nil")
+        end
+        if nameTag:type() ~= M.ts_types.id_name then
+            error("Expected nameTag to have type id_name, got '" .. nameTag:type() .. "'")
+        end
+
+        local name = parser:getStringFromRange({ nameTag:start() }, { nameTag:end_() })
+
+
+        return q.newSelector(function(ast)
+            return ast:getAttribute("id") == name
         end)
     end,
 
@@ -622,23 +648,37 @@ end
 ---@param tree TSNode
 ---@param query Banana.Ncss.Query
 ---@param parser Banana.Ncss.ParseData
+---@return boolean
 function M.parseQueryComponent(tree, query, parser)
     if tree:type() == M.ts_types.tag_name then
         local text = parser:getStringFromRange({ tree:start() }, { tree:end_() })
         query:setRootSelector(q.selectors.tag(text), true)
+    elseif tree:type() == '.' then
+        return true
+    elseif tree:type() == '#' then
+        return true
     else
         local child = tree:child(0)
         if child == nil then
             error("First child of '" .. tree:type() .. "' is nil")
         end
-        M.parseQueryComponent(child, query, parser)
+        local skip = M.parseQueryComponent(child, query, parser)
         local p = M.queryParsers[tree:type()]
         if p == nil then
             error("Could not find parser for '" .. tree:type() .. "'")
         end
         local comp = p(tree, parser)
-        query:appendFilter(comp)
+        if not skip then
+            query:appendFilter(comp)
+        else
+            if comp.filterType == require('banana.ncss.query').FilterType.Where then
+                comp = comp:toSelector()
+            end
+            ---@cast comp Banana.Ncss.Selector
+            query:setRootSelector(comp, false)
+        end
     end
+    return false
 end
 
 ---@param tree TSNode

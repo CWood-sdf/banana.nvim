@@ -1,9 +1,16 @@
 <div>
     <style>
+        .yeet {
+            hl-bold: true;
+        }
+        #asdf.yeet {
+            hl-fg: #4aafaf;
+            hl-bg: rgb(200, 100, 16);
+        }
         li {
             hl-bg: green;
         }
-        div.yeet > ol li {
+        div.yeet > ol {
             hl-fg: blue;
             hl-bg: red;
             hl-underline: false;
@@ -32,7 +39,7 @@
         <li> asdf </li>
         <li> asdf 2 </li>
     </ol>
-    <p>
+    <p id="asdf" class="yeet">
         p2
     </p>
     <script>

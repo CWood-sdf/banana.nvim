@@ -28,10 +28,18 @@ This plugin seeks to turn neovim into a hypermedia client through its own custom
 - [x] Should take in a page AST, and the styling AST, then apply all the rules
 - [ ] Needs to be really fast
 
+### Style/Markup interface
+
+- [ ] Need some sort of priority mechanism so that it isn't order based
+- [ ] Need maybe some caching, and some sort of trigger mechanism that lives on each element so that (for example) a class change can just retrigger only the needed selectors
+- [ ] Needs a good way of applying declarations to elements
+
 ### Renderer Goals
 
 - [ ] Should have a target that it can give the rendered lines to (this target could like render to a part of a buffer, or be a whole buffer renderer...)
 - [x] Should take in AST and return Word[][]
+- [ ] Need to actually compute width/height restrictions and follow them
+- [ ] Flexbox?
 - [ ] Respect the styling
 - [ ] Robust (aka styling still works if win really small)
 

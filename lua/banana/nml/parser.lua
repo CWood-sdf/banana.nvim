@@ -112,6 +112,12 @@ function M.Ast:applyStyleDeclarations(declarations)
     end
 end
 
+---@param name string
+---@return string?
+function M.Ast:getAttribute(name)
+    return self.attributes[name]
+end
+
 ---@param text string
 function M.Ast:appendTextNode(text)
     table.insert(self.nodes, text)

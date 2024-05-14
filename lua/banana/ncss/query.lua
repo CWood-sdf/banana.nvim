@@ -93,6 +93,11 @@ local Where = {
     filterType = M.FilterType.Where
 }
 
+---@return Banana.Ncss.Selector
+function Where:toSelector()
+    return M.newSelector(self.satisfies)
+end
+
 ---@param satisfies fun(ast: Banana.Ast): boolean
 ---@return Banana.Ncss.Where
 function M.newWhere(satisfies)
