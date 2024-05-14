@@ -86,6 +86,8 @@
 
 (integer_value) @number
 
+(boolean_value) @number
+
 (float_value) @number.float
 
 [

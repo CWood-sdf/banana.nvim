@@ -261,6 +261,7 @@ module.exports = grammar({
             prec(
                 -1,
                 choice(
+                    $.boolean_value,
                     alias($.identifier, $.plain_value),
                     $.plain_value,
                     $.color_value,
@@ -285,6 +286,7 @@ module.exports = grammar({
                 seq('"', /([^"\n]|\\(.|\n))*/, '"'),
             ),
 
+        boolean_value: () => token(choice("true", "false")),
         integer_value: ($) =>
             seq(
                 token(seq(optional(choice("+", "-")), /\d+/)),
@@ -314,7 +316,7 @@ module.exports = grammar({
         call_expression: ($) =>
             seq(alias($.identifier, $.function_name), $.arguments),
 
-        binary_expression: ($) =>
+        inary_expression: ($) =>
             prec.left(seq($._value, choice("+", "-", "*", "/"), $._value)),
 
         arguments: ($) =>
@@ -329,6 +331,8 @@ module.exports = grammar({
         at_keyword: (_) => /@[a-zA-Z-_]+/,
 
         js_comment: (_) => token(prec(-1, seq("//", /.*/))),
+        binary_expression: ($) =>
+            prec.left(seq($._value, choice("+", "-", "*", "/"), $._value)),
 
         comment: (_) => token(seq("/*", /[^*]*\*+([^/*][^*]*\*+)*/, "/")),
 

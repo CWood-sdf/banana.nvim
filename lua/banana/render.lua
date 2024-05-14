@@ -26,8 +26,6 @@ local Instance = {}
 ---@param ast Banana.Ast
 ---@return Banana.Line[]
 function Instance:virtualRender(ast)
-    ---TODO: The entire tag system needs to be reworked so that the tag renderers take in an AST and return a list of words.
-
     ---@type Banana.Line[]
     local ret = {}
     if require("banana.nml.tags").tagExists(ast.tag) then
@@ -72,6 +70,7 @@ function Instance:useWindow(winid)
     self.winid = winid
 end
 
+---@return Banana.Ast
 function Instance:render()
     local startTime = vim.loop.hrtime()
     local ast = self.parser:parse()
@@ -81,6 +80,18 @@ function Instance:render()
     end
     startTime = vim.loop.hrtime()
     require("banana.nml.tags").cleanAst(ast)
+    local rules = self.parser.styleSets
+    for _, v in ipairs(rules) do
+        if v.query == nil then
+            goto continue
+        end
+        local arr = v.query:find(ast)
+        for _, a in ipairs(arr) do
+            a:applyStyleDeclarations(v.declarations)
+        end
+
+        ::continue::
+    end
     local stuffToRender = self:virtualRender(ast)
     local renderTime = vim.loop.hrtime() - startTime
     if self.bufnr == nil or not vim.api.nvim_buf_is_valid(self.bufnr) then
@@ -136,6 +147,7 @@ function Instance:render()
     vim.api.nvim_set_option_value("modifiable", false, {
         buf = self.bufnr
     })
+    return ast
 end
 
 ---@param lines Banana.Line[]
@@ -168,7 +180,7 @@ function Instance:highlight(lines, offset)
 
                 if word.style._name ~= nil then
                     ns = 0
-                    hlGroup = word.style._name
+                    hlGroup = word.style._name or "Normal"
                     local hl = vim.api.nvim_get_hl(ns, {
                         name = hlGroup,
                     })

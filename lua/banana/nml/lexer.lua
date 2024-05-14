@@ -32,6 +32,12 @@ function Lexer:getStrFromRange(left, right)
     return ret
 end
 
+---@param node TSNode
+---@return string
+function Lexer:getStrFromNode(node)
+    return self:getStrFromRange({ node:start() }, { node:end_() })
+end
+
 ---@param file string
 ---@return Banana.Lexer?
 function M.fromPath(file)

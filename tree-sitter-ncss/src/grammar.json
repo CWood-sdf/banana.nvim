@@ -1376,6 +1376,10 @@
         "type": "CHOICE",
         "members": [
           {
+            "type": "SYMBOL",
+            "name": "boolean_value"
+          },
+          {
             "type": "ALIAS",
             "content": {
               "type": "SYMBOL",
@@ -1498,6 +1502,22 @@
           ]
         }
       ]
+    },
+    "boolean_value": {
+      "type": "TOKEN",
+      "content": {
+        "type": "CHOICE",
+        "members": [
+          {
+            "type": "STRING",
+            "value": "true"
+          },
+          {
+            "type": "STRING",
+            "value": "false"
+          }
+        ]
+      }
     },
     "integer_value": {
       "type": "SEQ",
@@ -1738,7 +1758,7 @@
         }
       ]
     },
-    "binary_expression": {
+    "inary_expression": {
       "type": "PREC_LEFT",
       "value": 0,
       "content": {
@@ -1866,6 +1886,44 @@
             }
           ]
         }
+      }
+    },
+    "binary_expression": {
+      "type": "PREC_LEFT",
+      "value": 0,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "SYMBOL",
+            "name": "_value"
+          },
+          {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "STRING",
+                "value": "+"
+              },
+              {
+                "type": "STRING",
+                "value": "-"
+              },
+              {
+                "type": "STRING",
+                "value": "*"
+              },
+              {
+                "type": "STRING",
+                "value": "/"
+              }
+            ]
+          },
+          {
+            "type": "SYMBOL",
+            "name": "_value"
+          }
+        ]
       }
     },
     "comment": {

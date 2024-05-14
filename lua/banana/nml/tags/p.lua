@@ -8,7 +8,7 @@ local function renderer(self, ast, parentHl)
     local b = require('banana.box')
     ---@type Banana.RenderRet
     local ret = b.Box:new()
-    ret.hlgroup = ast.hl or parentHl
+    ret.hlgroup = ast:mixHl(parentHl)
 
     -- Add the newline
     -- table.insert(ret, {})

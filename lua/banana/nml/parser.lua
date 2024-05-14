@@ -3,6 +3,10 @@ local M = {}
 
 ---@enum Banana.Nml.TSTypes
 M.ts_types = {
+    style_end_tag = "style_end_tag",
+    style_element = "style_element",
+    script_element = "script_element",
+    raw_text = "raw_text",
     source_file = "source_file",
     doctype = "doctype",
     element = "element",
@@ -19,11 +23,8 @@ M.ts_types = {
     self_closing_tag = "self_closing_tag"
 }
 
----@class (exact) Banana.Highlight
----@field [string] string?
-
----@class (exact) Banana.Nss.Style
----@field [string] string?
+---@class (exact) Banana.Highlight: vim.api.keyset.highlight
+---@field _name string?
 
 ---@class (exact) Banana.Attributes
 ---@field [string] string?
@@ -33,12 +34,18 @@ M.ts_types = {
 ---@field tag string
 ---@field attributes Banana.Attributes
 ---@field actualTag Banana.TagInfo
----@field style Banana.Nss.Style?
+---@field style Banana.Ncss.StyleDeclaration[]
 ---@field hl Banana.Highlight?
+---@field padding number[]
+---@field margin number[]
+---@field classes? { [string]: boolean }
 M.Ast = {
     nodes = {},
     tag = "",
     attributes = {},
+    padding = {},
+    margin = {},
+    classes = nil,
 }
 
 ---@param tag string
@@ -50,10 +57,59 @@ function M.Ast:new(tag)
         tag = tag,
         actualTag = require("banana.nml.tags").makeTag(tag),
         attributes = {},
-        style = nil
+        padding = {},
+        margin = {},
+        style = {},
     }
     setmetatable(ast, { __index = M.Ast })
     return ast
+end
+
+---@param c string
+---@return boolean
+function M.Ast:hasClass(c)
+    if self.classes == nil and self.attributes["class"] ~= nil then
+        local arr = vim.split(self.attributes["class"], ' ')
+        self.classes = {}
+        for _, v in ipairs(arr) do
+            self.classes[v] = true
+        end
+    elseif self.classes == nil then
+        self.classes = {}
+    end
+    return self.classes[c] or false
+end
+
+---@param parentHl Banana.Highlight?
+---@return Banana.Highlight
+function M.Ast:mixHl(parentHl)
+    local ret = {}
+
+    for k, v in pairs(self.hl or {}) do
+        ret[k] = v
+    end
+    for k, v in pairs(parentHl or {}) do
+        if ret[k] == nil then
+            ret[k] = v
+        end
+    end
+    return ret
+end
+
+---@param declarations Banana.Ncss.StyleDeclaration[]
+function M.Ast:applyStyleDeclarations(declarations)
+    for _, v in ipairs(declarations) do
+        if v.name:sub(1, 3) == "hl-" then
+            self.hl = self.hl or {}
+            local name = v.name:sub(4, #v.name)
+
+            local value = v.values[1]
+            if #v.values ~= 1 then
+                error("Multiple values given to specific declaration '" .. name .. "'")
+            end
+            self.hl[name] = value.value
+        end
+    end
 end
 
 ---@param text string
@@ -69,9 +125,13 @@ end
 ---@class (exact) Banana.Parser
 ---@field lexer Banana.Lexer?
 ---@field tree TSTree?
+---@field styleSets Banana.Ncss.RuleSet[]
+---@field scripts string[]
 local Parser = {
     lexer = nil,
     tree = nil,
+    styleSets = {},
+    scripts = {},
 }
 
 ---@param lex Banana.Lexer
@@ -177,8 +237,10 @@ function Parser:resolveEntity(str)
 end
 
 ---@param tree TSNode
+---@param isSpecial? boolean
 ---@return Banana.Ast?
-function Parser:parseTag(tree)
+function Parser:parseTag(tree, isSpecial)
+    isSpecial = isSpecial or false
     local firstChild = tree:child(0)
     local lastChild = tree:child(tree:child_count() - 1)
     if firstChild == nil or lastChild == nil then
@@ -187,7 +249,7 @@ function Parser:parseTag(tree)
     if firstChild:type() ~= M.ts_types.start_tag then
         error("Unreachable")
     end
-    if lastChild:type() ~= M.ts_types.end_tag then
+    if lastChild:type() ~= M.ts_types.end_tag and not isSpecial then
         error("Unreachable")
     end
     local tagName = firstChild:child(1)
@@ -210,10 +272,23 @@ function Parser:parseTag(tree)
         error("A start tag is not closed by the same tag (started with " ..
             tagNameStr .. " but ended with " .. endTagNameStr .. ")")
     end
-    local ret = M.Ast:new(tagNameStr)
+    local isScript = false
+    if tagNameStr == "script" then
+        isScript = true
+    end
+    local isStyle = false
+    if tagNameStr == "style" then
+        isStyle = true
+    end
+    local ret = nil
+    if not isScript and not isStyle then
+        ret = M.Ast:new(tagNameStr)
+    end
 
     local attrs = self:parseAttributes(firstChild)
-    ret.attributes = attrs
+    if ret ~= nil then
+        ret.attributes = attrs
+    end
 
     local i = 1
     while i < tree:child_count() - 1 do
@@ -222,19 +297,51 @@ function Parser:parseTag(tree)
             error("Unreachable")
         end
         if child:type() == M.ts_types.text then
+            if ret == nil then
+                error("Unreachable")
+            end
             ret:appendTextNode(self:getStrFromNode(child))
         elseif child:type() == M.ts_types.element then
             local element = self:parseElement(child)
-            if element == nil then
-                error("Error generating ast from treesitter element")
+            if element ~= nil then
+                if ret == nil then
+                    error("Unreachable")
+                end
+                ret:appendNode(element)
             end
-            ret:appendNode(element)
         elseif child:type() == M.ts_types.entity then
+            if ret == nil then
+                error("Unreachable")
+            end
             ret:appendTextNode(self:resolveEntity(self:getStrFromNode(child)))
+        elseif child:type() == M.ts_types.raw_text and isScript then
+            local scriptStr = self.lexer:getStrFromRange({ child:start() }, { child:end_() })
+            table.insert(self.scripts, scriptStr)
+        elseif child:type() == M.ts_types.raw_text and isStyle then
+            -- local stylesheet = child:child(0)
+            -- if stylesheet == nil then
+            --     error("Expected stylesheet to not be nil")
+            -- end
+            -- if stylesheet:type() ~= "stylesheet" then
+            --     error("Expected type 'stylesheet', got '" .. stylesheet:type() .. "'")
+            -- end
+            local str = self:getStrFromNode(child)
+            -- local ncssParser = require('banana.ncss.parser').newParseData(self.lexer.program)
+            local rules = require('banana.ncss.parser').parseText(str)
+            for _, rule in ipairs(rules) do
+                table.insert(self.styleSets, rule)
+            end
+        elseif child:type() == M.ts_types.style_element then
+            self:parseTag(child, true)
+        elseif child:type() == M.ts_types.script_element then
+            self:parseTag(child, true)
         else
             error("Node type " .. child:type() .. " not allowed when parsing tag body")
         end
         i = i + 1
+    end
+    if isScript or isStyle then
+        return nil
     end
 
     return ret

@@ -87,6 +87,10 @@
           "named": true
         },
         {
+          "type": "boolean_value",
+          "named": true
+        },
+        {
           "type": "call_expression",
           "named": true
         },
@@ -304,6 +308,10 @@
           "named": true
         },
         {
+          "type": "boolean_value",
+          "named": true
+        },
+        {
           "type": "call_expression",
           "named": true
         },
@@ -396,6 +404,10 @@
       "types": [
         {
           "type": "binary_expression",
+          "named": true
+        },
+        {
+          "type": "boolean_value",
           "named": true
         },
         {
@@ -552,6 +564,10 @@
       "types": [
         {
           "type": "binary_expression",
+          "named": true
+        },
+        {
+          "type": "boolean_value",
           "named": true
         },
         {
@@ -749,6 +765,10 @@
           "named": true
         },
         {
+          "type": "boolean_value",
+          "named": true
+        },
+        {
           "type": "call_expression",
           "named": true
         },
@@ -871,6 +891,10 @@
           "named": true
         },
         {
+          "type": "boolean_value",
+          "named": true
+        },
+        {
           "type": "call_expression",
           "named": true
         },
@@ -938,6 +962,10 @@
       "types": [
         {
           "type": "binary_expression",
+          "named": true
+        },
+        {
+          "type": "boolean_value",
           "named": true
         },
         {
@@ -1064,6 +1092,10 @@
         },
         {
           "type": "binary_query",
+          "named": true
+        },
+        {
+          "type": "boolean_value",
           "named": true
         },
         {
@@ -1382,6 +1414,10 @@
           "named": true
         },
         {
+          "type": "boolean_value",
+          "named": true
+        },
+        {
           "type": "call_expression",
           "named": true
         },
@@ -1434,6 +1470,10 @@
         },
         {
           "type": "binary_expression",
+          "named": true
+        },
+        {
+          "type": "boolean_value",
           "named": true
         },
         {
@@ -2086,6 +2126,10 @@
   },
   {
     "type": "at_keyword",
+    "named": true
+  },
+  {
+    "type": "boolean_value",
     "named": true
   },
   {

@@ -1,17 +1,38 @@
 <div>
+    <style>
+        div.yeet > ol li {
+            hl-fg: blue;
+            hl-bg: red;
+            hl-underline: false;
+        }
+
+        div {
+            hl-underline: true;
+
+        }
+    </style>
     div
     <span>span</span>
+
+    <div class="yeet">
+            <ol>
+                <li> asdf </li>
+            </ol>
+    </div>
 
     <p sdf="dsf" id="sdf" > 
         p1  
         <span> p.span</span>
     </p>
     <br>
-    <ol>
+    <ol style="color: red; asdf: blue">
         <li> asdf </li>
         <li> asdf 2 </li>
     </ol>
     <p>
         p2
     </p>
+    <script>
+    local asdf = 0
+    </script>
 </div>

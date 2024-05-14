@@ -8,7 +8,7 @@ local function renderer(self, ast, parentHl)
     local b = require('banana.box')
     ---@type Banana.Box
     local ret = b.Box:new()
-    ret.hlgroup = ast.hl or parentHl
+    ret.hlgroup = ast:mixHl(parentHl)
     -- keep track of what the last tag type was, then insert newlines as necessary rather than doing whatever we are doing rn
     ---@type "inline"|"block"|"text"
     local lastTag = "inline"

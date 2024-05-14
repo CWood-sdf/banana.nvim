@@ -10,18 +10,18 @@
   (raw_text) @injection.content)
   (#not-lua-match? @_no_type_lang "%slang%s*=")
   (#not-lua-match? @_no_type_lang "%stype%s*=")
-  (#set! injection.language "css"))
+  (#set! injection.language "ncss"))
 
 ((style_element
   (start_tag
     (attribute
       (attribute_name) @_type
       (quoted_attribute_value
-        (attribute_value) @_css)))
+        (attribute_value) @_ncss)))
   (raw_text) @injection.content)
   (#eq? @_type "type")
-  (#eq? @_css "text/css")
-  (#set! injection.language "css"))
+  (#eq? @_ncss "text/ncss")
+  (#set! injection.language "ncss"))
 
 ; <script>...</script>
 ; <script defer>...</script>
@@ -43,13 +43,13 @@
   (raw_text) @injection.content
   (#set-lang-from-mimetype! @_type))
 
-; <a style="/* css */">
+; <a style="/* ncss */">
 ((attribute
   (attribute_name) @_attr
   (quoted_attribute_value
     (attribute_value) @injection.content))
   (#eq? @_attr "style")
-  (#set! injection.language "css"))
+  (#set! injection.language "ncss"))
 
 ; lit-html style template interpolation
 ; <a @click=${e => console.log(e)}>

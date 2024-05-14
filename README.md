@@ -1,6 +1,6 @@
 # Banana.nvim
 
-This plugin seeks to turn neovim into a hypermedia client through its own custom markup, styling, and scripting languages for extensions. It will also try to use the hypermedia controls that htmx uses to make building extensions easier.
+This plugin seeks to turn neovim into a hypermedia client through its own custom markup, styling, and scripting interface for extensions. It will also try to use the hypermedia controls similar to what htmx uses to make building extensions easier.
 
 ## Roadmap
 
@@ -16,15 +16,17 @@ This plugin seeks to turn neovim into a hypermedia client through its own custom
 
 ### Styling Language
 
-- [ ] Basic Styling
-- [ ] Complex styling (animations, transitions, position:absolute)
-- [ ] Very Fast rendering
+- [x] Basic Styling
+- [ ] Complex styling (animations, transitions, absolute positioning)
+- [x] Very Fast rendering
 - [ ] Few errors
-- [ ] Based on css
+- [x] Based on css
+- [x] Have to do some inversions on the style treesitter tree
 
 ### Styler
 
-- [ ] Should take in a page AST, and the styling AST, then apply all the rules
+- [x] Should take in a page AST, and the styling AST, then apply all the rules
+- [ ] Needs to be really fast
 
 ### Renderer Goals
 

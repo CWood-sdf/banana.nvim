@@ -1,10 +1,13 @@
 local M = {}
 local instance = require("banana.render").newInstance(os.getenv("HOME") .. "/projects/banana.nvim/test.nml", "test.nml")
+local np = require('banana.ncss.parser')
 
 M.yeet = function()
 	-- local filename = os.getenv("HOME") .. '/projects/banana.nvim/test.nml'
 	instance:reset()
-	instance:render()
+	local ast = instance:render()
+	local lines = vim.fn.readfile(os.getenv("HOME") .. "/projects/banana.nvim/test.ncss")
+
 	local file = io.open(os.getenv("HOME") .. "/projects/banana.nvim/log", "w")
 	if file == nil then
 		print("Failed to open log file")
