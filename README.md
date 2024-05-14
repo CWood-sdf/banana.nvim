@@ -33,7 +33,7 @@ This plugin seeks to turn neovim into a hypermedia client through its own custom
 - [ ] Should have a target that it can give the rendered lines to (this target could like render to a part of a buffer, or be a whole buffer renderer...)
 - [x] Should take in AST and return Word[][]
 - [ ] Respect the styling
-- [ ] Robust (aka styling still works if buf really small)
+- [ ] Robust (aka styling still works if win really small)
 
 ### Events
 

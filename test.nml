@@ -1,5 +1,8 @@
 <div>
     <style>
+        li {
+            hl-bg: green;
+        }
         div.yeet > ol li {
             hl-fg: blue;
             hl-bg: red;
