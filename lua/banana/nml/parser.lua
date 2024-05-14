@@ -340,16 +340,7 @@ function Parser:parseTag(tree, isSpecial)
             local scriptStr = self.lexer:getStrFromRange({ child:start() }, { child:end_() })
             table.insert(self.scripts, scriptStr)
         elseif child:type() == M.ts_types.raw_text and isStyle then
-            -- local stylesheet = child:child(0)
-            -- if stylesheet == nil then
-            --     error("Expected stylesheet to not be nil")
-            -- end
-            -- if stylesheet:type() ~= "stylesheet" then
-            --     error("Expected type 'stylesheet', got '" .. stylesheet:type() .. "'")
-            -- end
             local ncssTree = self:getNextNcssParser()
-            -- local str = self:getStrFromNode(child)
-            -- local ncssParser = require('banana.ncss.parser').newParseData(self.lexer.program)
             local ncssParser = require('banana.ncss.parser').newParseData(self.lexer.program)
             local rules = require('banana.ncss.parser').parse(ncssTree, ncssParser)
             for _, rule in ipairs(rules) do
