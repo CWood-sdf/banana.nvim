@@ -30,7 +30,7 @@ This plugin seeks to turn neovim into a hypermedia client through its own custom
 
 ### Style/Markup interface
 
-- [ ] Need some sort of priority mechanism so that it isn't order based
+- [ ] Follow [this](https://stackoverflow.com/questions/25105736/what-is-the-order-of-precedence-for-css)
 - [ ] Need maybe some caching, and some sort of trigger mechanism that lives on each element so that (for example) a class change can just retrigger only the needed selectors
 - [ ] Needs a good way of applying declarations to elements
 

@@ -447,6 +447,7 @@ end
 function Parser:reset()
     self.lexer.currentLine = 1
     self.lexer.currentCol = 1
+    self.ncssIndex = 1
 end
 
 ---@type TSTree?

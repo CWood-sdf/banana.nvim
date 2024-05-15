@@ -1,9 +1,14 @@
-<div>
+<div id="root">
     <style>
         .yeet {
             hl-bold: true;
         }
         #asdf.yeet {
+            hl-fg: #4aafaf;
+            hl-bg: rgb(200, 100, 16);
+        }
+
+        #root > #as.asdf.yeet {
             hl-fg: #4aafaf;
             hl-bg: rgb(200, 100, 16);
         }
@@ -30,7 +35,7 @@
             </ol>
     </div>
 
-    <p sdf="dsf" id="sdf" > 
+    <p sdf="dsf" id="sdf"> 
         p1  
         <span> p.span</span>
     </p>
@@ -39,6 +44,9 @@
         <li> asdf </li>
         <li> asdf 2 </li>
     </ol>
+        <p class="asdf yeet" id="as" >
+        asdfkjsd
+        </p>
     <p id="asdf" class="yeet">
         p2
     </p>

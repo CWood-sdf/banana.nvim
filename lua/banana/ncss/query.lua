@@ -5,14 +5,29 @@ M.FilterType = {
     Where = 1,
 }
 
+local maxCount = 128
+M.Specificity = {
+    Important = 1 * maxCount * maxCount * maxCount * maxCount,
+    Star = 0,
+    Element = 1,
+    Class = 1 * maxCount,
+    AttributeSelector = 1 * maxCount,
+    Pseudoclass = 1 * maxCount,
+    Id = 1 * maxCount * maxCount,
+    Inline = 1 * maxCount * maxCount * maxCount,
+
+}
+
 ---@class (exact) Banana.Ncss.Selector
 ---@field select? fun(ast: Banana.Ast): boolean
 ---@field manualSelect? fun(ast: Banana.Ast): Banana.Ast[]
 ---@field filterType FilterType
+---@field specificity number
 local Selector = {
     select = function() return true end,
     manualSelect = nil,
-    filterType = M.FilterType.Selector
+    filterType = M.FilterType.Selector,
+    specificity = 0,
 }
 ---@param ast Banana.Ast
 ---@param arr Banana.Ast[]
@@ -22,10 +37,6 @@ function Selector:_getMatches(ast, arr)
     end
     for _, v in ipairs(ast.nodes) do
         if type(v) ~= "string" then
-            ---@cast v Banana.Ast
-            if self.select(ast) then
-                table.insert(arr, v)
-            end
             self:_getMatches(v, arr)
         end
     end
@@ -46,12 +57,14 @@ function Selector:getMatches(ast)
 end
 
 ---@param select fun(ast: Banana.Ast): boolean
+---@param specificity number
 ---@return Banana.Ncss.Selector
-function M.newSelector(select)
+function M.newSelector(select, specificity)
     ---@type Banana.Ncss.Selector
     local selector = {
-        select     = select,
-        filterType = M.FilterType.Selector
+        select      = select,
+        filterType  = M.FilterType.Selector,
+        specificity = specificity
     }
 
     setmetatable(selector, {
@@ -66,17 +79,19 @@ M.selectors = {
     tag = function(name)
         return M.newSelector(function(ast)
             return ast.tag == name
-        end)
+        end, M.Specificity.Element)
     end,
 }
 
 ---@param select fun(ast: Banana.Ast): Banana.Ast[]
+---@param specificity number
 ---@return Banana.Ncss.Selector
-function M.newManualSelector(select)
+function M.newManualSelector(select, specificity)
     ---@type Banana.Ncss.Selector
     local selector = {
         manualSelect = select,
-        filterType   = M.FilterType.Selector
+        filterType   = M.FilterType.Selector,
+        specificity  = specificity
     }
 
     setmetatable(selector, {
@@ -88,23 +103,27 @@ end
 ---@class (exact) Banana.Ncss.Where
 ---@field satisfies fun(ast: Banana.Ast): boolean
 ---@field filterType FilterType
+---@field specificity number
 local Where = {
-    satisfies  = function() return true end,
-    filterType = M.FilterType.Where
+    satisfies   = function() return true end,
+    filterType  = M.FilterType.Where,
+    specificity = 0,
 }
 
 ---@return Banana.Ncss.Selector
 function Where:toSelector()
-    return M.newSelector(self.satisfies)
+    return M.newSelector(self.satisfies, self.specificity)
 end
 
 ---@param satisfies fun(ast: Banana.Ast): boolean
+---@param specificity number
 ---@return Banana.Ncss.Where
-function M.newWhere(satisfies)
+function M.newWhere(satisfies, specificity)
     ---@type Banana.Ncss.Where
     local where = {
-        satisfies  = satisfies,
-        filterType = M.FilterType.Where
+        satisfies   = satisfies,
+        filterType  = M.FilterType.Where,
+        specificity = specificity,
     }
 
     setmetatable(where, {
@@ -116,7 +135,9 @@ end
 ---@class (exact) Banana.Ncss.Query
 ---@field rootSelector Banana.Ncss.Selector?
 ---@field filters (Banana.Ncss.Selector|Banana.Ncss.Where)[]
+---@field specificity integer
 local Query = {
+    specificity = 0,
     rootSelector = nil,
     filters = {}
 }
@@ -159,8 +180,15 @@ function Query:find(ast)
 end
 
 ---@param f Banana.Ncss.Selector|Banana.Ncss.Where
-function Query:appendFilter(f)
-    table.insert(self.filters, f)
+---@param promote boolean
+function Query:appendFilter(f, promote)
+    if promote and self.rootSelector == nil and f.filterType == M.FilterType.Selector then
+        ---@cast f Banana.Ncss.Selector
+        self:setRootSelector(f, true)
+    else
+        table.insert(self.filters, f)
+        self.specificity = self.specificity + f.specificity
+    end
 end
 
 ---@param sel Banana.Ncss.Selector
@@ -170,6 +198,7 @@ function Query:setRootSelector(sel, force)
         error("Overwriting the root selector of an Ncss Query")
     end
     self.rootSelector = sel
+    self.specificity = self.specificity + sel.specificity
 end
 
 ---@return Banana.Ncss.Query
@@ -177,7 +206,8 @@ function M.newQuery()
     ---@type Banana.Ncss.Query
     local query = {
         rootSelector = nil,
-        filters = {}
+        filters = {},
+        specificity = 0,
     }
     setmetatable(query, {
         __index = Query,

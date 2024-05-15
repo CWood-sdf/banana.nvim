@@ -127,18 +127,23 @@ M.queryParsers = {
             --TODO: Impl
             error("Please implement pseudo_class_selector")
             return true
-        end)
+        end, q.Specificity.Pseudoclass)
     end,
     [M.ts_types.descendant_selector] = function(node, parser)
         local el = node:child(1)
-
         if el == nil then
-            error("Expected el to not be nil in child_selector parser")
+            error("Unreachable")
         end
-        if el:type() ~= M.ts_types.tag_name then
-            error("Expected el to have type 'tag_name', instead got '" .. el:type() .. "'")
+
+        local query = q.newQuery()
+        M.parseQueryComponent(el, query, parser)
+        if query.rootSelector == nil then
+            error("Unexpected nil root selector on query")
         end
-        local elName = parser:getStringFromRange({ el:start() }, { el:end_() })
+        if query.rootSelector.select == nil then
+            error("descendant_selector requires the rootSelector to have a select function, not manualSelect")
+        end
+
         ---@type fun(ast: Banana.Ast, arr: Banana.Ast[]): Banana.Ast[]
         local sel = nil
         sel = function(ast, arr)
@@ -149,7 +154,19 @@ M.queryParsers = {
                 if type(v) == "string" then
                     goto continue
                 end
-                if v.tag == elName then
+                local canInsert = false
+                if query.rootSelector.select(v) then
+                    canInsert = true
+                end
+                local i = 1
+                while canInsert and query.filters[i] ~= nil do
+                    if query.filters[i].filterType ~= q.FilterType.Where then
+                        error("descendant_selector can only have where filters")
+                    end
+                    canInsert = query.filters[i].satisfies(v)
+                    i         = i + 1
+                end
+                if canInsert then
                     table.insert(arr, v)
                 end
                 sel(v, arr)
@@ -158,18 +175,27 @@ M.queryParsers = {
             return arr
         end
 
-        return q.newManualSelector(sel)
+        return q.newManualSelector(sel, query.specificity)
+    end,
+    [M.ts_types.tag_name] = function(node, parser)
+        local elName = parser:getStringFromRange({ node:start() }, { node:end_() })
+
+        return q.selectors.tag(elName)
     end,
     [M.ts_types.child_selector] = function(node, parser)
         local el = node:child(2)
-
         if el == nil then
-            error("Expected el to not be nil in child_selector parser")
+            error("Unreachable")
         end
-        if el:type() ~= M.ts_types.tag_name then
-            error("Expected el to have type 'tag_name', instead got '" .. el:type() .. "'")
+
+        local query = q.newQuery()
+        M.parseQueryComponent(el, query, parser)
+        if query.rootSelector == nil then
+            error("Unexpected nil root selector on query")
         end
-        local elName = parser:getStringFromRange({ el:start() }, { el:end_() })
+        if query.rootSelector.select == nil then
+            error("child_selector requires the rootSelector to have a select function, not manualSelect")
+        end
 
         return q.newManualSelector(function(ast)
             local ret = {}
@@ -177,15 +203,27 @@ M.queryParsers = {
                 if type(v) == "string" then
                     goto continue
                 end
-                ---@cast v Banana.Ast
-                if v.tag == elName then
+                local canInsert = false
+                if query.rootSelector.select(v) then
+                    canInsert = true
+                end
+                local i = 1
+                while canInsert and query.filters[i] ~= nil do
+                    if query.filters[i].filterType ~= q.FilterType.Where then
+                        error("child_selector can only have where filters")
+                    end
+                    canInsert = query.filters[i].satisfies(v)
+                    i         = i + 1
+                end
+                if canInsert then
                     table.insert(ret, v)
                 end
                 ::continue::
             end
             return ret
-        end)
+        end, query.specificity)
     end,
+
     [M.ts_types.class_selector] = function(node, parser)
         local nameTag = node:child(2)
         local isSel = false
@@ -207,9 +245,9 @@ M.queryParsers = {
 
 
         if isSel then
-            return q.newSelector(fn)
+            return q.newSelector(fn, q.Specificity.Class)
         end
-        return q.newWhere(fn)
+        return q.newWhere(fn, q.Specificity.Class)
     end,
     [M.ts_types.id_selector] = function(node, parser)
         local nameTag = node:child(1)
@@ -223,9 +261,26 @@ M.queryParsers = {
         local name = parser:getStringFromRange({ nameTag:start() }, { nameTag:end_() })
 
 
-        return q.newSelector(function(ast)
-            return ast:getAttribute("id") == name
-        end)
+        ---@type fun(ast: Banana.Ast): Banana.Ast[]
+        local sel = nil
+        sel = function(ast)
+            if ast:getAttribute("id") == name then
+                return { ast }
+            end
+            for _, v in ipairs(ast.nodes) do
+                if type(v) == "string" then
+                    goto continue
+                end
+                local ret = sel(v)
+                if #ret == 1 then
+                    return ret
+                end
+                ::continue::
+            end
+            return {}
+        end
+
+        return q.newManualSelector(sel, q.Specificity.Id)
     end,
 
 }
@@ -648,37 +703,23 @@ end
 ---@param tree TSNode
 ---@param query Banana.Ncss.Query
 ---@param parser Banana.Ncss.ParseData
----@return boolean
 function M.parseQueryComponent(tree, query, parser)
     if tree:type() == M.ts_types.tag_name then
         local text = parser:getStringFromRange({ tree:start() }, { tree:end_() })
         query:setRootSelector(q.selectors.tag(text), true)
-    elseif tree:type() == '.' then
-        return true
-    elseif tree:type() == '#' then
-        return true
     else
         local child = tree:child(0)
         if child == nil then
-            error("First child of '" .. tree:type() .. "' is nil")
+            return
         end
-        local skip = M.parseQueryComponent(child, query, parser)
+        M.parseQueryComponent(child, query, parser)
         local p = M.queryParsers[tree:type()]
         if p == nil then
             error("Could not find parser for '" .. tree:type() .. "'")
         end
         local comp = p(tree, parser)
-        if not skip then
-            query:appendFilter(comp)
-        else
-            if comp.filterType == require('banana.ncss.query').FilterType.Where then
-                comp = comp:toSelector()
-            end
-            ---@cast comp Banana.Ncss.Selector
-            query:setRootSelector(comp, false)
-        end
+        query:appendFilter(comp, true)
     end
-    return false
 end
 
 ---@param tree TSNode
