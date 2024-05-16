@@ -78,7 +78,10 @@ end
 ---@param name string
 ---@param value Banana.Ncss.StyleValue[]
 function M.validateCssProperty(name, value)
-
+    local validations = require('banana.ncss.validations')
+    if not validations.validate(name, value) then
+        error("Validation for property '" .. name .. "' failed")
+    end
 end
 
 ---@param tree TSNode

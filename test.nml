@@ -23,8 +23,8 @@
 
         div {
             hl-underline: true;
-
         }
+
     </style>
     div
     <span>span</span>
