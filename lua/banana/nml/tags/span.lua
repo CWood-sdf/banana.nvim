@@ -1,33 +1,18 @@
 local t = require('banana.nml.tags')
 
----@param self Banana.Ast
+---@param self Banana.TagInfo
 ---@param ast Banana.Ast
 ---@param parentHl Banana.Highlight?
 ---@return Banana.RenderRet
 local function renderer(self, ast, parentHl)
-    local b = require('banana.box')
-    ---@type Banana.Box
-    local ret = b.Box:new();
-    ret.hlgroup = ast:mixHl(parentHl)
-
-    for _, v in ipairs(ast.nodes) do
-        if type(v) == 'string' then
-            ret:appendStr(v, b.MergeStrategy.Bottom)
-        else
-            ---@cast v Banana.Ast
-            local tag = require('banana.nml.tags').makeTag(v.tag)
-            local rendered = tag:render(v, ret.hlgroup)
-            ret:append(rendered, b.MergeStrategy.Bottom)
-        end
-    end
-    return ret
+    return self:renderInlineEl(ast, parentHl)
 end
 ---@type Banana.TagInfo
-local M = {
-    name = 'span',
-    formatType = t.FormatType.Inline,
-    selfClosing = false,
-    render = renderer
-}
+local M = t.newTag(
+    'span',
+    t.FormatType.Inline,
+    false,
+    renderer
+)
 
 return M

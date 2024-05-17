@@ -20,11 +20,12 @@ end
 ---@field tag string
 ---@field attributes Banana.Attributes
 ---@field actualTag Banana.TagInfo
----@field style Banana.Ncss.StyleDeclaration[]
+---@field style { [string]: Banana.Ncss.Value[] }
 ---@field hl Banana.Highlight?
----@field padding number[]
----@field margin number[]
+---@field padding Banana.Ncss.Value[]
+---@field margin Banana.Ncss.Value[]
 ---@field classes? { [string]: boolean }
+---@field precedences { [string]: number }
 M.Ast = {
     nodes = {},
     tag = "",
@@ -32,6 +33,8 @@ M.Ast = {
     padding = {},
     margin = {},
     classes = nil,
+    precedences = {},
+
 }
 
 ---@param tag string
@@ -39,6 +42,7 @@ M.Ast = {
 function M.Ast:new(tag)
     ---@type Banana.Ast
     local ast = {
+        precedences = {},
         nodes = {},
         tag = tag,
         actualTag = require("banana.nml.tags").makeTag(tag),
@@ -83,29 +87,43 @@ function M.Ast:mixHl(parentHl)
 end
 
 ---@param declarations Banana.Ncss.StyleDeclaration[]
-function M.Ast:applyStyleDeclarations(declarations)
+---@param basePrec number
+function M.Ast:applyStyleDeclarations(declarations, basePrec)
     for _, v in ipairs(declarations) do
+        local prec = basePrec
+        if v.important then
+            prec = prec + require('banana.ncss.query').Specificity.Important
+        end
+        if self.precedences[v.name] ~= nil and prec < self.precedences[v.name] then
+            goto continue
+        end
+        self.precedences[v.name] = prec
         if v.name:sub(1, 3) == "hl-" then
             self.hl = self.hl or {}
             local name = v.name:sub(4, #v.name)
 
             local value = v.values[1]
             self.hl[name] = value.value
-        elseif v.name:sub(1, 8) == "padding-" then
-            local side = v.name:sub(8, #v.name)
-
-            local value = v.values[1]
-            local num = value.value
-            ---@cast num number
-            self.padding[M.nameToIndex(side)] = num
-        elseif v.name:sub(1, 7) == "margin-" then
-            local side = v.name:sub(7, #v.name)
-
-            local value = v.values[1]
-            local num = value.value
-            ---@cast num number
-            self.margin[M.nameToIndex(side)] = num
+            -- elseif v.name:sub(1, 8) == "padding-" then
+            --     error("Impl padding actually")
+            --     local side = v.name:sub(9, #v.name)
+            --
+            --     local value = v.values[1]
+            --     local num = value.value
+            --     ---@cast num Banana.Ncss.Value
+            --     self.padding[M.nameToIndex(side)] = num.value
+            -- elseif v.name:sub(1, 7) == "margin-" then
+            --     error("Impl margin actually")
+            --     local side = v.name:sub(8, #v.name)
+            --
+            --     local value = v.values[1]
+            --     local num = value.value
+            --     ---@cast num number
+            --     self.margin[M.nameToIndex(side)] = num
+        else
+            self.style[v.name] = v.values
         end
+        ::continue::
     end
 end
 

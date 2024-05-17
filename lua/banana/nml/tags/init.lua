@@ -18,7 +18,7 @@ M.FormatType = {
 ---@field name string
 ---@field formatType Banana.Nml.FormatType
 ---@field selfClosing boolean
----@field render Banana.Renderer
+---@field private render Banana.Renderer
 local TagInfo = {
     name = '',
     formatType = M.FormatType.Inline,
@@ -26,7 +26,67 @@ local TagInfo = {
     render = function(_) return {} end,
 }
 
+---@param ast Banana.Ast
+---@param parentHl Banana.Highlight?
+---@return Banana.RenderRet
+function TagInfo:getRendered(ast, parentHl)
+    return self:render(ast, parentHl)
+end
 
+---Returns an iterator that renders blocks
+---@param ast  Banana.Ast
+---@param parentHl Banana.Highlight?
+---@return fun(): integer?, Banana.Box?, integer?
+function TagInfo:blockIter(ast, parentHl)
+    local i = 1
+    return function()
+        if i > #ast.nodes then
+            return nil
+        end
+        local oldI = i
+        local render = nil
+        render, i = self:renderBlock(ast, parentHl, i)
+        return oldI, render, i - oldI
+    end
+end
+
+function TagInfo:renderInlineEl(ast, parentHl)
+    ---@type Banana.Box
+    local ret, _ = self:renderBlock(ast, ast:mixHl(parentHl), 1)
+    return ret
+end
+
+---Renders everything in a block
+---@param ast Banana.Ast
+---@param parentHl Banana.Highlight?
+---@param i integer
+---@return Banana.Box, integer
+function TagInfo:renderBlock(ast, parentHl, i)
+    local b = require('banana.box')
+    local currentLine = b.Box:new(parentHl)
+    local hasText = false
+    while i <= #ast.nodes do
+        local v = ast.nodes[i]
+        if v == nil then
+            break
+        end
+        if type(v) == 'string' then
+            currentLine:appendStr(v, b.MergeStrategy.Bottom)
+            hasText = true
+        else
+            local tag = M.makeTag(v.tag)
+            if (tag.formatType == M.FormatType.Block or tag.formatType == M.FormatType.BlockInline) and hasText then
+                break
+            end
+            local rendered = tag:getRendered(v, currentLine.hlgroup)
+            currentLine:append(rendered, b.MergeStrategy.Bottom)
+
+            hasText = true
+        end
+        i = i + 1
+    end
+    return currentLine, i
+end
 
 ---@param name string
 ---@param inline Banana.Nml.FormatType

@@ -1,7 +1,7 @@
-<div id="root">
+<div id="root" style="hl-underline: true;">
     <style>
         .yeet {
-            hl-bold: true;
+            hl-bold: true !important;
         }
         #asdf.yeet {
             hl-fg: #4aafaf;
@@ -15,14 +15,17 @@
         li {
             hl-bg: green;
         }
+        ol {
+            /* padding-right: 10ch; */
+        }
         div.yeet > ol {
             hl-fg: blue;
             hl-bg: red;
             hl-underline: false;
         }
 
-        div {
-            hl-underline: true;
+        #root {
+            hl-underline: false !important;
         }
 
     </style>
@@ -30,8 +33,7 @@
     <span>span</span>
 
     <div class="yeet">
-            <ol>
-                <li> asdf </li>
+            <ol> <li> asdf </li>
             </ol>
     </div>
 
@@ -40,7 +42,8 @@
         <span> p.span</span>
     </p>
     <br>
-    <ol style="hl-bg: black;">
+    <ol style="hl-bg: rgb(100, 100, 100);">
+        yeet burgers
         <li> asdf </li>
         <li> asdf 2 </li>
     </ol>

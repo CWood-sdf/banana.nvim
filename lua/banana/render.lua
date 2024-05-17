@@ -7,7 +7,7 @@ local ids = 0
 ---@alias Banana.Line Banana.Word[]
 
 
----@class Banana.Instance
+---@class (exact) Banana.Instance
 ---@field winid? number
 ---@field bufnr? number
 ---@field bufname string
@@ -30,7 +30,7 @@ function Instance:virtualRender(ast)
     local ret = {}
     if require("banana.nml.tags").tagExists(ast.tag) then
         local tag = require("banana.nml.tags").makeTag(ast.tag)
-        local rendered = tag:render(ast)
+        local rendered = tag:getRendered(ast)
         for _, line in ipairs(rendered.lines) do
             table.insert(ret, line)
         end
@@ -39,7 +39,7 @@ function Instance:virtualRender(ast)
 end
 
 ---@return Banana.Instance
-function Instance.new(filename, bufferName)
+function Instance:new(filename, bufferName)
     local parser = require("banana.nml.parser").fromFile(filename)
     if parser == nil then
         error("Failed to open nml file")
@@ -73,6 +73,7 @@ end
 ---@return Banana.Ast
 function Instance:render()
     local startTime = vim.loop.hrtime()
+    local actualStart = startTime
     local ast = self.parser:parse()
     local astTime = vim.loop.hrtime() - startTime
     if ast == nil then
@@ -87,7 +88,7 @@ function Instance:render()
         end
         local arr = v.query:find(ast)
         for _, a in ipairs(arr) do
-            a:applyStyleDeclarations(v.declarations)
+            a:applyStyleDeclarations(v.declarations, v.query.specificity)
         end
 
         ::continue::
@@ -138,6 +139,7 @@ function Instance:render()
     startTime = vim.loop.hrtime()
     self:highlight(stuffToRender, 0)
     local hlTime = vim.loop.hrtime() - startTime
+    local totalTime = vim.loop.hrtime() - actualStart
     local extraLines = {
         "",
         astTime / 1e3 .. "μs to parse",
@@ -145,6 +147,7 @@ function Instance:render()
         renderTime / 1e3 .. "μs to render",
         reductionTime / 1e3 .. "μs to reduce",
         hlTime / 1e3 .. "μs to highlight",
+        totalTime / 1e3 .. "μs total",
     }
     vim.api.nvim_buf_set_lines(self.bufnr, #lines, -1, false, extraLines)
     vim.api.nvim_set_option_value("modifiable", false, {
@@ -232,7 +235,7 @@ M.defaultWinHighlight = "NormalFloat"
 ---@param bufferName string
 ---@return Banana.Instance
 function M.newInstance(filename, bufferName)
-    local instance = Instance.new(filename, bufferName)
+    local instance = Instance:new(filename, bufferName)
     return instance
 end
 

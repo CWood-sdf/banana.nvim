@@ -1,6 +1,6 @@
 local t = require('banana.nml.tags')
 
----@param self Banana.Ast
+---@param self Banana.TagInfo
 ---@param ast Banana.Ast
 ---@param parentHl Banana.Highlight?
 ---@return Banana.RenderRet
@@ -13,11 +13,11 @@ local function renderer(self, ast, parentHl)
     return ret
 end
 ---@type Banana.TagInfo
-local M = {
-    name = 'br',
-    formatType = t.FormatType.Block,
-    selfClosing = true,
-    render = renderer
-}
+local M = t.newTag(
+    'br',
+    t.FormatType.Block,
+    true,
+    renderer
+)
 
 return M

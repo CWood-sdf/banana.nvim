@@ -48,6 +48,7 @@ end
 ---@class (exact) Banana.Ncss.StyleDeclaration
 ---@field name string
 ---@field values Banana.Ncss.StyleValue[]
+---@field important boolean
 local StyleDeclaration = {
     name = "",
     values = {}
@@ -65,9 +66,10 @@ local RuleSet = {
 ---@param declarations Banana.Ncss.StyleDeclaration[]?
 ---@return Banana.Ncss.RuleSet
 function RuleSet:new(query, declarations)
+    ---@type Banana.Ncss.RuleSet
     local ret = {
         query = query,
-        declarations = declarations,
+        declarations = declarations or {},
     }
     setmetatable(ret, {
         __index = RuleSet,
@@ -87,7 +89,7 @@ end
 ---@param tree TSNode
 ---@param name string
 ---@param parser Banana.Ncss.ParseData
----@return Banana.Ncss.StyleValue[]
+---@return Banana.Ncss.StyleValue[], boolean
 function M.parsePropValue(tree, name, parser)
     -- tree has type "block"
     local i = 1
@@ -96,6 +98,8 @@ function M.parsePropValue(tree, name, parser)
         error("expected a value when parsing css property")
     end
 
+    local important = false
+
     ---@type Banana.Ncss.StyleValue[]
     local ret = {}
 
@@ -103,6 +107,10 @@ function M.parsePropValue(tree, name, parser)
         local text = nil
         local value = nil
         if child:type() == ";" then
+            goto continue
+        end
+        if child:type() == ts_types.important then
+            important = true
             goto continue
         end
         text = parser:getStringFromRange({ child:start() }, { child:end_() })
@@ -121,7 +129,7 @@ function M.parsePropValue(tree, name, parser)
     end
     M.validateCssProperty(name, ret)
 
-    return ret
+    return ret, important
 end
 
 ---@param tree TSNode
@@ -138,12 +146,14 @@ function M.parseBlock(tree, parser)
         local name = nil
         local values = nil
         local styleVal = nil
-        if child:type() == '{' or child:type() == '}' then
+        local important = nil
+        local tp = child:type()
+        if tp == '{' or tp == '}' or tp == ts_types.comment then
             goto continue
         end
-        if child:type() ~= ts_types.declaration then
+        if tp ~= ts_types.declaration then
             error("Found a child that does not have type 'declaration' in a parseBlock tree (given type of '" ..
-                child:type() .. "' from parent of type '" .. tree:type() .. "')")
+                tp .. "' from parent of type '" .. tree:type() .. "')")
         end
         propName = child:child(0)
         if propName == nil then
@@ -153,11 +163,12 @@ function M.parseBlock(tree, parser)
             error("Expected propName to be type 'property', got '" .. propName:type() .. "'")
         end
         name = parser:getStringFromRange({ propName:start() }, { propName:end_() })
-        values = M.parsePropValue(child, name, parser)
+        values, important = M.parsePropValue(child, name, parser)
         ---@type Banana.Ncss.StyleDeclaration
         styleVal = {
             name = name,
             values = values,
+            important = important,
         }
         table.insert(ret, styleVal)
         ::continue::
@@ -205,7 +216,8 @@ function M.parseRuleSet(tree, parser)
 
     local query = M.parseQuery(selectors, parser)
     local b = M.parseBlock(block, parser)
-    return RuleSet:new(query, b)
+    local ret = RuleSet:new(query, b)
+    return ret
 end
 
 ---@param tree TSNode
@@ -244,6 +256,25 @@ function M.parse(tree, parser)
     end
     error("Could not parse given stylesheet bc expected block, declaration, or rule_set nodes but got '" ..
         firstChild:type() .. "'")
+end
+
+---@param tree TSNode
+---@return boolean
+function M.treeIsInline(tree)
+    if tree:has_error() then
+        error("omg there is an ncss parser error")
+    end
+    if tree:type() ~= ts_types.stylesheet then
+        error("Parsed treesitter tree must be a stylesheet type for ncss parser")
+    end
+    local firstChild = tree:child(0)
+    if firstChild == nil then
+        error("stylesheet first child is nil")
+    end
+    if firstChild:type() == ts_types.declaration then
+        return true
+    end
+    return false
 end
 
 ---@param content string

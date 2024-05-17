@@ -37,13 +37,15 @@ local ast = require('banana.nml.ast')
 ---@field styleSets Banana.Ncss.RuleSet[]
 ---@field scripts string[]
 ---@field ncssParsers TSTree[]
----@field ncssIndex number
+---@field ncssInlineIndex number
+---@field ncssBlockIndex number
 local Parser = {
     lexer = nil,
     tree = nil,
     styleSets = {},
     scripts = {},
-    ncssIndex = 1,
+    ncssInlineIndex = 1,
+    ncssBlockIndex = 1,
 }
 
 ---@param lex Banana.Lexer
@@ -57,7 +59,8 @@ function Parser:new(lex, tree, ncssParsers)
         styleSets = {},
         scripts = {},
         ncssParsers = ncssParsers,
-        ncssIndex = 1,
+        ncssInlineIndex = 1,
+        ncssBlockIndex = 1,
     }
     setmetatable(parser, { __index = Parser })
     return parser
@@ -82,7 +85,7 @@ function Parser:parseAttribute(tree)
     local nameStr = self:getStrFromNode(name)
     local value = nil
     if tree:child_count() >= 3 and nameStr == "style" then
-        local ncssTree = self:getNextNcssParser()
+        local ncssTree = self:getNextInlineNcssParser()
         local ncssParser = require('banana.ncss.parser').newParseData(self.lexer.program)
         local rules = require('banana.ncss.parser').parse(ncssTree, ncssParser)
         ---@type Banana.Ncss.StyleDeclaration[]
@@ -161,16 +164,29 @@ function Parser:parseSelfClosingTag(tree)
     local ret = ast.Ast:new(name)
 
     local attrs, decls = self:parseAttributes(child)
-    ret:applyStyleDeclarations(decls)
+    ret:applyStyleDeclarations(decls, require('banana.ncss.query').Specificity.Inline)
     ret.attributes = attrs
 
     return ret
 end
 
 ---@return TSNode
-function Parser:getNextNcssParser()
-    local node = self.ncssParsers[self.ncssIndex]:root()
-    self.ncssIndex = self.ncssIndex + 1
+function Parser:getNextBlockNcssParser()
+    while require('banana.ncss.parser').treeIsInline(self.ncssParsers[self.ncssBlockIndex]:root()) do
+        self.ncssBlockIndex = self.ncssBlockIndex + 1
+    end
+    local node = self.ncssParsers[self.ncssBlockIndex]:root()
+    self.ncssBlockIndex = self.ncssBlockIndex + 1
+    return node
+end
+
+---@return TSNode
+function Parser:getNextInlineNcssParser()
+    while not require('banana.ncss.parser').treeIsInline(self.ncssParsers[self.ncssInlineIndex]:root()) do
+        self.ncssInlineIndex = self.ncssInlineIndex + 1
+    end
+    local node = self.ncssParsers[self.ncssInlineIndex]:root()
+    self.ncssInlineIndex = self.ncssInlineIndex + 1
     return node
 end
 
@@ -234,7 +250,7 @@ function Parser:parseTag(tree, isSpecial)
     local attrs, decls = self:parseAttributes(firstChild)
     if ret ~= nil then
         ret.attributes = attrs
-        ret:applyStyleDeclarations(decls)
+        ret:applyStyleDeclarations(decls, require('banana.ncss.query').Specificity.Inline)
     end
 
     local i = 1
@@ -265,7 +281,7 @@ function Parser:parseTag(tree, isSpecial)
             local scriptStr = self.lexer:getStrFromRange({ child:start() }, { child:end_() })
             table.insert(self.scripts, scriptStr)
         elseif child:type() == M.ts_types.raw_text and isStyle then
-            local ncssTree = self:getNextNcssParser()
+            local ncssTree = self:getNextBlockNcssParser()
             local ncssParser = require('banana.ncss.parser').newParseData(self.lexer.program)
             local rules = require('banana.ncss.parser').parse(ncssTree, ncssParser)
             for _, rule in ipairs(rules) do
@@ -350,7 +366,8 @@ end
 function Parser:reset()
     self.lexer.currentLine = 1
     self.lexer.currentCol = 1
-    self.ncssIndex = 1
+    self.ncssBlockIndex = 1
+    self.ncssInlineIndex = 1
 end
 
 ---@type TSTree?
@@ -361,7 +378,7 @@ function M.getTree()
 end
 
 ---@return Banana.Parser?
-M.fromFile = function(path)
+function M.fromFile(path)
     local file = io.open(path, "r")
     if file == nil then
         print("Failed to open code file")
@@ -380,7 +397,7 @@ M.fromFile = function(path)
     vim.treesitter.start(buf, "nml")
     local langTree = vim.treesitter.get_parser(buf, "nml")
     local arr = langTree:parse(true)
-    local ncssParsers = langTree:children().ncss:parse(true)
+    local ncssParsers = langTree:children().ncss:trees()
     tree = arr[1]
     local parsed = tree:root()
     local children = parsed:child(0)
