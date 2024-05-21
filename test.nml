@@ -4,19 +4,21 @@
             hl-bold: true !important;
         }
         #asdf.yeet {
-            hl-fg: #4aafaf;
+            hl-fg: black;
             hl-bg: rgb(200, 100, 16);
         }
 
         #root > #as.asdf.yeet {
-            hl-fg: #4aafaf;
+            hl-fg: black;
             hl-bg: rgb(200, 100, 16);
         }
         li {
             hl-bg: green;
         }
         ol {
-            /* padding-right: 10ch; */
+            padding-left: 10%;
+            padding-top: 5%;
+            margin-left: 5%;
         }
         div.yeet > ol {
             hl-fg: blue;

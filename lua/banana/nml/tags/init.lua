@@ -1,4 +1,5 @@
 local M = {}
+local _ast = require('banana.nml.ast')
 
 ---@enum Banana.Nml.FormatType
 M.FormatType = {
@@ -11,7 +12,7 @@ M.FormatType = {
 
 ---@alias Banana.RenderRet Banana.Box
 
----@alias Banana.Renderer fun(self: Banana.TagInfo, ast: Banana.Ast, parentHl: Banana.Highlight?): Banana.RenderRet
+---@alias Banana.Renderer fun(self: Banana.TagInfo, ast: Banana.Ast, parentHl: Banana.Highlight?, parentWidth: number, parentHeight: number): Banana.RenderRet
 
 
 ---@class (exact) Banana.TagInfo
@@ -27,17 +28,83 @@ local TagInfo = {
 }
 
 ---@param ast Banana.Ast
+---@param name string
+---@param i number
+---@param hl Banana.Highlight?
+---@return Banana.Box
+local function padLeftRight(ast, name, i, hl)
+    local b = require('banana.box')
+    local box = b.Box:new(hl);
+    box:appendStr(' ', nil)
+    box:expandWidthTo(ast[name][i].value)
+    return box
+end
+
+---@param ast Banana.Ast
+---@param name string
+---@param i number
+---@param hl Banana.Highlight?
+---@param width number
+---@return Banana.Box
+local function padTopBtm(ast, name, i, hl, width)
+    local b = require('banana.box')
+    local box = b.Box:new(hl);
+    box:appendStr(' ', nil)
+    box:expandWidthTo(width)
+    while #box.lines < ast[name][i].value do
+        table.insert(box.lines, box.lines[1])
+    end
+    return box
+end
+
+---@param name string
+---@param ast Banana.Ast
+---@param ret Banana.Box
+---@param hl Banana.Highlight?
+---@return Banana.Box
+local function applyPad(name, ast, ret, hl)
+    local b = require('banana.box')
+    if ast[name][_ast.left].value ~= 0 then
+        local box = padLeftRight(ast, name, _ast.left, hl)
+        box:append(ret, nil)
+        ret = box
+    end
+    if ast[name][_ast.right].value ~= 0 then
+        local box = padLeftRight(ast, name, _ast.right, hl)
+        ret:append(box, nil)
+    end
+    if ast[name][_ast.top].value ~= 0 then
+        local box = padTopBtm(ast, name, _ast.top, hl, b.lineWidth(ret.lines[1]))
+        box:appendBoxBelow(ret)
+        ret = box
+    end
+    if ast[name][_ast.bottom].value ~= 0 then
+        local box = padTopBtm(ast, name, _ast.top, hl, b.lineWidth(ret.lines[1]))
+        ret:appendBoxBelow(box)
+    end
+    return ret
+end
+
+---@param ast Banana.Ast
 ---@param parentHl Banana.Highlight?
+---@param parentWidth number
+---@param parentHeight number
 ---@return Banana.RenderRet
-function TagInfo:getRendered(ast, parentHl)
-    return self:render(ast, parentHl)
+function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight)
+    ast:fixUnits(parentWidth, parentHeight)
+    local ret = self:render(ast, parentHl, parentWidth, parentHeight)
+    ret = applyPad('padding', ast, ret, ret.hlgroup)
+    ret = applyPad('margin', ast, ret, parentHl)
+    return ret
 end
 
 ---Returns an iterator that renders blocks
 ---@param ast  Banana.Ast
 ---@param parentHl Banana.Highlight?
+---@param parentWidth number
+---@param parentHeight number
 ---@return fun(): integer?, Banana.Box?, integer?
-function TagInfo:blockIter(ast, parentHl)
+function TagInfo:blockIter(ast, parentHl, parentWidth, parentHeight)
     local i = 1
     return function()
         if i > #ast.nodes then
@@ -45,14 +112,19 @@ function TagInfo:blockIter(ast, parentHl)
         end
         local oldI = i
         local render = nil
-        render, i = self:renderBlock(ast, parentHl, i)
+        render, i = self:renderBlock(ast, parentHl, i, parentWidth, parentHeight)
         return oldI, render, i - oldI
     end
 end
 
-function TagInfo:renderInlineEl(ast, parentHl)
+---@param ast Banana.Ast
+---@param parentHl Banana.Highlight?
+---@param parentWidth number
+---@param parentHeight number
+---@return Banana.Box
+function TagInfo:renderInlineEl(ast, parentHl, parentWidth, parentHeight)
     ---@type Banana.Box
-    local ret, _ = self:renderBlock(ast, ast:mixHl(parentHl), 1)
+    local ret, _ = self:renderBlock(ast, ast:mixHl(parentHl), 1, parentWidth, parentHeight)
     return ret
 end
 
@@ -60,11 +132,14 @@ end
 ---@param ast Banana.Ast
 ---@param parentHl Banana.Highlight?
 ---@param i integer
+---@param parentWidth number
+---@param parentHeight number
 ---@return Banana.Box, integer
-function TagInfo:renderBlock(ast, parentHl, i)
+function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight)
     local b = require('banana.box')
     local currentLine = b.Box:new(parentHl)
     local hasText = false
+    local allowedWidth = parentWidth
     while i <= #ast.nodes do
         local v = ast.nodes[i]
         if v == nil then
@@ -78,7 +153,8 @@ function TagInfo:renderBlock(ast, parentHl, i)
             if (tag.formatType == M.FormatType.Block or tag.formatType == M.FormatType.BlockInline) and hasText then
                 break
             end
-            local rendered = tag:getRendered(v, currentLine.hlgroup)
+            local rendered = tag:getRendered(v, currentLine.hlgroup, allowedWidth, parentHeight)
+            allowedWidth = allowedWidth - rendered.width
             currentLine:append(rendered, b.MergeStrategy.Bottom)
 
             hasText = true

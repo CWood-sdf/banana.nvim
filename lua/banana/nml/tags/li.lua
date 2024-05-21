@@ -4,8 +4,8 @@ local t = require('banana.nml.tags')
 ---@param ast Banana.Ast
 ---@param parentHl Banana.Highlight?
 ---@return Banana.RenderRet
-local function renderer(self, ast, parentHl)
-    return self:renderInlineEl(ast, parentHl)
+local function renderer(self, ast, parentHl, parentWidth, parentHeight)
+    return self:renderInlineEl(ast, parentHl, parentWidth, parentHeight)
 end
 ---@type Banana.TagInfo
 local M = t.newTag(

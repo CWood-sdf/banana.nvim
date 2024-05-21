@@ -1,3 +1,4 @@
+local _str = require('banana.utils.string')
 local M = {}
 ---@class (exact) Banana.Box
 ---@field lines Banana.Line[]
@@ -26,10 +27,10 @@ M.TrimStrategy = {
 
 ---@return number
 ---@param line Banana.Line
-local function lineWidth(line)
+function M.lineWidth(line)
     local ret = 0
     for _, v in ipairs(line) do
-        ret = ret + #v.word
+        ret = ret + _str.charCount(v.word)
     end
     return ret
 end
@@ -77,7 +78,7 @@ function M.Box:clean()
         return
     end
     for i, _ in ipairs(self.lines) do
-        local w = lineWidth(self.lines[i])
+        local w = M.lineWidth(self.lines[i])
         if w > self.width then
             error("Unreachable (line width is greater than max width)")
         elseif w < self.width then
@@ -126,6 +127,7 @@ function M.Box:append(box, strat)
         i = i + 1
     end
     self.width = self.width + box.width
+    self.dirty = box.dirty
 end
 
 ---@param str string
@@ -139,19 +141,19 @@ function M.Box:appendStr(str, strat)
     }
     if #self.lines == 0 then
         self.lines = { { word } }
-        self.width = #str
+        self.width = _str.charCount(str)
         self.dirty = false
     elseif #self.lines == 1 then
         table.insert(self.lines[1], word)
-        self.width = self.width + #str
+        self.width = self.width + _str.charCount(str)
         self.dirty = false
     else
         if strat == M.MergeStrategy.Top then
             table.insert(self.lines[1], word)
-            self.width = math.max(lineWidth(self.lines[1]), self.width)
+            self.width = math.max(M.lineWidth(self.lines[1]), self.width)
         else
             table.insert(self.lines[#self.lines], word)
-            self.width = math.max(lineWidth(self.lines[#self.lines]), self.width)
+            self.width = math.max(M.lineWidth(self.lines[#self.lines]), self.width)
         end
         self.dirty = true
     end
@@ -172,7 +174,7 @@ function M.Box:trimWidthLastLine(width, trimStrat)
     trimStrat = trimStrat or M.TrimStrategy.NewLine
     local maxWidth = 0
     for i = 1, #self.lines - 1 do
-        maxWidth = math.max(maxWidth, lineWidth(self.lines[i]))
+        maxWidth = math.max(maxWidth, M.lineWidth(self.lines[i]))
         if maxWidth > width then
             error("Can not trim non last line in Box:trimWidthLastLine")
         end

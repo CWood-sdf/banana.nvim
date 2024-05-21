@@ -1,3 +1,4 @@
+local _str = require('banana.utils.string')
 -- This file is for turning a BananaAst into a renderable highlight/line array.
 
 local M = {}
@@ -24,13 +25,15 @@ local Instance = {}
 ---@field style? Banana.Highlight
 
 ---@param ast Banana.Ast
+---@param width number
+---@param height number
 ---@return Banana.Line[]
-function Instance:virtualRender(ast)
+function Instance:virtualRender(ast, width, height)
     ---@type Banana.Line[]
     local ret = {}
     if require("banana.nml.tags").tagExists(ast.tag) then
         local tag = require("banana.nml.tags").makeTag(ast.tag)
-        local rendered = tag:getRendered(ast)
+        local rendered = tag:getRendered(ast, nil, width, height)
         for _, line in ipairs(rendered.lines) do
             table.insert(ret, line)
         end
@@ -95,7 +98,9 @@ function Instance:render()
     end
     local styleTime = vim.loop.hrtime() - startTime
     startTime = vim.loop.hrtime()
-    local stuffToRender = self:virtualRender(ast)
+    local width = 90
+    local height = 20
+    local stuffToRender = self:virtualRender(ast, width, height)
     local renderTime = vim.loop.hrtime() - startTime
     if self.bufnr == nil or not vim.api.nvim_buf_is_valid(self.bufnr) then
         self.bufnr = vim.api.nvim_create_buf(false, true)
@@ -105,8 +110,8 @@ function Instance:render()
     if self.winid == nil or not vim.api.nvim_win_is_valid(self.winid) then
         self.winid = vim.api.nvim_open_win(self.bufnr, true, {
             relative = "editor",
-            width = 90,
-            height = 20,
+            width = width,
+            height = height,
             row = 5,
             col = 5,
             style = "minimal",
@@ -217,8 +222,8 @@ function Instance:highlight(lines, offset)
                 hlGroup = "NormalFloat"
                 ns = 0
             end
-            vim.api.nvim_buf_add_highlight(self.bufnr, ns, hlGroup, row, col, col + #word.word)
-            col = col + #word.word
+            vim.api.nvim_buf_add_highlight(self.bufnr, ns, hlGroup, row, col, col + _str.charCount(word.word))
+            col = col + _str.charCount(word.word)
         end
         col = 0
         row = row + 1

@@ -1,23 +1,26 @@
+local _str = require('banana.utils.string')
 local t = require('banana.nml.tags')
 
 ---@param self Banana.TagInfo
 ---@param ast Banana.Ast
+---@param parentWidth number
+---@param parentHeight number
 ---@param parentHl Banana.Highlight?
 ---@return Banana.RenderRet
-local function renderer(self, ast, parentHl)
+local function renderer(self, ast, parentHl, parentWidth, parentHeight)
     local b = require('banana.box')
     ---@type Banana.Box
     local ret = b.Box:new()
     ret.hlgroup = ast:mixHl(parentHl)
 
     local count = 1
-    for i, box, _ in self:blockIter(ast, ret.hlgroup) do
+    for i, box, _ in self:blockIter(ast, ret.hlgroup, parentWidth, parentHeight) do
         local v = ast.nodes[i]
         local currentLine = b.Box:new(ret.hlgroup)
         if type(v) ~= "string" and t.makeTag(v.tag).name == 'li' then
             local str = count .. ". "
             currentLine:appendStr("", nil)
-            currentLine:expandWidthTo(5 - #str)
+            currentLine:expandWidthTo(5 - _str.charCount(str))
             currentLine:appendStr(count .. ". ", nil)
             count = count + 1
         end

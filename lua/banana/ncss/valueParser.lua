@@ -1,3 +1,4 @@
+local _str = require('banana.utils.string')
 local M = {}
 local ts_types = require('banana.ncss.tsTypes')
 ---@class (exact) Banana.Ncss.Value
@@ -120,7 +121,7 @@ local function parseNumValue(tree, parser, new)
     if unit ~= nil then
         local unitStr = parser:getStringFromRange({ unit:start() }, { unit:end_() })
 
-        local valStr = valueString:sub(1, #valueString - #unitStr)
+        local valStr = valueString:sub(1, _str.charCount(valueString) - _str.charCount(unitStr))
 
         local val = tonumber(valStr)
         if val == nil then

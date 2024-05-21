@@ -1,10 +1,7 @@
 local t = require('banana.nml.tags')
 
----@param self Banana.TagInfo
----@param ast Banana.Ast
----@param parentHl Banana.Highlight?
----@return Banana.RenderRet
-local function renderer(self, ast, parentHl)
+---@type Banana.Renderer
+local function renderer(_, ast, parentHl, _, _)
     local b = require('banana.box')
     ---@type Banana.Box
     local ret = b.Box:new()

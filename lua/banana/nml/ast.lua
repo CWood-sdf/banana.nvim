@@ -1,19 +1,11 @@
+local _str = require('banana.utils.string')
 local M = {}
 
----@param name string
----@return number
-M.nameToIndex = function(name)
-    if name == "left" then
-        return 1
-    elseif name == "top" then
-        return 2
-    elseif name == "right" then
-        return 3
-    elseif name == "bottom" then
-        return 4
-    end
-    return 0
-end
+M.left = 1
+M.top = 2
+M.right = 3
+M.bottom = 4
+M.padNames = { "left", "top", "right", "bottom" }
 
 ---@class (exact) Banana.Ast
 ---@field nodes (string|Banana.Ast)[]
@@ -30,8 +22,10 @@ M.Ast = {
     nodes = {},
     tag = "",
     attributes = {},
-    padding = {},
-    margin = {},
+    padding = {
+    },
+    margin = {
+    },
     classes = nil,
     precedences = {},
 
@@ -47,8 +41,42 @@ function M.Ast:new(tag)
         tag = tag,
         actualTag = require("banana.nml.tags").makeTag(tag),
         attributes = {},
-        padding = {},
-        margin = {},
+        padding = {
+            {
+                value = 0,
+                unit = "ch",
+            },
+            {
+                value = 0,
+                unit = "ch",
+            },
+            {
+                value = 0,
+                unit = "ch",
+            },
+            {
+                value = 0,
+                unit = "ch",
+            },
+        },
+        margin = {
+            {
+                value = 0,
+                unit = "ch",
+            },
+            {
+                value = 0,
+                unit = "ch",
+            },
+            {
+                value = 0,
+                unit = "ch",
+            },
+            {
+                value = 0,
+                unit = "ch",
+            },
+        },
         style = {},
     }
     setmetatable(ast, { __index = M.Ast })
@@ -86,6 +114,41 @@ function M.Ast:mixHl(parentHl)
     return ret
 end
 
+---@param unit Banana.Ncss.Value
+---@param parentWidth number
+---@return Banana.Ncss.Value
+function M.calcUnit(unit, parentWidth)
+    if unit.unit == "ch" then
+        return unit
+    elseif unit.unit == "%" then
+        local mult = unit.value / 100
+        return {
+            value = mult * parentWidth,
+            unit = "ch",
+        }
+    end
+    error("Undefined unit '" .. unit.unit .. "'")
+end
+
+---@param parentWidth number
+---@param parentHeight number
+function M.Ast:fixUnits(parentWidth, parentHeight)
+    for i, v in ipairs(self.margin) do
+        if i % 2 == 1 then
+            self.margin[i] = M.calcUnit(v, parentWidth)
+        else
+            self.margin[i] = M.calcUnit(v, parentHeight)
+        end
+    end
+    for i, v in ipairs(self.padding) do
+        if i % 2 == 1 then
+            self.padding[i] = M.calcUnit(v, parentWidth)
+        else
+            self.padding[i] = M.calcUnit(v, parentHeight)
+        end
+    end
+end
+
 ---@param declarations Banana.Ncss.StyleDeclaration[]
 ---@param basePrec number
 function M.Ast:applyStyleDeclarations(declarations, basePrec)
@@ -100,26 +163,50 @@ function M.Ast:applyStyleDeclarations(declarations, basePrec)
         self.precedences[v.name] = prec
         if v.name:sub(1, 3) == "hl-" then
             self.hl = self.hl or {}
-            local name = v.name:sub(4, #v.name)
+            local name = v.name:sub(4, _str.charCount(v.name))
 
             local value = v.values[1]
             self.hl[name] = value.value
-            -- elseif v.name:sub(1, 8) == "padding-" then
-            --     error("Impl padding actually")
-            --     local side = v.name:sub(9, #v.name)
-            --
-            --     local value = v.values[1]
-            --     local num = value.value
-            --     ---@cast num Banana.Ncss.Value
-            --     self.padding[M.nameToIndex(side)] = num.value
-            -- elseif v.name:sub(1, 7) == "margin-" then
-            --     error("Impl margin actually")
-            --     local side = v.name:sub(8, #v.name)
-            --
-            --     local value = v.values[1]
-            --     local num = value.value
-            --     ---@cast num number
-            --     self.margin[M.nameToIndex(side)] = num
+        elseif v.name:sub(1, 8) == "padding-" then
+            local side = v.name:sub(9, #v.name)
+
+            local value = v.values[1]
+            local index = M[side]
+            if index == nil then
+                error("Undefined side '" .. side .. "'")
+            end
+            local val = value.value
+            ---@cast val Banana.Ncss.Value
+            self.padding[index] = val
+        elseif v.name:sub(1, 7) == "margin-" then
+            local side = v.name:sub(8, #v.name)
+
+            local value = v.values[1]
+            local index = M[side]
+            if index == nil then
+                error("Undefined side '" .. side .. "'")
+            end
+            local val = value.value
+            ---@cast val Banana.Ncss.Value
+            self.margin[index] = val
+        elseif v.name == "margin" then
+            for i, _ in ipairs(self.margin) do
+                local offset = i - 1
+                local values = v.values
+                local fromArr = values[offset % #values + 1]
+                local val = fromArr.value
+                ---@cast val Banana.Ncss.Value
+                self.margin[i] = val
+            end
+        elseif v.name == "padding" then
+            for i, _ in ipairs(self.padding) do
+                local offset = i - 1
+                local values = v.values
+                local fromArr = values[offset % #values + 1]
+                local val = fromArr.value
+                ---@cast val Banana.Ncss.Value
+                self.padding[i] = val
+            end
         else
             self.style[v.name] = v.values
         end

@@ -1,3 +1,4 @@
+local _str = require('banana.utils.string')
 local M = {}
 
 ---@class (exact) Banana.Lexer
@@ -23,7 +24,7 @@ function Lexer:getStrFromRange(left, right)
     while row < right[1] + 1 or col < right[2] + 1 do
         ret = ret .. self.program[row]:sub(col, col)
         col = col + 1
-        if col > #self.program[row] then
+        if col > _str.charCount(self.program[row]) then
             row = row + 1
             col = 1
         end

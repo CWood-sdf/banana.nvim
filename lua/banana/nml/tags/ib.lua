@@ -5,12 +5,19 @@ local t = require('banana.nml.tags')
 ---@param parentHl Banana.Highlight?
 ---@return Banana.RenderRet
 local function renderer(self, ast, parentHl, parentWidth, parentHeight)
-    return self:renderInlineEl(ast, parentHl, parentWidth, parentHeight)
+    local b = require('banana.box')
+    ---@type Banana.Box
+    local ret = b.Box:new()
+    ret.hlgroup = ast:mixHl(parentHl)
+    for _, box, _ in self:blockIter(ast, ret.hlgroup, parentWidth, parentHeight) do
+        ret:appendBoxBelow(box)
+    end
+    return ret
 end
 ---@type Banana.TagInfo
 local M = t.newTag(
-    'span',
-    t.FormatType.Inline,
+    'ib',
+    t.FormatType.InlineBlock,
     false,
     renderer
 )

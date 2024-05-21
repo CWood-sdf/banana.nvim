@@ -1,3 +1,4 @@
+local _str = require('banana.utils.string')
 local lexer = require("banana.nml.lexer")
 local M = {}
 
@@ -193,7 +194,7 @@ end
 ---@param str string
 ---@return string
 function Parser:resolveEntity(str)
-    local stripped = str:sub(2, #str)
+    local stripped = str:sub(2, _str.charCount(str))
     ---TODO: process entity string
     return stripped
 end

@@ -26,6 +26,7 @@ module.exports = grammar({
                 "p",
                 "span",
                 "a",
+                "ib",
                 "ol",
                 "li",
                 /h[1-6]/,

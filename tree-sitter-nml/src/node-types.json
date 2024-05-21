@@ -363,6 +363,10 @@
     "named": false
   },
   {
+    "type": "ib",
+    "named": false
+  },
+  {
     "type": "img",
     "named": false
   },

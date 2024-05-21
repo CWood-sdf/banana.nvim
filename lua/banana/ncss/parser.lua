@@ -1,3 +1,4 @@
+local _str = require('banana.utils.string')
 local M = {}
 
 local q = require('banana.ncss.query')
@@ -37,7 +38,7 @@ function ParseData:getStringFromRange(left, right)
     while row < right[1] + 1 or col < right[2] + 1 do
         ret = ret .. self.lines[row]:sub(col, col)
         col = col + 1
-        if col > #self.lines[row] then
+        if col > _str.charCount(self.lines[row]) then
             row = row + 1
             col = 1
         end
