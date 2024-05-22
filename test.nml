@@ -4,20 +4,23 @@
             hl-bold: true !important;
         }
         #asdf.yeet {
-            hl-fg: black;
+            hl-fg: #4aafaf;
             hl-bg: rgb(200, 100, 16);
         }
 
         #root > #as.asdf.yeet {
-            hl-fg: black;
+            hl-fg: #4aafaf;
             hl-bg: rgb(200, 100, 16);
         }
         li {
-            hl-bg: green;
+            hl-fg: #ff0000;
+        }
+        ib {
+
         }
         ol {
+            hl-bg: #00ccc7;
             padding-left: 10%;
-            padding-top: 5%;
             margin-left: 5%;
         }
         div.yeet > ol {
@@ -30,8 +33,54 @@
             hl-underline: false !important;
         }
 
+      span > span {
+              padding-left: 5%;
+      }
+      .pad {
+          padding-left: 5%;
+      }
     </style>
     div
+    <div class="pad">
+    asdf
+    <div class="pad">
+    asdf
+    <div class="pad">
+    asdf
+    <div class="pad">
+    asdf
+    <div class="pad">
+    asdf
+    <div class="pad">
+    asdf
+    <div class="pad">
+    asdf
+    <div class="pad">
+    asdf
+    <div class="pad">
+    asdf
+    <div class="pad">
+    asdf
+    <div class="pad">
+    asdf
+    <div class="pad">
+    </div> </div> </div> </div> </div> </div> </div> </div> </div> </div> </div> </div>
+    <div>
+          <span>
+    <span> asdfasdf </span>
+    <span> asdfasdf </span>
+    <span> asdfasdf </span>
+    <span> asdfasdf </span>
+    <span> asdfasdf </span>
+          </span>
+          <span>
+    <span> asdfasdf </span>
+    <span> asdfasdf </span>
+    <span> asdfasdf </span>
+    <span> asdfasdf </span>
+    <span> asdfasdf </span>
+          </span>
+          </div>
     <span>span</span>
 
     <div class="yeet">
@@ -44,7 +93,7 @@
         <span> p.span</span>
     </p>
     <br>
-    <ol style="hl-bg: rgb(100, 100, 100);">
+    <ol >
         yeet burgers
         <li> asdf </li>
         <li> asdf 2 </li>

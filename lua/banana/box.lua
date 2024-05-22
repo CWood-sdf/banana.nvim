@@ -161,6 +161,7 @@ end
 
 ---@param box Banana.Box
 function M.Box:appendBoxBelow(box)
+    box:clean()
     for _, v in ipairs(box.lines) do
         table.insert(self.lines, v)
     end

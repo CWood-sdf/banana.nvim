@@ -5,7 +5,7 @@ local _ast = require('banana.nml.ast')
 M.FormatType = {
     Inline = 1,
     Block = 2,
-    InlineBlock = 3,
+    -- InlineBlock = 3,
     BlockInline = 4,
     Script = 5,
 }
@@ -91,7 +91,6 @@ end
 ---@param parentHeight number
 ---@return Banana.RenderRet
 function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight)
-    ast:fixUnits(parentWidth, parentHeight)
     local ret = self:render(ast, parentHl, parentWidth, parentHeight)
     ret = applyPad('padding', ast, ret, ret.hlgroup)
     ret = applyPad('margin', ast, ret, parentHl)
@@ -139,7 +138,10 @@ function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight)
     local b = require('banana.box')
     local currentLine = b.Box:new(parentHl)
     local hasText = false
-    local allowedWidth = parentWidth
+    local width = parentWidth - ast.padding[_ast.left].value - ast.padding[_ast.right].value -
+        ast.margin[_ast.left].value - ast.margin[_ast.right].value
+    local height = parentHeight - ast.padding[_ast.top].value - ast.padding[_ast.bottom].value -
+        ast.margin[_ast.top].value - ast.margin[_ast.bottom].value
     while i <= #ast.nodes do
         local v = ast.nodes[i]
         if v == nil then
@@ -153,8 +155,8 @@ function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight)
             if (tag.formatType == M.FormatType.Block or tag.formatType == M.FormatType.BlockInline) and hasText then
                 break
             end
-            local rendered = tag:getRendered(v, currentLine.hlgroup, allowedWidth, parentHeight)
-            allowedWidth = allowedWidth - rendered.width
+            v:resolveUnits(width, width)
+            local rendered = tag:getRendered(v, currentLine.hlgroup, width, height)
             currentLine:append(rendered, b.MergeStrategy.Bottom)
 
             hasText = true
@@ -252,10 +254,8 @@ function M.formatBlockContext(ast)
             if
                 nextNode ~= nil
                 and type(nextNode) ~= "string"
-                and (
-                    nextNode.actualTag.formatType == M.FormatType.Inline
-                    or nextNode.actualTag.formatType == M.FormatType.InlineBlock
-                )
+                and nextNode.actualTag.formatType == M.FormatType.Inline
+
             then
                 clearLast = false
             end
@@ -269,7 +269,7 @@ function M.formatBlockContext(ast)
             end
         else
             ---@cast node Banana.Ast
-            if node.actualTag.formatType == M.FormatType.InlineBlock or node.actualTag.formatType == M.FormatType.Block then
+            if node.actualTag.formatType == M.FormatType.Block then
                 M.formatBlockContext(node)
             elseif node.actualTag.formatType == M.FormatType.BlockInline then
                 M.formatInlineContext(node, true, true)
@@ -324,8 +324,6 @@ function M.formatInlineContext(ast, clearFirst, clearLast)
             end
             if node.actualTag.formatType == M.FormatType.Inline then
                 clearFirst = M.formatInlineContext(node, clearFirst, clearLast and last)
-            elseif node.actualTag.formatType == M.FormatType.InlineBlock then
-                M.formatBlockContext(node)
             end
         end
         if inc then
@@ -339,7 +337,7 @@ end
 ---@param ast Banana.Ast
 --- Removes all empty text nodes, and cleans up all whitespace.
 function M.cleanAst(ast)
-    if ast.actualTag.formatType == M.FormatType.Block or ast.actualTag.formatType == M.FormatType.InlineBlock then
+    if ast.actualTag.formatType == M.FormatType.Block then
         M.formatBlockContext(ast)
     elseif ast.actualTag.formatType == M.FormatType.Inline then
         M.formatInlineContext(ast, false, false)

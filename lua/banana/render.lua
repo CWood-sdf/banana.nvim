@@ -33,7 +33,7 @@ function Instance:virtualRender(ast, width, height)
     local ret = {}
     if require("banana.nml.tags").tagExists(ast.tag) then
         local tag = require("banana.nml.tags").makeTag(ast.tag)
-        local rendered = tag:getRendered(ast, nil, width, height)
+        local rendered = tag:getRendered(ast, nil, width, height, width)
         for _, line in ipairs(rendered.lines) do
             table.insert(ret, line)
         end

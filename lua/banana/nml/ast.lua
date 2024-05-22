@@ -132,7 +132,7 @@ end
 
 ---@param parentWidth number
 ---@param parentHeight number
-function M.Ast:fixUnits(parentWidth, parentHeight)
+function M.Ast:resolveUnits(parentWidth, parentHeight)
     for i, v in ipairs(self.margin) do
         if i % 2 == 1 then
             self.margin[i] = M.calcUnit(v, parentWidth)
@@ -191,19 +191,29 @@ function M.Ast:applyStyleDeclarations(declarations, basePrec)
             self.margin[index] = val
         elseif v.name == "margin" then
             for i, _ in ipairs(self.margin) do
+                local name = "margin-" .. M.padNames[i]
                 local offset = i - 1
                 local values = v.values
                 local fromArr = values[offset % #values + 1]
                 local val = fromArr.value
+                if self.precedences[name] ~= nil and prec < self.precedences[name] then
+                    goto continue
+                end
+                self.precedences[name] = prec
                 ---@cast val Banana.Ncss.Value
                 self.margin[i] = val
             end
         elseif v.name == "padding" then
             for i, _ in ipairs(self.padding) do
+                local name = "padding-" .. M.padNames[i]
                 local offset = i - 1
                 local values = v.values
                 local fromArr = values[offset % #values + 1]
                 local val = fromArr.value
+                if self.precedences[name] ~= nil and prec < self.precedences[name] then
+                    goto continue
+                end
+                self.precedences[name] = prec
                 ---@cast val Banana.Ncss.Value
                 self.padding[i] = val
             end

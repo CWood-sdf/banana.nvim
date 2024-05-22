@@ -41,10 +41,6 @@
         },
         {
           "type": "STRING",
-          "value": "ib"
-        },
-        {
-          "type": "STRING",
           "value": "ol"
         },
         {
