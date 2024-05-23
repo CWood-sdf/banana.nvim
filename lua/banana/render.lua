@@ -5,6 +5,8 @@ local M = {}
 
 local ids = 0
 
+local instances = {}
+
 ---@alias Banana.Line Banana.Word[]
 
 
@@ -33,7 +35,8 @@ function Instance:virtualRender(ast, width, height)
     local ret = {}
     if require("banana.nml.tags").tagExists(ast.tag) then
         local tag = require("banana.nml.tags").makeTag(ast.tag)
-        local rendered = tag:getRendered(ast, nil, width, height, width)
+        local rendered = tag:getRendered(ast, nil, width, height, 1, 1)
+        print(rendered.width)
         for _, line in ipairs(rendered.lines) do
             table.insert(ret, line)
         end
@@ -43,6 +46,8 @@ end
 
 ---@return Banana.Instance
 function Instance:new(filename, bufferName)
+    table.insert(instances, {})
+    local id = #instances
     local parser = require("banana.nml.parser").fromFile(filename)
     if parser == nil then
         error("Failed to open nml file")
@@ -54,15 +59,15 @@ function Instance:new(filename, bufferName)
         bufName = filename,
         highlightNs = vim.api.nvim_create_namespace("banana_instance_" .. ids),
         parser = parser,
-        instanceId = ids,
+        instanceId = id,
         winhl = {
             link = "NormalFloat"
         },
     }
-    ids = ids + 1
-    local instance = setmetatable(inst, { __index = Instance })
+    setmetatable(inst, { __index = Instance })
     vim.api.nvim_set_hl(inst.highlightNs, M.defaultWinHighlight, inst.winhl)
-    return instance
+    instances[id] = inst
+    return inst
 end
 
 function Instance:useBuffer(bufnr)
@@ -98,7 +103,7 @@ function Instance:render()
     end
     local styleTime = vim.loop.hrtime() - startTime
     startTime = vim.loop.hrtime()
-    local width = 90
+    local width = 100
     local height = 20
     local stuffToRender = self:virtualRender(ast, width, height)
     local renderTime = vim.loop.hrtime() - startTime
@@ -143,6 +148,14 @@ function Instance:render()
     vim.api.nvim_buf_set_lines(self.bufnr, 0, -1, false, lines)
     startTime = vim.loop.hrtime()
     self:highlight(stuffToRender, 0)
+    for _, v in ipairs(self.parser.scripts) do
+        v = "local document = require('banana.render').getInstance(" .. self.instanceId .. ")\n" .. v
+        local f = loadstring(v)
+        if f == nil then
+            error("Could not convert script tag to runnable lua function")
+        end
+        f()
+    end
     local hlTime = vim.loop.hrtime() - startTime
     local totalTime = vim.loop.hrtime() - actualStart
     local extraLines = {
@@ -242,6 +255,15 @@ M.defaultWinHighlight = "NormalFloat"
 function M.newInstance(filename, bufferName)
     local instance = Instance:new(filename, bufferName)
     return instance
+end
+
+---@param id number
+---@return Banana.Instance
+function M.getInstance(id)
+    if instances[id] == nil then
+        error("Could not find instance with id " .. id)
+    end
+    return instances[id]
 end
 
 return M

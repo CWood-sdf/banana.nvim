@@ -365,6 +365,8 @@ function Parser:parse()
 end
 
 function Parser:reset()
+    self.scripts = {}
+    self.styleSets = {}
     self.lexer.currentLine = 1
     self.lexer.currentCol = 1
     self.ncssBlockIndex = 1

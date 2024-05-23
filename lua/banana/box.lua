@@ -162,11 +162,17 @@ end
 ---@param box Banana.Box
 function M.Box:appendBoxBelow(box)
     box:clean()
+    local newWidth = math.max(self.width, box.width)
+    if newWidth > self.width then
+        self.width = newWidth
+        self.dirty = true
+        self:clean()
+    end
     for _, v in ipairs(box.lines) do
         table.insert(self.lines, v)
     end
     self.dirty = self.width ~= box.width
-    self.width = math.max(self.width, box.width)
+    self.width = newWidth
 end
 
 ---@param width number the maximum width of the box

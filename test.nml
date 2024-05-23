@@ -37,49 +37,41 @@
               padding-left: 5%;
       }
       .pad {
-          padding-left: 5%;
+          padding-left: 20%;
       }
     </style>
-    div
-    <div class="pad">
-    asdf
-    <div class="pad">
-    asdf
-    <div class="pad">
-    asdf
-    <div class="pad">
-    asdf
-    <div class="pad">
-    asdf
-    <div class="pad">
-    asdf
-    <div class="pad">
-    asdf
-    <div class="pad">
-    asdf
-    <div class="pad">
-    asdf
-    <div class="pad">
-    asdf
-    <div class="pad">
-    asdf
-    <div class="pad">
-    </div> </div> </div> </div> </div> </div> </div> </div> </div> </div> </div> </div>
     <div>
-          <span>
-    <span> asdfasdf </span>
-    <span> asdfasdf </span>
-    <span> asdfasdf </span>
-    <span> asdfasdf </span>
-    <span> asdfasdf </span>
-          </span>
-          <span>
-    <span> asdfasdf </span>
-    <span> asdfasdf </span>
-    <span> asdfasdf </span>
-    <span> asdfasdf </span>
-    <span> asdfasdf </span>
-          </span>
+    <bound />
+    </div>
+    div
+    <bound />
+    <div class="pad">
+    asdf
+    <bound />
+    <div class="pad">
+    asdf
+    <bound />
+    <div class="pad">
+    asdf
+    <bound />
+    <div class="pad">
+    asdf
+    <bound />
+    <div class="pad">
+    asdf
+    <bound />
+    <div class="pad">
+    asdf
+    <bound />
+    <div class="pad">
+    asdf
+    <bound />
+    <div class="pad">
+    asdf
+    <bound />
+    <div class="pad">
+            </div> </div> </div> </div> </div> </div> </div> </div> </div>
+    <div>
           </div>
     <span>span</span>
 
@@ -106,5 +98,7 @@
     </p>
     <script>
     local asdf = 0
+    -- print("hello from the script tag")
+    -- print(document)
     </script>
 </div>

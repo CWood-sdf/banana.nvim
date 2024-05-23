@@ -95,6 +95,10 @@
         {
           "type": "STRING",
           "value": "hr"
+        },
+        {
+          "type": "STRING",
+          "value": "bound"
         }
       ]
     },

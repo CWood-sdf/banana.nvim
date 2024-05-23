@@ -37,7 +37,14 @@ module.exports = grammar({
         _end_tag_name: ($) => $._start_tag_name,
         erroneous_end_tag_name: (_) => /[^>]+/,
         comment: (_) => /<!--[\s\S]*?-->/,
-        self_closing_tags: (_) => choice("img", "br", "hr"),
+        self_closing_tags: (_) =>
+            choice(
+                "img",
+                "br",
+                "hr",
+                //NOTE: BOUND IS TEMPORARY FOR TESTING
+                "bound",
+            ),
 
         document: ($) => repeat($._node),
 

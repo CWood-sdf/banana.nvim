@@ -7,6 +7,12 @@ M.right = 3
 M.bottom = 4
 M.padNames = { "left", "top", "right", "bottom" }
 
+---@class (exact) Banana.Ast.BoundingBox
+---@field topX number
+---@field topY number
+---@field bottomX number
+---@field bottomY number
+
 ---@class (exact) Banana.Ast
 ---@field nodes (string|Banana.Ast)[]
 ---@field tag string
@@ -17,6 +23,7 @@ M.padNames = { "left", "top", "right", "bottom" }
 ---@field padding Banana.Ncss.Value[]
 ---@field margin Banana.Ncss.Value[]
 ---@field classes? { [string]: boolean }
+---@field boundBox? Banana.Ast.BoundingBox
 ---@field precedences { [string]: number }
 M.Ast = {
     nodes = {},
@@ -28,7 +35,6 @@ M.Ast = {
     },
     classes = nil,
     precedences = {},
-
 }
 
 ---@param tag string
@@ -36,6 +42,7 @@ M.Ast = {
 function M.Ast:new(tag)
     ---@type Banana.Ast
     local ast = {
+        boundBox = nil,
         precedences = {},
         nodes = {},
         tag = tag,
@@ -123,7 +130,7 @@ function M.calcUnit(unit, parentWidth)
     elseif unit.unit == "%" then
         local mult = unit.value / 100
         return {
-            value = mult * parentWidth,
+            value = math.floor(mult * parentWidth),
             unit = "ch",
         }
     end

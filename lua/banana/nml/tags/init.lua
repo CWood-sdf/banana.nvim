@@ -1,4 +1,5 @@
 local M = {}
+local _str = require('banana.utils.string')
 local _ast = require('banana.nml.ast')
 
 ---@enum Banana.Nml.FormatType
@@ -12,7 +13,7 @@ M.FormatType = {
 
 ---@alias Banana.RenderRet Banana.Box
 
----@alias Banana.Renderer fun(self: Banana.TagInfo, ast: Banana.Ast, parentHl: Banana.Highlight?, parentWidth: number, parentHeight: number): Banana.RenderRet
+---@alias Banana.Renderer fun(self: Banana.TagInfo, ast: Banana.Ast, parentHl: Banana.Highlight?, parentWidth: number, parentHeight: number, startX: number, startY: number): Banana.RenderRet
 
 
 ---@class (exact) Banana.TagInfo
@@ -89,11 +90,34 @@ end
 ---@param parentHl Banana.Highlight?
 ---@param parentWidth number
 ---@param parentHeight number
+---@param startX number
+---@param startY number
 ---@return Banana.RenderRet
-function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight)
-    local ret = self:render(ast, parentHl, parentWidth, parentHeight)
+function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, startY)
+    ---@type Banana.Ast.BoundingBox
+    local boundBox = {
+        topX    = startX,
+        topY    = startY,
+        bottomX = 0,
+        bottomY = 0,
+    }
+    startX = startX + ast.padding[_ast.left].value + ast.margin[_ast.left].value
+    startY = startY + ast.padding[_ast.top].value + ast.margin[_ast.top].value
+    local ret = self:render(ast, parentHl, parentWidth, parentHeight, startX, startY)
+    local extraWidth =
+        parentWidth - ret.width -
+        ast.padding[_ast.left].value - ast.padding[_ast.right].value -
+        ast.margin[_ast.left].value - ast.margin[_ast.right].value
+    if (ast.actualTag.formatType == M.FormatType.Block or ast.actualTag.formatType == M.FormatType.BlockInline) and extraWidth > 0
+    then
+        ret:clean()
+        ret:appendStr(string.rep(' ', extraWidth))
+    end
     ret = applyPad('padding', ast, ret, ret.hlgroup)
     ret = applyPad('margin', ast, ret, parentHl)
+    boundBox.bottomX = boundBox.topX + ret.width
+    boundBox.bottomY = boundBox.topY + #ret.lines
+    ast.boundBox = boundBox
     return ret
 end
 
@@ -102,8 +126,10 @@ end
 ---@param parentHl Banana.Highlight?
 ---@param parentWidth number
 ---@param parentHeight number
+---@param startX number
+---@param startY number
 ---@return fun(): integer?, Banana.Box?, integer?
-function TagInfo:blockIter(ast, parentHl, parentWidth, parentHeight)
+function TagInfo:blockIter(ast, parentHl, parentWidth, parentHeight, startX, startY)
     local i = 1
     return function()
         if i > #ast.nodes then
@@ -111,7 +137,8 @@ function TagInfo:blockIter(ast, parentHl, parentWidth, parentHeight)
         end
         local oldI = i
         local render = nil
-        render, i = self:renderBlock(ast, parentHl, i, parentWidth, parentHeight)
+        render, i = self:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX, startY)
+        startY = startY + #render.lines
         return oldI, render, i - oldI
     end
 end
@@ -120,10 +147,12 @@ end
 ---@param parentHl Banana.Highlight?
 ---@param parentWidth number
 ---@param parentHeight number
+---@param startX number
+---@param startY number
 ---@return Banana.Box
-function TagInfo:renderInlineEl(ast, parentHl, parentWidth, parentHeight)
+function TagInfo:renderInlineEl(ast, parentHl, parentWidth, parentHeight, startX, startY)
     ---@type Banana.Box
-    local ret, _ = self:renderBlock(ast, ast:mixHl(parentHl), 1, parentWidth, parentHeight)
+    local ret, _ = self:renderBlock(ast, ast:mixHl(parentHl), 1, parentWidth, parentHeight, startX, startY)
     return ret
 end
 
@@ -133,8 +162,10 @@ end
 ---@param i integer
 ---@param parentWidth number
 ---@param parentHeight number
+---@param startX number
+---@param startY number
 ---@return Banana.Box, integer
-function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight)
+function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX, startY)
     local b = require('banana.box')
     local currentLine = b.Box:new(parentHl)
     local hasText = false
@@ -149,20 +180,29 @@ function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight)
         end
         if type(v) == 'string' then
             currentLine:appendStr(v, b.MergeStrategy.Bottom)
+            startX = startX + _str.charCount(v)
             hasText = true
         else
             local tag = M.makeTag(v.tag)
             if (tag.formatType == M.FormatType.Block or tag.formatType == M.FormatType.BlockInline) and hasText then
                 break
             end
-            v:resolveUnits(width, width)
-            local rendered = tag:getRendered(v, currentLine.hlgroup, width, height)
+            v:resolveUnits(width, height)
+            local rendered = tag:getRendered(v, currentLine.hlgroup, width, height, startX, startY)
+            startX = startX + rendered.width
             currentLine:append(rendered, b.MergeStrategy.Bottom)
+            if tag.formatType == M.FormatType.Block or tag.formatType == M.FormatType.BlockInline then
+                i = i + 1
+                break
+            end
 
             hasText = true
         end
         i = i + 1
     end
+    -- if currentLine.width < width - 2 then
+    --     currentLine:expandWidthTo(width - 3)
+    -- end
     return currentLine, i
 end
 
