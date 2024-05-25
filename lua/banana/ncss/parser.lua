@@ -283,6 +283,14 @@ function M.parseText(content)
     return M.parseLines(vim.split(content, '\n'))
 end
 
+function M.parseFile(name)
+    local f = io.open(name)
+    if f == nil then
+        return ""
+    end
+    return M.parseText(f:read("*a"))
+end
+
 function M.parseLines(lines)
     local buf = vim.api.nvim_create_buf(false, true)
     vim.api.nvim_set_option_value("modifiable", true, { buf = buf })

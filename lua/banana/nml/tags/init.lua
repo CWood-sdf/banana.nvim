@@ -96,9 +96,9 @@ end
 function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, startY)
     ---@type Banana.Ast.BoundingBox
     local boundBox = {
-        topX    = startX,
+        leftX   = startX,
         topY    = startY,
-        bottomX = 0,
+        rightX  = 0,
         bottomY = 0,
     }
     startX = startX + ast.padding[_ast.left].value + ast.margin[_ast.left].value
@@ -115,7 +115,7 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
     end
     ret = applyPad('padding', ast, ret, ret.hlgroup)
     ret = applyPad('margin', ast, ret, parentHl)
-    boundBox.bottomX = boundBox.topX + ret.width
+    boundBox.rightX = boundBox.leftX + ret.width
     boundBox.bottomY = boundBox.topY + #ret.lines
     ast.boundBox = boundBox
     return ret

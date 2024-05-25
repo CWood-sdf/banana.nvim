@@ -1,14 +1,17 @@
 local _str = require('banana.utils.string')
--- This file is for turning a BananaAst into a renderable highlight/line array.
 
 local M = {}
+
+---@class Banana.NilAst
+
+---@type Banana.NilAst?
+local nilAst = nil
 
 local ids = 0
 
 local instances = {}
 
 ---@alias Banana.Line Banana.Word[]
-
 
 ---@class (exact) Banana.Instance
 ---@field winid? number
@@ -20,6 +23,7 @@ local instances = {}
 ---@field highlightNs number
 ---@field instanceId number
 ---@field winhl table
+---@field ast? Banana.Ast
 local Instance = {}
 
 ---@class (exact) Banana.Word
@@ -46,6 +50,18 @@ end
 
 ---@return Banana.Instance
 function Instance:new(filename, bufferName)
+    if nilAst == nil then
+        nilAst = {}
+        for k, v in pairs(require('banana.nml.ast').Ast) do
+            if type(v) == "function" then
+                nilAst[k] = function()
+                    vim.notify("Calling '" .. k .. "' on the nil ast")
+                end
+            else
+                nilAst[k] = v
+            end
+        end
+    end
     table.insert(instances, {})
     local id = #instances
     local parser = require("banana.nml.parser").fromFile(filename)
@@ -78,34 +94,61 @@ function Instance:useWindow(winid)
     self.winid = winid
 end
 
----@return Banana.Ast
-function Instance:render()
-    local startTime = vim.loop.hrtime()
-    local actualStart = startTime
-    local ast = self.parser:parse()
-    local astTime = vim.loop.hrtime() - startTime
-    if ast == nil then
-        error("Failed to parse")
+---@param ast Banana.Ast
+function Instance:applyId(ast)
+    if ast.instance == nil then
+        ast.instance = self.instanceId
     end
-    startTime = vim.loop.hrtime()
-    require("banana.nml.tags").cleanAst(ast)
+    for _, v in ipairs(ast) do
+        if type(v) == "string" then
+            goto continue
+        end
+        self:applyId(v)
+        ::continue::
+    end
+end
+
+function Instance:applyStyleDeclarations()
+    if self.ast == nil then
+        error("Instance hasnt parsed data yet")
+    end
     local rules = self.parser.styleSets
     for _, v in ipairs(rules) do
         if v.query == nil then
             goto continue
         end
-        local arr = v.query:find(ast)
+        local arr = v.query:find(self.ast)
         for _, a in ipairs(arr) do
             a:applyStyleDeclarations(v.declarations, v.query.specificity)
         end
 
         ::continue::
     end
-    local styleTime = vim.loop.hrtime() - startTime
+end
+
+---@return Banana.Ast
+function Instance:render()
+    local startTime = vim.loop.hrtime()
+    local actualStart = startTime
+    local astTime = 0
+    local styleTime = 0
+    if self.ast == nil then
+        local ast = self.parser:parse()
+        if ast == nil then
+            error("Failed to parse")
+        end
+        astTime = vim.loop.hrtime() - startTime
+        startTime = vim.loop.hrtime()
+        require("banana.nml.tags").cleanAst(ast)
+        self.ast = ast
+        self:applyStyleDeclarations()
+        self:applyId(ast)
+        styleTime = vim.loop.hrtime() - startTime
+    end
     startTime = vim.loop.hrtime()
     local width = 100
     local height = 20
-    local stuffToRender = self:virtualRender(ast, width, height)
+    local stuffToRender = self:virtualRender(self.ast, width, height)
     local renderTime = vim.loop.hrtime() - startTime
     if self.bufnr == nil or not vim.api.nvim_buf_is_valid(self.bufnr) then
         self.bufnr = vim.api.nvim_create_buf(false, true)
@@ -156,6 +199,7 @@ function Instance:render()
         end
         f()
     end
+    self.parser.scripts = {}
     local hlTime = vim.loop.hrtime() - startTime
     local totalTime = vim.loop.hrtime() - actualStart
     local extraLines = {
@@ -171,7 +215,7 @@ function Instance:render()
     vim.api.nvim_set_option_value("modifiable", false, {
         buf = self.bufnr
     })
-    return ast
+    return self.ast
 end
 
 ---@param lines Banana.Line[]
@@ -241,6 +285,23 @@ function Instance:highlight(lines, offset)
         col = 0
         row = row + 1
     end
+end
+
+---@param name string
+---@return Banana.Ast|Banana.NilAst
+function Instance:getElementById(name)
+    if nilAst == nil then
+        error("Unreachable")
+    end
+    local query = require('banana.ncss.query').selectors.id(name)
+    if self.ast == nil then
+        error("Instance hasnt parsed yet (should be unreachable)")
+    end
+    local asts = query:getMatches(self.ast)
+    if #asts ~= 1 then
+        return nilAst
+    end
+    return asts[1]
 end
 
 function Instance:reset()

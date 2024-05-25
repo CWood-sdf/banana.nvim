@@ -8,9 +8,9 @@ M.bottom = 4
 M.padNames = { "left", "top", "right", "bottom" }
 
 ---@class (exact) Banana.Ast.BoundingBox
----@field topX number
+---@field leftX number
 ---@field topY number
----@field bottomX number
+---@field rightX number
 ---@field bottomY number
 
 ---@class (exact) Banana.Ast
@@ -25,6 +25,7 @@ M.padNames = { "left", "top", "right", "bottom" }
 ---@field classes? { [string]: boolean }
 ---@field boundBox? Banana.Ast.BoundingBox
 ---@field precedences { [string]: number }
+---@field instance number?
 M.Ast = {
     nodes = {},
     tag = "",
@@ -48,6 +49,7 @@ function M.Ast:new(tag)
         tag = tag,
         actualTag = require("banana.nml.tags").makeTag(tag),
         attributes = {},
+        instance = nil,
         padding = {
             {
                 value = 0,
@@ -88,6 +90,13 @@ function M.Ast:new(tag)
     }
     setmetatable(ast, { __index = M.Ast })
     return ast
+end
+
+---comment
+---@param name string
+---@param value string
+function M.Ast:setAttribute(name, value)
+    self.attributes[name] = value
 end
 
 ---@param c string
@@ -245,6 +254,19 @@ end
 ---@param node Banana.Ast
 function M.Ast:appendNode(node)
     table.insert(self.nodes, node)
+end
+
+function M.Ast:on(event, callback)
+end
+
+---@return boolean
+function M.Ast:isHovering()
+    local line = vim.fn.line('.')
+    local col = vim.fn.col('.')
+    if line >= self.boundBox.topY and line < self.boundBox.bottomY and col >= self.boundBox.leftX and col < self.boundBox.rightX then
+        return true
+    end
+    return false
 end
 
 return M

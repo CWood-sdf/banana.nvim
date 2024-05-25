@@ -153,26 +153,7 @@ M.queryParsers = {
         local name = parser:getStringFromRange({ nameTag:start() }, { nameTag:end_() })
 
 
-        ---@type fun(ast: Banana.Ast): Banana.Ast[]
-        local sel = nil
-        sel = function(ast)
-            if ast:getAttribute("id") == name then
-                return { ast }
-            end
-            for _, v in ipairs(ast.nodes) do
-                if type(v) == "string" then
-                    goto continue
-                end
-                local ret = sel(v)
-                if #ret == 1 then
-                    return ret
-                end
-                ::continue::
-            end
-            return {}
-        end
-
-        return q.newManualSelector(sel, q.Specificity.Id)
+        return q.selectors.id(name)
     end,
 
 }

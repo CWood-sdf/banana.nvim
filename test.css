@@ -1,3 +1,38 @@
-.sdf:clicked div.ooga {
-  font: monospace 5px;
+.yeet {
+  hl-bold: true !important;
+}
+#asdf.yeet {
+  hl-fg: #4aafaf;
+  hl-bg: rgb(200, 100, 16);
+}
+
+#root > #as.asdf.yeet {
+  hl-fg: #4aafaf;
+  hl-bg: rgb(200, 100, 16);
+}
+li {
+  hl-fg: #ff0000;
+}
+ib {
+}
+ol {
+  hl-bg: #00ccc7;
+  padding-left: 10%;
+  margin-left: 5%;
+}
+div.yeet > ol {
+  hl-fg: blue;
+  hl-bg: red;
+  hl-underline: false;
+}
+
+#root {
+  hl-underline: false !important;
+}
+
+span > span {
+  padding-left: 5%;
+}
+.pad {
+  padding-left: 20%;
 }

@@ -1,0 +1,5 @@
+describe("Tests", function()
+    it("works", function()
+        assert.equal(true, true)
+    end)
+end)
