@@ -92,6 +92,48 @@ function M.Ast:new(tag)
     return ast
 end
 
+function M.Ast:defaultStyles()
+    self.padding = {
+        {
+            value = 0,
+            unit = "ch",
+        },
+        {
+            value = 0,
+            unit = "ch",
+        },
+        {
+            value = 0,
+            unit = "ch",
+        },
+        {
+            value = 0,
+            unit = "ch",
+        },
+    }
+    self.margin = {
+        {
+            value = 0,
+            unit = "ch",
+        },
+        {
+            value = 0,
+            unit = "ch",
+        },
+        {
+            value = 0,
+            unit = "ch",
+        },
+        {
+            value = 0,
+            unit = "ch",
+        },
+    }
+    self.style = {}
+    self.hl = nil
+    self.precedences = {}
+end
+
 ---comment
 ---@param name string
 ---@param value string
@@ -111,7 +153,28 @@ function M.Ast:hasClass(c)
     elseif self.classes == nil then
         self.classes = {}
     end
-    return self.classes[c] or false
+    if self.classes[c] == nil then
+        return false
+    end
+    return self.classes[c]
+end
+
+---@param c string
+function M.Ast:removeClass(c)
+    if self.classes == nil then
+        self.classes = {}
+    end
+    if self.classes[c] == true then
+        self.classes[c] = false
+    end
+end
+
+---@param c string
+function M.Ast:addClass(c)
+    if self.classes == nil then
+        self.classes = {}
+    end
+    self.classes[c] = true
 end
 
 ---@param parentHl Banana.Highlight?
@@ -256,17 +319,66 @@ function M.Ast:appendNode(node)
     table.insert(self.nodes, node)
 end
 
-function M.Ast:on(event, callback)
-end
-
 ---@return boolean
 function M.Ast:isHovering()
     local line = vim.fn.line('.')
     local col = vim.fn.col('.')
-    if line >= self.boundBox.topY and line < self.boundBox.bottomY and col >= self.boundBox.leftX and col < self.boundBox.rightX then
-        return true
+    local ret =
+        line >= self.boundBox.topY
+        and line < self.boundBox.bottomY
+        and col >= self.boundBox.leftX
+        and col < self.boundBox.rightX
+    return ret
+end
+
+---@param mod Banana.Remap.Constraint
+---@return fun(): boolean
+function M.Ast:parseRemapMod(mod)
+    if mod == "hover" then
+        return function()
+            return self:isHovering()
+        end
+    elseif type(mod) == "number" then
+        return function()
+            local count = vim.v.count
+            return count == mod
+        end
     end
-    return false
+    error("Attempting to use ast remap mod '"
+        .. mod .. "' even though it has not been defined")
+end
+
+---@param mode string
+---@param lhs string
+---@param rhs string|fun()
+---@param mods Banana.Remap.Constraint[]
+---@param opts vim.keymap.set.Opts
+function M.Ast:attachRemap(mode, lhs, mods, rhs, opts)
+    local modFns = vim.iter(mods)
+        :map(function(mod) return self:parseRemapMod(mod) end):totable()
+    if type(rhs) == "string" then
+        local oldRhs = rhs
+        rhs = function()
+            vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes(oldRhs, true, true, true), mode, true)
+        end
+    end
+    local actualRhs = function()
+        local works = false
+        for _, v in ipairs(modFns) do
+            if v() then
+                works = true
+                break
+            end
+        end
+        if not works then return end
+        if type(rhs) == "string" then
+            vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes(rhs, true, true, true), mode, true)
+        else
+            rhs()
+        end
+    end
+    local inst = require('banana.render').getInstance(self.instance)
+    inst:setRemap(mode, lhs, actualRhs, opts)
 end
 
 return M

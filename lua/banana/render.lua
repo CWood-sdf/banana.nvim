@@ -13,17 +13,22 @@ local instances = {}
 
 ---@alias Banana.Line Banana.Word[]
 
+---@alias Banana.Remap.Constraint "hover"|number
+
+
+
 ---@class (exact) Banana.Instance
 ---@field winid? number
 ---@field bufnr? number
 ---@field bufname string
 ---@field filetype string
 ---@field bufName string
----@field parser Banana.Parser
+---@field parser Banana.Nml.Parser
 ---@field highlightNs number
 ---@field instanceId number
 ---@field winhl table
 ---@field ast? Banana.Ast
+---@field keymaps { [string]: { [string]: [ fun(), vim.keymap.set.Opts ][] } }
 local Instance = {}
 
 ---@class (exact) Banana.Word
@@ -70,6 +75,7 @@ function Instance:new(filename, bufferName)
     end
     ---@type Banana.Instance
     local inst = {
+        keymaps = {},
         bufname = bufferName,
         filetype = "banana",
         bufName = filename,
@@ -94,30 +100,61 @@ function Instance:useWindow(winid)
     self.winid = winid
 end
 
+---comment
+---@param mode string
+---@param lhs string
+---@param rhs string|fun()
+---@param opts vim.keymap.set.Opts
+function Instance:setRemap(mode, lhs, rhs, opts)
+    if self.keymaps[mode] == nil then
+        self.keymaps[mode] = {}
+    end
+    if self.keymaps[mode][lhs] == nil then
+        self.keymaps[mode][lhs] = {}
+        vim.keymap.set(mode, lhs, function()
+            for _, remap in ipairs(self.keymaps[mode][lhs]) do
+                local fn = remap[1]
+                fn()
+            end
+        end, {
+            buffer = self.bufnr
+        })
+    end
+    if type(rhs) == "string" then
+        local oldRhs = rhs
+        rhs = function()
+            vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes(oldRhs, true, true, true), mode, true)
+        end
+    end
+    table.insert(self.keymaps[mode][lhs], { rhs, opts })
+end
+
 ---@param ast Banana.Ast
 function Instance:applyId(ast)
     if ast.instance == nil then
         ast.instance = self.instanceId
     end
-    for _, v in ipairs(ast) do
+    for i, v in ipairs(ast.nodes) do
         if type(v) == "string" then
             goto continue
         end
-        self:applyId(v)
+        ---@diagnostic disable-next-line: param-type-mismatch
+        self:applyId(ast.nodes[i])
         ::continue::
     end
 end
 
-function Instance:applyStyleDeclarations()
-    if self.ast == nil then
-        error("Instance hasnt parsed data yet")
+---@param ast Banana.Ast?
+function Instance:applyStyleDeclarations(ast)
+    if ast == nil then
+        error("Ast is nil")
     end
     local rules = self.parser.styleSets
     for _, v in ipairs(rules) do
         if v.query == nil then
             goto continue
         end
-        local arr = v.query:find(self.ast)
+        local arr = v.query:find(ast)
         for _, a in ipairs(arr) do
             a:applyStyleDeclarations(v.declarations, v.query.specificity)
         end
@@ -140,11 +177,11 @@ function Instance:render()
         astTime = vim.loop.hrtime() - startTime
         startTime = vim.loop.hrtime()
         require("banana.nml.tags").cleanAst(ast)
-        self.ast = ast
-        self:applyStyleDeclarations()
         self:applyId(ast)
+        self.ast = ast
         styleTime = vim.loop.hrtime() - startTime
     end
+    self:applyStyleDeclarations(self.ast)
     startTime = vim.loop.hrtime()
     local width = 100
     local height = 20
@@ -321,6 +358,9 @@ end
 ---@param id number
 ---@return Banana.Instance
 function M.getInstance(id)
+    if id == nil then
+        error("Given a nil instance id")
+    end
     if instances[id] == nil then
         error("Could not find instance with id " .. id)
     end

@@ -32,7 +32,7 @@ local ast = require('banana.nml.ast')
 ---@class (exact) Banana.Attributes
 ---@field [string] string?
 
----@class (exact) Banana.Parser
+---@class (exact) Banana.Nml.Parser
 ---@field lexer Banana.Lexer?
 ---@field tree TSTree?
 ---@field styleSets Banana.Ncss.RuleSet[]
@@ -53,7 +53,7 @@ local Parser = {
 ---@param tree TSTree
 ---@param ncssParsers TSTree[]
 function Parser:new(lex, tree, ncssParsers)
-    ---@type Banana.Parser
+    ---@type Banana.Nml.Parser
     local parser = {
         lexer = lex,
         tree = tree,
@@ -380,7 +380,7 @@ function M.getTree()
     return tree
 end
 
----@return Banana.Parser?
+---@return Banana.Nml.Parser?
 function M.fromFile(path)
     local file = io.open(path, "r")
     if file == nil then

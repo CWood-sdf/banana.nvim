@@ -43,9 +43,12 @@ span > span {
     padding: 1ch;
     hl-bg: #00ffff;
     hl-fg: #000000;
+    hl-bold: false;
 }
 </style>
-    <span>span</span> <span id="omg"> asdfksdf</span>
+<br>
+    <span>span</span> 
+    <span id="omg"> asdfksdf</span> asdf
 
     <div class="yeet">
             <ol> <li> asdf </li>
@@ -70,9 +73,30 @@ span > span {
     </p>
     <script>
     local asdf = 0
-    -- print("hello from the script tag")
-    document:getElementById("omg"):on("hover", function()
-        print("yo")
-    end)
+    local omg = document:getElementById("omg")
+    omg:attachRemap("n", "K" , { 1, "hover"}, function()
+    
+        if omg:hasClass("yeet") then
+            omg:removeClass("yeet")
+        else
+            omg:addClass("yeet")
+        end
+        omg:defaultStyles()
+        document:render()
+        -- print(omg:hasClass("yeet"))
+    end, {})
+    local yeet = document:getElementById("as")
+
+    vim.api.nvim_create_autocmd({ "CursorMoved"}, {
+        callback = function()
+            -- if yeet:isHovering() then
+            -- print('ooga')
+            -- else
+            -- print('no')
+            -- end
+            
+
+        end
+        })
     </script>
 </div>
