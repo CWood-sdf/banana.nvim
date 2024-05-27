@@ -99,6 +99,21 @@ function Instance:new(filename, bufferName)
     return inst
 end
 
+---runs a lua require string as a script
+---@param str string
+function Instance:runScriptAt(str)
+    local script = require(str)
+    if type(script) == "function" then
+        script(self)
+    elseif type(script) == "table" and script.__banana_run ~= nil and type(script.__banana_run) == "function" then
+        script.__banana_run(self)
+    else
+        error("Return value from require('" ..
+            str ..
+            "' is not a runnable banana script (either fun(Banana.Instance): any or { __banana_run: fun(Banana.Instance): any })")
+    end
+end
+
 function Instance:useBuffer(bufnr)
     self.bufnr = bufnr
 end
@@ -185,7 +200,7 @@ function Instance:render()
     local stuffToRender = self:virtualRender(self.ast, width, height)
     local renderTime = vim.loop.hrtime() - startTime
     if self.bufnr == nil or not vim.api.nvim_buf_is_valid(self.bufnr) then
-        self.bufnr = vim.api.nvim_create_buf(false, true)
+        self.bufnr = vim.api.nvim_create_buf(false, false)
         vim.api.nvim_buf_set_name(self.bufnr, self.bufname)
         vim.api.nvim_set_option_value("filetype", self.filetype, { buf = self.bufnr })
     end
@@ -322,6 +337,20 @@ function Instance:highlight(lines, offset)
 end
 
 ---@param name string
+---@return Banana.Ast[]
+function Instance:getElementByClassName(name)
+    if nilAst == nil then
+        error("Unreachable")
+    end
+    local query = require('banana.ncss.query').selectors.class(name)
+    if self.ast == nil then
+        error("Instance hasnt parsed yet (should be unreachable)")
+    end
+    local asts = query:getMatches(self.ast)
+    return asts
+end
+
+---@param name string
 ---@return Banana.Ast|Banana.NilAst
 function Instance:getElementById(name)
     if nilAst == nil then
@@ -358,6 +387,11 @@ function M.getInstance(id)
         error("Could not find instance with id " .. id)
     end
     return instances[id]
+end
+
+---@return Banana.NilAst?
+function M.getNilAst()
+    return nilAst
 end
 
 return M

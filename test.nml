@@ -52,7 +52,8 @@ Total: <span class="comment"> 77 plugins </span>
 <script>
 local tabline = document:getElementById("tabline")
 
-for i, v in ipairs(tabline.nodes) do
+
+for i, v in ipairs(tabline:children()) do
   if type(v) ~= "string" then
     local remapStr = v.nodes[2].nodes[1]
     local remapCh = ''
@@ -63,9 +64,8 @@ for i, v in ipairs(tabline.nodes) do
       end
       k = k + 1
       remapCh = remapStr:sub(k, k)
-      print(remapCh)
       vim.keymap.set("n", remapCh, function()
-        for j, v in ipairs(tabline.nodes) do
+        for j, v in ipairs(tabline:children()) do
           if type(v) == "string" then
             goto continue
             end
@@ -90,6 +90,10 @@ for i, v in ipairs(tabline.nodes) do
 
 end
 
+</script>
+
+<script src="asdf">
+asdfasdfkl
 </script>
 
 </div>

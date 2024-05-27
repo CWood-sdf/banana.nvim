@@ -76,11 +76,17 @@ end
 ---@class (exact) Banana.Ncss.Selector.Defaults
 ---@field tag fun(name: string): Banana.Ncss.Selector
 ---@field id fun(name: string): Banana.Ncss.Selector
+---@field class fun(name: string): Banana.Ncss.Selector
 M.selectors = {
     tag = function(name)
         return M.newSelector(function(ast)
             return ast.tag == name
         end, M.Specificity.Element)
+    end,
+    class = function(name)
+        return M.newSelector(function(ast)
+            return ast:hasClass(name)
+        end, M.Specificity.Class)
     end,
     id = function(name)
         ---@type fun(ast: Banana.Ast): Banana.Ast[]

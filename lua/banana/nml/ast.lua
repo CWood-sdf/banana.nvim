@@ -26,6 +26,7 @@ M.padNames = { "left", "top", "right", "bottom" }
 ---@field boundBox? Banana.Ast.BoundingBox
 ---@field precedences { [string]: number }
 ---@field instance number?
+---@field _parent Banana.Ast
 ---@field inlineStyle? Banana.Ncss.StyleDeclaration[]
 M.Ast = {
     nodes = {},
@@ -41,14 +42,16 @@ M.Ast = {
 }
 
 ---@param tag string
+---@param parent Banana.Ast
 ---@return Banana.Ast
-function M.Ast:new(tag)
+function M.Ast:new(tag, parent)
     ---@type Banana.Ast
     local ast = {
         boundBox = nil,
         precedences = {},
         nodes = {},
         tag = tag,
+        _parent = parent,
         actualTag = require("banana.nml.tags").makeTag(tag),
         attributes = {},
         instance = nil,
@@ -346,6 +349,36 @@ function M.Ast:isHovering()
     return ret
 end
 
+---@return Banana.Ast[]
+function M.Ast:children()
+    ---@type Banana.Ast[]
+    local ret = {}
+    for i, v in ipairs(self.nodes) do
+        if type(v) ~= "string" then
+            table.insert(ret, self.nodes[i])
+        end
+    end
+    return ret
+end
+
+---@return string
+function M.Ast:getTextContent()
+    local ret = ""
+    for _, v in ipairs(self.nodes) do
+        if type(v) == "string" then
+            ret = ret .. v
+        else
+            ret = ret .. v:getTextContent()
+        end
+    end
+    return ret
+end
+
+---@param str string
+function M.Ast:setTextContent(str)
+    self.nodes = { str }
+end
+
 ---@param mod Banana.Remap.Constraint
 ---@return fun(): boolean
 function M.Ast:parseRemapMod(mod)
@@ -361,6 +394,11 @@ function M.Ast:parseRemapMod(mod)
     end
     error("Attempting to use ast remap mod '"
         .. mod .. "' even though it has not been defined")
+end
+
+---@return Banana.Ast
+function M.Ast:parent()
+    return self._parent
 end
 
 ---@param mode string

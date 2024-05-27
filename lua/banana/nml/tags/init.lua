@@ -94,6 +94,11 @@ end
 ---@param startY number
 ---@return Banana.RenderRet
 function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, startY)
+    local d = "display"
+    local disp = ast.style[d]
+    if disp ~= nil and disp[1] ~= nil and disp[1].value == "hidden" then
+        return require('banana.box').Box:new(nil)
+    end
     ---@type Banana.Ast.BoundingBox
     local boundBox = {
         leftX   = startX,

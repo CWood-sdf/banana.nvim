@@ -1,8 +1,11 @@
 local M = {}
+local instance = nil
 
 M.yeet = function()
-	local instance = require("banana.render").newInstance(os.getenv("HOME") .. "/projects/banana.nvim/test.nml",
-		"test.nml")
+	if instance == nil then
+		instance = require("banana.render").newInstance(os.getenv("HOME") .. "/projects/banana.nvim/test.nml",
+			"test.nml")
+	end
 	-- local filename = os.getenv("HOME") .. '/projects/banana.nvim/test.nml'
 	local ast = instance:render()
 	local lines = vim.fn.readfile(os.getenv("HOME") .. "/projects/banana.nvim/test.ncss")

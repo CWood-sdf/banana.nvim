@@ -7,7 +7,7 @@ This plugin seeks to turn neovim into a hypermedia client through its own custom
 ### Markup Language
 
 - [x] Basic Renderer
-- [ ] Very Fast rendering
+- [x] Very Fast rendering
 - [x] Attributes
 - [ ] Good attributes api
 - [ ] DOM Manipulation
@@ -20,9 +20,38 @@ This plugin seeks to turn neovim into a hypermedia client through its own custom
 - [ ] Complex styling (animations, transitions, absolute positioning)
 - [ ] Efficient style recalculation
 - [x] Very Fast rendering
-- [ ] Few errors
+- [x] Few errors
 - [x] Based on css
 - [x] Have to do some inversions on the style treesitter tree
+
+### Properties to implement
+
+- [ ] aspect-ratio
+- [ ] block-size?
+- [ ] display: flexbox, grid, inline, inline-block, none, block
+- [ ] height/width
+- [ ] list-style
+- [ ] max-\*size
+
+#### Later stuff
+
+- [ ] outline?
+- [ ] content? seems hard, do it later
+- [ ] direction? seems easy but not extremely useful for now
+- [ ] hyphenate-character (needs hyphenation)
+
+#### Abs/float position
+
+- [ ] left/right/top/bottom: needs abs position
+- [ ] float: seems hard, do later
+- [ ] z-index: req abs
+- [ ] position: abs seems kinda difficult
+
+#### Table stuff
+
+- [ ] gap: more table stuff, do later
+- [ ] row-gap: req table
+- [ ] empty-cells: later
 
 ### Styler
 
@@ -47,12 +76,11 @@ This plugin seeks to turn neovim into a hypermedia client through its own custom
 
 ### Events
 
-- [ ] Good event interface
+- [x] Good event interface (just using autocmd lol)
 
 ### Cleaner
 
-- [ ] Follow the html [block formatting spec](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_display/Block_formatting_context) and [inline formatting spec](https://developer.mozilla.org/en-US/docs/Web/CSS/Inline_formatting_context)
-- [ ] Should clone ast before cleaning?
+- [x] Follow the html [block formatting spec](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_display/Block_formatting_context) and [inline formatting spec](https://developer.mozilla.org/en-US/docs/Web/CSS/Inline_formatting_context)
 
 ### Rendering pipeline
 
@@ -67,8 +95,8 @@ This plugin seeks to turn neovim into a hypermedia client through its own custom
 
 ### Lua Scripting Interface
 
-- [ ] Basic Lua Scripting
-- [ ] Events
+- [x] Basic Lua Scripting
+- [x] Events
 - [ ] DOM Manipulation
 
 #### Much later roadmap

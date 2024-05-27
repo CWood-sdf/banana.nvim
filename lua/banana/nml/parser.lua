@@ -148,8 +148,9 @@ function Parser:parseAttributes(tree)
 end
 
 ---@param tree TSNode
+---@param parent Banana.Ast
 ---@return Banana.Ast?
-function Parser:parseSelfClosingTag(tree)
+function Parser:parseSelfClosingTag(tree, parent)
     local child = tree:child(0)
     if child == nil then
         error("Unreachable")
@@ -162,7 +163,7 @@ function Parser:parseSelfClosingTag(tree)
         error("Unreachable")
     end
     local name = self.lexer:getStrFromRange({ nameEl:start() }, { nameEl:end_() })
-    local ret = ast.Ast:new(name)
+    local ret = ast.Ast:new(name, parent)
 
     local attrs, decls = self:parseAttributes(child)
     ret.inlineStyle = decls
@@ -200,9 +201,10 @@ function Parser:resolveEntity(str)
 end
 
 ---@param tree TSNode
+---@param parent Banana.Ast?
 ---@param isSpecial? boolean
 ---@return Banana.Ast?
-function Parser:parseTag(tree, isSpecial)
+function Parser:parseTag(tree, parent, isSpecial)
     isSpecial = isSpecial or false
     local firstChild = tree:child(0)
     local lastChild = tree:child(tree:child_count() - 1)
@@ -245,7 +247,10 @@ function Parser:parseTag(tree, isSpecial)
     end
     local ret = nil
     if not isScript and not isStyle then
-        ret = ast.Ast:new(tagNameStr)
+        if parent == nil then
+            error("Parent is nil")
+        end
+        ret = ast.Ast:new(tagNameStr, parent)
     end
 
     local attrs, decls = self:parseAttributes(firstChild)
@@ -266,7 +271,8 @@ function Parser:parseTag(tree, isSpecial)
             end
             ret:appendTextNode(self:getStrFromNode(child))
         elseif child:type() == M.ts_types.element then
-            local element = self:parseElement(child)
+            ---@cast ret Banana.Ast
+            local element = self:parseElement(child, ret)
             if element ~= nil then
                 if ret == nil then
                     error("Unreachable")
@@ -281,6 +287,20 @@ function Parser:parseTag(tree, isSpecial)
         elseif child:type() == M.ts_types.raw_text and isScript then
             local scriptStr = ""
             if attrs["src"] ~= nil then
+                local quote = '"'
+                local start, _ = scriptStr:find("'")
+                local hasSingle = false
+                if start ~= nil then
+                    hasSingle = true
+                end
+                start, _ = scriptStr:find('"')
+                if start ~= nil and hasSingle then
+                    error("lua file has both single and double quotes in its name (cannot be required by banana")
+                elseif start ~= nil then
+                    quote = "'"
+                end
+                local req = quote .. attrs["src"] .. quote
+                scriptStr = "document:runScriptAt(" .. req .. ")"
             else
                 scriptStr = self.lexer:getStrFromRange({ child:start() }, { child:end_() })
             end
@@ -293,9 +313,9 @@ function Parser:parseTag(tree, isSpecial)
                 table.insert(self.styleSets, rule)
             end
         elseif child:type() == M.ts_types.style_element then
-            self:parseTag(child, true)
+            self:parseTag(child, ret, true)
         elseif child:type() == M.ts_types.script_element then
-            self:parseTag(child, true)
+            self:parseTag(child, ret, true)
         else
             error("Node type " .. child:type() .. " not allowed when parsing tag body")
         end
@@ -309,8 +329,9 @@ function Parser:parseTag(tree, isSpecial)
 end
 
 ---@param tree TSNode
+---@param parent Banana.Ast
 ---@return Banana.Ast?
-function Parser:parseElement(tree)
+function Parser:parseElement(tree, parent)
     if tree:type() ~= M.ts_types.element then
         error("Did not pass an element into parseElement()")
     end
@@ -318,9 +339,9 @@ function Parser:parseElement(tree)
         error("Somehow an element does not have a child")
     end
     if tree:child_count() == 1 then
-        return self:parseSelfClosingTag(tree)
+        return self:parseSelfClosingTag(tree, parent)
     end
-    return self:parseTag(tree)
+    return self:parseTag(tree, parent)
 end
 
 ---@return Banana.Ast?
@@ -365,7 +386,13 @@ function Parser:parse()
             error("Unreachable: parsed child is 0 in not fullDocMode")
         end
     end
-    return self:parseElement(child)
+    local nilAst = require('banana.render').getNilAst()
+    if nilAst == nil then
+        error("Nil ast is not defined")
+    end
+    ---@diagnostic disable-next-line: cast-type-mismatch
+    ---@cast nilAst Banana.Ast
+    return self:parseElement(child, nilAst)
 end
 
 function Parser:reset()

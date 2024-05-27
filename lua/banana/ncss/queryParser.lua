@@ -131,13 +131,11 @@ M.queryParsers = {
         end
 
         local name = parser:getStringFromRange({ nameTag:start() }, { nameTag:end_() })
+        if isSel then
+            return q.selectors.class(name)
+        end
         local fn = function(ast)
             return ast:hasClass(name)
-        end
-
-
-        if isSel then
-            return q.newSelector(fn, q.Specificity.Class)
         end
         return q.newWhere(fn, q.Specificity.Class)
     end,
