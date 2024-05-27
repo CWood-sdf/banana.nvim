@@ -26,10 +26,12 @@ M.padNames = { "left", "top", "right", "bottom" }
 ---@field boundBox? Banana.Ast.BoundingBox
 ---@field precedences { [string]: number }
 ---@field instance number?
+---@field inlineStyle? Banana.Ncss.StyleDeclaration[]
 M.Ast = {
     nodes = {},
     tag = "",
     attributes = {},
+    inlineStyle = nil,
     padding = {
     },
     margin = {
@@ -228,6 +230,16 @@ function M.Ast:resolveUnits(parentWidth, parentHeight)
     end
 end
 
+function M.Ast:applyInlineStyleDeclarations()
+    if self.inlineStyle == nil then
+        return
+    end
+    self:applyStyleDeclarations(
+        self.inlineStyle,
+        require('banana.ncss.query').Specificity.Inline
+    )
+end
+
 ---@param declarations Banana.Ncss.StyleDeclaration[]
 ---@param basePrec number
 function M.Ast:applyStyleDeclarations(declarations, basePrec)
@@ -245,6 +257,9 @@ function M.Ast:applyStyleDeclarations(declarations, basePrec)
             local name = v.name:sub(4, _str.charCount(v.name))
 
             local value = v.values[1]
+            if value.type == "plain" and value.value == "inherit" then
+                goto continue
+            end
             self.hl[name] = value.value
         elseif v.name:sub(1, 8) == "padding-" then
             local side = v.name:sub(9, #v.name)

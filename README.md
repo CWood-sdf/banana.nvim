@@ -18,6 +18,7 @@ This plugin seeks to turn neovim into a hypermedia client through its own custom
 
 - [x] Basic Styling
 - [ ] Complex styling (animations, transitions, absolute positioning)
+- [ ] Efficient style recalculation
 - [x] Very Fast rendering
 - [ ] Few errors
 - [x] Based on css
@@ -38,6 +39,7 @@ This plugin seeks to turn neovim into a hypermedia client through its own custom
 
 - [ ] Should have a target that it can give the rendered lines to (this target could like render to a part of a buffer, or be a whole buffer renderer...)
 - [x] Should take in AST and return Word[][]
+- [ ] Render caching?
 - [ ] Need to actually compute width/height restrictions and follow them
 - [ ] Flexbox?
 - [ ] Respect the styling

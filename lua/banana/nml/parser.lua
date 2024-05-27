@@ -165,7 +165,7 @@ function Parser:parseSelfClosingTag(tree)
     local ret = ast.Ast:new(name)
 
     local attrs, decls = self:parseAttributes(child)
-    ret:applyStyleDeclarations(decls, require('banana.ncss.query').Specificity.Inline)
+    ret.inlineStyle = decls
     ret.attributes = attrs
 
     return ret
@@ -251,7 +251,7 @@ function Parser:parseTag(tree, isSpecial)
     local attrs, decls = self:parseAttributes(firstChild)
     if ret ~= nil then
         ret.attributes = attrs
-        ret:applyStyleDeclarations(decls, require('banana.ncss.query').Specificity.Inline)
+        ret.inlineStyle = decls
     end
 
     local i = 1
@@ -279,7 +279,11 @@ function Parser:parseTag(tree, isSpecial)
             end
             ret:appendTextNode(self:resolveEntity(self:getStrFromNode(child)))
         elseif child:type() == M.ts_types.raw_text and isScript then
-            local scriptStr = self.lexer:getStrFromRange({ child:start() }, { child:end_() })
+            local scriptStr = ""
+            if attrs["src"] ~= nil then
+            else
+                scriptStr = self.lexer:getStrFromRange({ child:start() }, { child:end_() })
+            end
             table.insert(self.scripts, scriptStr)
         elseif child:type() == M.ts_types.raw_text and isStyle then
             local ncssTree = self:getNextBlockNcssParser()
@@ -382,7 +386,7 @@ end
 
 ---@return Banana.Nml.Parser?
 function M.fromFile(path)
-    local file = io.open(path, "r")
+    local file = io.open(path)
     if file == nil then
         print("Failed to open code file")
         return nil
@@ -400,7 +404,12 @@ function M.fromFile(path)
     vim.treesitter.start(buf, "nml")
     local langTree = vim.treesitter.get_parser(buf, "nml")
     local arr = langTree:parse(true)
-    local ncssParsers = langTree:children().ncss:trees()
+    local ncssChild = langTree:children()['ncss']
+    ---@cast ncssChild  vim.treesitter.LanguageTree
+    local ncssParsers = ncssChild:trees()
+    -- for _, v in ipairs(ncssParsers) do
+    --
+    -- end
     tree = arr[1]
     local parsed = tree:root()
     local children = parsed:child(0)

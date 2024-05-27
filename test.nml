@@ -1,102 +1,95 @@
-<div id="root" style="hl-underline: true;">
+<div id="root">
 <style>
-.yeet {
-    hl-bold: true !important;
+
+#tabline > .selected {
+  hl-bg: hl-extract(bg, Visual); 
+  hl-fg: hl-extract(fg, Visual); 
 }
-#asdf.yeet {
-    hl-fg: #4aafaf;
-    hl-bg: rgb(200, 100, 16);
+#tabline > .selected.home {
+  hl-bg: hl-extract(bg, IncSearch); 
+  hl-fg: hl-extract(fg, IncSearch); 
+}
+#tabline > .not-selected {
+  hl-bg: hl-extract(bg, CursorLine); 
+  hl-fg: hl-extract(fg, CursorLine); 
+}
+#tabline > span {
+  margin-right: 1ch;
+  padding-left: 1ch;
 }
 
-#root > #as.asdf.yeet {
-    hl-fg: #4aafaf;
-    hl-bg: rgb(200, 100, 16);
+#tabline .remap {
+  hl-fg: hl-extract(fg, Operator);
 }
-li {
-    hl-fg: #ff0000;
-}
-ib {
-
-}
-ol {
-    hl-bg: #00ccc7;
-    padding-left: 10%;
-    margin-left: 5%;
-}
-div.yeet > ol {
-    hl-fg: blue;
-    hl-bg: red;
-    hl-underline: false;
-}
-
 #root {
-    hl-underline: false !important;
-}
+  padding-top: 1ch;
+  padding-left: 2ch;
 
-span > span {
-    padding-left: 5%;
 }
-.pad {
-    padding-left: 20%;
+.header {
+  hl-bold: true;
 }
-#omg {
-    padding: 1ch;
-    hl-bg: #00ffff;
-    hl-fg: #000000;
-    hl-bold: false;
+.comment {
+  hl-fg: hl-extract(fg, Comment);
+  hl-bold: false;
 }
 </style>
+
+<div id="tabline">
+<span class="selected home"> lazy.nvim <span class="remap"> (H) </span> </span>
+<span class="not-selected"> Install <span class="remap"> (I) </span> </span>
+<span class="not-selected"> Update <span class="remap"> (U) </span> </span>
+<span class="not-selected"> Sync <span class="remap"> (S) </span> </span>
+</div>
+
 <br>
-    <span>span</span> 
-    <span id="omg"> asdfksdf</span> asdf
 
-    <div class="yeet">
-            <ol> <li> asdf </li>
-            </ol>
-    </div>
+<div class="header">
+Total: <span class="comment"> 77 plugins </span>
 
-    <p sdf="dsf" id="sdf"> 
-        p1  
-        <span> p.span</span>
-    </p>
-    <br>
-    <ol  >
-        yeet burgers
-        <li> asdf </li>
-        <li> asdf 2 </li>
-    </ol>
-        <p class="asdf yeet" id="as" >
-        asdfkjsd
-        </p>
-    <p id="asdf" class="yeet">
-        p2
-    </p>
-    <script>
-    local asdf = 0
-    local omg = document:getElementById("omg")
-    omg:attachRemap("n", "K" , { 1, "hover"}, function()
-    
-        if omg:hasClass("yeet") then
-            omg:removeClass("yeet")
-        else
-            omg:addClass("yeet")
-        end
-        omg:defaultStyles()
-        document:render()
-        -- print(omg:hasClass("yeet"))
-    end, {})
-    local yeet = document:getElementById("as")
+</div>
 
-    vim.api.nvim_create_autocmd({ "CursorMoved"}, {
-        callback = function()
-            -- if yeet:isHovering() then
-            -- print('ooga')
-            -- else
-            -- print('no')
-            -- end
-            
+<script>
+local tabline = document:getElementById("tabline")
 
-        end
-        })
-    </script>
+for i, v in ipairs(tabline.nodes) do
+  if type(v) ~= "string" then
+    local remapStr = v.nodes[2].nodes[1]
+    local remapCh = ''
+    local k = 1
+    while remapStr:sub(k, k) ~= '(' do
+      k = k + 1
+
+      end
+      k = k + 1
+      remapCh = remapStr:sub(k, k)
+      print(remapCh)
+      vim.keymap.set("n", remapCh, function()
+        for j, v in ipairs(tabline.nodes) do
+          if type(v) == "string" then
+            goto continue
+            end
+          if i == j then
+            v:addClass("selected")
+            v:removeClass("not-selected")
+            v:defaultStyles()
+
+          else
+            v:removeClass("selected")
+            v:addClass("not-selected")
+            v:defaultStyles()
+          end
+          ::continue::
+          end
+          document:render()
+
+      end, {})
+
+
+    end
+
+end
+
+</script>
+
 </div>

@@ -226,7 +226,7 @@ end
 ---@return Banana.Ncss.RuleSet[]
 function M.parse(tree, parser)
     if tree:has_error() then
-        error("omg there is an ncss parser error")
+        -- error("omg there is an ncss parser error")
     end
     if tree:type() ~= ts_types.stylesheet then
         error("Parsed treesitter tree must be a stylesheet type for ncss parser")
@@ -262,9 +262,9 @@ end
 ---@param tree TSNode
 ---@return boolean
 function M.treeIsInline(tree)
-    if tree:has_error() then
-        error("omg there is an ncss parser error")
-    end
+    -- if tree:has_error() then
+    --     error("omg there is an ncss parser error")
+    -- end
     if tree:type() ~= ts_types.stylesheet then
         error("Parsed treesitter tree must be a stylesheet type for ncss parser")
     end
@@ -279,18 +279,23 @@ function M.treeIsInline(tree)
 end
 
 ---@param content string
+---@return Banana.Ncss.RuleSet[]
 function M.parseText(content)
     return M.parseLines(vim.split(content, '\n'))
 end
 
+---@param name string
+---@return Banana.Ncss.RuleSet[]
 function M.parseFile(name)
-    local f = io.open(name)
+    local f = io.open(name, "r")
     if f == nil then
-        return ""
+        error("File '" .. name .. "' does not exist")
     end
     return M.parseText(f:read("*a"))
 end
 
+---@param lines string[]
+---@return Banana.Ncss.RuleSet[]
 function M.parseLines(lines)
     local buf = vim.api.nvim_create_buf(false, true)
     vim.api.nvim_set_option_value("modifiable", true, { buf = buf })

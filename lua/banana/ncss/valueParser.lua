@@ -173,6 +173,29 @@ local cssFunctions = {
         local num = red * 256 * 256 + green * 256 + blue
         return newColorValue(string.format("#%06x", num))
     end, 3, { "integer", "integer", "integer" }),
+    ["hl-extract"] = Function:new(function(params, _)
+        local section = params[1].value
+        local hl = params[2].value
+        ---@cast hl string
+        ---@cast section string
+        if not vim.fn.hlexists(hl) then
+            return {
+                value = "inherit",
+                type = "plain"
+            }
+        end
+        local hlVal = vim.api.nvim_get_hl(0, {
+            name = hl
+        })
+        local col = hlVal[section]
+        if col == nil then
+            return {
+                value = "inherit",
+                type = "plain"
+            }
+        end
+        return newColorValue(string.format("#%06x", col))
+    end, 2, { { "string", "plain" }, { "string", "plain" } })
 
 }
 ---@type { [string]: fun(tree: TSNode, parser: Banana.Ncss.ParseData, text: string): Banana.Ncss.StyleValue[]|Banana.Ncss.StyleValue }

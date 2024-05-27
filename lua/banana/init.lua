@@ -1,10 +1,9 @@
 local M = {}
-local instance = require("banana.render").newInstance(os.getenv("HOME") .. "/projects/banana.nvim/test.nml", "test.nml")
-local np = require('banana.ncss.parser')
 
 M.yeet = function()
+	local instance = require("banana.render").newInstance(os.getenv("HOME") .. "/projects/banana.nvim/test.nml",
+		"test.nml")
 	-- local filename = os.getenv("HOME") .. '/projects/banana.nvim/test.nml'
-	instance:reset()
 	local ast = instance:render()
 	local lines = vim.fn.readfile(os.getenv("HOME") .. "/projects/banana.nvim/test.ncss")
 

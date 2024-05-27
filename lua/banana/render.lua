@@ -23,11 +23,12 @@ local instances = {}
 ---@field bufname string
 ---@field filetype string
 ---@field bufName string
----@field parser Banana.Nml.Parser
 ---@field highlightNs number
 ---@field instanceId number
 ---@field winhl table
----@field ast? Banana.Ast
+---@field ast Banana.Ast
+---@field styleRules Banana.Ncss.RuleSet[]
+---@field scripts string[]
 ---@field keymaps { [string]: { [string]: [ fun(), vim.keymap.set.Opts ][] } }
 local Instance = {}
 
@@ -67,6 +68,8 @@ function Instance:new(filename, bufferName)
             end
         end
     end
+    local ast, styleRules, scripts = require('banana.require').nmlRequire(filename)
+    require("banana.nml.tags").cleanAst(ast)
     table.insert(instances, {})
     local id = #instances
     local parser = require("banana.nml.parser").fromFile(filename)
@@ -80,15 +83,19 @@ function Instance:new(filename, bufferName)
         filetype = "banana",
         bufName = filename,
         highlightNs = vim.api.nvim_create_namespace("banana_instance_" .. ids),
-        parser = parser,
+        ast = ast,
+        styleRules = styleRules,
+        scripts = scripts,
+        -- parser = parser,
         instanceId = id,
         winhl = {
             link = "NormalFloat"
         },
     }
     setmetatable(inst, { __index = Instance })
-    vim.api.nvim_set_hl(inst.highlightNs, M.defaultWinHighlight, inst.winhl)
     instances[id] = inst
+    inst:applyId(ast)
+    vim.api.nvim_set_hl(inst.highlightNs, M.defaultWinHighlight, inst.winhl)
     return inst
 end
 
@@ -149,13 +156,14 @@ function Instance:applyStyleDeclarations(ast)
     if ast == nil then
         error("Ast is nil")
     end
-    local rules = self.parser.styleSets
+    local rules = self.styleRules
     for _, v in ipairs(rules) do
         if v.query == nil then
             goto continue
         end
         local arr = v.query:find(ast)
         for _, a in ipairs(arr) do
+            a:applyInlineStyleDeclarations()
             a:applyStyleDeclarations(v.declarations, v.query.specificity)
         end
 
@@ -169,19 +177,8 @@ function Instance:render()
     local actualStart = startTime
     local astTime = 0
     local styleTime = 0
-    if self.ast == nil then
-        local ast = self.parser:parse()
-        if ast == nil then
-            error("Failed to parse")
-        end
-        astTime = vim.loop.hrtime() - startTime
-        startTime = vim.loop.hrtime()
-        require("banana.nml.tags").cleanAst(ast)
-        self:applyId(ast)
-        self.ast = ast
-        styleTime = vim.loop.hrtime() - startTime
-    end
     self:applyStyleDeclarations(self.ast)
+    styleTime = vim.loop.hrtime() - startTime
     startTime = vim.loop.hrtime()
     local width = 100
     local height = 20
@@ -228,7 +225,7 @@ function Instance:render()
     vim.api.nvim_buf_set_lines(self.bufnr, 0, -1, false, lines)
     startTime = vim.loop.hrtime()
     self:highlight(stuffToRender, 0)
-    for _, v in ipairs(self.parser.scripts) do
+    for _, v in ipairs(self.scripts) do
         v = "local document = require('banana.render').getInstance(" .. self.instanceId .. ")\n" .. v
         local f = loadstring(v)
         if f == nil then
@@ -236,7 +233,7 @@ function Instance:render()
         end
         f()
     end
-    self.parser.scripts = {}
+    self.scripts = {}
     local hlTime = vim.loop.hrtime() - startTime
     local totalTime = vim.loop.hrtime() - actualStart
     local extraLines = {
@@ -339,10 +336,6 @@ function Instance:getElementById(name)
         return nilAst
     end
     return asts[1]
-end
-
-function Instance:reset()
-    self.parser:reset()
 end
 
 M.defaultWinHighlight = "NormalFloat"

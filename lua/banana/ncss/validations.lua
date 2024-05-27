@@ -87,6 +87,7 @@ local validations = {
     ['hl-bold'] = boolValid,
     ['hl-fg'] = Validation:new({ [1] = { { "color" }, { "plain" } } }),
     ['hl-bg'] = Validation:new({ [1] = { { "color" }, { "plain" } } }),
+    ['hl-link'] = Validation:new({ [1] = { { "string" }, { "plain" } } }),
     ['padding'] = marginValid,
     ['padding-left'] = marginValValid,
     ['padding-right'] = marginValValid,
