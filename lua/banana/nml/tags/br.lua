@@ -14,7 +14,8 @@ local M = t.newTag(
     'br',
     t.FormatType.Block,
     true,
-    renderer
+    renderer,
+    require('banana.nml.tags').defaultInitials()
 )
 
 return M

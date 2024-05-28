@@ -9,7 +9,8 @@ local M = t.newTag(
     'span',
     t.FormatType.Inline,
     false,
-    renderer
+    renderer,
+    require('banana.nml.tags').defaultInitials()
 )
 
 return M

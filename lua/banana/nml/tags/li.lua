@@ -9,7 +9,8 @@ local M = t.newTag(
     'li',
     t.FormatType.BlockInline,
     false,
-    renderer
+    renderer,
+    require('banana.nml.tags').defaultInitials()
 )
 
 return M

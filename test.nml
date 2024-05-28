@@ -33,7 +33,14 @@
   hl-fg: hl-extract(fg, Comment);
   hl-bold: false;
 }
+#header {
+  text-align: center;
+}
 </style>
+<div id="header">
+~~ Ok ~~
+</div>
+<br>
 
 <div id="tabline">
 <span class="selected home"> lazy.nvim <span class="remap"> (H) </span> </span>

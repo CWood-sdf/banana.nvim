@@ -1,16 +1,21 @@
 local Ast = require('banana.nml.ast').Ast
 
-local id = Ast:new('div')
+---@diagnostic disable-next-line: param-type-mismatch
+local id = Ast:new('div', nil)
 id:setAttribute('id', 'test')
 
-local class = Ast:new('div')
+---@diagnostic disable-next-line: param-type-mismatch
+local class = Ast:new('div', nil)
 class:setAttribute('class', 'test1')
 
-local class2 = Ast:new('div')
+---@diagnostic disable-next-line: param-type-mismatch
+local class2 = Ast:new('div', nil)
 class2:setAttribute('class', 'test1 test2')
 
-local div = Ast:new('div')
-local span = Ast:new('span')
+---@diagnostic disable-next-line: param-type-mismatch
+local div = Ast:new('div', nil)
+---@diagnostic disable-next-line: param-type-mismatch
+local span = Ast:new('span', nil)
 return {
     id = id,
     class = class,

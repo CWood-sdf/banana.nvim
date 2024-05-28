@@ -80,6 +80,7 @@ end)
 local marginValValid = Validation:new(function(a)
     return #a == 1 and a[1].type == "unit"
 end)
+local singlePlain = Validation:new({ [1] = { { "plain" } } })
 ---@type { [string]: Banana.Ncss.PropertyValidation }
 local validations = {
     ['hl-underline'] = boolValid,
@@ -88,7 +89,8 @@ local validations = {
     ['hl-fg'] = Validation:new({ [1] = { { "color" }, { "plain" } } }),
     ['hl-bg'] = Validation:new({ [1] = { { "color" }, { "plain" } } }),
     ['hl-link'] = Validation:new({ [1] = { { "string" }, { "plain" } } }),
-    ['display'] = Validation:new({ [1] = { { "plain" } } }),
+    ['display'] = singlePlain,
+    ['text-align'] = singlePlain,
     ['padding'] = marginValid,
     ['padding-left'] = marginValValid,
     ['padding-right'] = marginValValid,

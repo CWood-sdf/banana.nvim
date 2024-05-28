@@ -13,7 +13,8 @@ local M = t.newTag(
     'bound',
     t.FormatType.Inline,
     true,
-    renderer
+    renderer,
+    require('banana.nml.tags').defaultInitials()
 )
 
 return M

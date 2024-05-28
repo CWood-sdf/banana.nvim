@@ -97,6 +97,11 @@ function M.Ast:new(tag, parent)
     return ast
 end
 
+function M.Ast:_getInitialStyles()
+    local tag = self.actualTag
+    return tag.initialProps
+end
+
 function M.Ast:defaultStyles()
     self.padding = {
         {

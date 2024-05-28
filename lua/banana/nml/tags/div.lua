@@ -16,7 +16,8 @@ local M = t.newTag(
     'div',
     t.FormatType.Block,
     false,
-    renderer
+    renderer,
+    require('banana.nml.tags').defaultInitials()
 )
 
 return M

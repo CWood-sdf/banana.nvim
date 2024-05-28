@@ -31,7 +31,8 @@ local M = t.newTag(
     'ol',
     t.FormatType.Block,
     false,
-    renderer
+    renderer,
+    require('banana.nml.tags').defaultInitials()
 )
 
 return M

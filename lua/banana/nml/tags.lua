@@ -2,8 +2,25 @@ local M = {}
 local _str = require('banana.utils.string')
 local _ast = require('banana.nml.ast')
 
+---@param str string
+---@return string
+local function snakeToKebab(str)
+    local ret, _ = str:gsub('_', '-')
+    return ret
+end
+
+---@param str string
+---@return string
+---@diagnostic disable-next-line: unused-local, unused-function
+local function kebabToSnake(str)
+    local ret, _ = str:gsub('\\-', '_')
+    return ret
+end
+
 ---@class (exact) Banana.Renderer.InheritedProperties
 ---@field text_align string
+
+---@class (exact) Banana.Renderer.InitialProperties: Banana.Renderer.InheritedProperties
 
 ---@enum Banana.Nml.FormatType
 M.FormatType = {
@@ -23,6 +40,7 @@ M.FormatType = {
 ---@field name string
 ---@field formatType Banana.Nml.FormatType
 ---@field selfClosing boolean
+---@field initialProps Banana.Renderer.InitialProperties
 ---@field private render Banana.Renderer
 local TagInfo = {
     name = '',
@@ -98,9 +116,24 @@ end
 ---@param inherit Banana.Renderer.InheritedProperties
 ---@return Banana.RenderRet
 function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, startY, inherit)
+    local inheritOld = {}
+    for k, _ in pairs(inherit) do
+        local style = snakeToKebab(k)
+        if ast.style[style] ~= nil then
+            inheritOld[k] = inherit[k]
+            inherit[k] = ast.style[style][1].value
+            if inherit[k] == "initial" then
+                inherit[k] = ast:_getInitialStyles()[style]
+            end
+        end
+    end
     local d = "display"
     local disp = ast.style[d]
     if disp ~= nil and disp[1] ~= nil and disp[1].value == "hidden" then
+        for k, _ in pairs(inheritOld) do
+            inherit[k] = inheritOld[k]
+        end
+
         return require('banana.box').Box:new(nil)
     end
     ---@type Banana.Ast.BoundingBox
@@ -127,6 +160,9 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
     boundBox.rightX = boundBox.leftX + ret.width
     boundBox.bottomY = boundBox.topY + #ret.lines
     ast.boundBox = boundBox
+    for k, _ in pairs(inheritOld) do
+        inherit[k] = inheritOld[k]
+    end
     return ret
 end
 
@@ -214,8 +250,28 @@ function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX
         end
         i = i + 1
     end
-    if currentLine.width < width - 2 and self.formatType ~= M.FormatType.Inline then
-        currentLine:expandWidthTo(width - 3)
+    -- why 3? i have no idea but it works somehow
+    local magicUnderExpansion = 3
+    if currentLine.width < width - magicUnderExpansion and self.formatType ~= M.FormatType.Inline then
+        local extraWidth = width - magicUnderExpansion - currentLine.width
+        if inherit.text_align == "left" then
+            currentLine:expandWidthTo(width - magicUnderExpansion)
+        elseif inherit.text_align == "right" then
+            local prepend = b.Box:new(currentLine.hlgroup)
+            prepend:appendStr('', nil)
+            prepend:expandWidthTo(extraWidth)
+            prepend:append(currentLine)
+            currentLine = prepend
+        elseif inherit.text_align == "center" then
+            local leftWidth = math.floor(extraWidth / 2)
+            local left = b.Box:new(currentLine.hlgroup)
+            left:appendStr('', nil)
+            left:expandWidthTo(leftWidth)
+            left:clean()
+            left:append(currentLine)
+            left:expandWidthTo(width - magicUnderExpansion)
+            currentLine = left
+        end
     end
     return currentLine, i
 end
@@ -224,16 +280,27 @@ end
 ---@param inline Banana.Nml.FormatType
 ---@param selfClosing boolean
 ---@param renderer Banana.Renderer
-function M.newTag(name, inline, selfClosing, renderer)
+---@param initialProps Banana.Renderer.InitialProperties
+function M.newTag(name, inline, selfClosing, renderer, initialProps)
     ---@type Banana.TagInfo
     local tag = {
         name = name,
         formatType = inline,
         selfClosing = selfClosing,
-        render = renderer
+        render = renderer,
+        initialProps = initialProps,
     }
     setmetatable(tag, { __index = TagInfo })
     return tag
+end
+
+---@return Banana.Renderer.InitialProperties
+function M.defaultInitials()
+    ---@type Banana.Renderer.InitialProperties
+    local initialProps = {
+        text_align = "left",
+    }
+    return initialProps
 end
 
 ---@param name string
