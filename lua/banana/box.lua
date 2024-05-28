@@ -1,6 +1,5 @@
 local _str = require('banana.utils.string')
-local M = {}
----@class (exact) Banana.Box
+local M = {} ---@class (exact) Banana.Box
 ---@field lines Banana.Line[]
 ---@field width integer
 ---@field dirty boolean true when box is a rect of width self.width
@@ -173,6 +172,31 @@ function M.Box:appendBoxBelow(box)
     end
     self.dirty = self.width ~= box.width
     self.width = newWidth
+end
+
+function M.Box:stripRightSpace()
+    for _, row in ipairs(self.lines) do
+        for i = #row, 1, -1 do
+            if row[i].style == self.hlgroup then
+                goto skip
+            end
+            if
+                row[i].style.fg ~= nil
+                and row[i].style.fg ~= self.hlgroup.fg
+                and row[i].style.bg ~= nil
+                and row[i].style.bg ~= self.hlgroup.bg
+            then
+                break
+            end
+            ::skip::
+            row[i].word = row[i].word:gsub('[ ]+$', '')
+            if #row[i].word == 0 then
+                table.remove(row, i)
+            else
+                break
+            end
+        end
+    end
 end
 
 ---@param width number the maximum width of the box

@@ -45,8 +45,10 @@ function Instance:virtualRender(ast, width, height)
     local ret = {}
     if require("banana.nml.tags").tagExists(ast.tag) then
         local tag = require("banana.nml.tags").makeTag(ast.tag)
-        local rendered = tag:getRendered(ast, nil, width, height, 1, 1)
-        print(rendered.width)
+        local rendered = tag:getRendered(ast, nil, width, height, 1, 1, {
+            text_align = "left",
+        })
+        rendered:stripRightSpace()
         for _, line in ipairs(rendered.lines) do
             table.insert(ret, line)
         end

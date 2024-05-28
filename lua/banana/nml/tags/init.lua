@@ -2,6 +2,9 @@ local M = {}
 local _str = require('banana.utils.string')
 local _ast = require('banana.nml.ast')
 
+---@class (exact) Banana.Renderer.InheritedProperties
+---@field text_align string
+
 ---@enum Banana.Nml.FormatType
 M.FormatType = {
     Inline = 1,
@@ -13,7 +16,7 @@ M.FormatType = {
 
 ---@alias Banana.RenderRet Banana.Box
 
----@alias Banana.Renderer fun(self: Banana.TagInfo, ast: Banana.Ast, parentHl: Banana.Highlight?, parentWidth: number, parentHeight: number, startX: number, startY: number): Banana.RenderRet
+---@alias Banana.Renderer fun(self: Banana.TagInfo, ast: Banana.Ast, parentHl: Banana.Highlight?, parentWidth: number, parentHeight: number, startX: number, startY: number, inherit: Banana.Renderer.InheritedProperties): Banana.RenderRet
 
 
 ---@class (exact) Banana.TagInfo
@@ -92,8 +95,9 @@ end
 ---@param parentHeight number
 ---@param startX number
 ---@param startY number
+---@param inherit Banana.Renderer.InheritedProperties
 ---@return Banana.RenderRet
-function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, startY)
+function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, startY, inherit)
     local d = "display"
     local disp = ast.style[d]
     if disp ~= nil and disp[1] ~= nil and disp[1].value == "hidden" then
@@ -108,7 +112,7 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
     }
     startX = startX + ast.padding[_ast.left].value + ast.margin[_ast.left].value
     startY = startY + ast.padding[_ast.top].value + ast.margin[_ast.top].value
-    local ret = self:render(ast, parentHl, parentWidth, parentHeight, startX, startY)
+    local ret = self:render(ast, parentHl, parentWidth, parentHeight, startX, startY, inherit)
     local extraWidth =
         parentWidth - ret.width -
         ast.padding[_ast.left].value - ast.padding[_ast.right].value -
@@ -133,8 +137,9 @@ end
 ---@param parentHeight number
 ---@param startX number
 ---@param startY number
+---@param inherit Banana.Renderer.InheritedProperties
 ---@return fun(): integer?, Banana.Box?, integer?
-function TagInfo:blockIter(ast, parentHl, parentWidth, parentHeight, startX, startY)
+function TagInfo:blockIter(ast, parentHl, parentWidth, parentHeight, startX, startY, inherit)
     local i = 1
     return function()
         if i > #ast.nodes then
@@ -142,7 +147,7 @@ function TagInfo:blockIter(ast, parentHl, parentWidth, parentHeight, startX, sta
         end
         local oldI = i
         local render = nil
-        render, i = self:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX, startY)
+        render, i = self:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX, startY, inherit)
         startY = startY + #render.lines
         return oldI, render, i - oldI
     end
@@ -154,10 +159,11 @@ end
 ---@param parentHeight number
 ---@param startX number
 ---@param startY number
+---@param inherit Banana.Renderer.InheritedProperties
 ---@return Banana.Box
-function TagInfo:renderInlineEl(ast, parentHl, parentWidth, parentHeight, startX, startY)
+function TagInfo:renderInlineEl(ast, parentHl, parentWidth, parentHeight, startX, startY, inherit)
     ---@type Banana.Box
-    local ret, _ = self:renderBlock(ast, ast:mixHl(parentHl), 1, parentWidth, parentHeight, startX, startY)
+    local ret, _ = self:renderBlock(ast, ast:mixHl(parentHl), 1, parentWidth, parentHeight, startX, startY, inherit)
     return ret
 end
 
@@ -169,15 +175,18 @@ end
 ---@param parentHeight number
 ---@param startX number
 ---@param startY number
+---@param inherit Banana.Renderer.InheritedProperties
 ---@return Banana.Box, integer
-function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX, startY)
+function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX, startY, inherit)
     local b = require('banana.box')
     local currentLine = b.Box:new(parentHl)
     local hasText = false
-    local width = parentWidth - ast.padding[_ast.left].value - ast.padding[_ast.right].value -
-        ast.margin[_ast.left].value - ast.margin[_ast.right].value
-    local height = parentHeight - ast.padding[_ast.top].value - ast.padding[_ast.bottom].value -
-        ast.margin[_ast.top].value - ast.margin[_ast.bottom].value
+    local width = parentWidth
+        - ast.padding[_ast.left].value - ast.padding[_ast.right].value
+        - ast.margin[_ast.left].value - ast.margin[_ast.right].value
+    local height = parentHeight
+        - ast.padding[_ast.top].value - ast.padding[_ast.bottom].value
+        - ast.margin[_ast.top].value - ast.margin[_ast.bottom].value
     while i <= #ast.nodes do
         local v = ast.nodes[i]
         if v == nil then
@@ -193,7 +202,7 @@ function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX
                 break
             end
             v:resolveUnits(width, height)
-            local rendered = tag:getRendered(v, currentLine.hlgroup, width, height, startX, startY)
+            local rendered = tag:getRendered(v, currentLine.hlgroup, width, height, startX, startY, inherit)
             startX = startX + rendered.width
             currentLine:append(rendered, b.MergeStrategy.Bottom)
             if tag.formatType == M.FormatType.Block or tag.formatType == M.FormatType.BlockInline then
@@ -205,9 +214,9 @@ function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX
         end
         i = i + 1
     end
-    -- if currentLine.width < width - 2 then
-    --     currentLine:expandWidthTo(width - 3)
-    -- end
+    if currentLine.width < width - 2 and self.formatType ~= M.FormatType.Inline then
+        currentLine:expandWidthTo(width - 3)
+    end
     return currentLine, i
 end
 

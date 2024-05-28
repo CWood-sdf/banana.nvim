@@ -2,7 +2,7 @@
 local t = require('banana.nml.tags')
 
 ---@type Banana.Renderer
-local function renderer(self, ast, parentHl, parentWidth, parentHeight, startX, startY)
+local function renderer(_, ast, parentHl, _, _, startX, startY, _)
     local b = require('banana.box')
     local ret = b.Box:new(ast:mixHl(parentHl))
     ret:appendStr(startX .. ", " .. startY)
@@ -10,7 +10,7 @@ local function renderer(self, ast, parentHl, parentWidth, parentHeight, startX, 
 end
 ---@type Banana.TagInfo
 local M = t.newTag(
-    'span',
+    'bound',
     t.FormatType.Inline,
     true,
     renderer
