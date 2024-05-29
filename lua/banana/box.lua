@@ -49,7 +49,8 @@ end
 ---@param width number
 function M.Box:expandWidthTo(width)
     if width < self.width then
-        error("width is smaller than possible")
+        error("width is smaller than possible (given target width " ..
+            width .. " when current width is " .. self.width .. ")")
     end
     self.width = width
     self.dirty = true

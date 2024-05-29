@@ -42,7 +42,6 @@ function Validation:passes(value, name)
     end
     local validations = self.validations[#value]
     if validations == nil then
-        vim.notify(vim.inspect(self.validations))
         error("No validation for size " .. #value .. " exists for property '" .. name .. "'")
     end
     for _, v in pairs(validations) do
@@ -89,6 +88,8 @@ local validations = {
     ['hl-fg'] = Validation:new({ [1] = { { "color" }, { "plain" } } }),
     ['hl-bg'] = Validation:new({ [1] = { { "color" }, { "plain" } } }),
     ['hl-link'] = Validation:new({ [1] = { { "string" }, { "plain" } } }),
+    ['list-style-type'] = Validation:new({ [1] = { { "string" } } }),
+    ['list-base-width'] = Validation:new({ [1] = { { "unit" } } }),
     ['display'] = singlePlain,
     ['text-align'] = singlePlain,
     ['padding'] = marginValid,

@@ -25,8 +25,8 @@ module.exports = grammar({
                 "div",
                 "p",
                 "span",
-                "a",
                 "ol",
+                "ul",
                 "li",
                 /h[1-6]/,
                 /(\w+-)+\w+/,
@@ -36,7 +36,8 @@ module.exports = grammar({
         _style_start_tag_name: (_) => "style",
         _end_tag_name: ($) => $._start_tag_name,
         erroneous_end_tag_name: (_) => /[^>]+/,
-        comment: (_) => /<!--[\s\S]*?-->/,
+        comment: (_) =>
+            seq("<!--", repeat(choice(/[^-]/, /\-[^-]/, /--[^-]/)), "-->"),
         self_closing_tags: (_) =>
             choice(
                 "img",

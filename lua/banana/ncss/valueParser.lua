@@ -4,6 +4,7 @@ local ts_types = require('banana.ncss.tsTypes')
 ---@class (exact) Banana.Ncss.Value
 ---@field value number
 ---@field unit string
+---@field computed number|nil
 local Value = {
     value = 0,
     unit = "%",
@@ -210,6 +211,8 @@ local cssParsers = {
         return parseNumValue(tree, parser, newFloatValue)
     end,
     string_value = function(_, _, str)
+        str = str:sub(2, #str)
+        str = str:sub(1, #str - 1)
         return newStringValue(str)
     end,
     plain_value = function(_, _, str)

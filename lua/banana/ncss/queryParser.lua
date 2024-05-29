@@ -21,6 +21,9 @@ M.queryParsers = {
             return true
         end, q.Specificity.Pseudoclass)
     end,
+    [ts_types.universal_selector] = function()
+        return q.newSelector(function() return true end, q.Specificity.Star)
+    end,
     [ts_types.descendant_selector] = function(node, parser)
         local el = node:child(1)
         if el == nil then

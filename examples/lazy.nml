@@ -37,20 +37,16 @@ ul.not-local {
   hl-fg: hl-extract(fg, "@punctuation.special");
 }
 ul.local {
-  hl-fg: hl-extract(fg, Constant);
+  hl-fg: hl-extract(fg, Comment);
 }
 ul.plugin-loaded {
-  list-style-type: '● ';
+  list-style-type: '●';
 }
 ul.plugin-not-loaded {
-  list-style-type: '○ ';
-  list-base-width: 4ch;
+  list-style-type: '○';
 }
 ul > * {
   hl-fg: hl-extract(fg, Normal);
-}
-#plugin-template {
-  display: hidden;
 }
 </style>
 <br>
@@ -67,20 +63,56 @@ ul > * {
 <div>
 <span class="header">Total: </span><span class="comment"> 77 plugins </span>
 </div>
-
 <br>
-
 <div id="loaded-plugins">
 <span class="header">Loaded: </span><span class="comment"> (44)</span>
 </div>
 
-<div style="display: hidden;" id="plugin-template">
-<ul> <li> </li> </ul>
-</div>
+<script>
+local tabline = document:getElementById("tabline")
+
+
+for i, v in ipairs(tabline:children()) do
+  if type(v) ~= "string" then
+    local remapStr = v.nodes[2].nodes[1]
+    local remapCh = ''
+    local k = 1
+    while remapStr:sub(k, k) ~= '(' do
+      k = k + 1
+
+      end
+      k = k + 1
+      remapCh = remapStr:sub(k, k)
+      v:attachRemap("n", remapCh, {}, function()
+        for j, v in ipairs(tabline:children()) do
+          if type(v) == "string" then
+            goto continue
+            end
+          if i == j then
+            v:addClass("selected")
+            v:removeClass("not-selected")
+            v:defaultStyles()
+
+          else
+            v:removeClass("selected")
+            v:addClass("not-selected")
+            v:defaultStyles()
+          end
+          ::continue::
+          end
+          document:render()
+
+      end, {})
+
+
+    end
+
+end
+
+</script>
 
 <script src="asdf">
-print("asdf")
-
+asdfasdfkl
 </script>
 
 </div>

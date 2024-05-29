@@ -26,13 +26,14 @@ This plugin seeks to turn neovim into a hypermedia client through its own custom
 
 ### Properties to implement
 
-- [ ] text-align
+- [ ] text-align (missing justify)
 - [ ] aspect-ratio
 - [ ] block-size?
 - [ ] display: flexbox, grid, inline, inline-block, none, block
 - [ ] height/width
 - [ ] list-style
-- [ ] max-\*size
+- [x] list-style-type
+- [ ] max/min-\*size
 
 #### Later stuff
 

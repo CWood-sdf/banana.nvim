@@ -219,6 +219,27 @@ function M.calcUnit(unit, parentWidth)
     error("Undefined unit '" .. unit.unit .. "'")
 end
 
+---@param unit Banana.Ncss.Value
+---@param parentWidth number
+---@return Banana.Ncss.Value
+function M.calcUnitNoMod(unit, parentWidth)
+    if unit.unit == "ch" then
+        return {
+            value = unit.value,
+            unit = unit.unit,
+            computed = unit.value,
+        }
+    elseif unit.unit == "%" then
+        local mult = unit.value / 100
+        return {
+            value = unit.value,
+            computed = math.floor(mult * parentWidth),
+            unit = unit.unit,
+        }
+    end
+    error("Undefined unit '" .. unit.unit .. "'")
+end
+
 ---@param parentWidth number
 ---@param parentHeight number
 function M.Ast:resolveUnits(parentWidth, parentHeight)
@@ -236,6 +257,10 @@ function M.Ast:resolveUnits(parentWidth, parentHeight)
             self.padding[i] = M.calcUnit(v, parentHeight)
         end
     end
+    -- if self.style['list-base-width'] ~= nil then
+    --     local unitVal = self.style['list-base-width'][1]
+    --     self.style['list-base-width'][1] = M.calcUnitNoMod(unitVal, parentWidth)
+    -- end
 end
 
 function M.Ast:applyInlineStyleDeclarations()
@@ -412,6 +437,9 @@ end
 ---@param mods Banana.Remap.Constraint[]
 ---@param opts vim.keymap.set.Opts
 function M.Ast:attachRemap(mode, lhs, mods, rhs, opts)
+    if type(mods) ~= "table" then
+        error("Banana attachRemap requires the 4th parameter (before rhs) to be a table of modifiers")
+    end
     local modFns = vim.iter(mods)
         :map(function(mod) return self:parseRemapMod(mod) end):totable()
     if type(rhs) == "string" then
@@ -421,7 +449,7 @@ function M.Ast:attachRemap(mode, lhs, mods, rhs, opts)
         end
     end
     local actualRhs = function()
-        local works = false
+        local works = #modFns == 0
         for _, v in ipairs(modFns) do
             if v() then
                 works = true

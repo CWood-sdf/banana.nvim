@@ -37,11 +37,11 @@
         },
         {
           "type": "STRING",
-          "value": "a"
+          "value": "ol"
         },
         {
           "type": "STRING",
-          "value": "ol"
+          "value": "ul"
         },
         {
           "type": "STRING",
@@ -78,8 +78,37 @@
       "value": "[^>]+"
     },
     "comment": {
-      "type": "PATTERN",
-      "value": "<!--[\\s\\S]*?-->"
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "<!--"
+        },
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "PATTERN",
+                "value": "[^-]"
+              },
+              {
+                "type": "PATTERN",
+                "value": "\\-[^-]"
+              },
+              {
+                "type": "PATTERN",
+                "value": "--[^-]"
+              }
+            ]
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "-->"
+        }
+      ]
     },
     "self_closing_tags": {
       "type": "CHOICE",

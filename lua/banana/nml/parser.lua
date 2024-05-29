@@ -287,20 +287,8 @@ function Parser:parseTag(tree, parent, isSpecial)
         elseif child:type() == M.ts_types.raw_text and isScript then
             local scriptStr = ""
             if attrs["src"] ~= nil then
-                local quote = '"'
-                local start, _ = scriptStr:find("'")
-                local hasSingle = false
-                if start ~= nil then
-                    hasSingle = true
-                end
-                start, _ = scriptStr:find('"')
-                if start ~= nil and hasSingle then
-                    error("lua file has both single and double quotes in its name (cannot be required by banana")
-                elseif start ~= nil then
-                    quote = "'"
-                end
-                local req = quote .. attrs["src"] .. quote
-                scriptStr = "document:runScriptAt(" .. req .. ")"
+                local req = attrs["src"]
+                scriptStr = "@" .. req
             else
                 scriptStr = self.lexer:getStrFromRange({ child:start() }, { child:end_() })
             end
@@ -316,6 +304,7 @@ function Parser:parseTag(tree, parent, isSpecial)
             self:parseTag(child, ret, true)
         elseif child:type() == M.ts_types.script_element then
             self:parseTag(child, ret, true)
+        elseif child:type() == M.ts_types.comment then
         else
             error("Node type " .. child:type() .. " not allowed when parsing tag body")
         end

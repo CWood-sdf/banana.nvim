@@ -23,6 +23,11 @@
     }
   },
   {
+    "type": "comment",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "doctype",
     "named": true,
     "fields": {}
@@ -295,6 +300,10 @@
     "named": false
   },
   {
+    "type": "-->",
+    "named": false
+  },
+  {
     "type": "/>",
     "named": false
   },
@@ -307,6 +316,10 @@
     "named": false
   },
   {
+    "type": "<!--",
+    "named": false
+  },
+  {
     "type": "</",
     "named": false
   },
@@ -316,10 +329,6 @@
   },
   {
     "type": ">",
-    "named": false
-  },
-  {
-    "type": "a",
     "named": false
   },
   {
@@ -341,10 +350,6 @@
   {
     "type": "br",
     "named": false
-  },
-  {
-    "type": "comment",
-    "named": true
   },
   {
     "type": "div",
@@ -397,5 +402,9 @@
   {
     "type": "text",
     "named": true
+  },
+  {
+    "type": "ul",
+    "named": false
   }
 ]

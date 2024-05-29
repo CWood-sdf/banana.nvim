@@ -133,6 +133,9 @@ function Instance:setRemap(mode, lhs, rhs, opts)
     if self.keymaps[mode] == nil then
         self.keymaps[mode] = {}
     end
+    if self.bufnr == nil then
+        error("Buf does not exist")
+    end
     if self.keymaps[mode][lhs] == nil then
         self.keymaps[mode][lhs] = {}
         vim.keymap.set(mode, lhs, function()
@@ -243,8 +246,16 @@ function Instance:render()
     startTime = vim.loop.hrtime()
     self:highlight(stuffToRender, 0)
     for _, v in ipairs(self.scripts) do
-        v = "local document = require('banana.render').getInstance(" .. self.instanceId .. ")\n" .. v
-        local f = loadstring(v)
+        ---@type fun()|nil
+        local f = nil
+        if #v > 0 and v:sub(1, 1) == "@" then
+            local str = v:sub(2, #v)
+            f = function()
+                self:runScriptAt(str)
+            end
+        else
+            f = loadstring(v)
+        end
         if f == nil then
             error("Could not convert script tag to runnable lua function")
         end
@@ -353,7 +364,7 @@ function Instance:getElementByClassName(name)
 end
 
 ---@param name string
----@return Banana.Ast|Banana.NilAst
+---@return Banana.Ast
 function Instance:getElementById(name)
     if nilAst == nil then
         error("Unreachable")
@@ -364,6 +375,7 @@ function Instance:getElementById(name)
     end
     local asts = query:getMatches(self.ast)
     if #asts ~= 1 then
+        ---@diagnostic disable-next-line: return-type-mismatch
         return nilAst
     end
     return asts[1]
