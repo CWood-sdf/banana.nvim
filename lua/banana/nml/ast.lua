@@ -18,7 +18,7 @@ M.padNames = { "left", "top", "right", "bottom" }
 ---@field tag string
 ---@field attributes Banana.Attributes
 ---@field actualTag Banana.TagInfo
----@field style { [string]: Banana.Ncss.Value[] }
+---@field style { [string]: Banana.Ncss.StyleValue[] }
 ---@field hl Banana.Highlight?
 ---@field padding Banana.Ncss.Value[]
 ---@field margin Banana.Ncss.Value[]
@@ -257,10 +257,11 @@ function M.Ast:resolveUnits(parentWidth, parentHeight)
             self.padding[i] = M.calcUnit(v, parentHeight)
         end
     end
-    -- if self.style['list-base-width'] ~= nil then
-    --     local unitVal = self.style['list-base-width'][1]
-    --     self.style['list-base-width'][1] = M.calcUnitNoMod(unitVal, parentWidth)
-    -- end
+    if self.style['list-base-width'] ~= nil then
+        local unitVal = self.style['list-base-width'][1].value
+        ---@cast unitVal Banana.Ncss.Value
+        self.style['list-base-width'][1].value = M.calcUnitNoMod(unitVal, parentWidth)
+    end
 end
 
 function M.Ast:applyInlineStyleDeclarations()
@@ -278,6 +279,9 @@ end
 function M.Ast:applyStyleDeclarations(declarations, basePrec)
     for _, v in ipairs(declarations) do
         local prec = basePrec
+        if v.name == "list-base-width" then
+            local x = 1
+        end
         if v.important then
             prec = prec + require('banana.ncss.query').Specificity.Important
         end

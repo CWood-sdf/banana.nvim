@@ -1,9 +1,10 @@
 local M = {}
 local instance = nil
+local render = require('banana.render')
 
 M.yeet = function()
 	if instance == nil then
-		instance = require("banana.render").newInstance(os.getenv("HOME") .. "/projects/banana.nvim/test.nml",
+		instance = render.newInstance(os.getenv("HOME") .. "/projects/banana.nvim/test.nml",
 			"test.nml")
 	end
 	-- local filename = os.getenv("HOME") .. '/projects/banana.nvim/test.nml'

@@ -32,10 +32,10 @@ return function(document)
       newAst:addClass("plugin-not-loaded")
     end
     table.insert(root.nodes, newAst)
-    vim.defer_fn(function()
-      document:render()
-    end, 100)
   end
+  vim.defer_fn(function()
+    document:render()
+  end, 100)
 
 
   for i, v in ipairs(tabline:children()) do
@@ -49,18 +49,18 @@ return function(document)
       k = k + 1
       remapCh = remapStr:sub(k, k)
       v:attachRemap("n", remapCh, {}, function()
-        for j, v in ipairs(tabline:children()) do
-          if type(v) == "string" then
+        for j, u in ipairs(tabline:children()) do
+          if type(u) == "string" then
             goto continue
           end
           if i == j then
-            v:addClass("selected")
-            v:removeClass("not-selected")
-            v:defaultStyles()
+            u:addClass("selected")
+            u:removeClass("not-selected")
+            u:defaultStyles()
           else
-            v:removeClass("selected")
-            v:addClass("not-selected")
-            v:defaultStyles()
+            u:removeClass("selected")
+            u:addClass("not-selected")
+            u:defaultStyles()
           end
           ::continue::
         end
