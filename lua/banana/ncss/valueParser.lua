@@ -1,7 +1,7 @@
 local _str = require('banana.utils.string')
 local M = {}
 local ts_types = require('banana.ncss.tsTypes')
----@class (exact) Banana.Ncss.Value
+---@class (exact) Banana.Ncss.UnitValue
 ---@field value number
 ---@field unit string
 ---@field computed number|nil
@@ -16,7 +16,7 @@ local Value = {
 ---@alias Banana.Ncss.StyleValue.Types "color"|"integer"|"plain"|"float"|"string"|"unit"|"boolean"
 
 ---@class (exact) Banana.Ncss.StyleValue
----@field value number|string|Banana.Ncss.Value|boolean
+---@field value number|string|Banana.Ncss.UnitValue|boolean
 ---@field type Banana.Ncss.StyleValue.Types
 local StyleValue = {
 

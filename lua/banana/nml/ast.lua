@@ -1,5 +1,13 @@
-local _str = require('banana.utils.string')
 local M = {}
+local _str = require('banana.utils.string')
+---Literally just to get nilAst without warnings
+---@return Banana.Ast
+local function getNilAst()
+    local nilAst = require('banana.render').getNilAst()
+
+    ---@diagnostic disable-next-line: return-type-mismatch
+    return nilAst
+end
 
 M.left = 1
 M.top = 2
@@ -20,8 +28,8 @@ M.padNames = { "left", "top", "right", "bottom" }
 ---@field actualTag Banana.TagInfo
 ---@field style { [string]: Banana.Ncss.StyleValue[] }
 ---@field hl Banana.Highlight?
----@field padding Banana.Ncss.Value[]
----@field margin Banana.Ncss.Value[]
+---@field padding Banana.Ncss.UnitValue[]
+---@field margin Banana.Ncss.UnitValue[]
 ---@field classes? { [string]: boolean }
 ---@field boundBox? Banana.Ast.BoundingBox
 ---@field precedences { [string]: number }
@@ -203,9 +211,9 @@ function M.Ast:mixHl(parentHl)
     return ret
 end
 
----@param unit Banana.Ncss.Value
+---@param unit Banana.Ncss.UnitValue
 ---@param parentWidth number
----@return Banana.Ncss.Value
+---@return Banana.Ncss.UnitValue
 function M.calcUnit(unit, parentWidth)
     if unit.unit == "ch" then
         return unit
@@ -219,9 +227,9 @@ function M.calcUnit(unit, parentWidth)
     error("Undefined unit '" .. unit.unit .. "'")
 end
 
----@param unit Banana.Ncss.Value
+---@param unit Banana.Ncss.UnitValue
 ---@param parentWidth number
----@return Banana.Ncss.Value
+---@return Banana.Ncss.UnitValue
 function M.calcUnitNoMod(unit, parentWidth)
     if unit.unit == "ch" then
         return {
@@ -259,7 +267,7 @@ function M.Ast:resolveUnits(parentWidth, parentHeight)
     end
     if self.style['list-base-width'] ~= nil then
         local unitVal = self.style['list-base-width'][1].value
-        ---@cast unitVal Banana.Ncss.Value
+        ---@cast unitVal Banana.Ncss.UnitValue
         self.style['list-base-width'][1].value = M.calcUnitNoMod(unitVal, parentWidth)
     end
 end
@@ -307,7 +315,7 @@ function M.Ast:applyStyleDeclarations(declarations, basePrec)
                 error("Undefined side '" .. side .. "'")
             end
             local val = value.value
-            ---@cast val Banana.Ncss.Value
+            ---@cast val Banana.Ncss.UnitValue
             self.padding[index] = val
         elseif v.name:sub(1, 7) == "margin-" then
             local side = v.name:sub(8, #v.name)
@@ -318,7 +326,7 @@ function M.Ast:applyStyleDeclarations(declarations, basePrec)
                 error("Undefined side '" .. side .. "'")
             end
             local val = value.value
-            ---@cast val Banana.Ncss.Value
+            ---@cast val Banana.Ncss.UnitValue
             self.margin[index] = val
         elseif v.name == "margin" then
             for i, _ in ipairs(self.margin) do
@@ -331,7 +339,7 @@ function M.Ast:applyStyleDeclarations(declarations, basePrec)
                     goto continue
                 end
                 self.precedences[name] = prec
-                ---@cast val Banana.Ncss.Value
+                ---@cast val Banana.Ncss.UnitValue
                 self.margin[i] = val
             end
         elseif v.name == "padding" then
@@ -345,7 +353,7 @@ function M.Ast:applyStyleDeclarations(declarations, basePrec)
                     goto continue
                 end
                 self.precedences[name] = prec
-                ---@cast val Banana.Ncss.Value
+                ---@cast val Banana.Ncss.UnitValue
                 self.padding[i] = val
             end
         else
@@ -393,6 +401,20 @@ function M.Ast:children()
         end
     end
     return ret
+end
+
+---@return Banana.Ast
+function M.Ast:child(i)
+    for _, v in ipairs(self.nodes) do
+        if type(v) ~= "string" then
+            if i == 1 then
+                return v
+            else
+                i = i - 1
+            end
+        end
+    end
+    return getNilAst()
 end
 
 ---@return string
