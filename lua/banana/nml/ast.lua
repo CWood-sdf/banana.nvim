@@ -248,6 +248,14 @@ function M.calcUnitNoMod(unit, parentWidth)
     error("Undefined unit '" .. unit.unit .. "'")
 end
 
+function M.Ast:_computeUnitFor(prop, basedOn)
+    local style = self.style[prop]
+    if style ~= nil then
+        ---@diagnostic disable-next-line: param-type-mismatch
+        style[1].value = M.calcUnitNoMod(style[1].value, basedOn)
+    end
+end
+
 ---@param parentWidth number
 ---@param parentHeight number
 function M.Ast:resolveUnits(parentWidth, parentHeight)
@@ -265,11 +273,9 @@ function M.Ast:resolveUnits(parentWidth, parentHeight)
             self.padding[i] = M.calcUnit(v, parentHeight)
         end
     end
-    if self.style['list-base-width'] ~= nil then
-        local unitVal = self.style['list-base-width'][1].value
-        ---@cast unitVal Banana.Ncss.UnitValue
-        self.style['list-base-width'][1].value = M.calcUnitNoMod(unitVal, parentWidth)
-    end
+    self:_computeUnitFor("list-base-width", parentWidth)
+    self:_computeUnitFor("width", parentWidth)
+    self:_computeUnitFor("height", parentHeight)
 end
 
 function M.Ast:applyInlineStyleDeclarations()

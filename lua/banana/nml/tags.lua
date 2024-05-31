@@ -145,6 +145,16 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
     }
     startX = startX + ast.padding[_ast.left].value + ast.margin[_ast.left].value
     startY = startY + ast.padding[_ast.top].value + ast.margin[_ast.top].value
+    if ast.style['width'] ~= nil then
+        ---@diagnostic disable-next-line: cast-local-type
+        parentWidth = math.min(ast.style['width'][1].value.computed, parentWidth)
+    end
+    if ast.style['height'] ~= nil then
+        ---@diagnostic disable-next-line: cast-local-type
+        parentHeight = math.min(ast.style['height'][1].value.computed, parentHeight)
+    end
+    ---@cast parentWidth number
+    ---@cast parentHeight number
     local ret = self:render(ast, parentHl, parentWidth, parentHeight, startX, startY, inherit)
     local extraWidth =
         parentWidth - ret.width -
@@ -154,6 +164,23 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
     then
         ret:clean()
         ret:appendStr(string.rep(' ', extraWidth))
+    end
+    if ast.style['height'] ~= nil then
+        local height = ast.style['height'][1].value.computed
+        ---@cast height number
+        local above = require('banana.box').Box:new(ret.hlgroup)
+        above:appendStr(' ')
+        above:expandWidthTo(ret.width)
+        if #ret.lines >= height then
+            goto skip
+        end
+        while #ret.lines + #above.lines < height do
+            table.insert(above.lines, above.lines[1])
+        end
+        above:appendBoxBelow(ret)
+        ret = above
+
+        ::skip::
     end
     ret = applyPad('padding', ast, ret, ret.hlgroup)
     ret = applyPad('margin', ast, ret, parentHl)
@@ -249,29 +276,6 @@ function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX
             hasText = true
         end
         i = i + 1
-    end
-    -- why 3? i have no idea but it works somehow
-    local magicUnderExpansion = 3
-    if currentLine.width < width - magicUnderExpansion and self.formatType ~= M.FormatType.Inline then
-        local extraWidth = width - magicUnderExpansion - currentLine.width
-        if inherit.text_align == "left" then
-            currentLine:expandWidthTo(width - magicUnderExpansion)
-        elseif inherit.text_align == "right" then
-            local prepend = b.Box:new(currentLine.hlgroup)
-            prepend:appendStr('', nil)
-            prepend:expandWidthTo(extraWidth)
-            prepend:append(currentLine)
-            currentLine = prepend
-        elseif inherit.text_align == "center" then
-            local leftWidth = math.floor(extraWidth / 2)
-            local left = b.Box:new(currentLine.hlgroup)
-            left:appendStr('', nil)
-            left:expandWidthTo(leftWidth)
-            left:clean()
-            left:append(currentLine)
-            left:expandWidthTo(width - magicUnderExpansion)
-            currentLine = left
-        end
     end
     return currentLine, i
 end

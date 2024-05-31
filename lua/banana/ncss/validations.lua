@@ -76,7 +76,7 @@ local marginValid = Validation:new(function(a)
 end)
 
 
-local marginValValid = Validation:new(function(a)
+local singleUnit = Validation:new(function(a)
     return #a == 1 and a[1].type == "unit"
 end)
 local singlePlain = Validation:new({ [1] = { { "plain" } } })
@@ -89,19 +89,21 @@ local validations = {
     ['hl-bg'] = Validation:new({ [1] = { { "color" }, { "plain" } } }),
     ['hl-link'] = Validation:new({ [1] = { { "string" }, { "plain" } } }),
     ['list-style-type'] = Validation:new({ [1] = { { "string" } } }),
-    ['list-base-width'] = Validation:new({ [1] = { { "unit" } } }),
+    ['list-base-width'] = singleUnit,
+    ['width'] = singleUnit,
+    ['height'] = singleUnit,
     ['display'] = singlePlain,
     ['text-align'] = singlePlain,
     ['padding'] = marginValid,
-    ['padding-left'] = marginValValid,
-    ['padding-right'] = marginValValid,
-    ['padding-top'] = marginValValid,
-    ['padding-bottom'] = marginValValid,
+    ['padding-left'] = singleUnit,
+    ['padding-right'] = singleUnit,
+    ['padding-top'] = singleUnit,
+    ['padding-bottom'] = singleUnit,
     ['margin'] = marginValid,
-    ['margin-left'] = marginValValid,
-    ['margin-right'] = marginValValid,
-    ['margin-top'] = marginValValid,
-    ['margin-bottom'] = marginValValid,
+    ['margin-left'] = singleUnit,
+    ['margin-right'] = singleUnit,
+    ['margin-top'] = singleUnit,
+    ['margin-bottom'] = singleUnit,
 }
 return {
     validate = function(name, value)

@@ -182,10 +182,10 @@ function M.Box:stripRightSpace()
                 goto skip
             end
             if
-                row[i].style.fg ~= nil
-                and row[i].style.fg ~= self.hlgroup.fg
-                and row[i].style.bg ~= nil
-                and row[i].style.bg ~= self.hlgroup.bg
+                (row[i].style.fg ~= nil
+                    and row[i].style.fg ~= self.hlgroup.fg)
+                or (row[i].style.bg ~= nil
+                    and row[i].style.bg ~= self.hlgroup.bg)
             then
                 break
             end

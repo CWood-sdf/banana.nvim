@@ -16,6 +16,10 @@ local function renderer(self, ast, parentHl, parentWidth, parentHeight, startX, 
     end
     ---@cast listType string
     local numSize = 5
+    if ast.style["list-base-width"] ~= nil then
+        numSize = ast.style["list-base-width"][1].value.computed
+        ---@cast numSize number
+    end
     for i, box, _ in self:blockIter(ast, ret.hlgroup, parentWidth - numSize, parentHeight, startX, startY, inherit) do
         local v = ast.nodes[i]
         local currentLine = b.Box:new(ret.hlgroup)

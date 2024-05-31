@@ -41,6 +41,7 @@ ul.local {
 }
 ul.plugin-loaded {
   list-style-type: '● ';
+  list-base-width: 4ch;
 }
 ul.plugin-not-loaded {
   list-style-type: '○ ';
@@ -52,8 +53,16 @@ ul > * {
 #plugin-template {
   display: hidden;
 }
+
+.widthyeet {
+  hl-bg: red;
+  width: 50%;
+  height: 50%;
+
+}
 </style>
-<br>
+
+<!--<div class="widthyeet">asdfasdf</div>-->
 
 <div id="tabline">
 <span class="selected home"> lazy.nvim <span class="remap"> (H) </span> </span>

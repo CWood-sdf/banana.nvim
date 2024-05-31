@@ -35,12 +35,12 @@ return function(document)
   end
   vim.defer_fn(function()
     document:render()
-  end, 100)
+  end, 10)
 
 
   for i, v in ipairs(tabline:children()) do
     if type(v) ~= "string" then
-      local remapStr = v.nodes[2].nodes[1]
+      local remapStr = v:child(1):getTextContent()
       local remapCh = ''
       local k = 1
       while remapStr:sub(k, k) ~= '(' do
