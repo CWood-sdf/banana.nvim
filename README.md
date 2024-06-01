@@ -2,6 +2,15 @@
 
 This plugin seeks to turn neovim into a hypermedia client through its own custom markup, styling, and scripting interface for extensions. It will also try to use the hypermedia controls similar to what htmx uses to make building extensions easier.
 
+## 1.0 requirements
+
+- Able to make actual uis with same level of difficulty as html
+- Able to query any element on the page easily (with as much code as dom)
+- As easy to write as html
+- A proper framework for loading nml/ncss files (hopefully similar in usage to lua require)
+- tests for pretty much every styling condition (uggh)
+- impl all the styles not in the "Later styles section"
+
 ## Roadmap
 
 ### Markup Language
@@ -11,7 +20,6 @@ This plugin seeks to turn neovim into a hypermedia client through its own custom
 - [x] Attributes
 - [ ] Good attributes api
 - [ ] DOM Manipulation
-- [ ] Hypermedia Controls
 - [x] Read File
 
 ### Styling Language
@@ -62,9 +70,9 @@ This plugin seeks to turn neovim into a hypermedia client through its own custom
 
 ### Style/Markup interface
 
-- [ ] Follow [this](https://stackoverflow.com/questions/25105736/what-is-the-order-of-precedence-for-css)
-- [ ] Need maybe some caching, and some sort of trigger mechanism that lives on each element so that (for example) a class change can just retrigger only the needed selectors
-- [ ] Needs a good way of applying declarations to elements
+- [x] Follow [this](https://stackoverflow.com/questions/25105736/what-is-the-order-of-precedence-for-css)
+- [ ] Need maybe some caching, and some sort of trigger mechanism that lives on each element so that (for example) a class change can just retrigger only the needed selectors (might not be necessary bc it pretty fast)
+- [x] Needs a good way of applying declarations to elements
 
 ### Renderer Goals
 
@@ -82,7 +90,7 @@ This plugin seeks to turn neovim into a hypermedia client through its own custom
 
 ### Cleaner
 
-- [x] Follow the html [block formatting spec](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_display/Block_formatting_context) and [inline formatting spec](https://developer.mozilla.org/en-US/docs/Web/CSS/Inline_formatting_context)
+- [x] Follow the html [block formatting spec](hhttps://developer.mozilla.org/en-US/docs/Web/CSS/CSS_display/Block_formatting_contextthttps://developer.mozilla.org/en-US/docs/Web/CSS/CSS_display/Block_formatting_contexttps://developer.mozilla.org/en-US/docs/Web/CSS/CSS_display/Block_formatting_context) and [inline formatting spec](https://developer.mozilla.org/en-US/docs/Web/CSS/Inline_formatting_context)
 
 ### Rendering pipeline
 
@@ -98,10 +106,14 @@ This plugin seeks to turn neovim into a hypermedia client through its own custom
 ### Lua Scripting Interface
 
 - [x] Basic Lua Scripting
-- [x] Events
-- [ ] DOM Manipulation
+- [x] Events (just using autocmd)
+- [x] DOM Manipulation (very basic)
 
-#### Much later roadmap
+## Later Roadmap
+
+- [ ] Hypermedia attributes
+
+## Much later roadmap
 
 ### LSP
 
@@ -111,5 +123,5 @@ This plugin seeks to turn neovim into a hypermedia client through its own custom
 
 ### Tree-sitter
 
-- [ ] Markup Language
-- [ ] Styling
+- [x] Markup Language
+- [x] Styling
