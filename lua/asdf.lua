@@ -10,16 +10,13 @@ return function(document)
     { "pineapple",   loc = true,  loaded = false },
     { "venn.nvim",   loc = false, loaded = true },
   }
+  local startTime = vim.uv.hrtime()
 
   local astToClone = document:getElementById("plugin-template"):children()[1]
 
   local root = document:getElementById("root")
   for _, v in ipairs(plugins) do
-    local newAst = vim.fn.deepcopy(astToClone)
-    setmetatable(newAst, { __index = require('banana.nml.ast').Ast })
-    setmetatable(newAst:children()[1], { __index = require('banana.nml.ast').Ast })
-    ---@cast newAst Banana.Ast
-    newAst._parent = root
+    local newAst = astToClone:clone()
     newAst:children()[1]:setTextContent(v[1])
     if v.loc then
       newAst:addClass("local")
@@ -31,11 +28,9 @@ return function(document)
     else
       newAst:addClass("plugin-not-loaded")
     end
-    table.insert(root.nodes, newAst)
+    root:appendNode(newAst)
   end
-  vim.defer_fn(function()
-    document:render()
-  end, 10)
+  document:render()
 
 
   for i, v in ipairs(tabline:children()) do
@@ -67,6 +62,7 @@ return function(document)
         document:render()
       end, {})
     end
+    print((vim.uv.hrtime() - startTime) / 1e6 .. "ms")
   end
 
 

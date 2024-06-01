@@ -30,6 +30,8 @@ local instances = {}
 ---@field styleRules Banana.Ncss.RuleSet[]
 ---@field scripts string[]
 ---@field keymaps { [string]: { [string]: [ fun(), vim.keymap.set.Opts ][] } }
+---@field rendering boolean
+---@field renderStart number
 local Instance = {}
 
 ---@class (exact) Banana.Word
@@ -80,6 +82,8 @@ function Instance:new(filename, bufferName)
     end
     ---@type Banana.Instance
     local inst = {
+        renderStart = 0,
+        rendering = false,
         keymaps = {},
         bufname = bufferName,
         filetype = "banana",
@@ -191,8 +195,21 @@ function Instance:applyStyleDeclarations(ast)
     end
 end
 
+local totalTime = 0
+
 ---@return Banana.Ast
 function Instance:render()
+    if self.rendering and (vim.loop.hrtime() - self.renderStart) > 2e9 then
+        self.rendering = false
+    end
+    if self.rendering then
+        vim.defer_fn(function()
+            self:render()
+        end, 10)
+        return self.ast
+    end
+    self.rendering = true
+    self.renderStart = vim.loop.hrtime()
     local startTime = vim.loop.hrtime()
     local actualStart = startTime
     local astTime = 0
@@ -200,8 +217,8 @@ function Instance:render()
     self:applyStyleDeclarations(self.ast)
     styleTime = vim.loop.hrtime() - startTime
     startTime = vim.loop.hrtime()
-    local width = 100
-    local height = 20
+    local width = vim.o.columns - 8 * 2
+    local height = vim.o.lines - 3 * 2 - 4
     local stuffToRender = self:virtualRender(self.ast, width, height)
     local renderTime = vim.loop.hrtime() - startTime
     if self.bufnr == nil or not vim.api.nvim_buf_is_valid(self.bufnr) then
@@ -214,8 +231,8 @@ function Instance:render()
             relative = "editor",
             width = width,
             height = height,
-            row = 5,
-            col = 5,
+            row = 3,
+            col = 8,
             style = "minimal",
             -- zindex = 1000,
         })
@@ -254,6 +271,7 @@ function Instance:render()
                 self:runScriptAt(str)
             end
         else
+            v = "local document = require('banana.render').getInstance(" .. self.instanceId .. ")\n" .. v
             f = loadstring(v)
         end
         if f == nil then
@@ -263,7 +281,7 @@ function Instance:render()
     end
     self.scripts = {}
     local hlTime = vim.loop.hrtime() - startTime
-    local totalTime = vim.loop.hrtime() - actualStart
+    totalTime = totalTime + vim.loop.hrtime() - actualStart
     local extraLines = {
         "",
         astTime / 1e3 .. "μs to parse",
@@ -277,6 +295,7 @@ function Instance:render()
     vim.api.nvim_set_option_value("modifiable", false, {
         buf = self.bufnr
     })
+    self.rendering = false
     return self.ast
 end
 

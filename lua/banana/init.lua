@@ -8,14 +8,13 @@ M.yeet = function()
 			"test.nml")
 	end
 	-- local filename = os.getenv("HOME") .. '/projects/banana.nvim/test.nml'
-	local ast = instance:render()
-	local lines = vim.fn.readfile(os.getenv("HOME") .. "/projects/banana.nvim/test.ncss")
+	instance:render()
 
-	local file = io.open(os.getenv("HOME") .. "/projects/banana.nvim/log", "w")
-	if file == nil then
-		print("Failed to open log file")
-		return
-	end
+	-- local file = io.open(os.getenv("HOME") .. "/projects/banana.nvim/log", "w")
+	-- if file == nil then
+	-- 	print("Failed to open log file")
+	-- 	return
+	-- end
 	-- local parser = require('banana.nml.parser').fromFile(os.getenv("HOME") .. '/projects/banana.nvim/test.nml')
 	-- if parser == nil then
 	--     print('Failed to open nml file')
@@ -28,7 +27,7 @@ M.yeet = function()
 	-- end
 	-- file:write(vim.inspect(ast))
 
-	file:close()
+	-- file:close()
 end
 
 return M

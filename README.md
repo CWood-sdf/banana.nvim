@@ -1,12 +1,5 @@
 # Banana.nvim
 
-## TOMORROW
-
-- list-style-type on ol
-- justify?
-- overflow handling (just wrap for now)
-- start flexbox/grid
-
 This plugin seeks to turn neovim into a hypermedia client through its own custom markup, styling, and scripting interface for extensions. It will also try to use the hypermedia controls similar to what htmx uses to make building extensions easier.
 
 ## Roadmap
@@ -33,6 +26,7 @@ This plugin seeks to turn neovim into a hypermedia client through its own custom
 
 ### Properties to implement
 
+- [x] handles overflow
 - [ ] text-align (missing justify)
 - [ ] aspect-ratio
 - [ ] display: flexbox, grid, inline, inline-block, none, block

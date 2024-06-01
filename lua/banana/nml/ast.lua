@@ -152,6 +152,24 @@ function M.Ast:defaultStyles()
     self.precedences = {}
 end
 
+---@param ast Banana.Ast
+local function applyAstMeta(ast)
+    setmetatable(ast, { __index = M.Ast })
+    for _, v in ipairs(ast.nodes) do
+        if type(v) ~= "string" then
+            applyAstMeta(v)
+            v._parent = ast
+        end
+    end
+end
+
+---@return Banana.Ast
+function M.Ast:clone()
+    local newAst = vim.fn.deepcopy(self)
+    applyAstMeta(newAst)
+    return newAst
+end
+
 ---comment
 ---@param name string
 ---@param value string
@@ -224,7 +242,8 @@ function M.calcUnit(unit, parentWidth)
             unit = "ch",
         }
     end
-    error("Undefined unit '" .. unit.unit .. "'")
+    return unit
+    -- error("Undefined unit '" .. unit.unit .. "'")
 end
 
 ---@param unit Banana.Ncss.UnitValue
@@ -245,7 +264,16 @@ function M.calcUnitNoMod(unit, parentWidth)
             unit = unit.unit,
         }
     end
-    error("Undefined unit '" .. unit.unit .. "'")
+    return unit
+    -- error("Undefined unit '" .. unit.unit .. "'")
+end
+
+function M.Ast:getWidth()
+    return self.boundBox.rightX - self.boundBox.leftX
+end
+
+function M.Ast:getHeight()
+    return self.boundBox.bottomY - self.boundBox.topY
 end
 
 function M.Ast:_computeUnitFor(prop, basedOn)
@@ -382,6 +410,7 @@ end
 
 ---@param node Banana.Ast
 function M.Ast:appendNode(node)
+    node._parent = self
     table.insert(self.nodes, node)
 end
 

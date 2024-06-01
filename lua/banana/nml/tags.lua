@@ -160,10 +160,30 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
         parentWidth - ret.width -
         ast.padding[_ast.left].value - ast.padding[_ast.right].value -
         ast.margin[_ast.left].value - ast.margin[_ast.right].value
-    if (ast.actualTag.formatType == M.FormatType.Block or ast.actualTag.formatType == M.FormatType.BlockInline) and extraWidth > 0
+    if (ast.actualTag.formatType == M.FormatType.Block or ast.actualTag.formatType == M.FormatType.BlockInline) and extraWidth > 0 or ast.style['width'] ~= nil
     then
+        local width = parentWidth - ast.padding[_ast.left].value
+            - ast.padding[_ast.right].value - ast.margin[_ast.left].value
+            - ast.margin[_ast.right].value
+        if inherit.text_align == "left" then
+            ret:expandWidthTo(width)
+        elseif inherit.text_align == "right" then
+            local prepend = require('banana.box').Box:new(ret.hlgroup)
+            prepend:appendStr('', nil)
+            prepend:expandWidthTo(extraWidth)
+            prepend:append(ret)
+            ret = prepend
+        elseif inherit.text_align == "center" then
+            local leftWidth = math.floor(extraWidth / 2)
+            local left = require('banana.box').Box:new(ret.hlgroup)
+            left:appendStr('', nil)
+            left:expandWidthTo(leftWidth)
+            left:clean()
+            left:append(ret)
+            left:expandWidthTo(width)
+            ret = left
+        end
         ret:clean()
-        ret:appendStr(string.rep(' ', extraWidth))
     end
     if ast.style['height'] ~= nil then
         local height = ast.style['height'][1].value.computed
@@ -250,14 +270,37 @@ function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX
     local height = parentHeight
         - ast.padding[_ast.top].value - ast.padding[_ast.bottom].value
         - ast.margin[_ast.top].value - ast.margin[_ast.bottom].value
+    ---@type Banana.Box?
+    local extra = nil
     while i <= #ast.nodes do
         local v = ast.nodes[i]
         if v == nil then
             break
         end
         if type(v) == 'string' then
+            local count = _str.charCount(v)
+            if count + currentLine.width > width then
+                local remove = 0
+                local j = count
+                while count + currentLine.width - remove > width do
+                    while v:sub(j, j) ~= ' ' do
+                        remove = remove + 1
+                        j = count - remove
+                    end
+                end
+                local str = v:sub(1, j)
+                currentLine:appendStr(str, b.MergeStrategy.Bottom)
+                if extra == nil then
+                    extra = currentLine
+                else
+                    extra:appendBoxBelow(currentLine)
+                end
+                currentLine = b.Box:new(currentLine.hlgroup)
+                v = v:sub(j, count)
+                startX = 0
+            end
             currentLine:appendStr(v, b.MergeStrategy.Bottom)
-            startX = startX + _str.charCount(v)
+            startX = startX + count
             hasText = true
         else
             local tag = M.makeTag(v.tag)
@@ -267,6 +310,14 @@ function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX
             v:resolveUnits(width, height)
             local rendered = tag:getRendered(v, currentLine.hlgroup, width, height, startX, startY, inherit)
             startX = startX + rendered.width
+            if currentLine.width + rendered.width > width then
+                if extra == nil then
+                    extra = currentLine
+                else
+                    extra:appendBoxBelow(currentLine)
+                end
+                currentLine = b.Box:new(currentLine.hlgroup)
+            end
             currentLine:append(rendered, b.MergeStrategy.Bottom)
             if tag.formatType == M.FormatType.Block or tag.formatType == M.FormatType.BlockInline then
                 i = i + 1
@@ -276,6 +327,10 @@ function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX
             hasText = true
         end
         i = i + 1
+    end
+    if extra ~= nil then
+        extra:appendBoxBelow(currentLine)
+        currentLine = extra
     end
     return currentLine, i
 end
