@@ -1,6 +1,17 @@
-<div id="root">
+<nml>
 <!-- A partial clone of the lazy.nvim ui -->
+<head>
+
+<title>
+Yeet yeet
+</title>
 <style>
+
+nml {
+  width: 50%;
+  height: 50%;
+
+}
 
 #tabline > .selected {
   hl-bg: hl-extract(bg, Visual); 
@@ -22,7 +33,7 @@
 #tabline .remap {
   hl-fg: hl-extract(fg, Operator);
 }
-#root {
+body {
   padding-top: 1ch;
   padding-left: 2ch;
 
@@ -61,9 +72,8 @@ ul > * {
 
 }
 </style>
-
-<!--<div class="widthyeet">asdfasdf</div>-->
-
+</head>
+<body>
 <div id="tabline">
 <span class="selected home"> lazy.nvim <span class="remap"> (H) </span> </span>
 <span class="not-selected"> Install <span class="remap"> (I) </span> </span>
@@ -92,8 +102,8 @@ ul > * {
 </script>
 
 <script>
-print(document:getElementById("loaded-plugins"))
 
 </script>
 
-</div>
+</body>
+</nml>

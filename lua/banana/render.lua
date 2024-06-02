@@ -22,7 +22,6 @@ local instances = {}
 ---@field bufnr? number
 ---@field bufname string
 ---@field filetype string
----@field bufName string
 ---@field highlightNs number
 ---@field instanceId number
 ---@field winhl table
@@ -58,6 +57,10 @@ function Instance:virtualRender(ast, width, height)
     return ret
 end
 
+function Instance:setBufName(str)
+    self.bufname = str
+end
+
 ---@return Banana.Instance
 function Instance:new(filename, bufferName)
     if nilAst == nil then
@@ -65,7 +68,7 @@ function Instance:new(filename, bufferName)
         for k, v in pairs(require('banana.nml.ast').Ast) do
             if type(v) == "function" then
                 nilAst[k] = function()
-                    vim.notify("Calling '" .. k .. "' on the nil ast")
+                    vim.notify("Calling '" .. k .. "' on the nil ast\n")
                 end
             else
                 nilAst[k] = v
@@ -76,10 +79,6 @@ function Instance:new(filename, bufferName)
     require("banana.nml.tags").cleanAst(ast)
     table.insert(instances, {})
     local id = #instances
-    local parser = require("banana.nml.parser").fromFile(filename)
-    if parser == nil then
-        error("Failed to open nml file")
-    end
     ---@type Banana.Instance
     local inst = {
         renderStart = 0,
@@ -87,7 +86,6 @@ function Instance:new(filename, bufferName)
         keymaps = {},
         bufname = bufferName,
         filetype = "banana",
-        bufName = filename,
         highlightNs = vim.api.nvim_create_namespace("banana_instance_" .. ids),
         ast = ast,
         styleRules = styleRules,
@@ -219,6 +217,17 @@ function Instance:render()
     startTime = vim.loop.hrtime()
     local width = vim.o.columns - 8 * 2
     local height = vim.o.lines - 3 * 2 - 4
+    if self.ast.tag == "nml" then
+        self.ast:resolveUnits(vim.o.columns, vim.o.lines)
+        if self.ast.style["width"] ~= nil then
+            width = self.ast.style.width[1].value.computed
+            ---@cast width number
+        end
+        if self.ast.style["height"] ~= nil then
+            height = self.ast.style.height[1].value.computed
+            ---@cast height number
+        end
+    end
     local stuffToRender = self:virtualRender(self.ast, width, height)
     local renderTime = vim.loop.hrtime() - startTime
     if self.bufnr == nil or not vim.api.nvim_buf_is_valid(self.bufnr) then
@@ -370,7 +379,7 @@ end
 
 ---@param name string
 ---@return Banana.Ast[]
-function Instance:getElementByClassName(name)
+function Instance:getElementsByClassName(name)
     if nilAst == nil then
         error("Unreachable")
     end
@@ -398,6 +407,24 @@ function Instance:getElementById(name)
         return nilAst
     end
     return asts[1]
+end
+
+---@param name string
+---@return Banana.Ast[]
+function Instance:getElementsByTag(name)
+    if nilAst == nil then
+        error("Unreachable")
+    end
+    local query = require('banana.ncss.query').selectors.tag(name)
+    if self.ast == nil then
+        error("Instance hasnt parsed yet (should be unreachable)")
+    end
+    local asts = query:getMatches(self.ast)
+    if #asts ~= 1 then
+        ---@diagnostic disable-next-line: return-type-mismatch
+        return nilAst
+    end
+    return asts
 end
 
 M.defaultWinHighlight = "NormalFloat"

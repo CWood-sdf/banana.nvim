@@ -185,7 +185,7 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
         end
         ret:clean()
     end
-    if ast.style['height'] ~= nil then
+    if ast.style['height'] ~= nil and ast.tag ~= "nml" then
         local height = ast.style['height'][1].value.computed
         ---@cast height number
         local above = require('banana.box').Box:new(ret.hlgroup)

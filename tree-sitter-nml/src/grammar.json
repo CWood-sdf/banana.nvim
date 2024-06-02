@@ -17,6 +17,14 @@
         },
         {
           "type": "STRING",
+          "value": "title"
+        },
+        {
+          "type": "STRING",
+          "value": "meta"
+        },
+        {
+          "type": "STRING",
           "value": "head"
         },
         {

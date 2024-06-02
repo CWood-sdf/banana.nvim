@@ -20,6 +20,8 @@ module.exports = grammar({
         _start_tag_name: (_) =>
             choice(
                 "nml",
+                "title",
+                "meta",
                 "head",
                 "body",
                 "div",

@@ -13,6 +13,14 @@ This plugin seeks to turn neovim into a hypermedia client through its own custom
 
 ## Roadmap
 
+### Api
+
+- [x] Easy to load nml files
+- [x] Title tag sets title of buf
+- [ ] Meta tags set attributes (like maybe float...)
+- [x] Nml width height sets win width/height
+- [ ] Nml left, right, top, bottom sets win position
+
 ### Markup Language
 
 - [x] Basic Renderer
@@ -20,6 +28,7 @@ This plugin seeks to turn neovim into a hypermedia client through its own custom
 - [x] Attributes
 - [ ] Good attributes api
 - [ ] DOM Manipulation
+- [ ] Hypermedia attributes
 - [x] Read File
 
 ### Styling Language
@@ -108,10 +117,6 @@ This plugin seeks to turn neovim into a hypermedia client through its own custom
 - [x] Basic Lua Scripting
 - [x] Events (just using autocmd)
 - [x] DOM Manipulation (very basic)
-
-## Later Roadmap
-
-- [ ] Hypermedia attributes
 
 ## Much later roadmap
 

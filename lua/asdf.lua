@@ -14,7 +14,8 @@ return function(document)
 
   local astToClone = document:getElementById("plugin-template"):children()[1]
 
-  local root = document:getElementById("root")
+  local root = document:getElementsByTag('body')
+  root = root[1]
   for _, v in ipairs(plugins) do
     local newAst = astToClone:clone()
     newAst:children()[1]:setTextContent(v[1])
@@ -62,8 +63,8 @@ return function(document)
         document:render()
       end, {})
     end
-    print((vim.uv.hrtime() - startTime) / 1e6 .. "ms")
   end
+  print((vim.uv.hrtime() - startTime) / 1e6 .. "ms")
 
 
   -- print(document:getElementById("root"):getTextContent())
