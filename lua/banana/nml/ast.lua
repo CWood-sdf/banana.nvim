@@ -1,13 +1,5 @@
 local M = {}
 local _str = require('banana.utils.string')
----Literally just to get nilAst without warnings
----@return Banana.Ast
-local function getNilAst()
-    local nilAst = require('banana.render').getNilAst()
-
-    ---@diagnostic disable-next-line: return-type-mismatch
-    return nilAst
-end
 
 M.left = 1
 M.top = 2
@@ -316,14 +308,16 @@ function M.Ast:applyInlineStyleDeclarations()
     )
 end
 
+---@return boolean
+function M.Ast:isNil()
+    return false
+end
+
 ---@param declarations Banana.Ncss.StyleDeclaration[]
 ---@param basePrec number
 function M.Ast:applyStyleDeclarations(declarations, basePrec)
     for _, v in ipairs(declarations) do
         local prec = basePrec
-        if v.name == "list-base-width" then
-            local x = 1
-        end
         if v.important then
             prec = prec + require('banana.ncss.query').Specificity.Important
         end
@@ -397,6 +391,20 @@ function M.Ast:applyStyleDeclarations(declarations, basePrec)
     end
 end
 
+function M.Ast:remove()
+    if self._parent == require('banana.render').getNilAst() then
+        error("Attempting to remove the root node")
+    end
+    for i, v in ipairs(self._parent.nodes) do
+        if v == self then
+            table.remove(self._parent.nodes, i)
+            break
+        end
+    end
+    require('banana.render').getInstance(self.instance):removeMapsFor(self)
+    self._parent = nil
+end
+
 ---@param name string
 ---@return string?
 function M.Ast:getAttribute(name)
@@ -412,6 +420,18 @@ end
 function M.Ast:appendNode(node)
     node._parent = self
     table.insert(self.nodes, node)
+    if self.instance ~= nil then
+        require('banana.render').getInstance(self.instance):applyId(node)
+    end
+end
+
+---@return boolean
+function M.Ast:isLineHovering()
+    local line = vim.fn.line('.')
+    local ret =
+        line >= self.boundBox.topY
+        and line < self.boundBox.bottomY
+    return ret
 end
 
 ---@return boolean
@@ -424,6 +444,15 @@ function M.Ast:isHovering()
         and col >= self.boundBox.leftX
         and col < self.boundBox.rightX
     return ret
+end
+
+function M.Ast:removeChildren()
+    for _, v in ipairs(self.nodes) do
+        if type(v) ~= "string" then
+            v:remove()
+        end
+    end
+    self.nodes = {}
 end
 
 ---@return Banana.Ast[]
@@ -449,7 +478,7 @@ function M.Ast:child(i)
             end
         end
     end
-    return getNilAst()
+    return require('banana.render').getNilAst()
 end
 
 ---@return string
@@ -467,6 +496,7 @@ end
 
 ---@param str string
 function M.Ast:setTextContent(str)
+    self:removeChildren()
     self.nodes = { str }
 end
 
@@ -476,6 +506,10 @@ function M.Ast:parseRemapMod(mod)
     if mod == "hover" then
         return function()
             return self:isHovering()
+        end
+    elseif mod == "line-hover" then
+        return function()
+            return self:isLineHovering()
         end
     elseif type(mod) == "number" then
         return function()
@@ -517,15 +551,16 @@ function M.Ast:attachRemap(mode, lhs, mods, rhs, opts)
                 break
             end
         end
-        if not works then return end
+        if not works then return false end
         if type(rhs) == "string" then
             vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes(rhs, true, true, true), mode, true)
         else
             rhs()
         end
+        return true
     end
     local inst = require('banana.render').getInstance(self.instance)
-    inst:setRemap(mode, lhs, actualRhs, opts)
+    inst:_setRemap(mode, lhs, actualRhs, opts, self)
 end
 
 return M

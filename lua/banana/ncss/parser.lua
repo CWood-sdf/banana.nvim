@@ -234,7 +234,8 @@ function M.parse(tree, parser)
     end
     local firstChild = tree:child(0)
     if firstChild == nil then
-        error("stylesheet first child is nil")
+        -- empty tag
+        return {}
     end
     if firstChild:type() == ts_types.block then
         local block = M.parseBlock(firstChild, parser)
@@ -271,7 +272,12 @@ function M.treeIsInline(tree)
     end
     local firstChild = tree:child(0)
     if firstChild == nil then
-        error("stylesheet first child is nil")
+        vim.notify(
+            "Empty inline styles/style tags could lead to undefined behavior in banana, please remove any style tags or inline styles that are empty or contain only whitespace\n",
+            vim.log.levels.WARN)
+        local startLine, _, _ = tree:start()
+        local endLine = tree:end_()
+        return startLine == endLine
     end
     if firstChild:type() == ts_types.declaration then
         return true

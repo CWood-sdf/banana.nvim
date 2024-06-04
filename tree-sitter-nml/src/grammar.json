@@ -25,6 +25,10 @@
         },
         {
           "type": "STRING",
+          "value": "pre"
+        },
+        {
+          "type": "STRING",
           "value": "head"
         },
         {

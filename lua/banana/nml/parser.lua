@@ -421,8 +421,10 @@ function M.fromFile(path)
     local langTree = vim.treesitter.get_parser(buf, "nml")
     local arr = langTree:parse(true)
     local ncssChild = langTree:children()['ncss']
-    ---@cast ncssChild  vim.treesitter.LanguageTree
-    local ncssParsers = ncssChild:trees()
+    local ncssParsers = {}
+    if ncssChild ~= nil then
+        ncssParsers = ncssChild:trees()
+    end
     -- for _, v in ipairs(ncssParsers) do
     --
     -- end

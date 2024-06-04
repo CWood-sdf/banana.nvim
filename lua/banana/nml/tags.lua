@@ -426,6 +426,7 @@ function M.formatBlockContext(ast)
     local i = 1
     local inc = true
     local clearFirst = true
+    local skip = ast.tag == "pre"
     while i <= #ast.nodes do
         local node = ast.nodes[i]
         if type(node) == 'string' then
@@ -440,7 +441,9 @@ function M.formatBlockContext(ast)
                 clearLast = false
             end
             ---@cast node string
-            node, clearFirst = formatInlineText(node, clearFirst, clearLast)
+            if not skip then
+                node, clearFirst = formatInlineText(node, clearFirst, clearLast)
+            end
             if node == "" then
                 table.remove(ast.nodes, i)
                 inc = false
@@ -517,6 +520,9 @@ end
 ---@param ast Banana.Ast
 --- Removes all empty text nodes, and cleans up all whitespace.
 function M.cleanAst(ast)
+    if ast.tag == "pre" then
+        return
+    end
     if ast.actualTag.formatType == M.FormatType.Block then
         M.formatBlockContext(ast)
     elseif ast.actualTag.formatType == M.FormatType.Inline then

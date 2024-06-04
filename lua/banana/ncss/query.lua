@@ -75,9 +75,26 @@ end
 
 ---@class (exact) Banana.Ncss.Selector.Defaults
 ---@field tag fun(name: string): Banana.Ncss.Selector
+---@field oneTag fun(name: string): Banana.Ncss.Selector
 ---@field id fun(name: string): Banana.Ncss.Selector
 ---@field class fun(name: string): Banana.Ncss.Selector
 M.selectors = {
+    oneTag = function(name)
+        ---@type fun(ast: Banana.Ast): Banana.Ast[]
+        local sel = nil
+        sel = function(ast)
+            if ast.tag == name then
+                return { ast }
+            end
+            for _, v in ipairs(ast.nodes) do
+                if type(v) ~= "string" then
+                    return sel(v)
+                end
+            end
+            return {}
+        end
+        return M.newManualSelector(sel, M.Specificity.Element)
+    end,
     tag = function(name)
         return M.newSelector(function(ast)
             return ast.tag == name

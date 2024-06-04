@@ -396,6 +396,10 @@
     "named": false
   },
   {
+    "type": "pre",
+    "named": false
+  },
+  {
     "type": "raw_text",
     "named": true
   },

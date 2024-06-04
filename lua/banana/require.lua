@@ -26,6 +26,7 @@ function M.nmlLoad(filename)
     if ast == nil then
         error("Unable to parse file '" .. filename .. "'")
     end
+    require("banana.nml.tags").cleanAst(ast)
     nmlAsts[filename] = { parser, ast }
     return ast, parser.styleSets, parser.scripts
 end
@@ -34,7 +35,16 @@ end
 ---@param file string
 ---@return boolean
 local function fileExists(file)
-    local ok, _, code = os.rename(file, file)
+    local val = vim.fn.filereadable(file)
+    return val == 1
+end
+
+---@param path string
+---@return boolean
+local function isdir(path)
+    -- "/" works on both Unix and Windows
+    path = path .. "/"
+    local ok, _, code = os.rename(path, path)
     if not ok then
         if code == 13 then
             -- Permission denied, but it exists
@@ -45,13 +55,6 @@ local function fileExists(file)
         return false
     end
     return ok
-end
-
----@param path string
----@return boolean
-local function isdir(path)
-    -- "/" works on both Unix and Windows
-    return fileExists(path .. "/")
 end
 
 ---@param basePath string
@@ -66,7 +69,7 @@ local function getPathFor(basePath, paths, ft, i)
         end
         return getPathFor(basePath .. "/" .. paths[i], paths, ft, i + 1)
     end
-    local hasDot = #vim.split(paths[i], '.') ~= 1
+    local hasDot = #vim.split(paths[i], '\\.') ~= 1
     if hasDot then
         if fileExists(basePath .. "/" .. paths[i]) then
             return basePath .. "/" .. paths[i]
@@ -93,7 +96,7 @@ local function basicRequire(file, ft)
         :filter(function(v) return #v ~= 0 end)
         :totable()
     for _, v in ipairs(vim.api.nvim_list_runtime_paths()) do
-        local fname = getPathFor(v .. "/" .. baseFolder .. "/", path, ft)
+        local fname = getPathFor(v .. "/" .. baseFolder, path, ft)
         if fname ~= nil then
             return M.nmlLoad(fname)
         end
