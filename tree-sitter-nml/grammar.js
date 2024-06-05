@@ -21,7 +21,6 @@ module.exports = grammar({
             choice(
                 "nml",
                 "title",
-                "meta",
                 "pre",
                 "head",
                 "body",
@@ -43,7 +42,7 @@ module.exports = grammar({
             seq("<!--", repeat(choice(/[^-]/, /\-[^-]/, /--[^-]/)), "-->"),
         self_closing_tags: (_) =>
             choice(
-                "img",
+                "meta",
                 "br",
                 "hr",
                 //NOTE: BOUND IS TEMPORARY FOR TESTING

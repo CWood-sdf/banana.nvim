@@ -29,4 +29,17 @@ M.yeet = function()
 	-- file:close()
 end
 
+function M.spam()
+	local startTime = vim.uv.hrtime()
+	for i = 1, 1000 do
+		local testFile = [[
+			.asdf {
+				hl-bg: #0000ff;
+			}
+		]]
+		local _ = require('banana.ncss.parser').parseText(testFile)
+	end
+	print((vim.uv.hrtime() - startTime) / 1e6 .. "ms")
+end
+
 return M

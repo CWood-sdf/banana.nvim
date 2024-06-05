@@ -21,10 +21,6 @@
         },
         {
           "type": "STRING",
-          "value": "meta"
-        },
-        {
-          "type": "STRING",
           "value": "pre"
         },
         {
@@ -127,7 +123,7 @@
       "members": [
         {
           "type": "STRING",
-          "value": "img"
+          "value": "meta"
         },
         {
           "type": "STRING",

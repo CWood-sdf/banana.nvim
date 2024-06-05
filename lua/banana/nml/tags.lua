@@ -278,15 +278,23 @@ function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX
             break
         end
         if type(v) == 'string' then
+            if hasText then
+                break
+            end
             local count = _str.charCount(v)
             if count + currentLine.width > width then
                 local remove = 0
                 local j = count
+                local repLim = 1000
                 while count + currentLine.width - remove > width do
                     while v:sub(j, j) ~= ' ' do
                         remove = remove + 1
                         j = count - remove
                     end
+                    if repLim < 0 then
+                        vim.notify("Reached repeat limit on string '" .. v .. "'")
+                    end
+                    repLim = repLim - 1
                 end
                 local str = v:sub(1, j)
                 currentLine:appendStr(str, b.MergeStrategy.Bottom)

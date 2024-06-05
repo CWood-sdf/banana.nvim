@@ -26,7 +26,7 @@ local StyleValue = {
 ---@param value number
 ---@param unit string
 ---@return Banana.Ncss.StyleValue
-local function newUnitValue(value, unit)
+function M.newUnitValue(value, unit)
     ---@type Banana.Ncss.StyleValue
     local ret = {
         value = {
@@ -41,7 +41,7 @@ end
 
 ---@param value string
 ---@return Banana.Ncss.StyleValue
-local function newColorValue(value)
+function M.newColorValue(value)
     ---@type Banana.Ncss.StyleValue
     local ret = {
         value = value,
@@ -50,9 +50,10 @@ local function newColorValue(value)
     setmetatable(ret, { __index = StyleValue })
     return ret
 end
+
 ---@param value boolean
 ---@return Banana.Ncss.StyleValue
-local function newBoolValue(value)
+function M.newBoolValue(value)
     ---@type Banana.Ncss.StyleValue
     local ret = {
         value = value,
@@ -64,7 +65,7 @@ end
 
 ---@param value string
 ---@return Banana.Ncss.StyleValue
-local function newStringValue(value)
+function M.newStringValue(value)
     ---@type Banana.Ncss.StyleValue
     local ret = {
         value = value,
@@ -76,7 +77,7 @@ end
 
 ---@param value string
 ---@return Banana.Ncss.StyleValue
-local function newPlainValue(value)
+function M.newPlainValue(value)
     ---@type Banana.Ncss.StyleValue
     local ret = {
         value = value,
@@ -88,7 +89,7 @@ end
 
 ---@param value number
 ---@return Banana.Ncss.StyleValue
-local function newIntegerValue(value)
+function M.newIntegerValue(value)
     ---@type Banana.Ncss.StyleValue
     local ret = {
         value = value,
@@ -100,7 +101,7 @@ end
 
 ---@param value number
 ---@return Banana.Ncss.StyleValue
-local function newFloatValue(value)
+function M.newFloatValue(value)
     ---@type Banana.Ncss.StyleValue
     local ret = {
         value = value,
@@ -128,7 +129,7 @@ local function parseNumValue(tree, parser, new)
         if val == nil then
             error("Value is nil (from value string of '" .. valStr .. "')")
         end
-        return newUnitValue(val, unitStr)
+        return M.newUnitValue(val, unitStr)
     end
     local num = tonumber(valueString)
     if num == nil then
@@ -172,7 +173,7 @@ local cssFunctions = {
         ---@cast blue number
 
         local num = red * 256 * 256 + green * 256 + blue
-        return newColorValue(string.format("#%06x", num))
+        return M.newColorValue(string.format("#%06x", num))
     end, 3, { "integer", "integer", "integer" }),
     ["hl-extract"] = Function:new(function(params, _)
         local section = params[1].value
@@ -195,32 +196,32 @@ local cssFunctions = {
                 type = "plain"
             }
         end
-        return newColorValue(string.format("#%06x", col))
+        return M.newColorValue(string.format("#%06x", col))
     end, 2, { { "string", "plain" }, { "string", "plain" } })
 
 }
 ---@type { [string]: fun(tree: TSNode, parser: Banana.Ncss.ParseData, text: string): Banana.Ncss.StyleValue[]|Banana.Ncss.StyleValue }
 local cssParsers = {
     integer_value = function(tree, parser, _)
-        return parseNumValue(tree, parser, newIntegerValue)
+        return parseNumValue(tree, parser, M.newIntegerValue)
     end,
     boolean_value = function(_, _, str)
-        return newBoolValue(str == "true")
+        return M.newBoolValue(str == "true")
     end,
     float_value = function(tree, parser, _)
-        return parseNumValue(tree, parser, newFloatValue)
+        return parseNumValue(tree, parser, M.newFloatValue)
     end,
     string_value = function(_, _, str)
         str = str:sub(2, #str)
         str = str:sub(1, #str - 1)
-        return newStringValue(str)
+        return M.newStringValue(str)
     end,
     plain_value = function(_, _, str)
-        return newPlainValue(str)
+        return M.newPlainValue(str)
     end,
     color_value = function(_, _, str)
         --TODO: Might need to process the string a lil bit
-        return newColorValue(str)
+        return M.newColorValue(str)
     end,
     call_expression = function(tree, parser, _)
         local fNameNode = tree:child(0)

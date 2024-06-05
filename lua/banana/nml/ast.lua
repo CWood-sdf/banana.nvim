@@ -166,7 +166,50 @@ end
 ---@param name string
 ---@param value string
 function M.Ast:setAttribute(name, value)
+    if name == "style" then
+        vim.notify(
+            "Setting the style property using setAttribute does nothing, please use setStyleSlow. Banana will call setStyleSlow for you right now, but it should be explicit",
+            vim.log.levels.WARN)
+        self:setStyleSlow(value)
+        return
+    end
     self.attributes[name] = value
+end
+
+---THIS FUNCTION TAKES ~1ms TO RUN: DO NOT CALL INSIDE A LOOP
+---@param value string
+function M.Ast:setStyleSlow(value)
+    local parsed = require('banana.ncss.parser').parseText(value)
+    self.inlineStyle = parsed[1].declarations
+end
+
+---@param name string
+---@param value string
+function M.Ast:setStyleValue(name, value)
+    local p = require('banana.ncss.valueParser')
+    ---@type Banana.Ncss.StyleValue
+    local cssVal = nil
+    if value:sub(1, 1) == '#' then
+        cssVal = p.newColorValue(value)
+    elseif value:sub(1, 1) == '"' or value:sub(1, 1) == "'" then
+        value = value:sub(2, #value)
+        value = value:sub(1, #value - 1)
+        cssVal = p.newStringValue(value)
+    else
+        vim.notify("Currently only sting values and color values are supported for ast:setStyleValue",
+            vim.log.levels.WARN)
+        cssVal = p.newPlainValue(value)
+    end
+    ---@type Banana.Ncss.StyleDeclaration
+    local decl = {
+        name = name,
+        values = { cssVal },
+        important = false,
+    }
+    if self.inlineStyle == nil then
+        self.inlineStyle = {}
+    end
+    table.insert(self.inlineStyle, decl)
 end
 
 ---@param c string

@@ -373,6 +373,9 @@ function Instance:render()
         hlTime / 1e3 .. "μs to highlight",
         totalTime / 1e3 .. "μs total",
     }
+    vim.api.nvim_set_option_value("modifiable", true, {
+        buf = self.bufnr
+    })
     vim.api.nvim_buf_set_lines(self.bufnr, #lines, -1, false, extraLines)
     vim.api.nvim_set_option_value("modifiable", false, {
         buf = self.bufnr
@@ -531,6 +534,7 @@ end
 ---@return Banana.Ast
 function Instance:createElement(name)
     local ast = require('banana.nml.ast').Ast:new(name, M.getNilAst())
+    self:applyId(ast)
     return ast
 end
 
