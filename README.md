@@ -130,3 +130,7 @@ This plugin seeks to turn neovim into a hypermedia client through its own custom
 
 - [x] Markup Language
 - [x] Styling
+
+### Rewrite in rust (or zig)
+
+Rewrite into rust or zig using nvim-oxi or ffi and stuff so that it can be much faster.

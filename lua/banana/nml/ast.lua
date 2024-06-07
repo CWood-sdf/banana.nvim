@@ -162,7 +162,6 @@ function M.Ast:clone()
     return newAst
 end
 
----comment
 ---@param name string
 ---@param value string
 function M.Ast:setAttribute(name, value)

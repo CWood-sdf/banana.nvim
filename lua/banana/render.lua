@@ -456,12 +456,16 @@ end
 ---Loads a partial nml file at {file} to be the content of the ast
 ---@param file string
 ---@param ast Banana.Ast
-function Instance:loadNmlTo(file, ast)
+---@param preserve boolean? Whether to clone the ast, default false.
+function Instance:loadNmlTo(file, ast, preserve)
+    preserve = preserve or false
     local sides = vim.split(file, '?', {
         plain = true,
     })
     local content, rules, scripts = require('banana.require').nmlRequire(sides[1])
-    content = content:clone()
+    if not preserve then
+        content = content:clone()
+    end
     ast:removeChildren()
     ast:appendNode(content)
     self.foreignStyles[content] = rules
