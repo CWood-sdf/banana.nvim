@@ -1,5 +1,6 @@
 ---@enum Banana.Ncss.TSTypes
 local M = {
+    _anon = "_anon",
     function_name = "function_name",
     class_name = "class_name",
     id_name = "id_name",
@@ -47,7 +48,6 @@ local M = {
     binary_query = "binary_query",
     unary_query = "unary_query",
     selector_query = "selector_query",
-    -- _value = "_value",
     parenthesized_value = "parenthesized_value",
     color_value = "color_value",
     string_value = "string_value",

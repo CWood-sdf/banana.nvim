@@ -15,10 +15,11 @@ M.TokenType = {
     Semicolon = ';', -- ==
     LeftBrace = '{',
     RightBrace = '}',
-
+    Comma = ',',
+    RightAngle = '<',
     Space = ' ',
-    Word = '[%w%-][%w%-%d]*', -- :gmatch
-    Number = '%d',            -- :gmatch
+    Word = '[%w%-][%w%-%d]*', -- :find
+    Number = '%d*',           -- :find
     Unknown = "ERROR",
 }
 
@@ -83,9 +84,9 @@ function Lexer:nextChar()
     if self.row > #self.program then
         return ''
     end
-    local char = self.program[self.row][self.col]
+    local char = self:currentChar()
     self.col = self.col + 1
-    while self.col > #self.program[self.row] do
+    while self.col > #self.program[self.row] + 1 do
         self.col = 1
         self.row = self.row + 1
         if self.row > #self.program then
@@ -100,30 +101,63 @@ function Lexer:currentChar()
     if self.row > #self.program then
         return ''
     end
+    local char = ''
+    if self.col == #self.program[self.row] + 1 then
+        char = '\n'
+    else
+        char = self.program[self.row][self.col]
+    end
 
-    return self.program[self.row][self.col]
+    return char
 end
 
 ---@return string
 function Lexer:peekNextChar()
     local row, col = self.row, self.col
-    local ret = self:peekNextChar()
+    local ret = self:nextChar()
     self.row, self.col = row, col
     return ret
 end
 
-function Lexer:parseColor()
+---@param pattern string
+---@return string
+function Lexer:read(pattern)
+    local str = self:currentChar()
+    while (str .. self:peekNextChar()):find(pattern) ~= nil do
+        str = str .. self:nextChar()
+    end
+    return str
+end
 
+---@return [ number, number ]
+function Lexer:position()
+    return { self.row, self.col }
 end
 
 ---@return Banana.Ncss.MiniParser.Token
-function Lexer:getNextToken()
+function Lexer:peekNextToken()
+    local row, col = self.row, self.col
+    local tok = self:nextToken()
+    self.row, self.col = row, col
+    return tok
+end
+
+---@return Banana.Ncss.MiniParser.Token
+function Lexer:nextToken()
     local char = self:nextChar()
     while (char == ' ' and self.context ~= "selector") or char == '\t' do
         char = self:nextChar()
     end
     if char == M.TokenType.EOF then
         local currentTok = Token:new(M.TokenType.EOF, M.TokenType.EOF)
+        self.currentToken = currentTok
+        return currentTok
+    elseif char == M.TokenType.RightAngle then
+        local currentTok = Token:new(M.TokenType.RightAngle, M.TokenType.RightAngle)
+        self.currentToken = currentTok
+        return currentTok
+    elseif char == M.TokenType.Comma then
+        local currentTok = Token:new(M.TokenType.Comma, M.TokenType.Comma)
         self.currentToken = currentTok
         return currentTok
     elseif char == M.TokenType.LeftParen then
@@ -176,6 +210,16 @@ function Lexer:getNextToken()
         return currentTok
     elseif char == M.TokenType.RightBrace then
         local currentTok = Token:new(M.TokenType.RightBrace, M.TokenType.RightBrace)
+        self.currentToken = currentTok
+        return currentTok
+    elseif char:find(M.TokenType.Word) ~= nil then
+        local str = self:read(M.TokenType.Word)
+        local currentTok = Token:new(M.TokenType.Word, str)
+        self.currentToken = currentTok
+        return currentTok
+    elseif char:find(M.TokenType.Number) ~= nil then
+        local str = self:read(M.TokenType.Number)
+        local currentTok = Token:new(M.TokenType.Number, str)
         self.currentToken = currentTok
         return currentTok
     elseif char == M.TokenType.Space and self.context == "selector" then

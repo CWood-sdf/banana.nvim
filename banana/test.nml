@@ -69,6 +69,10 @@ ul > * {
   height: 50%;
 
 }
+
+asdf:hover(asdf, .asdf) {
+
+}
 </style>
 </head>
 <body>

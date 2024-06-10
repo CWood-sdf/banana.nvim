@@ -27,7 +27,7 @@ M.ts_types = {
 local ast = require('banana.nml.ast')
 
 ---@class (exact) Banana.Highlight: vim.api.keyset.highlight
----@field _name string?
+---@field __name string?
 
 ---@class (exact) Banana.Attributes
 ---@field [string] string?

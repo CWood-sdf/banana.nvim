@@ -412,9 +412,9 @@ function Instance:highlight(lines, offset)
             if word.style ~= nil then
                 local optsStr = vim.inspect(word.style)
 
-                if word.style._name ~= nil then
+                if word.style.__name ~= nil then
                     ns = 0
-                    hlGroup = word.style._name or "Normal"
+                    hlGroup = word.style.__name or "Normal"
                     local hl = vim.api.nvim_get_hl(ns, {
                         name = hlGroup,
                     })
@@ -424,7 +424,7 @@ function Instance:highlight(lines, offset)
                     -- If there are default highlight options, and the highlight does not exist, create it
                     if hlNotExists and keysCount > 1 then
                         local opts = vim.deepcopy(word.style)
-                        opts._name = nil
+                        opts.__name = nil
                         if opts == nil then
                             error("Unreachable [highlightBuffer colorOpts is nil]")
                         end

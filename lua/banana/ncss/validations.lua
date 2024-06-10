@@ -80,6 +80,7 @@ local singleUnit = Validation:new(function(a)
     return #a == 1 and a[1].type == "unit"
 end)
 local singlePlain = Validation:new({ [1] = { { "plain" } } })
+local singleStringOrPlain = Validation:new({ [1] = { { "string" }, { "plain" } } })
 ---@type { [string]: Banana.Ncss.PropertyValidation }
 local validations = {
     ['hl-underline'] = boolValid,
@@ -87,7 +88,8 @@ local validations = {
     ['hl-bold'] = boolValid,
     ['hl-fg'] = Validation:new({ [1] = { { "color" }, { "plain" } } }),
     ['hl-bg'] = Validation:new({ [1] = { { "color" }, { "plain" } } }),
-    ['hl-link'] = Validation:new({ [1] = { { "string" }, { "plain" } } }),
+    ['hl-link'] = singleStringOrPlain,
+    ['hl-__name'] = singleStringOrPlain,
     ['list-style-type'] = Validation:new({ [1] = { { "string" } } }),
     ['list-base-width'] = singleUnit,
     ['width'] = singleUnit,
