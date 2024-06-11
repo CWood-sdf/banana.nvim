@@ -23,6 +23,7 @@ This plugin seeks to turn neovim into a hypermedia client through its own custom
 
 ### Markup Language
 
+- [ ] Character Entity Support
 - [x] Basic Renderer
 - [x] Very Fast rendering
 - [x] Attributes
