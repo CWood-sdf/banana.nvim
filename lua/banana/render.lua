@@ -26,7 +26,6 @@ local instances = {}
 ---@field winid? number
 ---@field bufnr? number
 ---@field bufname string
----@field filetype string
 ---@field highlightNs number
 ---@field instanceId number
 ---@field winhl table
@@ -38,6 +37,9 @@ local instances = {}
 ---@field astMapDeps { [Banana.Ast]: [string, string, Banana.Instance.Keymap][] }
 ---@field rendering boolean
 ---@field renderStart number
+---@field winOpts { [string]: any }
+---@field bufOpts { [string]: any }
+---@field _body Banana.Ast?
 local Instance = {}
 
 ---@class (exact) Banana.Word
@@ -96,7 +98,6 @@ function Instance:new(filename, bufferName)
         rendering = false,
         keymaps = {},
         bufname = bufferName,
-        filetype = "banana",
         highlightNs = vim.api.nvim_create_namespace("banana_instance_" .. ids),
         ast = ast,
         styleRules = styleRules,
@@ -106,7 +107,13 @@ function Instance:new(filename, bufferName)
         winhl = {
             link = "NormalFloat"
         },
-        astMapDeps = {}
+        astMapDeps = {},
+        bufOpts = {
+            filetype = "",
+        },
+        winOpts = {
+            signcolumn = "no",
+        },
     }
     setmetatable(inst, { __index = Instance })
     instances[id] = inst
@@ -201,6 +208,9 @@ end
 
 ---@return Banana.Ast
 function Instance:body()
+    if self._body ~= nil then
+        return self._body
+    end
     if self.ast.tag ~= "nml" then
         return self.ast
     end
@@ -209,6 +219,7 @@ function Instance:body()
     if #arr == 0 then
         error("Could not find a body tag in Instance:body()")
     end
+    self._body = arr[1]
     return arr[1]
 end
 
@@ -277,6 +288,58 @@ function Instance:runScript(script, opts)
     f(opts)
 end
 
+---@return number, number
+function Instance:createWinAndBuf()
+    local headQuery = require('banana.ncss.query').selectors.oneTag("head")
+    local headTag = headQuery:getMatches(self.ast)
+    if #headTag ~= 0 then
+        headTag[1].actualTag:getRendered(headTag[1], nil, 0, 0, 0, 0, {
+            text_align = "left",
+        })
+    end
+    local width = vim.o.columns - 8 * 2
+    local height = vim.o.lines - 3 * 2 - 4
+    if self.ast.tag == "nml" then
+        self.ast:resolveUnits(vim.o.columns, vim.o.lines)
+        if self.ast.style["width"] ~= nil then
+            width = self.ast.style.width[1].value.computed
+            ---@cast width number
+        end
+        if self.ast.style["height"] ~= nil then
+            height = self.ast.style.height[1].value.computed
+            ---@cast height number
+        end
+    end
+    if self.bufnr == nil or not vim.api.nvim_buf_is_valid(self.bufnr) then
+        self.bufnr = vim.api.nvim_create_buf(false, false)
+        vim.api.nvim_buf_set_name(self.bufnr, self.bufname)
+        for k, v in pairs(self.bufOpts) do
+            vim.api.nvim_set_option_value(k, v, { buf = self.bufnr })
+        end
+    end
+    if self.winid == nil or not vim.api.nvim_win_is_valid(self.winid) then
+        self.winid = vim.api.nvim_open_win(self.bufnr, true, {
+            relative = "editor",
+            width = width,
+            height = height,
+            row = 3,
+            col = 8,
+            style = "minimal",
+            -- zindex = 1000,
+        })
+        vim.api.nvim_set_current_win(self.winid)
+        vim.api.nvim_win_set_buf(self.winid, self.bufnr)
+        vim.api.nvim_set_option_value("signcolumn", "no", { win = self.winid })
+        for k, v in pairs(self.winOpts) do
+            vim.api.nvim_set_option_value(k, v, { win = self.winid })
+        end
+    else
+        width = vim.api.nvim_win_get_width(self.winid)
+        height = vim.api.nvim_win_get_height(self.winid)
+    end
+    return width, height
+end
+
 ---@return Banana.Ast
 function Instance:render()
     local totalTime = 0
@@ -301,41 +364,10 @@ function Instance:render()
     end
     styleTime = vim.loop.hrtime() - startTime
     startTime = vim.loop.hrtime()
-    -- default width
-    local width = vim.o.columns - 8 * 2
-    local height = vim.o.lines - 3 * 2 - 4
-    if self.ast.tag == "nml" then
-        self.ast:resolveUnits(vim.o.columns, vim.o.lines)
-        if self.ast.style["width"] ~= nil then
-            width = self.ast.style.width[1].value.computed
-            ---@cast width number
-        end
-        if self.ast.style["height"] ~= nil then
-            height = self.ast.style.height[1].value.computed
-            ---@cast height number
-        end
-    end
+    local width, height = self:createWinAndBuf()
     local stuffToRender = self:virtualRender(self.ast, width, height)
     local renderTime = vim.loop.hrtime() - startTime
-    if self.bufnr == nil or not vim.api.nvim_buf_is_valid(self.bufnr) then
-        self.bufnr = vim.api.nvim_create_buf(false, false)
-        vim.api.nvim_buf_set_name(self.bufnr, self.bufname)
-        vim.api.nvim_set_option_value("filetype", self.filetype, { buf = self.bufnr })
-    end
-    if self.winid == nil or not vim.api.nvim_win_is_valid(self.winid) then
-        self.winid = vim.api.nvim_open_win(self.bufnr, true, {
-            relative = "editor",
-            width = width,
-            height = height,
-            row = 3,
-            col = 8,
-            style = "minimal",
-            -- zindex = 1000,
-        })
-        vim.api.nvim_set_current_win(self.winid)
-        vim.api.nvim_win_set_buf(self.winid, self.bufnr)
-        vim.api.nvim_set_option_value("signcolumn", "no", { win = self.winid })
-    end
+
     local lines = {
         -- astTime / 1e3 .. "μs to parse",
         -- renderTime / 1e3 .. "μs to render",

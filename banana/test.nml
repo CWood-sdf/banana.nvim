@@ -1,111 +1,106 @@
 <nml>
 <!-- A partial clone of the lazy.nvim ui -->
-<head>
+  <head>
+    <meta name="winopt-signcolumn" value="yes">
 
-<title>
-Yeet yeet
-</title>
-<style>
+    <title>
+      Yeet yeet
+    </title>
+    <style>
 
-nml {
+      nml {
 
-}
+      }
 
-#tabline > .selected {
-  hl-bg: hl-extract(bg, Visual); 
-  hl-fg: hl-extract(fg, Visual); 
-}
-#tabline > .selected.home {
-  hl-bg: hl-extract(bg, IncSearch); 
-  hl-fg: hl-extract(fg, IncSearch); 
-}
-#tabline > .not-selected {
-  hl-bg: hl-extract(bg, CursorLine); 
-  hl-fg: hl-extract(fg, CursorLine); 
-}
-#tabline > span {
-  margin-right: 1ch;
-  padding-left: 1ch;
-}
+      #tabline > .selected {
+        hl-bg: hl-extract(bg, Visual); 
+        hl-fg: hl-extract(fg, Visual); 
+      }
+      #tabline > .selected.home { hl-bg: hl-extract(bg, IncSearch); hl-fg: hl-extract(fg, IncSearch); }
+      #tabline > .not-selected {
+        hl-bg: hl-extract(bg, CursorLine); 
+        hl-fg: hl-extract(fg, CursorLine); 
+      }
+      #tabline > span {
+        margin-right: 1ch;
+        padding-left: 1ch;
+      }
 
-#tabline .remap {
-  hl-fg: hl-extract(fg, Operator);
-}
-body {
-  padding-top: 1ch;
-  padding-left: 2ch;
+      #tabline .remap {
+        hl-fg: hl-extract(fg, Operator);
+      }
+      body {
+        padding-top: 1ch;
+        padding-left: 2ch;
 
-}
-.header {
-  hl-bold: true;
-}
-.comment {
-  hl-fg: hl-extract(fg, Comment);
-}
-ul.not-local {
-  hl-fg: hl-extract(fg, "@punctuation.special");
-}
-ul.local {
-  hl-fg: hl-extract(fg, Constant);
-}
-ul.plugin-loaded {
-  list-style-type: '● ';
-  list-base-width: 4ch;
-}
-ul.plugin-not-loaded {
-  list-style-type: '○ ';
-  list-base-width: 4ch;
-}
-ul > * {
-  hl-fg: hl-extract(fg, Normal);
-}
+      }
+      .header {
+        hl-bold: true;
+      }
+      .comment {
+        hl-fg: hl-extract(fg, Comment);
+      }
+      ul.not-local {
+        hl-fg: hl-extract(fg, "@punctuation.special");
+      }
+      ul.local {
+        hl-fg: hl-extract(fg, Constant);
+      }
+      ul.plugin-loaded {
+        list-style-type: '● ';
+        list-base-width: 4ch;
+      }
+      ul.plugin-not-loaded {
+        list-style-type: '○ ';
+        list-base-width: 4ch;
+      }
+      ul > * {
+        hl-fg: hl-extract(fg, Normal);
+      }
 #plugin-template {
-  display: hidden;
-}
+        display: hidden;
+      }
 
-.widthyeet {
-  hl-bg: red;
-  width: 50%;
-  height: 50%;
+      .widthyeet {
+        hl-bg: red;
+        width: 50%;
+        height: 50%;
 
-}
+      }
 
-asdf:hover(asdf, .asdf) {
+      asdf:hover(asdf, .asdf) {
 
-}
-</style>
-</head>
-<body>
-<div id="tabline">
-<span class="selected home"> lazy.nvim <span class="remap"> (H) </span> </span>
-<span class="not-selected"> Install <span class="remap"> (I) </span> </span>
-<span class="not-selected"> Update <span class="remap"> (U) </span> </span>
-<span class="not-selected"> Sync <span class="remap"> (S) </span> </span>
-</div>
+      }
+    </style>
+  </head>
+  <body>
+    <div id="tabline">
+    <span class="selected home"> lazy.nvim <span class="remap"> (H) </span> </span>
+    <span class="not-selected"> Install <span class="remap"> (I) </span> </span>
+    <span class="not-selected"> Update <span class="remap"> (U) </span> </span>
+    <span class="not-selected"> Sync <span class="remap"> (S) </span> </span>
+    </div>
 
-<br>
+    <br>
 
-<div>
-<span class="header">Total: </span><span class="comment"> 77 plugins </span>
-</div>
+    <div>
+    <span class="header">Total: </span><span class="comment"> 77 plugins </span>
+    </div>
 
-<br>
+    <br>
 
-<div id="loaded-plugins">
-<span class="header">Loaded: </span><span class="comment"> (44)</span>
-</div>
+    <div id="loaded-plugins">
+    <span class="header">Loaded: </span><span class="comment"> (44)</span>
+    </div>
 
-<div style="display: hidden;" id="plugin-template">
-<ul> <li> </li> </ul>
-</div>
+    <div style="display: hidden;" id="plugin-template">
+    <ul> <li> </li> </ul>
+    </div>
 
-<script src="asdf">
+    <script src="asdf">
 
-</script>
+    </script>
 
-<script>
 
-</script>
-
-</body>
+  </body>
 </nml>

@@ -88,7 +88,10 @@ M.selectors = {
             end
             for _, v in ipairs(ast.nodes) do
                 if type(v) ~= "string" then
-                    return sel(v)
+                    local r = sel(v)
+                    if #r ~= 0 then
+                        return r
+                    end
                 end
             end
             return {}
