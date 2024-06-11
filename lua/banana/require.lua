@@ -26,7 +26,7 @@ function M.nmlLoad(filename)
     if ast == nil then
         error("Unable to parse file '" .. filename .. "'")
     end
-    require("banana.nml.tags").cleanAst(ast)
+    require("banana.nml.cleanAst").cleanAst(ast)
     nmlAsts[filename] = { parser, ast }
     return ast, parser.styleSets, parser.scripts
 end

@@ -1,4 +1,3 @@
-local _str = require('banana.utils.string')
 local M = {}
 
 local q = require('banana.ncss.query')
@@ -226,9 +225,6 @@ end
 ---@param parser Banana.Ncss.ParseData
 ---@return Banana.Ncss.RuleSet[]
 function M.parse(tree, parser)
-    if tree:has_error() then
-        -- error("omg there is an ncss parser error")
-    end
     if tree:type() ~= ts_types.stylesheet then
         error("Parsed treesitter tree must be a stylesheet type for ncss parser")
     end

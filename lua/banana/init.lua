@@ -31,7 +31,7 @@ end
 
 function M.spam()
 	local startTime = vim.uv.hrtime()
-	for i = 1, 1000 do
+	for _ = 1, 1000 do
 		local testFile = [[
 			.asdf {
 				hl-bg: #0000ff;
