@@ -1,25 +1,60 @@
 local M = {}
 local q = require('banana.ncss.query')
+---@alias Banana.Ncss.PseudoGenRet fun(ast: Banana.Ast): boolean
+---@type { [string]: fun(node: TSNode?, parser: Banana.Ncss.ParseData): Banana.Ncss.PseudoGenRet, number?}
+local pseudoClasses = {
+    ["not"] = function(node, parser)
+        assert(node ~= nil, ":not requires a selector argument")
+        assert(node:child_count() == 3, ":not can only take one argument")
+        local child = node:child(1)
+        assert(child ~= nil, "Unreachable")
+        local query = q.newQuery()
+        M.parseQueryComponent(child, query, parser)
+        local spec = query.specificity
+        return function(ast)
+            if query.rootSelector.select == nil then
+                error("Expected a whereable root selector in :not")
+            end
+            if query.rootSelector.select(ast) then return false end
+            for _, sel in ipairs(query.filters) do
+                if sel.filterType == q.FilterType.Selector then
+                    error("Exected only where filters in :not")
+                end
+                ---@cast sel Banana.Ncss.Where
+                if sel.satisfies(ast) then return false end
+            end
+            return true
+        end, spec
+    end,
+
+}
 local ts_types = require('banana.ncss.tsTypes')
 ---@type { [Banana.Ncss.TSTypes]: fun(node: TSNode, parser: Banana.Ncss.ParseData): Banana.Ncss.Where|Banana.Ncss.Selector }
 M.queryParsers = {
     [ts_types.pseudo_class_selector] = function(node, parser)
+        local argsIndex = 3
         local nameTag = node:child(2)
-        if nameTag == nil then
-            error("Expected class_name to not be nil")
+        local isSel = false
+        if nameTag == nil or nameTag:type() ~= ts_types.class_name then
+            isSel = true
+            nameTag = node:child(1)
+            argsIndex = argsIndex - 1
         end
-        if nameTag:type() ~= ts_types.class_name then
-            error("Expected nameTag to have type class_name, got '" .. nameTag:type() .. "'")
+        if nameTag == nil or nameTag:type() ~= ts_types.class_name then
+            error("Could not parse pseudo class as got no class_name node at the expected spots")
         end
 
         local name = parser:getStringFromRange({ nameTag:start() }, { nameTag:end_() })
-
-
-        return q.newWhere(function(ast)
-            --TODO: Impl
-            error("Please implement pseudo_class_selector")
-            return true
-        end, q.Specificity.Pseudoclass)
+        local parse = pseudoClasses[name]
+        if parse == nil then
+            error("Could not find pseudo class parser for pseudo class '" .. name .. "'")
+        end
+        local fn, spec = parse(node:child(argsIndex), parser)
+        spec = spec or q.Specificity.Pseudoclass
+        if isSel then
+            return q.newSelector(fn, spec)
+        end
+        return q.newWhere(fn, spec)
     end,
     [ts_types.universal_selector] = function()
         return q.newSelector(function() return true end, q.Specificity.Star)

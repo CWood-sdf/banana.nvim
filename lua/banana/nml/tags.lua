@@ -108,6 +108,16 @@ local function applyPad(name, ast, ret, hl)
 end
 
 ---@param ast Banana.Ast
+---@param extraWidth number
+---@return boolean
+local function isExpandable(ast, extraWidth)
+    local isFlexChild = ast._parent ~= nil and ast._parent.style ~= nil and ast._parent.style['width'] == "flex"
+    return (ast.actualTag.formatType == M.FormatType.Block or ast.actualTag.formatType == M.FormatType.BlockInline
+        ) and extraWidth > 0 and isFlexChild
+        or ast.style['width'] ~= nil
+end
+
+---@param ast Banana.Ast
 ---@param parentHl Banana.Highlight?
 ---@param parentWidth number
 ---@param parentHeight number
@@ -160,8 +170,7 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
         parentWidth - ret.width -
         ast.padding[_ast.left].value - ast.padding[_ast.right].value -
         ast.margin[_ast.left].value - ast.margin[_ast.right].value
-    if (ast.actualTag.formatType == M.FormatType.Block or ast.actualTag.formatType == M.FormatType.BlockInline) and extraWidth > 0 or ast.style['width'] ~= nil
-    then
+    if isExpandable(ast, extraWidth) then
         local width = parentWidth - ast.padding[_ast.left].value
             - ast.padding[_ast.right].value - ast.margin[_ast.left].value
             - ast.margin[_ast.right].value
@@ -230,7 +239,16 @@ function TagInfo:blockIter(ast, parentHl, parentWidth, parentHeight, startX, sta
         end
         local oldI = i
         local render = nil
-        render, i = self:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX, startY, inherit)
+        if ast.style.display ~= nil and ast.style["display"][1].value == "flex" then
+            render = self:renderFlexBlock(
+                ast, parentHl, parentWidth, parentHeight,
+                startX, startY, inherit)
+            i = #ast.nodes + 1
+        else
+            render, i = self:renderBlock(
+                ast, parentHl, i, parentWidth, parentHeight,
+                startX, startY, inherit)
+        end
         startY = startY + #render.lines
         return oldI, render, i - oldI
     end
@@ -248,6 +266,85 @@ function TagInfo:renderInlineEl(ast, parentHl, parentWidth, parentHeight, startX
     ---@type Banana.Box
     local ret, _ = self:renderBlock(ast, ast:mixHl(parentHl), 1, parentWidth, parentHeight, startX, startY, inherit)
     return ret
+end
+
+---Renders everything in a flex block
+---@param ast Banana.Ast
+---@param parentHl Banana.Highlight?
+---@param parentWidth number
+---@param parentHeight number
+---@param startX number
+---@param startY number
+---@param inherit Banana.Renderer.InheritedProperties
+---@return Banana.Box
+function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, startX, startY, inherit)
+    local i = 1
+    local b = require('banana.box')
+    local currentLine = b.Box:new(parentHl)
+    local width = parentWidth
+        - ast.padding[_ast.left].value - ast.padding[_ast.right].value
+        - ast.margin[_ast.left].value - ast.margin[_ast.right].value
+    local height = parentHeight
+        - ast.padding[_ast.top].value - ast.padding[_ast.bottom].value
+        - ast.margin[_ast.top].value - ast.margin[_ast.bottom].value
+    ---@type Banana.Box?
+    local extra = nil
+    while i <= #ast.nodes do
+        local v = ast.nodes[i]
+        if v == nil then
+            break
+        end
+        if type(v) == 'string' then
+            local count = _str.charCount(v)
+            if count + currentLine.width > width then
+                local remove = 0
+                local j = count
+                local repLim = 1000
+                while count + currentLine.width - remove > width do
+                    while v:sub(j, j) ~= ' ' do
+                        remove = remove + 1
+                        j = count - remove
+                    end
+                    if repLim < 0 then
+                        vim.notify("Reached repeat limit on string '" .. v .. "'")
+                    end
+                    repLim = repLim - 1
+                end
+                local str = v:sub(1, j)
+                currentLine:appendStr(str, b.MergeStrategy.Bottom)
+                if extra == nil then
+                    extra = currentLine
+                else
+                    extra:appendBoxBelow(currentLine)
+                end
+                currentLine = b.Box:new(currentLine.hlgroup)
+                v = v:sub(j, count)
+                startX = 0
+            end
+            currentLine:appendStr(v, b.MergeStrategy.Bottom)
+            startX = startX + count
+        else
+            local tag = M.makeTag(v.tag)
+            v:resolveUnits(width, height)
+            local rendered = tag:getRendered(v, currentLine.hlgroup, width, height, startX, startY, inherit)
+            startX = startX + rendered.width
+            if currentLine.width + rendered.width > width then
+                if extra == nil then
+                    extra = currentLine
+                else
+                    extra:appendBoxBelow(currentLine)
+                end
+                currentLine = b.Box:new(currentLine.hlgroup)
+            end
+            currentLine:append(rendered, b.MergeStrategy.Bottom)
+        end
+        i = i + 1
+    end
+    if extra ~= nil then
+        extra:appendBoxBelow(currentLine)
+        currentLine = extra
+    end
+    return currentLine
 end
 
 ---Renders everything in a block
@@ -407,140 +504,6 @@ function M.makeTag(name)
         error("Error while trying to load tag '" .. name .. "'")
     end
     return mgr
-end
-
----@param str string
----@param clearFirst boolean
----@param clearLast boolean
----@return string, boolean
-local function formatInlineText(str, clearFirst, clearLast)
-    str = str:gsub('%s+', ' ')
-    if clearFirst and str:sub(1, 1) == ' ' then
-        str = str:sub(2, #str)
-    end
-    local lastChar = str:sub(#str, #str)
-    if clearLast and lastChar == ' ' then
-        str = str:sub(1, #str - 1)
-    end
-    lastChar = str:sub(#str, #str)
-    clearFirst = lastChar == ' '
-    return str, clearFirst
-end
-
----Reference for this function:
---https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_display/Block_formatting_context
----@param ast Banana.Ast
-function M.formatBlockContext(ast)
-    local i = 1
-    local inc = true
-    local clearFirst = true
-    local skip = ast.tag == "pre"
-    while i <= #ast.nodes do
-        local node = ast.nodes[i]
-        if type(node) == 'string' then
-            local nextNode = ast.nodes[i + 1]
-            local clearLast = true
-            if
-                nextNode ~= nil
-                and type(nextNode) ~= "string"
-                and nextNode.actualTag.formatType == M.FormatType.Inline
-
-            then
-                clearLast = false
-            end
-            ---@cast node string
-            if not skip then
-                node, clearFirst = formatInlineText(node, clearFirst, clearLast)
-            end
-            if node == "" then
-                table.remove(ast.nodes, i)
-                inc = false
-            else
-                ast.nodes[i] = node
-            end
-        else
-            ---@cast node Banana.Ast
-            if node.actualTag.formatType == M.FormatType.Block then
-                M.formatBlockContext(node)
-            elseif node.actualTag.formatType == M.FormatType.BlockInline then
-                M.formatInlineContext(node, true, true)
-            elseif node.actualTag.formatType == M.FormatType.Inline then
-                local clearLast = false
-                local nextNode = ast.nodes[i + 1]
-                if
-                    nextNode ~= nil
-                    and type(nextNode) ~= "string"
-                    and (
-                        nextNode.actualTag.formatType == M.FormatType.Block
-                        or nextNode.actualTag.formatType == M.FormatType.BlockInline
-                    )
-                then
-                    clearLast = true
-                end
-                clearFirst = M.formatInlineContext(node, clearFirst, clearLast)
-            end
-        end
-        if inc then
-            i = i + 1
-        end
-        inc = true
-    end
-end
-
----Reference:
----https://developer.mozilla.org/en-US/docs/Web/API/Document_Object_Model/Whitespace
----https://developer.mozilla.org/en-US/docs/Web/CSS/Inline_formatting_context
----@param ast Banana.Ast
----@param clearFirst boolean
----@param clearLast boolean
----@return boolean
-function M.formatInlineContext(ast, clearFirst, clearLast)
-    local i = 1
-    local inc = true
-    while i <= #ast.nodes do
-        local node = ast.nodes[i]
-        local last = i == #ast.nodes
-        if type(node) == 'string' then
-            node, clearFirst = formatInlineText(node, clearFirst, clearLast and last)
-            if node == "" then
-                table.remove(ast.nodes, i)
-                inc = false
-            else
-                ast.nodes[i] = node
-            end
-        else
-            ---@cast node Banana.Ast
-            if node.actualTag.formatType == M.FormatType.Block or node.actualTag.formatType == M.FormatType.BlockInline then
-                error("A Block or BlockInline format type element is nested in an inline formatting context")
-            end
-            if node.actualTag.formatType == M.FormatType.Inline then
-                clearFirst = M.formatInlineContext(node, clearFirst, clearLast and last)
-            end
-        end
-        if inc then
-            i = i + 1
-        end
-        inc = true
-    end
-    return clearFirst
-end
-
----@param ast Banana.Ast
---- Removes all empty text nodes, and cleans up all whitespace.
-function M.cleanAst(ast)
-    if ast.tag == "pre" then
-        return
-    end
-    if ast.actualTag.formatType == M.FormatType.Block then
-        M.formatBlockContext(ast)
-    elseif ast.actualTag.formatType == M.FormatType.Inline then
-        M.formatInlineContext(ast, false, false)
-    elseif ast.actualTag.formatType == M.FormatType.BlockInline then
-        M.formatInlineContext(ast, true, true)
-    elseif ast.actualTag.formatType == M.FormatType.Script then
-    else
-        error("Unreachable")
-    end
 end
 
 return M

@@ -17,10 +17,10 @@ local function renderer(_, ast)
     if value == nil then
         error("Expected a value attribute on a meta tag")
     end
-    if startsWith(name, "bufopt-") then
-        inst.bufOpts[name:sub(#"bufopt-" + 1, #name)] = tonumber(value) or value
-    elseif startsWith(name, "winopt-") then
-        local newName = name:sub(#"winopt-" + 1, #name)
+    if startsWith(name, "buf-") then
+        inst.bufOpts[name:sub(#"buf-" + 1, #name)] = tonumber(value) or value
+    elseif startsWith(name, "win-") then
+        local newName = name:sub(#"win-" + 1, #name)
         inst.winOpts[newName] = tonumber(value) or value
     else
         error("Unknown option '" .. name .. "'")

@@ -2,27 +2,22 @@
 <html>
   <head>
     <style>
-      span {
-        background-color: blue;
+      #flex {
+        display: flex;
+        width: 100%;
       }
-      * {
-        font-family: monospace;
-      }
-      div {
-        padding: 10px;
-      }
-      a:visited span:hover {
-        color: black;
-        background-color: red;
+      #flex > * {
+        flex-basis: 100px;
       }
     </style>
   </head>
   <body>
-	  <pre>
-	  asdfasdflkadf
-	  asdlfkasdkfj
-asdlfkjaskdjfadf <span> asdf</span>
-
-	  </pre>
+    <div id="flex">
+      asdf
+      <div><div>asdfasdf</div></div>
+      <div>asdfasdf</div>
+      <div>asdfasdf</div>
+      <div>asdfasdf</div>
+    </div>
   </body>
 </html>

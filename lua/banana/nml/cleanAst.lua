@@ -1,4 +1,5 @@
 local M = {}
+local tags = require('banana.nml.tags')
 
 ---@param str string
 ---@param clearFirst boolean
@@ -34,7 +35,7 @@ function M.formatBlockContext(ast)
             if
                 nextNode ~= nil
                 and type(nextNode) ~= "string"
-                and nextNode.actualTag.formatType == M.FormatType.Inline
+                and nextNode.actualTag.formatType == tags.FormatType.Inline
 
             then
                 clearLast = false
@@ -51,19 +52,19 @@ function M.formatBlockContext(ast)
             end
         else
             ---@cast node Banana.Ast
-            if node.actualTag.formatType == M.FormatType.Block then
+            if node.actualTag.formatType == tags.FormatType.Block then
                 M.formatBlockContext(node)
-            elseif node.actualTag.formatType == M.FormatType.BlockInline then
+            elseif node.actualTag.formatType == tags.FormatType.BlockInline then
                 M.formatInlineContext(node, true, true)
-            elseif node.actualTag.formatType == M.FormatType.Inline then
+            elseif node.actualTag.formatType == tags.FormatType.Inline then
                 local clearLast = false
                 local nextNode = ast.nodes[i + 1]
                 if
                     nextNode ~= nil
                     and type(nextNode) ~= "string"
                     and (
-                        nextNode.actualTag.formatType == M.FormatType.Block
-                        or nextNode.actualTag.formatType == M.FormatType.BlockInline
+                        nextNode.actualTag.formatType == tags.FormatType.Block
+                        or nextNode.actualTag.formatType == tags.FormatType.BlockInline
                     )
                 then
                     clearLast = true
@@ -101,10 +102,10 @@ function M.formatInlineContext(ast, clearFirst, clearLast)
             end
         else
             ---@cast node Banana.Ast
-            if node.actualTag.formatType == M.FormatType.Block or node.actualTag.formatType == M.FormatType.BlockInline then
+            if node.actualTag.formatType == tags.FormatType.Block or node.actualTag.formatType == tags.FormatType.BlockInline then
                 error("A Block or BlockInline format type element is nested in an inline formatting context")
             end
-            if node.actualTag.formatType == M.FormatType.Inline then
+            if node.actualTag.formatType == tags.FormatType.Inline then
                 clearFirst = M.formatInlineContext(node, clearFirst, clearLast and last)
             end
         end
@@ -122,13 +123,13 @@ function M.cleanAst(ast)
     if ast.tag == "pre" then
         return
     end
-    if ast.actualTag.formatType == M.FormatType.Block then
+    if ast.actualTag.formatType == tags.FormatType.Block then
         M.formatBlockContext(ast)
-    elseif ast.actualTag.formatType == M.FormatType.Inline then
+    elseif ast.actualTag.formatType == tags.FormatType.Inline then
         M.formatInlineContext(ast, false, false)
-    elseif ast.actualTag.formatType == M.FormatType.BlockInline then
+    elseif ast.actualTag.formatType == tags.FormatType.BlockInline then
         M.formatInlineContext(ast, true, true)
-    elseif ast.actualTag.formatType == M.FormatType.Script then
+    elseif ast.actualTag.formatType == tags.FormatType.Script then
     else
         error("Unreachable")
     end

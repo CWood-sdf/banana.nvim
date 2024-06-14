@@ -20,13 +20,9 @@ return function(document)
     newAst:children()[1]:setTextContent(v[1])
     if v.loc then
       newAst:addClass("local")
-    else
-      newAst:addClass("not-local")
     end
     if v.loaded then
       newAst:addClass("plugin-loaded")
-    else
-      newAst:addClass("plugin-not-loaded")
     end
     root:appendNode(newAst)
   end
@@ -50,11 +46,9 @@ return function(document)
           end
           if i == j then
             u:addClass("selected")
-            u:removeClass("not-selected")
             u:defaultStyles()
           else
             u:removeClass("selected")
-            u:addClass("not-selected")
             u:defaultStyles()
           end
           ::continue::

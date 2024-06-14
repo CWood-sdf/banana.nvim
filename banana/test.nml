@@ -1,7 +1,6 @@
 <nml>
 <!-- A partial clone of the lazy.nvim ui -->
   <head>
-    <meta name="winopt-signcolumn" value="yes">
 
     <title>
       Yeet yeet
@@ -16,8 +15,11 @@
         hl-bg: hl-extract(bg, Visual); 
         hl-fg: hl-extract(fg, Visual); 
       }
-      #tabline > .selected.home { hl-bg: hl-extract(bg, IncSearch); hl-fg: hl-extract(fg, IncSearch); }
-      #tabline > .not-selected {
+      #tabline > .selected.home {
+        hl-bg: hl-extract(bg, IncSearch);
+        hl-fg: hl-extract(fg, IncSearch);
+      }
+      #tabline > :not(.selected) {
         hl-bg: hl-extract(bg, CursorLine); 
         hl-fg: hl-extract(fg, CursorLine); 
       }
@@ -40,7 +42,7 @@
       .comment {
         hl-fg: hl-extract(fg, Comment);
       }
-      ul.not-local {
+      ul:not(.local) {
         hl-fg: hl-extract(fg, "@punctuation.special");
       }
       ul.local {
@@ -50,14 +52,14 @@
         list-style-type: '● ';
         list-base-width: 4ch;
       }
-      ul.plugin-not-loaded {
+      ul:not(.plugin-loaded) {
         list-style-type: '○ ';
         list-base-width: 4ch;
       }
       ul > * {
         hl-fg: hl-extract(fg, Normal);
       }
-#plugin-template {
+      #plugin-template {
         display: hidden;
       }
 
@@ -68,7 +70,7 @@
 
       }
 
-      asdf:hover(asdf, .asdf) {
+      asdf {
 
       }
     </style>
@@ -76,9 +78,9 @@
   <body>
     <div id="tabline">
     <span class="selected home"> lazy.nvim <span class="remap"> (H) </span> </span>
-    <span class="not-selected"> Install <span class="remap"> (I) </span> </span>
-    <span class="not-selected"> Update <span class="remap"> (U) </span> </span>
-    <span class="not-selected"> Sync <span class="remap"> (S) </span> </span>
+    <span class=""> Install <span class="remap"> (I) </span> </span>
+    <span class=""> Update <span class="remap"> (U) </span> </span>
+    <span class=""> Sync <span class="remap"> (S) </span> </span>
     </div>
 
     <br>
