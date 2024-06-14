@@ -16,7 +16,6 @@ local instances = {}
 
 ---@alias Banana.Remap.Constraint "hover"|number|"line-hover"
 
-
 ---@class (exact) Banana.Instance.Keymap
 ---@field fn fun(): boolean
 ---@field opts vim.keymap.set.Opts
@@ -156,9 +155,8 @@ function Instance:_setRemap(mode, lhs, rhs, opts, dep)
     if self.keymaps[mode] == nil then
         self.keymaps[mode] = {}
     end
-    if self.bufnr == nil then
-        error("Buf does not exist")
-    end
+    assert(self.bufnr ~= nil,
+        "Buf does not exist")
     if self.keymaps[mode][lhs] == nil then
         self.keymaps[mode][lhs] = {}
         vim.keymap.set(mode, lhs, function()
@@ -216,9 +214,8 @@ function Instance:body()
     end
     local sel = require('banana.ncss.query').selectors.oneTag("body")
     local arr = sel:getMatches(self.ast)
-    if #arr == 0 then
-        error("Could not find a body tag in Instance:body()")
-    end
+    assert(#arr ~= 0,
+        "Could not find a body tag in Instance:body()")
     self._body = arr[1]
     return arr[1]
 end
@@ -251,9 +248,8 @@ end
 ---@param ast Banana.Ast?
 ---@param rules Banana.Ncss.RuleSet[]
 function Instance:applyStyleDeclarations(ast, rules)
-    if ast == nil then
-        error("Ast is nil")
-    end
+    assert(ast ~= nil,
+        "Ast is nil")
     self:applyInlineStyles(ast)
     for _, v in ipairs(rules) do
         if v.query == nil then
@@ -282,9 +278,8 @@ function Instance:runScript(script, opts)
         script = "local document = require('banana.render').getInstance(" .. self.instanceId .. ")\n" .. script
         f = loadstring(script)
     end
-    if f == nil then
-        error("Could not convert script tag to runnable lua function")
-    end
+    assert(f ~= nil,
+        "Could not convert script tag to runnable lua function")
     f(opts)
 end
 
@@ -429,9 +424,8 @@ function Instance:highlight(lines, offset)
         self.highlightNs = vim.api.nvim_create_namespace("Spaceport")
     end
     vim.api.nvim_win_set_hl_ns(self.winid, self.highlightNs)
-    if self.bufnr == nil or not vim.api.nvim_buf_is_valid(self.bufnr) then
-        error("Unreachable (buf is invalid in higlightBuffer)")
-    end
+    assert(self.bufnr ~= nil or not vim.api.nvim_buf_is_valid(self.bufnr),
+        "Unreachable (buf is invalid in higlightBuffer)")
     local row = offset
     local col = 0
     local hlId = 0
@@ -457,9 +451,8 @@ function Instance:highlight(lines, offset)
                     if hlNotExists and keysCount > 1 then
                         local opts = vim.deepcopy(word.style)
                         opts.__name = nil
-                        if opts == nil then
-                            error("Unreachable [highlightBuffer colorOpts is nil]")
-                        end
+                        assert(opts ~= nil,
+                            "Unreachable [highlightBuffer colorOpts is nil]")
                         vim.api.nvim_set_hl(0, hlGroup, opts)
                     elseif hlNotExists then
                         hlGroup = M.defaultWinHighlight
@@ -519,13 +512,11 @@ end
 ---@param name string
 ---@return Banana.Ast[]
 function Instance:getElementsByClassName(name)
-    if nilAst == nil then
-        error("Unreachable")
-    end
+    assert(nilAst ~= nil,
+        "Unreachable")
     local query = require('banana.ncss.query').selectors.class(name)
-    if self.ast == nil then
-        error("Instance hasnt parsed yet (should be unreachable)")
-    end
+    assert(self.ast ~= nil,
+        "Instance hasnt parsed yet (should be unreachable)")
     local asts = query:getMatches(self.ast)
     return asts
 end
@@ -533,13 +524,11 @@ end
 ---@param name string
 ---@return Banana.Ast
 function Instance:getElementById(name)
-    if nilAst == nil then
-        error("Unreachable")
-    end
+    assert(nilAst ~= nil,
+        "Unreachable")
     local query = require('banana.ncss.query').selectors.id(name)
-    if self.ast == nil then
-        error("Instance hasnt parsed yet (should be unreachable)")
-    end
+    assert(self.ast ~= nil,
+        "Instance hasnt parsed yet (should be unreachable)")
     local asts = query:getMatches(self.ast)
     if #asts ~= 1 then
         ---@diagnostic disable-next-line: return-type-mismatch
@@ -551,13 +540,11 @@ end
 ---@param name string
 ---@return Banana.Ast[]
 function Instance:getElementsByTag(name)
-    if nilAst == nil then
-        error("Unreachable")
-    end
+    assert(nilAst ~= nil,
+        "Unreachable")
     local query = require('banana.ncss.query').selectors.tag(name)
-    if self.ast == nil then
-        error("Instance hasnt parsed yet (should be unreachable)")
-    end
+    assert(self.ast ~= nil,
+        "Instance hasnt parsed yet (should be unreachable)")
     local asts = query:getMatches(self.ast)
     if #asts ~= 1 then
         ---@diagnostic disable-next-line: return-type-mismatch
@@ -592,12 +579,10 @@ end
 ---@param id number
 ---@return Banana.Instance
 function M.getInstance(id)
-    if id == nil then
-        error("Given a nil instance id")
-    end
-    if instances[id] == nil then
-        error("Could not find instance with id " .. id)
-    end
+    assert(id ~= nil,
+        "Given a nil instance id")
+    assert(instances[id] ~= nil,
+        "Could not find instance with id " .. id)
     return instances[id]
 end
 

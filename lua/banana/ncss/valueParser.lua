@@ -126,15 +126,13 @@ local function parseNumValue(tree, parser, new)
         local valStr = valueString:sub(1, _str.charCount(valueString) - _str.charCount(unitStr))
 
         local val = tonumber(valStr)
-        if val == nil then
-            error("Value is nil (from value string of '" .. valStr .. "')")
-        end
+        assert(val ~= nil,
+            "Value is nil (from value string of '" .. valStr .. "')")
         return M.newUnitValue(val, unitStr)
     end
     local num = tonumber(valueString)
-    if num == nil then
-        error("Got a nil value when num parsing '" .. valueString .. "'")
-    end
+    assert(num ~= nil,
+        "Got a nil value when num parsing '" .. valueString .. "'")
     return new(num)
 end
 
@@ -149,9 +147,8 @@ local Function = {
 ---@param fn fun(params: Banana.Ncss.StyleValue[], parser: Banana.Ncss.ParseData): Banana.Ncss.StyleValue[]|Banana.Ncss.StyleValue
 ---@param argsType (Banana.Ncss.StyleValue.Types|Banana.Ncss.StyleValue.Types[])[]
 function Function:new(fn, args, argsType)
-    if #argsType ~= args then
-        error("Could not match argument size to type size")
-    end
+    assert(#argsType == args,
+        "Could not match argument size to type size")
     ---@type Banana.Ncss.Function
     local ret = {
         argsCount = args,
@@ -225,24 +222,19 @@ local cssParsers = {
     end,
     call_expression = function(tree, parser, _)
         local fNameNode = tree:child(0)
-        if fNameNode == nil then
-            error("function_name node is nil in call_expression")
-        end
-        if fNameNode:type() ~= ts_types.function_name then
-            error("Expected fNameNode to be 'function_name' type, but got '" .. fNameNode:type() .. "'")
-        end
+        assert(fNameNode ~= nil,
+            "function_name node is nil in call_expression")
+        assert(fNameNode:type() == ts_types.function_name,
+            "Expected fNameNode to be 'function_name' type, but got '" .. fNameNode:type() .. "'")
         local fName = parser:getStringFromRange({ fNameNode:start() }, { fNameNode:end_() })
         local fn = cssFunctions[fName]
-        if fn == nil then
-            error("Could not find function definition for function '" .. fName .. "'")
-        end
+        assert(fn ~= nil,
+            "Could not find function definition for function '" .. fName .. "'")
         local paramsNode = tree:child(1)
-        if paramsNode == nil then
-            error("Expected arguments node to not be nil")
-        end
-        if paramsNode:type() ~= ts_types.arguments then
-            error("Expected paramsNode to have type 'arguments', instead got '" .. paramsNode:type() .. "'")
-        end
+        assert(paramsNode ~= nil,
+            "Expected arguments node to not be nil")
+        assert(paramsNode:type() == ts_types.arguments,
+            "Expected paramsNode to have type 'arguments', instead got '" .. paramsNode:type() .. "'")
         ---@type Banana.Ncss.StyleValue[]
         local params = {}
         local i = 0
@@ -261,10 +253,9 @@ local cssParsers = {
             i = i + 1
             param = paramsNode:child(i)
         end
-        if #params ~= fn.argsCount then
-            error("Got incorrect number of arguments for function '" ..
-                fName .. "', expected " .. fn.argsCount .. ", but got " .. #params)
-        end
+        assert(#params == fn.argsCount,
+            "Got incorrect number of arguments for function '" ..
+            fName .. "', expected " .. fn.argsCount .. ", but got " .. #params)
         for j, v in ipairs(params) do
             local pType = v.type
             local expected = fn.argsType[j]
@@ -298,9 +289,8 @@ local cssParsers = {
     end,
     parenthesized_value = function(tree, parser, _)
         local child = tree:child(1)
-        if child == nil then
-            error("Unreachable")
-        end
+        assert(child ~= nil,
+            "Unreachable")
         return M.parseCssValue(child, parser)
     end,
 }
@@ -310,14 +300,12 @@ local cssParsers = {
 ---@return Banana.Ncss.StyleValue[]
 function M.parseCssValue(tree, parser)
     local p = cssParsers[tree:type()]
-    if p == nil then
-        error("Could not find value parser for node of type '" .. tree:type() .. "'")
-    end
+    assert(p ~= nil,
+        "Could not find value parser for node of type '" .. tree:type() .. "'")
     local str = parser:getStringFromRange({ tree:start() }, { tree:end_() })
     local ret = p(tree, parser, str)
-    if ret == nil then
-        error("Unreachable")
-    end
+    assert(ret ~= nil,
+        "Unreachable")
     if ret[1] ~= nil then
         return ret
     end

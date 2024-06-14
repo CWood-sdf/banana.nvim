@@ -48,10 +48,9 @@ end
 
 ---@param width number
 function M.Box:expandWidthTo(width)
-    if width < self.width then
-        error("width is smaller than possible (given target width " ..
-            width .. " when current width is " .. self.width .. ")")
-    end
+    assert(width >= self.width,
+        "width is smaller than possible (given target width " ..
+        width .. " when current width is " .. self.width .. ")")
     self.width = width
     self.dirty = true
     self:clean()
@@ -79,9 +78,9 @@ function M.Box:clean()
     end
     for i, _ in ipairs(self.lines) do
         local w = M.lineWidth(self.lines[i])
-        if w > self.width then
-            error("Unreachable (line width is greater than max width)")
-        elseif w < self.width then
+        assert(w <= self.width,
+            "Unreachable (line width is greater than max width)")
+        if w < self.width then
             table.insert(self.lines[i], self:fillString(self.width - w))
         end
     end
@@ -207,9 +206,8 @@ function M.Box:trimWidthLastLine(width, trimStrat)
     local maxWidth = 0
     for i = 1, #self.lines - 1 do
         maxWidth = math.max(maxWidth, M.lineWidth(self.lines[i]))
-        if maxWidth > width then
-            error("Can not trim non last line in Box:trimWidthLastLine")
-        end
+        assert(maxWidth <= width,
+            "Can not trim non last line in Box:trimWidthLastLine")
     end
 end
 

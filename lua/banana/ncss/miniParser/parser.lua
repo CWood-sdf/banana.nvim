@@ -75,9 +75,8 @@ end
 ---@return Banana.Ncss.MiniParser.Ast
 function Parser:parsePseudoClass()
     local name = self.lexer:nextToken()
-    if name.tp ~= lex.TokenType.Word then
-        error("Expected a name for a pseudo class")
-    end
+    assert(name.tp == lex.TokenType.Word,
+        "Expected a name for a pseudo class")
     local peek = self.lexer:peekNextToken()
     local ret = Ast:new("", tsTypes.pseudo_class_selector)
     local nameAst = Ast:new(name.str, tsTypes.class_name)

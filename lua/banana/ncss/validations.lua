@@ -14,9 +14,8 @@ function Validation:new(val)
     if type(val) == "table" then
         for k, v in pairs(val) do
             for _, y in ipairs(v) do
-                if #y ~= k then
-                    error("Validation does not have the proper size")
-                end
+                assert(#y == k,
+                    "Validation does not have the proper size")
             end
         end
         ret = {
@@ -41,9 +40,8 @@ function Validation:passes(value, name)
         return self.custom(value)
     end
     local validations = self.validations[#value]
-    if validations == nil then
-        error("No validation for size " .. #value .. " exists for property '" .. name .. "'")
-    end
+    assert(validations ~= nil,
+        "No validation for size " .. #value .. " exists for property '" .. name .. "'")
     for _, v in pairs(validations) do
         local passes = true
         for i, tp in ipairs(v) do
@@ -110,9 +108,8 @@ local validations = {
 return {
     validate = function(name, value)
         local validation = validations[name]
-        if validation == nil then
-            error("Unable to validate property '" .. name .. "'")
-        end
+        assert(validation ~= nil,
+            "Unable to validate property '" .. name .. "'")
         return validation:passes(value, name)
     end,
 }

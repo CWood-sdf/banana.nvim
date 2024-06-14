@@ -19,13 +19,11 @@ function M.nmlLoad(filename)
         return nmlAsts[filename][2], nmlAsts[filename][1].styleSets, nmlAsts[filename][1].scripts
     end
     local parser = require('banana.nml.parser').fromFile(filename)
-    if parser == nil then
-        error("Could not generate parser for file '" .. filename .. "'")
-    end
+    assert(parser ~= nil,
+        "Could not generate parser for file '" .. filename .. "'")
     local ast = parser:parse()
-    if ast == nil then
-        error("Unable to parse file '" .. filename .. "'")
-    end
+    assert(ast ~= nil,
+        "Unable to parse file '" .. filename .. "'")
     require("banana.nml.cleanAst").cleanAst(ast)
     nmlAsts[filename] = { parser, ast }
     return ast, parser.styleSets, parser.scripts

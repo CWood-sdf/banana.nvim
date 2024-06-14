@@ -77,12 +77,10 @@ end
 ---@return string,string?,Banana.Ncss.StyleDeclaration[]?
 function Parser:parseAttribute(tree)
     local name = tree:child(0)
-    if name == nil then
-        error("Unreachable")
-    end
-    if name:type() ~= M.ts_types.attribute_name then
-        error("Unreachable")
-    end
+    assert(name ~= nil,
+        "Unreachable")
+    assert(name:type() == M.ts_types.attribute_name,
+        "Unreachable")
     local nameStr = self:getStrFromNode(name)
     local value = nil
     if tree:child_count() >= 3 and nameStr == "style" then
@@ -100,9 +98,8 @@ function Parser:parseAttribute(tree)
     elseif tree:child_count() >= 3 then
         local val = tree:child(2)
         ::top::
-        if val == nil then
-            error("Unreachable")
-        end
+        assert(val ~= nil,
+            "Unreachable")
         if val:type() == M.ts_types.attribute_value then
             value = self:getStrFromNode(val)
         elseif val:type() == M.ts_types.quoted_attribute_value then
@@ -117,9 +114,8 @@ end
 ---@param tree TSNode
 ---@return Banana.Attributes, Banana.Ncss.StyleDeclaration[]
 function Parser:parseAttributes(tree)
-    if tree:type() ~= M.ts_types.start_tag and tree:type() ~= M.ts_types.self_closing_tag then
-        error("Must pass in a start_tag or self_closing_tag tree to parseAttributes")
-    end
+    assert(tree:type() == M.ts_types.start_tag or tree:type() == M.ts_types.self_closing_tag,
+        "Must pass in a start_tag or self_closing_tag tree to parseAttributes")
     ---@type Banana.Attributes
     local ret = {}
     local i = 2
@@ -127,12 +123,10 @@ function Parser:parseAttributes(tree)
     local decls = {}
     while i < tree:child_count() - 1 do
         local attr = tree:child(i)
-        if attr == nil then
-            error("Unreachable")
-        end
-        if attr:type() ~= M.ts_types.attribute then
-            error("An attribute was not given")
-        end
+        assert(attr ~= nil,
+            "Unreachable")
+        assert(attr:type() == M.ts_types.attribute,
+            "An attribute was not given")
         local name, val, d = self:parseAttribute(attr)
         if d ~= nil then
             for _, v in ipairs(d) do
@@ -152,16 +146,13 @@ end
 ---@return Banana.Ast?
 function Parser:parseSelfClosingTag(tree, parent)
     local child = tree:child(0)
-    if child == nil then
-        error("Unreachable")
-    end
+    assert(child ~= nil,
+        "Unreachable")
     local nameEl = child:child(1)
-    if nameEl == nil then
-        error("Unreachable")
-    end
-    if nameEl:type() ~= M.ts_types.tag_name then
-        error("Unreachable")
-    end
+    assert(nameEl ~= nil,
+        "Unreachable")
+    assert(nameEl:type() == M.ts_types.tag_name,
+        "Unreachable")
     local name = self.lexer:getStrFromRange({ nameEl:start() }, { nameEl:end_() })
     local ret = ast.Ast:new(name, parent)
 
@@ -208,35 +199,27 @@ function Parser:parseTag(tree, parent, isSpecial)
     isSpecial = isSpecial or false
     local firstChild = tree:child(0)
     local lastChild = tree:child(tree:child_count() - 1)
-    if firstChild == nil or lastChild == nil then
-        error("Unreachable")
-    end
-    if firstChild:type() ~= M.ts_types.start_tag then
-        error("Unreachable")
-    end
-    if lastChild:type() ~= M.ts_types.end_tag and not isSpecial then
-        error("Unreachable")
-    end
+    assert(firstChild ~= nil and lastChild ~= nil,
+        "Unreachable")
+    assert(firstChild:type() == M.ts_types.start_tag,
+        "Unreachable")
+    assert(lastChild:type() == M.ts_types.end_tag or isSpecial,
+        "Unreachable")
     local tagName = firstChild:child(1)
-    if tagName == nil then
-        error("Unreachable")
-    end
-    if tagName:type() ~= M.ts_types.tag_name then
-        error("tagName does not have type tag_name, but instead has type " .. tagName:type())
-    end
+    assert(tagName ~= nil,
+        "Unreachable")
+    assert(tagName:type() == M.ts_types.tag_name,
+        "tagName does not have type tag_name, but instead has type " .. tagName:type())
     local tagNameStr = self.lexer:getStrFromRange({ tagName:start() }, { tagName:end_() })
     local lastTagName = lastChild:child(1)
-    if lastTagName == nil then
-        error('Unreachable')
-    end
-    if lastTagName:type() ~= M.ts_types.tag_name then
-        error("Unreachable")
-    end
+    assert(lastTagName ~= nil,
+        'Unreachable')
+    assert(lastTagName:type() == M.ts_types.tag_name,
+        "Unreachable")
     local endTagNameStr = self.lexer:getStrFromRange({ lastTagName:start() }, { lastTagName:end_() })
-    if tagNameStr ~= endTagNameStr then
-        error("A start tag is not closed by the same tag (started with " ..
-            tagNameStr .. " but ended with " .. endTagNameStr .. ")")
-    end
+    assert(tagNameStr == endTagNameStr,
+        "A start tag is not closed by the same tag (started with " ..
+        tagNameStr .. " but ended with " .. endTagNameStr .. ")")
     local isScript = false
     if tagNameStr == "script" then
         isScript = true
@@ -247,9 +230,8 @@ function Parser:parseTag(tree, parent, isSpecial)
     end
     local ret = nil
     if not isScript and not isStyle then
-        if parent == nil then
-            error("Parent is nil")
-        end
+        assert(parent ~= nil,
+            "Parent is nil")
         ret = ast.Ast:new(tagNameStr, parent)
     end
 
@@ -262,27 +244,23 @@ function Parser:parseTag(tree, parent, isSpecial)
     local i = 1
     while i < tree:child_count() - 1 do
         local child = tree:child(i)
-        if child == nil then
-            error("Unreachable")
-        end
+        assert(child ~= nil,
+            "Unreachable")
         if child:type() == M.ts_types.text then
-            if ret == nil then
-                error("Unreachable")
-            end
+            assert(ret ~= nil,
+                "Unreachable")
             ret:appendTextNode(self:getStrFromNode(child))
         elseif child:type() == M.ts_types.element then
             ---@cast ret Banana.Ast
             local element = self:parseElement(child, ret)
             if element ~= nil then
-                if ret == nil then
-                    error("Unreachable")
-                end
+                assert(ret ~= nil,
+                    "Unreachable")
                 ret:appendNode(element)
             end
         elseif child:type() == M.ts_types.entity then
-            if ret == nil then
-                error("Unreachable")
-            end
+            assert(ret ~= nil,
+                "Unreachable")
             ret:appendTextNode(self:resolveEntity(self:getStrFromNode(child)))
         elseif child:type() == M.ts_types.raw_text and isScript then
             local scriptStr = ""
@@ -321,12 +299,10 @@ end
 ---@param parent Banana.Ast
 ---@return Banana.Ast?
 function Parser:parseElement(tree, parent)
-    if tree:type() ~= M.ts_types.element then
-        error("Did not pass an element into parseElement()")
-    end
-    if tree:child_count() == 0 then
-        error("Somehow an element does not have a child")
-    end
+    assert(tree:type() == M.ts_types.element,
+        "Did not pass an element into parseElement()")
+    assert(tree:child_count() ~= 0,
+        "Somehow an element does not have a child")
     if tree:child_count() == 1 then
         return self:parseSelfClosingTag(tree, parent)
     end
@@ -357,28 +333,23 @@ function Parser:parse()
     if fullDocMode and parsed:child_count() < 2 then
         error("A full nml document must have an <nml> tag")
     end
-    if not fullDocMode and parsed:child_count() ~= 1 then
-        error("A partial nml document should have only one element")
-    end
-    if not fullDocMode and parsed:child(0):type() ~= M.ts_types.element then
-        error("A partial nml document should contain an element as the root node")
-    end
+    assert(fullDocMode or parsed:child_count() == 1,
+        "A partial nml document should have only one element")
+    assert(fullDocMode or parsed:child(0):type() == M.ts_types.element,
+        "A partial nml document should contain an element as the root node")
     local child = nil
     if fullDocMode then
         child = parsed:child(1)
-        if child == nil then
-            error("Unreachable: parsed child is 0 in fullDocMode")
-        end
+        assert(child ~= nil,
+            "Unreachable: parsed child is 0 in fullDocMode")
     else
         child = parsed:child(0)
-        if child == nil then
-            error("Unreachable: parsed child is 0 in not fullDocMode")
-        end
+        assert(child ~= nil,
+            "Unreachable: parsed child is 0 in not fullDocMode")
     end
     local nilAst = require('banana.render').getNilAst()
-    if nilAst == nil then
-        error("Nil ast is not defined")
-    end
+    assert(nilAst ~= nil,
+        "Nil ast is not defined")
     ---@diagnostic disable-next-line: cast-type-mismatch
     ---@cast nilAst Banana.Ast
     return self:parseElement(child, nilAst)
@@ -431,9 +402,8 @@ function M.fromFile(path)
     tree = arr[1]
     local parsed = tree:root()
     local children = parsed:child(0)
-    if children == nil then
-        error("y r u gay")
-    end
+    assert(children ~= nil,
+        "y r u gay")
 
     -- delete the buffer
     vim.api.nvim_buf_delete(buf, { force = true })

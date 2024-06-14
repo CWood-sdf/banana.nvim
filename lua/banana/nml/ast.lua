@@ -381,9 +381,8 @@ function M.Ast:applyStyleDeclarations(declarations, basePrec)
 
             local value = v.values[1]
             local index = M[side]
-            if index == nil then
-                error("Undefined side '" .. side .. "'")
-            end
+            assert(index ~= nil,
+                "Undefined side '" .. side .. "'")
             local val = value.value
             ---@cast val Banana.Ncss.UnitValue
             self.padding[index] = val
@@ -392,9 +391,8 @@ function M.Ast:applyStyleDeclarations(declarations, basePrec)
 
             local value = v.values[1]
             local index = M[side]
-            if index == nil then
-                error("Undefined side '" .. side .. "'")
-            end
+            assert(index ~= nil,
+                "Undefined side '" .. side .. "'")
             local val = value.value
             ---@cast val Banana.Ncss.UnitValue
             self.margin[index] = val
@@ -434,9 +432,8 @@ function M.Ast:applyStyleDeclarations(declarations, basePrec)
 end
 
 function M.Ast:remove()
-    if self._parent == require('banana.render').getNilAst() then
-        error("Attempting to remove the root node")
-    end
+    assert(self._parent ~= require('banana.render').getNilAst(),
+        "Attempting to remove the root node")
     for i, v in ipairs(self._parent.nodes) do
         if v == self then
             table.remove(self._parent.nodes, i)
@@ -574,9 +571,8 @@ end
 ---@param mods Banana.Remap.Constraint[]
 ---@param opts vim.keymap.set.Opts
 function M.Ast:attachRemap(mode, lhs, mods, rhs, opts)
-    if type(mods) ~= "table" then
-        error("Banana attachRemap requires the 4th parameter (before rhs) to be a table of modifiers")
-    end
+    assert(type(mods) == "table",
+        "Banana attachRemap requires the 4th parameter (before rhs) to be a table of modifiers")
     local modFns = vim.iter(mods)
         :map(function(mod) return self:parseRemapMod(mod) end):totable()
     if type(rhs) == "string" then

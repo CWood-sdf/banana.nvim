@@ -12,14 +12,12 @@ local pseudoClasses = {
         M.parseQueryComponent(child, query, parser)
         local spec = query.specificity
         return function(ast)
-            if query.rootSelector.select == nil then
-                error("Expected a whereable root selector in :not")
-            end
+            assert(query.rootSelector.select ~= nil,
+                "Expected a whereable root selector in :not")
             if query.rootSelector.select(ast) then return false end
             for _, sel in ipairs(query.filters) do
-                if sel.filterType == q.FilterType.Selector then
-                    error("Exected only where filters in :not")
-                end
+                assert(sel.filterType ~= q.FilterType.Selector,
+                    "Exected only where filters in :not")
                 ---@cast sel Banana.Ncss.Where
                 if sel.satisfies(ast) then return false end
             end
@@ -40,15 +38,13 @@ M.queryParsers = {
             nameTag = node:child(1)
             argsIndex = argsIndex - 1
         end
-        if nameTag == nil or nameTag:type() ~= ts_types.class_name then
-            error("Could not parse pseudo class as got no class_name node at the expected spots")
-        end
+        assert(nameTag ~= nil or nameTag:type() ~= ts_types.class_name,
+            "Could not parse pseudo class as got no class_name node at the expected spots")
 
         local name = parser:getStringFromRange({ nameTag:start() }, { nameTag:end_() })
         local parse = pseudoClasses[name]
-        if parse == nil then
-            error("Could not find pseudo class parser for pseudo class '" .. name .. "'")
-        end
+        assert(parse ~= nil,
+            "Could not find pseudo class parser for pseudo class '" .. name .. "'")
         local fn, spec = parse(node:child(argsIndex), parser)
         spec = spec or q.Specificity.Pseudoclass
         if isSel then
@@ -61,18 +57,15 @@ M.queryParsers = {
     end,
     [ts_types.descendant_selector] = function(node, parser)
         local el = node:child(1)
-        if el == nil then
-            error("Unreachable")
-        end
+        assert(el ~= nil,
+            "Unreachable")
 
         local query = q.newQuery()
         M.parseQueryComponent(el, query, parser)
-        if query.rootSelector == nil then
-            error("Unexpected nil root selector on query")
-        end
-        if query.rootSelector.select == nil then
-            error("descendant_selector requires the rootSelector to have a select function, not manualSelect")
-        end
+        assert(query.rootSelector ~= nil,
+            "Unexpected nil root selector on query")
+        assert(query.rootSelector.select ~= nil,
+            "descendant_selector requires the rootSelector to have a select function, not manualSelect")
 
         ---@type fun(ast: Banana.Ast, arr: Banana.Ast[]): Banana.Ast[]
         local sel = nil
@@ -90,9 +83,8 @@ M.queryParsers = {
                 end
                 local i = 1
                 while canInsert and query.filters[i] ~= nil do
-                    if query.filters[i].filterType ~= q.FilterType.Where then
-                        error("descendant_selector can only have where filters")
-                    end
+                    assert(query.filters[i].filterType == q.FilterType.Where,
+                        "descendant_selector can only have where filters")
                     canInsert = query.filters[i].satisfies(v)
                     i         = i + 1
                 end
@@ -114,18 +106,15 @@ M.queryParsers = {
     end,
     [ts_types.child_selector] = function(node, parser)
         local el = node:child(2)
-        if el == nil then
-            error("Unreachable")
-        end
+        assert(el ~= nil,
+            "Unreachable")
 
         local query = q.newQuery()
         M.parseQueryComponent(el, query, parser)
-        if query.rootSelector == nil then
-            error("Unexpected nil root selector on query")
-        end
-        if query.rootSelector.select == nil then
-            error("child_selector requires the rootSelector to have a select function, not manualSelect")
-        end
+        assert(query.rootSelector ~= nil,
+            "Unexpected nil root selector on query")
+        assert(query.rootSelector.select ~= nil,
+            "child_selector requires the rootSelector to have a select function, not manualSelect")
 
         return q.newManualSelector(function(ast)
             local ret = {}
@@ -139,9 +128,8 @@ M.queryParsers = {
                 end
                 local i = 1
                 while canInsert and query.filters[i] ~= nil do
-                    if query.filters[i].filterType ~= q.FilterType.Where then
-                        error("child_selector can only have where filters")
-                    end
+                    assert(query.filters[i].filterType == q.FilterType.Where,
+                        "child_selector can only have where filters")
                     canInsert = query.filters[i].satisfies(v)
                     i         = i + 1
                 end
@@ -161,12 +149,10 @@ M.queryParsers = {
             isSel = true
             nameTag = node:child(1)
         end
-        if nameTag == nil then
-            error("Expected class_name to not be nil")
-        end
-        if nameTag:type() ~= ts_types.class_name then
-            error("Expected nameTag to have type class_name, got '" .. nameTag:type() .. "'")
-        end
+        assert(nameTag ~= nil,
+            "Expected class_name to not be nil")
+        assert(nameTag:type() == ts_types.class_name,
+            "Expected nameTag to have type class_name, got '" .. nameTag:type() .. "'")
 
         local name = parser:getStringFromRange({ nameTag:start() }, { nameTag:end_() })
         if isSel then
@@ -179,12 +165,10 @@ M.queryParsers = {
     end,
     [ts_types.id_selector] = function(node, parser)
         local nameTag = node:child(1)
-        if nameTag == nil then
-            error("Expected id_name to not be nil")
-        end
-        if nameTag:type() ~= ts_types.id_name then
-            error("Expected nameTag to have type id_name, got '" .. nameTag:type() .. "'")
-        end
+        assert(nameTag ~= nil,
+            "Expected id_name to not be nil")
+        assert(nameTag:type() == ts_types.id_name,
+            "Expected nameTag to have type id_name, got '" .. nameTag:type() .. "'")
 
         local name = parser:getStringFromRange({ nameTag:start() }, { nameTag:end_() })
 
@@ -207,9 +191,8 @@ function M.parseQueryComponent(tree, query, parser)
         end
         M.parseQueryComponent(child, query, parser)
         local p = M.queryParsers[tree:type()]
-        if p == nil then
-            error("Could not find parser for '" .. tree:type() .. "'")
-        end
+        assert(p ~= nil,
+            "Could not find parser for '" .. tree:type() .. "'")
         local comp = p(tree, parser)
         query:appendFilter(comp, true)
     end

@@ -111,9 +111,15 @@ end
 ---@param extraWidth number
 ---@return boolean
 local function isExpandable(ast, extraWidth)
-    local isFlexChild = ast._parent ~= nil and ast._parent.style ~= nil and ast._parent.style['width'] == "flex"
+    local isFlexChild = ast._parent ~= nil and ast._parent.style ~= nil and ast._parent.style['display'] == "flex"
+    if isFlexChild then
+        return extraWidth > 0 and
+            (ast.actualTag.formatType == M.FormatType.Block or ast.actualTag.formatType == M.FormatType.BlockInline) and
+            ast.style.width ~= nil
+    end
+
     return (ast.actualTag.formatType == M.FormatType.Block or ast.actualTag.formatType == M.FormatType.BlockInline
-        ) and extraWidth > 0 and isFlexChild
+        ) and extraWidth > 0
         or ast.style['width'] ~= nil
 end
 
@@ -380,10 +386,12 @@ function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX
             end
             local count = _str.charCount(v)
             if count + currentLine.width > width then
-                local remove = 0
-                local j = count
+                local remove = 1
+                local j = count - remove
                 local repLim = 1000
                 while count + currentLine.width - remove > width do
+                    remove = remove + 1
+                    j = count - remove
                     while v:sub(j, j) ~= ' ' do
                         remove = remove + 1
                         j = count - remove
@@ -500,9 +508,8 @@ end
 ---@param name string
 function M.makeTag(name)
     local ok, mgr = pcall(require, 'banana.nml.tags.' .. name)
-    if not ok then
-        error("Error while trying to load tag '" .. name .. "'")
-    end
+    assert(ok,
+        "Error while trying to load tag '" .. name .. "'")
     return mgr
 end
 

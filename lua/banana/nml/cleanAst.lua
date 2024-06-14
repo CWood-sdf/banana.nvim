@@ -102,12 +102,11 @@ function M.formatInlineContext(ast, clearFirst, clearLast)
             end
         else
             ---@cast node Banana.Ast
-            if node.actualTag.formatType == tags.FormatType.Block or node.actualTag.formatType == tags.FormatType.BlockInline then
-                error("A Block or BlockInline format type element is nested in an inline formatting context")
-            end
-            if node.actualTag.formatType == tags.FormatType.Inline then
-                clearFirst = M.formatInlineContext(node, clearFirst, clearLast and last)
-            end
+            assert(
+                node.actualTag.formatType ~= tags.FormatType.Block and
+                node.actualTag.formatType ~= tags.FormatType.BlockInline,
+                "A Block or BlockInline format type element is nested in an inline formatting context")
+            clearFirst = M.formatInlineContext(node, clearFirst, clearLast and last)
         end
         if inc then
             i = i + 1

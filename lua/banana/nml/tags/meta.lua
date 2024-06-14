@@ -10,13 +10,11 @@ end
 local function renderer(_, ast)
     local inst = require('banana.render').getInstance(ast.instance)
     local name = ast:getAttribute("name")
-    if name == nil then
-        error("Expected a name attribute on a meta tag")
-    end
+    assert(name ~= nil,
+        "Expected a name attribute on a meta tag")
     local value = ast:getAttribute("value")
-    if value == nil then
-        error("Expected a value attribute on a meta tag")
-    end
+    assert(value ~= nil,
+        "Expected a value attribute on a meta tag")
     if startsWith(name, "buf-") then
         inst.bufOpts[name:sub(#"buf-" + 1, #name)] = tonumber(value) or value
     elseif startsWith(name, "win-") then

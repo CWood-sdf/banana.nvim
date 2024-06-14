@@ -48,9 +48,8 @@ function Selector:getMatches(ast)
     if self.manualSelect ~= nil then
         return self.manualSelect(ast)
     end
-    if self.select == nil then
-        error("Both selector functions are nil in Ncss Selector")
-    end
+    assert(not (self.select == nil),
+        "Both selector functions are nil in Ncss Selector")
     local ret = {}
     self:_getMatches(ast, ret)
     return ret
@@ -193,9 +192,8 @@ local Query = {
 ---@param ast Banana.Ast
 ---@return Banana.Ast[]
 function Query:find(ast)
-    if self.rootSelector == nil then
-        error("rootSelector is nil in Ncss Query")
-    end
+    assert(not (self.rootSelector == nil),
+        "rootSelector is nil in Ncss Query")
     local ret = self.rootSelector:getMatches(ast)
     for _, v in ipairs(self.filters) do
         if v.filterType == M.FilterType.Where then
@@ -242,9 +240,8 @@ end
 ---@param sel Banana.Ncss.Selector
 ---@param force boolean
 function Query:setRootSelector(sel, force)
-    if self.rootSelector ~= nil and not force then
-        error("Overwriting the root selector of an Ncss Query")
-    end
+    assert(self.rootSelector == nil or force,
+        "Overwriting the root selector of an Ncss Query")
     self.rootSelector = sel
     self.specificity = self.specificity + sel.specificity
 end
