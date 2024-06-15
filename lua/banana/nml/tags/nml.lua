@@ -1,7 +1,7 @@
 local t = require('banana.nml.tags')
 
 ---@type Banana.Renderer
-local function renderer(self, ast, parentHl, parentWidth, parentHeight, startX, startY, inherit)
+local function renderer(self, ast, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra)
     local b = require('banana.box')
     ---@type Banana.Box
     local ret = b.Box:new()
@@ -11,9 +11,9 @@ local function renderer(self, ast, parentHl, parentWidth, parentHeight, startX, 
         end
         ---@cast node Banana.Ast
         if node.tag == "head" then
-            node.actualTag:getRendered(ast, parentHl, parentWidth, parentHeight, 0, 0, inherit)
+            node.actualTag:getRendered(ast, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra)
         elseif node.tag == "body" then
-            ret = node.actualTag:getRendered(ast, parentHl, parentWidth, parentHeight, 0, 0, inherit)
+            ret = node.actualTag:getRendered(ast, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra)
         elseif node.tag ~= "script" and node.tag ~= "style" then
             error("Only <head> and <body> tags allowed in <nml>, instead got <" .. node.tag .. ">")
         end

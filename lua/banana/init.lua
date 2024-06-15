@@ -30,16 +30,21 @@ M.yeet = function()
 end
 
 function M.spam()
-	local startTime = vim.uv.hrtime()
-	for _ = 1, 1000 do
-		local testFile = [[
+	local testFile = [[
 			.asdf {
 				hl-bg: #0000ff;
 			}
 		]]
+	local startTime = vim.uv.hrtime()
+	for _ = 1, 1000 do
+		local _ = require('banana.ncss.parser').parseTextSlow(testFile)
+	end
+	vim.notify((vim.uv.hrtime() - startTime) / 1e6 .. "ms\n")
+	startTime = vim.uv.hrtime()
+	for _ = 1, 1000 do
 		local _ = require('banana.ncss.parser').parseText(testFile)
 	end
-	print((vim.uv.hrtime() - startTime) / 1e6 .. "ms")
+	vim.notify((vim.uv.hrtime() - startTime) / 1e6 .. "ms\n")
 end
 
 return M

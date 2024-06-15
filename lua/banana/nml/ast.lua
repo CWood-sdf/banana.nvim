@@ -169,15 +169,14 @@ function M.Ast:setAttribute(name, value)
         vim.notify(
             "Setting the style property using setAttribute does nothing, please use setStyleSlow. Banana will call setStyleSlow for you right now, but it should be explicit",
             vim.log.levels.WARN)
-        self:setStyleSlow(value)
+        self:setStyle(value)
         return
     end
     self.attributes[name] = value
 end
 
----THIS FUNCTION TAKES ~1ms TO RUN: DO NOT CALL INSIDE A LOOP
 ---@param value string
-function M.Ast:setStyleSlow(value)
+function M.Ast:setStyle(value)
     local parsed = require('banana.ncss.parser').parseText(value)
     self.inlineStyle = parsed[1].declarations
 end
@@ -478,8 +477,8 @@ function M.Ast:isHovering()
     local line = vim.fn.line('.')
     local col = vim.fn.col('.')
     local ret =
-        line >= self.boundBox.topY
-        and line < self.boundBox.bottomY
+        line > self.boundBox.topY
+        and line <= self.boundBox.bottomY
         and col >= self.boundBox.leftX
         and col < self.boundBox.rightX
     return ret

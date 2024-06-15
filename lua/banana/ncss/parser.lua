@@ -271,6 +271,15 @@ end
 ---@param content string
 ---@return Banana.Ncss.RuleSet[]
 function M.parseText(content)
+    local tree = require('banana.ncss.ffiparser').getTree(content)
+    local parser = ParseData:new(vim.split(content, '\n'))
+    ---@diagnostic disable-next-line: param-type-mismatch
+    return M.parse(tree:root(), parser)
+end
+
+---@param content string
+---@return Banana.Ncss.RuleSet[]
+function M.parseTextSlow(content)
     return M.parseLines(vim.split(content, '\n'))
 end
 

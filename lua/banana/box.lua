@@ -174,6 +174,10 @@ function M.Box:appendBoxBelow(box)
     self.width = newWidth
 end
 
+-- function M.Box:floatAppend()
+--
+-- end
+
 function M.Box:stripRightSpace()
     for _, row in ipairs(self.lines) do
         for i = #row, 1, -1 do

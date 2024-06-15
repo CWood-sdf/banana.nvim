@@ -33,7 +33,11 @@ M.FormatType = {
 
 ---@alias Banana.RenderRet Banana.Box
 
----@alias Banana.Renderer fun(self: Banana.TagInfo, ast: Banana.Ast, parentHl: Banana.Highlight?, parentWidth: number, parentHeight: number, startX: number, startY: number, inherit: Banana.Renderer.InheritedProperties): Banana.RenderRet
+---@class (exact) Banana.Renderer.ExtraInfo
+---@field box Banana.Box?
+
+---Gosh so many parameters i might die
+---@alias Banana.Renderer fun(self: Banana.TagInfo, ast: Banana.Ast, parentHl: Banana.Highlight?, parentWidth: number, parentHeight: number, startX: number, startY: number, inherit: Banana.Renderer.InheritedProperties, extra: Banana.Renderer.ExtraInfo): Banana.RenderRet
 
 
 ---@class (exact) Banana.TagInfo
@@ -130,8 +134,9 @@ end
 ---@param startX number
 ---@param startY number
 ---@param inherit Banana.Renderer.InheritedProperties
+---@param extra Banana.Renderer.ExtraInfo
 ---@return Banana.RenderRet
-function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, startY, inherit)
+function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra)
     local inheritOld = {}
     for k, _ in pairs(inherit) do
         local style = snakeToKebab(k)
@@ -171,7 +176,7 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
     end
     ---@cast parentWidth number
     ---@cast parentHeight number
-    local ret = self:render(ast, parentHl, parentWidth, parentHeight, startX, startY, inherit)
+    local ret = self:render(ast, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra)
     local extraWidth =
         parentWidth - ret.width -
         ast.padding[_ast.left].value - ast.padding[_ast.right].value -
@@ -236,8 +241,9 @@ end
 ---@param startX number
 ---@param startY number
 ---@param inherit Banana.Renderer.InheritedProperties
+---@param extra Banana.Renderer.ExtraInfo
 ---@return fun(): integer?, Banana.Box?, integer?
-function TagInfo:blockIter(ast, parentHl, parentWidth, parentHeight, startX, startY, inherit)
+function TagInfo:blockIter(ast, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra)
     local i = 1
     return function()
         if i > #ast.nodes then
@@ -248,12 +254,12 @@ function TagInfo:blockIter(ast, parentHl, parentWidth, parentHeight, startX, sta
         if ast.style.display ~= nil and ast.style["display"][1].value == "flex" then
             render = self:renderFlexBlock(
                 ast, parentHl, parentWidth, parentHeight,
-                startX, startY, inherit)
+                startX, startY, inherit, extra)
             i = #ast.nodes + 1
         else
             render, i = self:renderBlock(
                 ast, parentHl, i, parentWidth, parentHeight,
-                startX, startY, inherit)
+                startX, startY, inherit, extra)
         end
         startY = startY + #render.lines
         return oldI, render, i - oldI
@@ -268,9 +274,10 @@ end
 ---@param startY number
 ---@param inherit Banana.Renderer.InheritedProperties
 ---@return Banana.Box
-function TagInfo:renderInlineEl(ast, parentHl, parentWidth, parentHeight, startX, startY, inherit)
+function TagInfo:renderInlineEl(ast, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra)
     ---@type Banana.Box
-    local ret, _ = self:renderBlock(ast, ast:mixHl(parentHl), 1, parentWidth, parentHeight, startX, startY, inherit)
+    local ret, _ = self:renderBlock(ast, ast:mixHl(parentHl), 1, parentWidth, parentHeight, startX, startY, inherit,
+        extra)
     return ret
 end
 
@@ -282,8 +289,9 @@ end
 ---@param startX number
 ---@param startY number
 ---@param inherit Banana.Renderer.InheritedProperties
+---@param extra_ Banana.Renderer.ExtraInfo
 ---@return Banana.Box
-function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, startX, startY, inherit)
+function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra_)
     local i = 1
     local b = require('banana.box')
     local currentLine = b.Box:new(parentHl)
@@ -332,7 +340,7 @@ function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, start
         else
             local tag = M.makeTag(v.tag)
             v:resolveUnits(width, height)
-            local rendered = tag:getRendered(v, currentLine.hlgroup, width, height, startX, startY, inherit)
+            local rendered = tag:getRendered(v, currentLine.hlgroup, width, height, startX, startY, inherit, extra_)
             startX = startX + rendered.width
             if currentLine.width + rendered.width > width then
                 if extra == nil then
@@ -362,8 +370,11 @@ end
 ---@param startX number
 ---@param startY number
 ---@param inherit Banana.Renderer.InheritedProperties
+---@param extra_ Banana.Renderer.ExtraInfo
 ---@return Banana.Box, integer
-function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX, startY, inherit)
+function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX, startY, inherit, extra_)
+    --FIX: SPANS DONT KNOW HOW MANY CHARS WILL OVERFLOW, SO THEY JUST RENDER AS IF THEY WONT
+    --THEN WHEN OVERFLOW HAPPENS ITS LIKE SHOOT THE SPAN OVERFLOWED, I'LL JUST appendBelow() BADD
     local b = require('banana.box')
     local currentLine = b.Box:new(parentHl)
     local hasText = false
@@ -421,7 +432,7 @@ function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX
                 break
             end
             v:resolveUnits(width, height)
-            local rendered = tag:getRendered(v, currentLine.hlgroup, width, height, startX, startY, inherit)
+            local rendered = tag:getRendered(v, currentLine.hlgroup, width, height, startX, startY, inherit, extra_)
             startX = startX + rendered.width
             if currentLine.width + rendered.width > width then
                 if extra == nil then

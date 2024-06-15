@@ -2,7 +2,7 @@ local _str = require('banana.utils.string')
 local t = require('banana.nml.tags')
 
 ---@type Banana.Renderer
-local function renderer(self, ast, parentHl, parentWidth, parentHeight, startX, startY, inherit)
+local function renderer(self, ast, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra)
     local b = require('banana.box')
     ---@type Banana.Box
     local ret = b.Box:new()
@@ -14,7 +14,7 @@ local function renderer(self, ast, parentHl, parentWidth, parentHeight, startX, 
         numSize = ast.style["list-base-width"][1].value.computed
         ---@cast numSize number
     end
-    for i, box, _ in self:blockIter(ast, ret.hlgroup, parentWidth - numSize, parentHeight, startX, startY, inherit) do
+    for i, box, _ in self:blockIter(ast, ret.hlgroup, parentWidth - numSize, parentHeight, startX, startY, inherit, extra) do
         local v = ast.nodes[i]
         local currentLine = b.Box:new(ret.hlgroup)
         if type(v) ~= "string" and t.makeTag(v.tag).name == 'li' then

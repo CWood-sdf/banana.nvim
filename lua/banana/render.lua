@@ -57,6 +57,7 @@ function Instance:virtualRender(ast, width, height)
         local rendered = tag:getRendered(ast, nil, width, height, 1, 1, {
             text_align = "left",
         })
+        print("a")
         rendered:stripRightSpace()
         for _, line in ipairs(rendered.lines) do
             table.insert(ret, line)

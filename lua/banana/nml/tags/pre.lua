@@ -1,13 +1,13 @@
 local t = require('banana.nml.tags')
 
 ---@type Banana.Renderer
-local function renderer(self, ast, parentHl, parentWidth, parentHeight, startX, startY, inherit)
+local function renderer(self, ast, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra)
     local _str = require('banana.utils.string')
     local b = require('banana.box')
     ---@type Banana.Box
     local ret = b.Box:new()
     ret.hlgroup = ast:mixHl(parentHl)
-    for _, box, _ in self:blockIter(ast, ret.hlgroup, parentWidth, parentHeight, startX, startY, inherit) do
+    for _, box, _ in self:blockIter(ast, ret.hlgroup, parentWidth, parentHeight, startX, startY, inherit, extra) do
         for _, v in ipairs(box.lines) do
             local currentLine = b.Box:new(ret.hlgroup)
             currentLine:appendStr('', nil)
