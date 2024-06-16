@@ -35,7 +35,7 @@ This plugin seeks to turn neovim into a hypermedia client through its own custom
 ### Styling Language
 
 - [x] Basic Styling
-- [ ] Complex styling (animations, transitions, absolute positioning)
+- [ ] Complex styling (animations, transitions)
 - [ ] Efficient style recalculation
 - [x] Very Fast rendering
 - [x] Few errors
@@ -50,8 +50,15 @@ This plugin seeks to turn neovim into a hypermedia client through its own custom
 - [ ] display: flexbox, grid, inline, inline-block, none, block
 - [x] height/width
 - [ ] list-style
-- [ ] list-style-type (needed for ol)
+- [x] list-style-type (needed for ol)
 - [ ] max/min-\*size
+- [ ] float: seems hard, do later
+
+### Abs/float position
+
+- [ ] left/right/top/bottom
+- [ ] z-index
+- [ ] position: cant do fixed (unfortunate)
 
 #### Later stuff
 
@@ -59,13 +66,6 @@ This plugin seeks to turn neovim into a hypermedia client through its own custom
 - [ ] content? seems hard, do it later
 - [ ] direction? seems easy but not extremely useful for now
 - [ ] hyphenate-character (needs hyphenation)
-
-#### Abs/float position
-
-- [ ] left/right/top/bottom: needs abs position
-- [ ] float: seems hard, do later
-- [ ] z-index: req abs
-- [ ] position: abs seems kinda difficult
 
 #### Table stuff
 

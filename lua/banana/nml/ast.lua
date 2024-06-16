@@ -28,6 +28,8 @@ M.padNames = { "left", "top", "right", "bottom" }
 ---@field instance number?
 ---@field _parent Banana.Ast
 ---@field inlineStyle? Banana.Ncss.StyleDeclaration[]
+---@field absoluteAsts? Banana.Ast[]
+---@field relativeBoxes? { box: Banana.Box, left: number, top: number, z: number}[]
 M.Ast = {
     nodes = {},
     tag = "",

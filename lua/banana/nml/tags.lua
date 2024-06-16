@@ -19,6 +19,7 @@ end
 
 ---@class (exact) Banana.Renderer.InheritedProperties
 ---@field text_align string
+---@field position "static"|"absolute"|"sticky"|"relative"
 
 ---@class (exact) Banana.Renderer.InitialProperties: Banana.Renderer.InheritedProperties
 
@@ -137,6 +138,7 @@ end
 ---@param extra Banana.Renderer.ExtraInfo
 ---@return Banana.RenderRet
 function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra)
+    local b = require('banana.box')
     local inheritOld = {}
     for k, _ in pairs(inherit) do
         local style = snakeToKebab(k)
@@ -148,6 +150,21 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
             end
         end
     end
+    local position = ast.style.position[1].value
+    if position == nil or position == "initial" then
+        position = ast:_getInitialStyles().position
+    end
+    if position == "absolute" then
+        local root = ast
+        while root.absoluteAsts ~= nil do
+            root = root._parent
+        end
+        table.insert(root.absoluteAsts, ast)
+        for k, _ in pairs(inheritOld) do
+            inherit[k] = inheritOld[k]
+        end
+        return b.Box:new()
+    end
     local d = "display"
     local disp = ast.style[d]
     if disp ~= nil and disp[1] ~= nil and disp[1].value == "hidden" then
@@ -155,7 +172,7 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
             inherit[k] = inheritOld[k]
         end
 
-        return require('banana.box').Box:new(nil)
+        return b.Box:new(nil)
     end
     ---@type Banana.Ast.BoundingBox
     local boundBox = {
@@ -173,6 +190,18 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
     if ast.style['height'] ~= nil then
         ---@diagnostic disable-next-line: cast-local-type
         parentHeight = math.min(ast.style['height'][1].value.computed, parentHeight)
+    end
+    if position ~= "static" then
+        if ast.style.left ~= nil then
+            startX = startX + ast.style.left[1].value.computed
+        elseif ast.style.right ~= nil then
+            startX = startX - ast.style.right[1].value.computed
+        end
+        if ast.style.top ~= nil then
+            startX = startX + ast.style.top[1].value.computed
+        elseif ast.style.bottom ~= nil then
+            startX = startX - ast.style.bottom[1].value.computed
+        end
     end
     ---@cast parentWidth number
     ---@cast parentHeight number
@@ -205,7 +234,7 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
         end
         ret:clean()
     end
-    if ast.style['height'] ~= nil and ast.tag ~= "nml" then
+    if ast.style['height'] ~= nil and not ast:parent():isNil() then
         local height = ast.style['height'][1].value.computed
         ---@cast height number
         local above = require('banana.box').Box:new(ret.hlgroup)
@@ -223,10 +252,38 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
         ::skip::
     end
     ret = applyPad('padding', ast, ret, ret.hlgroup)
-    ret = applyPad('margin', ast, ret, parentHl)
     boundBox.rightX = boundBox.leftX + ret.width
     boundBox.bottomY = boundBox.topY + #ret.lines
     ast.boundBox = boundBox
+    if position == "static" then
+        ret = applyPad('margin', ast, ret, parentHl)
+    else
+        local newRet = b.Box:new(parentHl)
+        while #newRet.lines < #ret.lines do
+            ---@type Banana.Word[]
+            local ins = {
+                {
+                    word = "",
+                    style = newRet.hlgroup,
+                }
+            }
+            table.insert(newRet.lines, ins)
+        end
+        newRet.width = ret.width
+        newRet.dirty = true
+        newRet:clean()
+        local root = ast
+        while root.relativeBoxes ~= nil do
+            root = root._parent
+        end
+        table.insert(root.relativeBoxes, {
+            box = ret,
+            left = startX,
+            top = startY,
+            z = (ast.style['z-index'] or { {} })[1].value or 0
+        })
+        ret = newRet
+    end
     for k, _ in pairs(inheritOld) do
         inherit[k] = inheritOld[k]
     end
@@ -482,6 +539,7 @@ function M.defaultInitials()
     ---@type Banana.Renderer.InitialProperties
     local initialProps = {
         text_align = "left",
+        display = "static",
     }
     return initialProps
 end

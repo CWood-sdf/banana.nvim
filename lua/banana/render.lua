@@ -10,6 +10,7 @@ local nilAst = nil
 
 local ids = 0
 
+---@type Banana.Instance[]
 local instances = {}
 
 ---@alias Banana.Line Banana.Word[]
@@ -56,8 +57,9 @@ function Instance:virtualRender(ast, width, height)
         local tag = require("banana.nml.tags").makeTag(ast.tag)
         local rendered = tag:getRendered(ast, nil, width, height, 1, 1, {
             text_align = "left",
+            position = "static",
+        }, {
         })
-        print("a")
         rendered:stripRightSpace()
         for _, line in ipairs(rendered.lines) do
             table.insert(ret, line)
@@ -290,7 +292,9 @@ function Instance:createWinAndBuf()
     local headTag = headQuery:getMatches(self.ast)
     if #headTag ~= 0 then
         headTag[1].actualTag:getRendered(headTag[1], nil, 0, 0, 0, 0, {
+            position = "static",
             text_align = "left",
+        }, {
         })
     end
     local width = vim.o.columns - 8 * 2
@@ -396,10 +400,10 @@ function Instance:render()
         "",
         astTime / 1e3 .. "μs to parse",
         styleTime / 1e3 .. "μs to style",
-        renderTime / 1e3 .. "μs to render",
+        renderTime / 1e6 .. "ms to render",
         reductionTime / 1e3 .. "μs to reduce",
         hlTime / 1e3 .. "μs to highlight",
-        totalTime / 1e3 .. "μs total",
+        totalTime / 1e6 .. "ms total",
     }
     vim.api.nvim_set_option_value("modifiable", true, {
         buf = self.bufnr
@@ -591,6 +595,11 @@ end
 function M.getNilAst()
     ---@diagnostic disable-next-line: return-type-mismatch
     return nilAst
+end
+
+---@return number[]
+function M.listInstanceIds()
+    return vim.iter(ipairs(instances)):map(function(i, _) return i end):totable()
 end
 
 return M

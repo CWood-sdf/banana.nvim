@@ -32,4 +32,33 @@ function M.charCount(str)
     return len
 end
 
+---@param str string
+---@param start number
+---@param e number
+---@return string
+function M.sub(str, start, e)
+    local i = 1
+    if start < 1 or e < start then
+        return ""
+    end
+    while start > 1 do
+        local char = str:sub(i, i)
+        i = i + M.codepointLen(char)
+        start = start - 1
+        if i > #str then
+            return ""
+        end
+    end
+    local ret = ""
+    e = e - start
+    while e >= 0 do
+        local char = str:sub(i, i)
+        local len = M.codepointLen(char)
+        ret = ret + str:sub(i, i + len - 1)
+        i = i + len
+        e = e - 1
+    end
+    return ret
+end
+
 return M

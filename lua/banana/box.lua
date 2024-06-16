@@ -1,5 +1,8 @@
 local _str = require('banana.utils.string')
-local M = {} ---@class (exact) Banana.Box
+
+local M = {}
+
+---@class (exact) Banana.Box
 ---@field lines Banana.Line[]
 ---@field width integer
 ---@field dirty boolean true when box is a rect of width self.width
@@ -212,6 +215,92 @@ function M.Box:trimWidthLastLine(width, trimStrat)
         maxWidth = math.max(maxWidth, M.lineWidth(self.lines[i]))
         assert(maxWidth <= width,
             "Can not trim non last line in Box:trimWidthLastLine")
+    end
+end
+
+---@param other Banana.Box
+---@param left number
+---@param top number
+function M.Box:renderOver(other, left, top)
+    other:clean()
+    left = math.max(left, 0)
+    top = math.max(top, 0)
+    assert(left + other.width <= self.width, "Cannot right overflow a box with renderOver()")
+    local j = 1
+    -- need + 1 so that top:0 sets it to be on the actual top
+    for i = top + 1, #self.lines do
+        if j > #other.lines then
+            break
+        end
+        local line = self.lines[i]
+        local count = left
+        local wordIndex = 1
+        local wordSize = _str.charCount(line[wordIndex].word)
+        while count > wordSize do
+            count = count - wordSize
+            wordIndex = wordIndex + 1
+            wordSize = _str.charCount(line[wordIndex].word)
+        end
+        -- 4 rendering cases:
+        -- 1:
+        -- |-- word --|
+        --          |-- overlay --|
+        -- 2:
+        -- |-- word ----------------|
+        --          |-- overlay --|
+        -- 3:
+        --        |-- word --|
+        -- |-- overlay -----------|
+        -- 4:
+        --          |-- word --|
+        -- |-- overlay --|
+
+        -- Cut out overlayed word chars
+
+        local charsToCut = other.width
+        while charsToCut > 0 do
+            local str = line[wordIndex].word
+            -- case 2
+            if wordSize - count > other.width and count ~= 0 then
+                local leftStr = _str.sub(str, 1, count)
+                local rightStr = _str.sub(str, count + other.width, wordSize)
+                line[wordIndex].word = rightStr
+                table.insert(line, wordIndex, {
+                    word = leftStr,
+                    style = line[wordIndex].style,
+                })
+                break
+            end
+            local newStr = _str.sub(str, count + 1, math.min(wordSize, charsToCut))
+            if newStr == "" then
+                table.remove(line, wordIndex)
+            else
+                wordIndex = wordIndex + 1
+            end
+            charsToCut = charsToCut - wordSize
+            wordSize = _str.charCount(line[wordIndex].word)
+            count = 0
+        end
+        -- Insert new words
+        for _, v in ipairs(other.lines[j]) do
+            table.insert(line, wordIndex, v)
+        end
+        j = j + 1
+    end
+
+    while j <= #other.lines do
+        ---@type Banana.Word[]
+        local newLine = {
+            {
+                word = string.rep(self.fillChar, left),
+                style = self.hlgroup,
+            }
+        }
+        table.insert(self.lines, newLine)
+        for _, v in ipairs(other.lines[j]) do
+            table.insert(self.lines[#self.lines], v)
+        end
+        j = j + 1
     end
 end
 
