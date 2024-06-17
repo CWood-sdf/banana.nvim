@@ -57,9 +57,9 @@ This plugin seeks to turn neovim into a hypermedia client through its own custom
 
 ### Abs/float position
 
-- [ ] left/right/top/bottom
-- [ ] z-index
-- [ ] position: cant do fixed (unfortunate)
+- [x] left/right/top/bottom
+- [x] z-index
+- [x] position: cant do fixed (unfortunate)
 
 #### Later stuff
 
