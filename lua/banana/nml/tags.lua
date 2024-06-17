@@ -423,6 +423,7 @@ function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX
                     end
                     if repLim < 0 then
                         vim.notify("Reached repeat limit on string '" .. v .. "'")
+                        break
                     end
                     repLim = repLim - 1
                 end
@@ -438,7 +439,7 @@ function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX
                     extra:appendBoxBelow(currentLine)
                 end
                 currentLine = b.Box:new(currentLine.hlgroup)
-                v = v:sub(j, count)
+                v = v:sub(j + 1, count)
                 startX = 0
             end
             currentLine:appendStr(v, b.MergeStrategy.Bottom)

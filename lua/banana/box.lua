@@ -323,7 +323,8 @@ function M.Box:renderOver(other, left, top)
             self.dirty = true
         end
         -- Insert new words
-        for _, v in ipairs(other.lines[j]) do
+        for l = #other.lines[j], 1, -1 do
+            local v = other.lines[j][l]
             table.insert(line, wordIndex, v)
         end
         j = j + 1

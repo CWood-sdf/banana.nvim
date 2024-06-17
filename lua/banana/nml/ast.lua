@@ -485,7 +485,7 @@ function M.Ast:isHovering()
     local ret =
         line >= self.boundBox.topY
         and line < self.boundBox.bottomY
-        and col >= self.boundBox.leftX
+        and col > self.boundBox.leftX
         and col <= self.boundBox.rightX
     return ret
 end
