@@ -339,6 +339,10 @@ function M.Ast:resolveUnits(parentWidth, parentHeight)
     self:_computeUnitFor("list-base-width", parentWidth)
     self:_computeUnitFor("width", parentWidth)
     self:_computeUnitFor("height", parentHeight)
+    self:_computeUnitFor("top", parentHeight)
+    self:_computeUnitFor("bottom", parentHeight)
+    self:_computeUnitFor("left", parentWidth)
+    self:_computeUnitFor("right", parentWidth)
 end
 
 function M.Ast:applyInlineStyleDeclarations()
@@ -479,10 +483,10 @@ function M.Ast:isHovering()
     local line = vim.fn.line('.')
     local col = vim.fn.col('.')
     local ret =
-        line > self.boundBox.topY
-        and line <= self.boundBox.bottomY
+        line >= self.boundBox.topY
+        and line < self.boundBox.bottomY
         and col >= self.boundBox.leftX
-        and col < self.boundBox.rightX
+        and col <= self.boundBox.rightX
     return ret
 end
 

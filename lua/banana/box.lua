@@ -222,6 +222,8 @@ end
 ---@param left number
 ---@param top number
 function M.Box:renderOver(other, left, top)
+    -- lol dont look at this function i barely understand it
+    self:clean()
     other:clean()
     left = math.max(left, 0)
     top = math.max(top, 0)
@@ -239,6 +241,9 @@ function M.Box:renderOver(other, left, top)
         while count > wordSize do
             count = count - wordSize
             wordIndex = wordIndex + 1
+            if line[wordIndex] == nil then
+                break
+            end
             wordSize = _str.charCount(line[wordIndex].word)
         end
         -- 4 rendering cases:
@@ -258,28 +263,64 @@ function M.Box:renderOver(other, left, top)
         -- Cut out overlayed word chars
 
         local charsToCut = other.width
-        while charsToCut > 0 do
+        while charsToCut > 0 and line[wordIndex] ~= nil do
             local str = line[wordIndex].word
             -- case 2
             if wordSize - count > other.width and count ~= 0 then
                 local leftStr = _str.sub(str, 1, count)
                 local rightStr = _str.sub(str, count + other.width, wordSize)
-                line[wordIndex].word = rightStr
+                line[wordIndex].word = leftStr
                 table.insert(line, wordIndex, {
-                    word = leftStr,
+                    word = rightStr,
                     style = line[wordIndex].style,
                 })
                 break
             end
-            local newStr = _str.sub(str, count + 1, math.min(wordSize, charsToCut))
+            local newStr = ""
+            if count == 0 and charsToCut >= wordSize then
+                newStr = ""
+            elseif count == 0 then
+                newStr = _str.sub(str, math.min(charsToCut + 1, wordSize + 1), wordSize)
+            else
+                newStr = _str.sub(str, 1, count)
+            end
+            local newLen = _str.charCount(newStr)
             if newStr == "" then
                 table.remove(line, wordIndex)
-            else
+            elseif count ~= 0 then
+                line[wordIndex].word = newStr
                 wordIndex = wordIndex + 1
+            else
+                line[wordIndex].word = newStr
             end
-            charsToCut = charsToCut - wordSize
+            charsToCut = charsToCut - (wordSize - newLen)
+            if line[wordIndex] == nil then
+                wordIndex = wordIndex - 1
+            end
+            if #line == 0 then
+                table.insert(line, {
+                    {
+                        word = "",
+                        style = self.hlgroup,
+                    }
+                })
+                break
+            end
             wordSize = _str.charCount(line[wordIndex].word)
             count = 0
+        end
+        if M.lineWidth(line) < left + 1 then
+            table.insert(line, {
+                word = string.rep(self.fillChar, M.lineWidth(line) - left - 1),
+                style = self.hlgroup
+            })
+            table.insert(line, {
+                word = "",
+                style = self.hlgroup
+            })
+            wordIndex = wordIndex + 1
+            self.width = math.max(M.lineWidth(line), self.width)
+            self.dirty = true
         end
         -- Insert new words
         for _, v in ipairs(other.lines[j]) do

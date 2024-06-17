@@ -30,6 +30,7 @@ This plugin seeks to turn neovim into a hypermedia client through its own custom
 - [ ] Good attributes api
 - [ ] DOM Manipulation
 - [ ] Hypermedia attributes
+- [ ] Basic templating (maybe just substitution of attribute values)
 - [x] Read File
 
 ### Styling Language

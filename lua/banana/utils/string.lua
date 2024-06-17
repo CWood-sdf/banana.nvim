@@ -37,26 +37,20 @@ end
 ---@param e number
 ---@return string
 function M.sub(str, start, e)
-    local i = 1
-    if start < 1 or e < start then
-        return ""
-    end
-    while start > 1 do
-        local char = str:sub(i, i)
-        i = i + M.codepointLen(char)
-        start = start - 1
-        if i > #str then
-            return ""
-        end
-    end
     local ret = ""
-    e = e - start
-    while e >= 0 do
+    local c = 1
+    local i = 1
+    while c < start do
+        local char = str:sub(i, i)
+        c = c + 1
+        i = i + M.codepointLen(char)
+    end
+    while c <= e do
         local char = str:sub(i, i)
         local len = M.codepointLen(char)
-        ret = ret + str:sub(i, i + len - 1)
+        ret = ret .. str:sub(i, i + len - 1)
+        c = c + 1
         i = i + len
-        e = e - 1
     end
     return ret
 end

@@ -150,13 +150,13 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
             end
         end
     end
-    local position = ast.style.position[1].value
+    local position = (ast.style.position or { {} })[1].value
     if position == nil or position == "initial" then
         position = ast:_getInitialStyles().position
     end
     if position == "absolute" then
         local root = ast
-        while root.absoluteAsts ~= nil do
+        while root.absoluteAsts == nil do
             root = root._parent
         end
         table.insert(root.absoluteAsts, ast)
@@ -174,15 +174,6 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
 
         return b.Box:new(nil)
     end
-    ---@type Banana.Ast.BoundingBox
-    local boundBox = {
-        leftX   = startX,
-        topY    = startY,
-        rightX  = 0,
-        bottomY = 0,
-    }
-    startX = startX + ast.padding[_ast.left].value + ast.margin[_ast.left].value
-    startY = startY + ast.padding[_ast.top].value + ast.margin[_ast.top].value
     if ast.style['width'] ~= nil then
         ---@diagnostic disable-next-line: cast-local-type
         parentWidth = math.min(ast.style['width'][1].value.computed, parentWidth)
@@ -198,11 +189,20 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
             startX = startX - ast.style.right[1].value.computed
         end
         if ast.style.top ~= nil then
-            startX = startX + ast.style.top[1].value.computed
+            startY = startY + ast.style.top[1].value.computed
         elseif ast.style.bottom ~= nil then
-            startX = startX - ast.style.bottom[1].value.computed
+            startY = startY - ast.style.bottom[1].value.computed
         end
     end
+    ---@type Banana.Ast.BoundingBox
+    local boundBox = {
+        leftX   = startX,
+        topY    = startY,
+        rightX  = 0,
+        bottomY = 0,
+    }
+    startX = startX + ast.padding[_ast.left].value + ast.margin[_ast.left].value
+    startY = startY + ast.padding[_ast.top].value + ast.margin[_ast.top].value
     ---@cast parentWidth number
     ---@cast parentHeight number
     local ret = self:render(ast, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra)
@@ -256,33 +256,54 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
     boundBox.bottomY = boundBox.topY + #ret.lines
     ast.boundBox = boundBox
     if position == "static" then
-        ret = applyPad('margin', ast, ret, parentHl)
     else
         local newRet = b.Box:new(parentHl)
         while #newRet.lines < #ret.lines do
-            ---@type Banana.Word[]
-            local ins = {
-                {
-                    word = "",
-                    style = newRet.hlgroup,
-                }
-            }
-            table.insert(newRet.lines, ins)
+            local newBox = b.Box:new(newRet.hlgroup)
+            newBox:appendStr(string.rep(' ', ret.width))
+            newRet:appendBoxBelow(newBox)
         end
-        newRet.width = ret.width
-        newRet.dirty = true
         newRet:clean()
         local root = ast
-        while root.relativeBoxes ~= nil do
+        while root.relativeBoxes == nil do
             root = root._parent
         end
         table.insert(root.relativeBoxes, {
             box = ret,
-            left = startX,
-            top = startY,
+            left = startX - 1,
+            top = startY - 1,
             z = (ast.style['z-index'] or { {} })[1].value or 0
         })
         ret = newRet
+        if ast.style.left ~= nil then
+            startX = startX - ast.style.left[1].value.computed
+        elseif ast.style.right ~= nil then
+            startX = startX + ast.style.right[1].value.computed
+        end
+        if ast.style.top ~= nil then
+            startY = startY - ast.style.top[1].value.computed
+        elseif ast.style.bottom ~= nil then
+            startY = startY + ast.style.bottom[1].value.computed
+        end
+    end
+    ret = applyPad('margin', ast, ret, parentHl)
+    if ast.absoluteAsts ~= nil then
+        for _, v in ipairs(ast.absoluteAsts) do
+            v:resolveUnits(parentWidth, parentHeight)
+            v.style.position[1].value = "relative"
+            v.actualTag:getRendered(
+                v, ret.hlgroup, parentWidth, parentHeight, startX, startY, inherit,
+                {})
+            v.style.position[1].value = "absolute"
+        end
+    end
+    if ast.relativeBoxes ~= nil then
+        table.sort(ast.relativeBoxes, function(l, r)
+            return l.z < r.z
+        end)
+        for _, data in ipairs(ast.relativeBoxes) do
+            ret:renderOver(data.box, data.left, data.top)
+        end
     end
     for k, _ in pairs(inheritOld) do
         inherit[k] = inheritOld[k]
@@ -539,7 +560,7 @@ function M.defaultInitials()
     ---@type Banana.Renderer.InitialProperties
     local initialProps = {
         text_align = "left",
-        display = "static",
+        position = "static",
     }
     return initialProps
 end

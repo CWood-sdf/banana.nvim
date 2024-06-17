@@ -362,6 +362,8 @@ function Instance:render()
     for ast, rules in pairs(self.foreignStyles) do
         self:applyStyleDeclarations(ast, rules)
     end
+    self.ast.relativeBoxes = {}
+    self.ast.absoluteAsts = {}
     styleTime = vim.loop.hrtime() - startTime
     startTime = vim.loop.hrtime()
     local width, height = self:createWinAndBuf()
@@ -512,6 +514,19 @@ function Instance:loadNmlTo(file, ast, preserve)
             params = params
         })
     end
+end
+
+---@param sel string
+---@return Banana.Ast[]
+function Instance:querySelectorAll(sel)
+    local rule = sel .. "{}"
+    local styleStuff = require('banana.ncss.parser').parseText(rule)
+    local query = styleStuff[1].query
+    if query == nil then
+        error("No query for element")
+    end
+    local asts = query:find(self.ast)
+    return asts
 end
 
 ---@param name string

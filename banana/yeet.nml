@@ -1,0 +1,34 @@
+<nml>
+  <head>
+
+    <title>
+      Yeet yeet
+    </title>
+    <style>
+    .card {
+      width: 8ch;
+      height: 3ch;
+      hl-bg: #143c87;
+      margin-left: 2ch;
+      position: initial;
+    }
+    .rel {
+      position: relative;
+      top: 1ch;
+      left: 1ch;
+      hl-bg: #732846;
+    }
+    </style>
+  </head>
+  <body>
+    <span class="card">asdf</span>
+    <span class="card">asdf</span>
+    <span class="card">asdf</span>
+    <span class="card">asdf</span>
+    <span class="card">asdf</span>
+
+    <script src="asdf2">
+
+    </script>
+  </body>
+</nml>

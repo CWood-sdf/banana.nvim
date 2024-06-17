@@ -11,9 +11,9 @@ local function renderer(self, ast, parentHl, parentWidth, parentHeight, startX, 
         end
         ---@cast node Banana.Ast
         if node.tag == "head" then
-            node.actualTag:getRendered(ast, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra)
+            node.actualTag:getRendered(node, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra)
         elseif node.tag == "body" then
-            ret = node.actualTag:getRendered(ast, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra)
+            ret = node.actualTag:getRendered(node, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra)
         elseif node.tag ~= "script" and node.tag ~= "style" then
             error("Only <head> and <body> tags allowed in <nml>, instead got <" .. node.tag .. ">")
         end
