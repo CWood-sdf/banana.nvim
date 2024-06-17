@@ -309,9 +309,9 @@ function M.Box:renderOver(other, left, top)
             wordSize = _str.charCount(line[wordIndex].word)
             count = 0
         end
-        if M.lineWidth(line) < left + 1 then
+        if M.lineWidth(line) < left then
             table.insert(line, {
-                word = string.rep(self.fillChar, M.lineWidth(line) - left - 1),
+                word = string.rep(self.fillChar, left - M.lineWidth(line)),
                 style = self.hlgroup
             })
             table.insert(line, {
