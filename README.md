@@ -17,7 +17,7 @@ This plugin seeks to turn neovim into a hypermedia client through its own custom
 
 - [x] Easy to load nml files
 - [x] Title tag sets title of buf
-- [ ] Meta tags set attributes (like maybe float...)
+- [x] Meta tags set attributes (like maybe float...)
 - [x] Nml width height sets win width/height
 - [ ] Nml left, right, top, bottom sets win position
 
@@ -27,8 +27,8 @@ This plugin seeks to turn neovim into a hypermedia client through its own custom
 - [x] Basic Renderer
 - [x] Very Fast rendering
 - [x] Attributes
-- [ ] Good attributes api
-- [ ] DOM Manipulation
+- [x] Good attributes api
+- [x] DOM Manipulation
 - [ ] Hypermedia attributes
 - [ ] Basic templating (maybe just substitution of attribute values)
 - [x] Read File
@@ -37,7 +37,7 @@ This plugin seeks to turn neovim into a hypermedia client through its own custom
 
 - [x] Basic Styling
 - [ ] Complex styling (animations, transitions)
-- [ ] Efficient style recalculation
+- [x] Efficient style recalculation (not needed (hopefully) bc current application so fast)
 - [x] Very Fast rendering
 - [x] Few errors
 - [x] Based on css
@@ -59,7 +59,7 @@ This plugin seeks to turn neovim into a hypermedia client through its own custom
 
 - [x] left/right/top/bottom
 - [x] z-index
-- [x] position: cant do fixed (unfortunate)
+- [x] position: cant do fixed or sticky (unfortunate)
 
 #### Later stuff
 
@@ -77,7 +77,7 @@ This plugin seeks to turn neovim into a hypermedia client through its own custom
 ### Styler
 
 - [x] Should take in a page AST, and the styling AST, then apply all the rules
-- [ ] Needs to be really fast
+- [x] Needs to be really fast
 
 ### Style/Markup interface
 
@@ -92,7 +92,7 @@ This plugin seeks to turn neovim into a hypermedia client through its own custom
 - [ ] Render caching?
 - [ ] Need to actually compute width/height restrictions and follow them
 - [ ] Flexbox?
-- [ ] Respect the styling
+- [x] Respect the styling
 - [ ] Robust (aka styling still works if win really small)
 
 ### Events
