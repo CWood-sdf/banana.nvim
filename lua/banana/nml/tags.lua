@@ -330,10 +330,11 @@ function TagInfo:blockIter(ast, parentHl, parentWidth, parentHeight, startX, sta
         local oldI = i
         local render = nil
         if ast.style.display ~= nil and ast.style["display"][1].value == "flex" then
-            render = self:renderFlexBlock(
-                ast, parentHl, parentWidth, parentHeight,
-                startX, startY, inherit, extra)
-            i = #ast.nodes + 1
+            error("impl flex")
+            -- render = self:renderFlexBlock(
+            --     ast, parentHl, parentWidth, parentHeight,
+            --     startX, startY, inherit, extra)
+            -- i = #ast.nodes + 1
         else
             render, i = self:renderBlock(
                 ast, parentHl, i, parentWidth, parentHeight,
@@ -359,86 +360,6 @@ function TagInfo:renderInlineEl(ast, parentHl, parentWidth, parentHeight, startX
     return ret
 end
 
----Renders everything in a flex block
----@param ast Banana.Ast
----@param parentHl Banana.Highlight?
----@param parentWidth number
----@param parentHeight number
----@param startX number
----@param startY number
----@param inherit Banana.Renderer.InheritedProperties
----@param extra_ Banana.Renderer.ExtraInfo
----@return Banana.Box
-function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra_)
-    local i = 1
-    local b = require('banana.box')
-    local currentLine = b.Box:new(parentHl)
-    local width = parentWidth
-        - ast.padding[_ast.left].value - ast.padding[_ast.right].value
-        - ast.margin[_ast.left].value - ast.margin[_ast.right].value
-    local height = parentHeight
-        - ast.padding[_ast.top].value - ast.padding[_ast.bottom].value
-        - ast.margin[_ast.top].value - ast.margin[_ast.bottom].value
-    ---@type Banana.Box?
-    local extra = nil
-    while i <= #ast.nodes do
-        local v = ast.nodes[i]
-        if v == nil then
-            break
-        end
-        if type(v) == 'string' then
-            local count = _str.charCount(v)
-            if count + currentLine.width > width then
-                local remove = 0
-                local j = count
-                local repLim = 1000
-                while count + currentLine.width - remove > width do
-                    while v:sub(j, j) ~= ' ' do
-                        remove = remove + 1
-                        j = count - remove
-                    end
-                    if repLim < 0 then
-                        vim.notify("Reached repeat limit on string '" .. v .. "'")
-                    end
-                    repLim = repLim - 1
-                end
-                local str = v:sub(1, j)
-                currentLine:appendStr(str, b.MergeStrategy.Bottom)
-                if extra == nil then
-                    extra = currentLine
-                else
-                    extra:appendBoxBelow(currentLine)
-                end
-                currentLine = b.Box:new(currentLine.hlgroup)
-                v = v:sub(j, count)
-                startX = 0
-            end
-            currentLine:appendStr(v, b.MergeStrategy.Bottom)
-            startX = startX + count
-        else
-            local tag = M.makeTag(v.tag)
-            v:resolveUnits(width, height)
-            local rendered = tag:getRendered(v, currentLine.hlgroup, width, height, startX, startY, inherit, extra_)
-            startX = startX + rendered.width
-            if currentLine.width + rendered.width > width then
-                if extra == nil then
-                    extra = currentLine
-                else
-                    extra:appendBoxBelow(currentLine)
-                end
-                currentLine = b.Box:new(currentLine.hlgroup)
-            end
-            currentLine:append(rendered, b.MergeStrategy.Bottom)
-        end
-        i = i + 1
-    end
-    if extra ~= nil then
-        extra:appendBoxBelow(currentLine)
-        currentLine = extra
-    end
-    return currentLine
-end
-
 ---Renders everything in a block
 ---@param ast Banana.Ast
 ---@param parentHl Banana.Highlight?
@@ -451,8 +372,9 @@ end
 ---@param extra_ Banana.Renderer.ExtraInfo
 ---@return Banana.Box, integer
 function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX, startY, inherit, extra_)
-    --FIX: SPANS DONT KNOW HOW MANY CHARS WILL OVERFLOW, SO THEY JUST RENDER AS IF THEY WONT
-    --THEN WHEN OVERFLOW HAPPENS ITS LIKE SHOOT THE SPAN OVERFLOWED, I'LL JUST appendBelow() BADD
+    --FIX: spans dont know how many chars will overflow, so they just render as if they wont
+    --then when overflow happens its like shoot the span overflowed, i'll just appendBelow() badd
+    -- NEEDS FLOAT
     local b = require('banana.box')
     local currentLine = b.Box:new(parentHl)
     local hasText = false
@@ -470,8 +392,22 @@ function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX
             break
         end
         if type(v) == 'string' then
-            if hasText then
-                break
+            if v:sub(1, 1) == "&" then
+                error("Entity support is nonexistent")
+            elseif v:sub(1, 1) == "%" then
+                if v:sub(2, 2) == "%" then
+                    v = "%"
+                else
+                    local attr = v:sub(2, #v)
+                    local el = ast
+                    while el.attributes[attr] == nil do
+                        if el:isNil() then
+                            break
+                        end
+                        el = el._parent
+                    end
+                    v = el:getAttribute(attr) or ""
+                end
             end
             local count = _str.charCount(v)
             if count + currentLine.width > width then
@@ -481,7 +417,7 @@ function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX
                 while count + currentLine.width - remove > width do
                     remove = remove + 1
                     j = count - remove
-                    while v:sub(j, j) ~= ' ' do
+                    while v:sub(j, j) ~= ' ' and j > 0 do
                         remove = remove + 1
                         j = count - remove
                     end
@@ -489,6 +425,10 @@ function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX
                         vim.notify("Reached repeat limit on string '" .. v .. "'")
                     end
                     repLim = repLim - 1
+                end
+                if j <= 0 then
+                    remove = count + currentLine.width - width
+                    j = count - remove
                 end
                 local str = v:sub(1, j)
                 currentLine:appendStr(str, b.MergeStrategy.Bottom)

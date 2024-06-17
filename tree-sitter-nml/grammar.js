@@ -39,7 +39,7 @@ module.exports = grammar({
         _end_tag_name: ($) => $._start_tag_name,
         erroneous_end_tag_name: (_) => /[^>]+/,
         comment: (_) =>
-            seq("<!--", repeat(choice(/[^-]/, /\-[^-]/, /--[^-]/)), "-->"),
+            seq("<!--", repeat(choice(/[^-]/, /\-[^-]/, /--[^>]/)), "-->"),
         self_closing_tags: (_) =>
             choice(
                 "meta",
@@ -59,6 +59,7 @@ module.exports = grammar({
             choice(
                 $.doctype,
                 $.entity,
+                $.substitution,
                 $.text,
                 $.element,
                 $.script_element,
@@ -148,12 +149,14 @@ module.exports = grammar({
         // no more will ever be added.
         entity: (_) => /&(#([xX][0-9a-fA-F]{1,6}|[0-9]{1,5})|[A-Za-z]{1,30});?/,
 
+        substitution: (_) => /%([\w\-]*|%)/,
+
         quoted_attribute_value: ($) =>
             choice(
                 seq("'", optional(alias(/[^']+/, $.attribute_value)), "'"),
                 seq('"', optional(alias(/[^"]+/, $.attribute_value)), '"'),
             ),
 
-        text: (_) => /[^<>&]*[^<>&\s][^<>&]*/,
+        text: (_) => /[^<>&%]*[^<>&%\s][^<>%&]*/,
     },
 });

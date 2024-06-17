@@ -12,6 +12,7 @@ M.ts_types = {
     doctype = "doctype",
     element = "element",
     entity = "entity",
+    substitution = "substitution",
     start_tag = "start_tag",
     end_tag = "end_tag",
     tag_name = "tag_name",
@@ -183,13 +184,13 @@ function Parser:getNextInlineNcssParser()
     return node
 end
 
----@param str string
----@return string
-function Parser:resolveEntity(str)
-    local stripped = str:sub(2, _str.charCount(str))
-    ---TODO: process entity string
-    return stripped
-end
+-- ---@param str string
+-- ---@return string
+-- function Parser:resolveEntity(str)
+--     local stripped = str:sub(2, _str.charCount(str))
+--     ---TODO: process entity string
+--     return stripped
+-- end
 
 ---@param tree TSNode
 ---@param parent Banana.Ast?
@@ -261,7 +262,11 @@ function Parser:parseTag(tree, parent, isSpecial)
         elseif child:type() == M.ts_types.entity then
             assert(ret ~= nil,
                 "Unreachable")
-            ret:appendTextNode(self:resolveEntity(self:getStrFromNode(child)))
+            ret:appendTextNode(self:getStrFromNode(child))
+        elseif child:type() == M.ts_types.substitution then
+            assert(ret ~= nil,
+                "Unreachable")
+            ret:appendTextNode(self:getStrFromNode(child))
         elseif child:type() == M.ts_types.raw_text and isScript then
             local scriptStr = ""
             if attrs["src"] ~= nil then

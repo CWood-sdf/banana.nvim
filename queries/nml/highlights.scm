@@ -5,3 +5,5 @@
 "<!" @tag.delimiter
 
 (entity) @character.special
+
+(substitution) @character.special

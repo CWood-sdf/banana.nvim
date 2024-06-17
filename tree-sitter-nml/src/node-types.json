@@ -77,6 +77,10 @@
           "named": true
         },
         {
+          "type": "substitution",
+          "named": true
+        },
+        {
           "type": "text",
           "named": true
         }
@@ -220,6 +224,10 @@
         },
         {
           "type": "style_element",
+          "named": true
+        },
+        {
+          "type": "substitution",
           "named": true
         },
         {
@@ -402,6 +410,10 @@
   {
     "type": "span",
     "named": false
+  },
+  {
+    "type": "substitution",
+    "named": true
   },
   {
     "type": "text",

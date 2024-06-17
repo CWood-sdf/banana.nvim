@@ -25,7 +25,7 @@
     <span class="card">asdf</span>
     <span class="card">asdf</span>
     <span class="card">asdf</span>
-    <span class="card">asdf</span>
+    <span class="card" data-text="aswdf">asdf %data-text</span>
 
     <script src="asdf2">
 
