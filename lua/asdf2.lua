@@ -1,10 +1,9 @@
 ---@param document Banana.Instance
 return function(document)
   local spans = document:getElementsByClassName("card")
-  vim.api.nvim_create_autocmd("CursorMoved", {
+  document:on("CursorMoved", {
     callback = function()
-      for i, v in ipairs(spans) do
-        print(i)
+      for _, v in ipairs(spans) do
         if v:isHovering() then
           v:addClass("rel")
         else
@@ -14,4 +13,7 @@ return function(document)
       document:render()
     end,
   })
+  document:body():attachRemap("n", "q", {}, function()
+    document:close()
+  end, {})
 end

@@ -35,11 +35,13 @@ local instances = {}
 ---@field foreignStyles { [Banana.Ast]: Banana.Ncss.RuleSet[] }
 ---@field keymaps { [string]: { [string]: Banana.Instance.Keymap[] } }
 ---@field astMapDeps { [Banana.Ast]: [string, string, Banana.Instance.Keymap][] }
----@field rendering boolean
+---@field renderRequested boolean
 ---@field renderStart number
+---@field isVisible boolean
 ---@field winOpts { [string]: any }
 ---@field bufOpts { [string]: any }
 ---@field _body Banana.Ast?
+---@field augroup number
 local Instance = {}
 
 ---@class (exact) Banana.Word
@@ -55,7 +57,7 @@ function Instance:virtualRender(ast, width, height)
     local ret = {}
     if require("banana.nml.tags").tagExists(ast.tag) then
         local tag = require("banana.nml.tags").makeTag(ast.tag)
-        local rendered = tag:getRendered(ast, nil, width, height, 1, 1, {
+        local rendered = tag:renderRoot(ast, nil, width, height, {
             text_align = "left",
             position = "static",
         }, {
@@ -95,12 +97,14 @@ function Instance:new(filename, bufferName)
     local id = #instances
     ---@type Banana.Instance
     local inst = {
+        isVisible = false,
         foreignStyles = {},
         renderStart = 0,
-        rendering = false,
+        renderRequested = false,
         keymaps = {},
         bufname = bufferName,
         highlightNs = vim.api.nvim_create_namespace("banana_instance_" .. ids),
+        augroup = vim.api.nvim_create_augroup("banana_instance_" .. ids, {}),
         ast = ast,
         styleRules = styleRules,
         scripts = scripts,
@@ -121,7 +125,42 @@ function Instance:new(filename, bufferName)
     instances[id] = inst
     inst:applyId(ast)
     vim.api.nvim_set_hl(inst.highlightNs, M.defaultWinHighlight, inst.winhl)
+    inst:_attachAutocmds()
     return inst
+end
+
+function Instance:_attachAutocmds()
+    vim.api.nvim_create_autocmd({ "WinEnter" }, {
+        callback = function(args)
+            if args.buf == self.bufnr then
+                self.isVisible = true
+            end
+        end,
+        group = self.augroup,
+    })
+    vim.api.nvim_create_autocmd({ "WinLeave" }, {
+        group = self.augroup,
+        callback = function(args)
+            if args.buf == self.bufnr then
+                self.isVisible = false
+            end
+        end,
+    })
+end
+
+function Instance:close()
+    self.isVisible = false
+    vim.api.nvim_win_close(self.winid, false)
+end
+
+function Instance:open()
+    self.isVisible = true
+    self:render()
+end
+
+---@return boolean
+function Instance:isOpen()
+    return self.isVisible
 end
 
 ---runs a lua require string as a script
@@ -142,6 +181,31 @@ end
 
 function Instance:useBuffer(bufnr)
     self.bufnr = bufnr
+end
+
+---@param ev string|string[]
+---@param opts vim.api.keyset.create_autocmd
+---@return number
+function Instance:on(ev, opts)
+    if opts.command ~= nil then
+        local cmd = opts.command
+        opts.callback = function()
+            if not self.isVisible then
+                return
+            end
+            vim.cmd(cmd)
+        end
+        opts.command = nil
+    else
+        local cb = opts.callback
+        opts.callback = function()
+            if not self.isVisible then
+                return
+            end
+            cb()
+        end
+    end
+    return vim.api.nvim_create_autocmd(ev, opts)
 end
 
 function Instance:useWindow(winid)
@@ -340,19 +404,21 @@ function Instance:createWinAndBuf()
     return width, height
 end
 
----@return Banana.Ast
 function Instance:render()
-    local totalTime = 0
-    if self.rendering and (vim.loop.hrtime() - self.renderStart) > 2e9 then
-        self.rendering = false
+    if not self.isVisible then
+        return
     end
-    if self.rendering then
+    local totalTime = 0
+    if self.renderRequested and (vim.loop.hrtime() - self.renderStart) > 2e9 then
+        self.renderRequested = false
+    end
+    if self.renderRequested then
         vim.defer_fn(function()
             self:render()
         end, 10)
-        return self.ast
+        return
     end
-    self.rendering = true
+    self.renderRequested = true
     self.renderStart = vim.loop.hrtime()
     local startTime = vim.loop.hrtime()
     local actualStart = startTime
@@ -362,8 +428,8 @@ function Instance:render()
     for ast, rules in pairs(self.foreignStyles) do
         self:applyStyleDeclarations(ast, rules)
     end
-    self.ast.relativeBoxes = {}
-    self.ast.absoluteAsts = {}
+    self:body().relativeBoxes = {}
+    self:body().absoluteAsts = {}
     styleTime = vim.loop.hrtime() - startTime
     startTime = vim.loop.hrtime()
     local width, height = self:createWinAndBuf()
@@ -414,8 +480,7 @@ function Instance:render()
     vim.api.nvim_set_option_value("modifiable", false, {
         buf = self.bufnr
     })
-    self.rendering = false
-    return self.ast
+    self.renderRequested = false
 end
 
 ---@param lines Banana.Line[]

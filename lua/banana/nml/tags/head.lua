@@ -6,8 +6,12 @@ local function renderer(self, ast, _, parentWidth, parentHeight, startX, startY,
     ---@type Banana.Box
     local ret = b.Box:new()
     -- not actually rendering anything bc its all metadata tags
-    for _, _, _ in self:blockIter(ast, ret.hlgroup, parentWidth, parentHeight, startX, startY, inherit, extra) do
-        local _ = 0
+    for _, v in ipairs(ast.nodes) do
+        if type(v) == "string" then
+            goto continue
+        end
+        v.actualTag:renderRoot(ast, parentWidth, parentHeight, inherit, extra)
+        ::continue::
     end
     return ret
 end

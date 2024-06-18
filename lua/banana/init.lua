@@ -7,7 +7,7 @@ M.yeet = function()
 		instance = render.newInstance("yeet", "asdf")
 	end
 	-- local filename = os.getenv("HOME") .. '/projects/banana.nvim/test.nml'
-	instance:render()
+	instance:open()
 
 	-- local file = io.open(os.getenv("HOME") .. "/projects/banana.nvim/log", "w")
 	-- if file == nil then

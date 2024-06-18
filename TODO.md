@@ -3,4 +3,3 @@
 - list-style-type on ol
 - start flexbox/grid
 - Rework width passing in render flow
-- meta tags

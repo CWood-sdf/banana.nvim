@@ -128,6 +128,11 @@ local function isExpandable(ast, extraWidth)
         or ast.style['width'] ~= nil
 end
 
+function TagInfo:renderRoot(ast, startHl, winWidth, winHeight, inherit, extra)
+    local ret = self:render(ast, startHl, winWidth, winHeight, 1, 1, inherit, extra)
+    return ret
+end
+
 ---@param ast Banana.Ast
 ---@param parentHl Banana.Highlight?
 ---@param parentWidth number

@@ -238,7 +238,7 @@ function M.Box:renderOver(other, left, top)
         local count = left
         local wordIndex = 1
         local wordSize = _str.charCount(line[wordIndex].word)
-        while count > wordSize do
+        while count >= wordSize do
             count = count - wordSize
             wordIndex = wordIndex + 1
             if line[wordIndex] == nil then

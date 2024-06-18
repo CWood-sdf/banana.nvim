@@ -9,7 +9,7 @@
       width: 8ch;
       height: 3ch;
       hl-bg: #143c87;
-      margin-left: 1ch;
+      margin-left: 0ch;
       position: initial;
     }
     .rel {
