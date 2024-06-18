@@ -21,15 +21,16 @@ end
 ---@param str string
 ---@return number
 function M.charCount(str)
-    local len = 0
-    local i = 1
-    while i <= #str do
-        local c = str:sub(i, i)
-        local inc = M.codepointLen(c)
-        len = len + 1
-        i = i + inc
-    end
-    return len
+    -- local len = 0
+    -- local i = 1
+    -- while i <= #str do
+    --     local c = str:sub(i, i)
+    --     local inc = M.codepointLen(c)
+    --     len = len + 1
+    --     i = i + inc
+    -- end
+    -- return len󰩁
+    return vim.api.nvim_strwidth(str)
 end
 
 ---@param str string
@@ -42,15 +43,22 @@ function M.sub(str, start, e)
     local i = 1
     while c < start do
         local char = str:sub(i, i)
-        c = c + 1
-        i = i + M.codepointLen(char)
+        local len = M.codepointLen(char)
+        c = c + vim.api.nvim_strwidth(str:sub(i, i + len - 1))
+        i = i + len
+        if i > #str then
+            return ""
+        end
     end
     while c <= e do
         local char = str:sub(i, i)
         local len = M.codepointLen(char)
         ret = ret .. str:sub(i, i + len - 1)
-        c = c + 1
+        c = c + vim.api.nvim_strwidth(str:sub(i, i + len - 1))
         i = i + len
+        if i > #str then
+            return ret
+        end
     end
     return ret
 end

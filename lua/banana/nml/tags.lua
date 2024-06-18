@@ -1,6 +1,7 @@
 local M = {}
 local _str = require('banana.utils.string')
 local _ast = require('banana.nml.ast')
+local b = require('banana.box')
 
 ---@param str string
 ---@return string
@@ -60,7 +61,6 @@ local TagInfo = {
 ---@param hl Banana.Highlight?
 ---@return Banana.Box
 local function padLeftRight(ast, name, i, hl)
-    local b = require('banana.box')
     local box = b.Box:new(hl);
     box:appendStr(' ', nil)
     box:expandWidthTo(ast[name][i].value)
@@ -74,7 +74,6 @@ end
 ---@param width number
 ---@return Banana.Box
 local function padTopBtm(ast, name, i, hl, width)
-    local b = require('banana.box')
     local box = b.Box:new(hl);
     box:appendStr(' ', nil)
     box:expandWidthTo(width)
@@ -90,7 +89,6 @@ end
 ---@param hl Banana.Highlight?
 ---@return Banana.Box
 local function applyPad(name, ast, ret, hl)
-    local b = require('banana.box')
     if ast[name][_ast.left].value ~= 0 then
         local box = padLeftRight(ast, name, _ast.left, hl)
         box:append(ret, nil)
@@ -143,7 +141,6 @@ end
 ---@param extra Banana.Renderer.ExtraInfo
 ---@return Banana.RenderRet
 function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra)
-    local b = require('banana.box')
     local inheritOld = {}
     for k, _ in pairs(inherit) do
         local style = snakeToKebab(k)
@@ -365,6 +362,89 @@ function TagInfo:renderInlineEl(ast, parentHl, parentWidth, parentHeight, startX
     return ret
 end
 
+---@param targetWidth number
+---@param box Banana.Box
+---@return Banana.Box, Banana.Box
+local function splitLineBoxOnce(targetWidth, box)
+    if box.width < targetWidth then
+        return box, b.Box:new(box.hlgroup)
+    end
+    local left = b.Box:new(box.hlgroup)
+    left.lines = { {} }
+    left.width = 0
+    local right = b.Box:new(box.hlgroup)
+    right.lines = { {} }
+    right.width = 0
+    local i = 1
+    while left.width + _str.charCount(box.lines[1][i].word) < targetWidth do
+        table.insert(left.lines[1], box.lines[1][i])
+        left.width = left.width + _str.charCount(box.lines[1][i].word)
+        i = i + 1
+    end
+    local leftIns = _str.sub(box.lines[1][i].word, 1, targetWidth - b.lineWidth(left.lines[1]))
+    local rightIns = _str.sub(box.lines[1][i].word, targetWidth - b.lineWidth(left.lines[1]) + 1, #box.lines[1][i].word)
+    table.insert(left.lines[1], {
+        word = leftIns,
+        style = box.lines[1][i].style,
+    })
+    left.width = left.width + _str.charCount(leftIns)
+    table.insert(right.lines[1], {
+        word = rightIns,
+        style = box.lines[1][i].style,
+    })
+    right.width = right.width + _str.charCount(rightIns)
+    i = i + 1
+    while i <= #box.lines[1] do
+        table.insert(right.lines[1], box.lines[1][i])
+        right.width = right.width + _str.charCount(box.lines[1][i].word)
+        i = i + 1
+    end
+    return left, right
+end
+
+---@param ast Banana.Ast|string
+---@return boolean
+local function breakable(ast)
+    if type(ast) == "string" then
+        return true
+    end
+    return ast.padding[_ast.right].value == 0 and ast.padding[_ast.left].value == 0 and ast.style.width == nil
+end
+
+
+---@param ast Banana.Ast
+---@param i number
+---@param currentLine Banana.Box
+---@param append Banana.Box
+---@param maxWidth number
+---@return Banana.Box, Banana.Box?
+local function handleOverflow(ast, i, currentLine, append, maxWidth)
+    if #currentLine.lines == 0 then
+        currentLine:appendStr("", nil)
+    end
+    if currentLine.width + append.width <= maxWidth then
+        currentLine:append(append, nil)
+        return currentLine, nil
+    end
+    if #append.lines ~= 1 or not breakable(ast.nodes[i]) then
+        return currentLine, append
+    end
+    if #currentLine.lines ~= 1 then
+        local ap, extra = splitLineBoxOnce(maxWidth - currentLine.width, append)
+        currentLine:append(ap, nil)
+        return currentLine, extra
+    end
+    currentLine:append(append, nil)
+    local preStuff = b.Box:new(currentLine.hlgroup)
+    local extra = nil
+    repeat
+        currentLine, extra = splitLineBoxOnce(maxWidth, currentLine)
+        preStuff:appendBoxBelow(currentLine)
+        currentLine = extra
+    until extra.width <= maxWidth
+    return preStuff, extra
+end
+
 ---Renders everything in a block
 ---@param ast Banana.Ast
 ---@param parentHl Banana.Highlight?
@@ -377,12 +457,8 @@ end
 ---@param extra_ Banana.Renderer.ExtraInfo
 ---@return Banana.Box, integer
 function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX, startY, inherit, extra_)
-    --FIX: spans dont know how many chars will overflow, so they just render as if they wont
-    --then when overflow happens its like shoot the span overflowed, i'll just appendBelow() badd
-    -- NEEDS FLOAT
-    local b = require('banana.box')
     local currentLine = b.Box:new(parentHl)
-    local hasText = false
+    local hasElements = false
     local width = parentWidth
         - ast.padding[_ast.left].value - ast.padding[_ast.right].value
         - ast.margin[_ast.left].value - ast.margin[_ast.right].value
@@ -415,64 +491,45 @@ function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX
                 end
             end
             local count = _str.charCount(v)
-            if count + currentLine.width > width then
-                local remove = 1
-                local j = count - remove
-                local repLim = 1000
-                while count + currentLine.width - remove > width do
-                    remove = remove + 1
-                    j = count - remove
-                    while v:sub(j, j) ~= ' ' and j > 0 do
-                        remove = remove + 1
-                        j = count - remove
-                    end
-                    if repLim < 0 then
-                        vim.notify("Reached repeat limit on string '" .. v .. "'")
-                        break
-                    end
-                    repLim = repLim - 1
-                end
-                if j <= 0 then
-                    remove = count + currentLine.width - width
-                    j = count - remove
-                end
-                local str = v:sub(1, j)
-                currentLine:appendStr(str, b.MergeStrategy.Bottom)
+            local box = b.Box:new(currentLine.hlgroup)
+            box:appendStr(v, nil)
+            local overflow = nil
+            currentLine, overflow = handleOverflow(ast, i, currentLine, box, width)
+            if overflow ~= nil then
                 if extra == nil then
                     extra = currentLine
                 else
                     extra:appendBoxBelow(currentLine)
                 end
-                currentLine = b.Box:new(currentLine.hlgroup)
-                v = v:sub(j + 1, count)
-                startX = 0
+                currentLine = overflow
             end
-            currentLine:appendStr(v, b.MergeStrategy.Bottom)
             startX = startX + count
-            hasText = true
+            hasElements = true
         else
             local tag = M.makeTag(v.tag)
-            if (tag.formatType == M.FormatType.Block or tag.formatType == M.FormatType.BlockInline) and hasText then
+            if (tag.formatType == M.FormatType.Block or tag.formatType == M.FormatType.BlockInline) and hasElements then
                 break
             end
             v:resolveUnits(width, height)
             local rendered = tag:getRendered(v, currentLine.hlgroup, width, height, startX, startY, inherit, extra_)
             startX = startX + rendered.width
-            if currentLine.width + rendered.width > width then
+            local overflow = nil
+            currentLine, overflow = handleOverflow(ast, i, currentLine, rendered, width)
+            if overflow ~= nil then
                 if extra == nil then
                     extra = currentLine
                 else
                     extra:appendBoxBelow(currentLine)
                 end
-                currentLine = b.Box:new(currentLine.hlgroup)
+                currentLine = overflow
             end
-            currentLine:append(rendered, b.MergeStrategy.Bottom)
+
             if tag.formatType == M.FormatType.Block or tag.formatType == M.FormatType.BlockInline then
                 i = i + 1
                 break
             end
 
-            hasText = true
+            hasElements = true
         end
         i = i + 1
     end

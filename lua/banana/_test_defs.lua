@@ -13,7 +13,7 @@ function it(str, fn)
 end
 
 ---@class assert
----@field equal fun(v: any, v: any)
+---@field equal fun(v: any, v: any, msg: string)
 assert = {
 
 }
