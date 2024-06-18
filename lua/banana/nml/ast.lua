@@ -29,6 +29,7 @@ M.padNames = { "left", "top", "right", "bottom" }
 ---@field _parent Banana.Ast
 ---@field inlineStyle? Banana.Ncss.StyleDeclaration[]
 ---@field absoluteAsts? Banana.Ast[]
+---@field relativeBoxId? number
 ---@field relativeBoxes? { box: Banana.Box, left: number, top: number, z: number}[]
 M.Ast = {
     nodes = {},
@@ -488,6 +489,21 @@ function M.Ast:isHovering()
         and col >= self.boundBox.leftX
         and col < self.boundBox.rightX
     return ret
+end
+
+function M.Ast:_increaseTopBound(number)
+    assert(self.boundBox ~= nil, "Expected the ast to be rendered")
+    print("Inc by " .. number)
+    self.boundBox.bottomY = self.boundBox.bottomY + number
+    self.boundBox.topY = self.boundBox.topY + number
+    if self.relativeBoxId ~= nil then
+        local root = self
+        repeat
+            root = root._parent
+        until root.relativeBoxes ~= nil
+        local box = root.relativeBoxes[self.relativeBoxId]
+        box.top = box.top + number
+    end
 end
 
 function M.Ast:removeChildren()

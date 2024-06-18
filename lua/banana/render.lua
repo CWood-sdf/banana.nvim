@@ -62,7 +62,7 @@ function Instance:virtualRender(ast, width, height)
             position = "static",
         }, {
         })
-        rendered:stripRightSpace()
+        -- rendered:stripRightSpace()
         for _, line in ipairs(rendered.lines) do
             table.insert(ret, line)
         end

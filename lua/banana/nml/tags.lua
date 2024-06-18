@@ -146,6 +146,7 @@ end
 ---@param extra Banana.Renderer.ExtraInfo
 ---@return Banana.RenderRet
 function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra)
+    ast.relativeBoxId = nil
     local inheritOld = {}
     for k, _ in pairs(inherit) do
         local style = snakeToKebab(k)
@@ -288,6 +289,7 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
             top = startY - 1 - ast.padding[_ast.top].value,
             z = (ast.style['z-index'] or { {} })[1].value or 0
         })
+        ast.relativeBoxId = #root.relativeBoxes
         ret = newRet
         if ast.style.left ~= nil then
             startX = startX - ast.style.left[1].value.computed
@@ -479,6 +481,7 @@ function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX
         - ast.margin[_ast.top].value - ast.margin[_ast.bottom].value
     ---@type Banana.Box?
     local extra = nil
+    local startI = i
     while i <= #ast.nodes do
         local v = ast.nodes[i]
         if v == nil then
@@ -526,10 +529,20 @@ function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX
             local rendered = tag:getRendered(v, currentLine.hlgroup, width, height, startX, startY, inherit, extra_)
             startX = startX + rendered.width
             local overflow = nil
+            local orgLines = #currentLine.lines
             currentLine, overflow = handleOverflow(ast, i, currentLine, rendered, width)
-            if #rendered.lines > #currentLine.lines and overflow == nil and tag.formatType == M.FormatType.Inline then
-                --FIX: go back through passed inlines and say yo dawg you gotta change yo bounds
-                local yInc = #rendered.lines - #currentLine.lines
+            if #rendered.lines > orgLines and overflow == nil then
+                local yInc = #rendered.lines - orgLines
+                local currentI = startI
+                while currentI < i do
+                    local node = ast.nodes[currentI]
+                    if type(node) == "string" then
+                        goto continue
+                    end
+                    node:_increaseTopBound(yInc)
+                    ::continue::
+                    currentI = currentI + 1
+                end
             end
             if overflow ~= nil then
                 if extra == nil then
