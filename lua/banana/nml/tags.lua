@@ -59,12 +59,17 @@ local TagInfo = {
 ---@param name string
 ---@param i number
 ---@param hl Banana.Highlight?
+---@param lines number
 ---@return Banana.Box
-local function padLeftRight(ast, name, i, hl)
-    local box = b.Box:new(hl);
-    box:appendStr(' ', nil)
-    box:expandWidthTo(ast[name][i].value)
-    return box
+local function padLeftRight(ast, name, i, hl, lines)
+    local ret = b.Box:new(hl);
+    while #ret.lines < lines do
+        local box = b.Box:new(hl)
+        box:appendStr(' ', nil)
+        box:expandWidthTo(ast[name][i].value)
+        ret:appendBoxBelow(box)
+    end
+    return ret
 end
 
 ---@param ast Banana.Ast
@@ -78,7 +83,7 @@ local function padTopBtm(ast, name, i, hl, width)
     box:appendStr(' ', nil)
     box:expandWidthTo(width)
     while #box.lines < ast[name][i].value do
-        table.insert(box.lines, box.lines[1])
+        table.insert(box.lines, vim.deepcopy(box.lines[1]))
     end
     return box
 end
@@ -90,12 +95,12 @@ end
 ---@return Banana.Box
 local function applyPad(name, ast, ret, hl)
     if ast[name][_ast.left].value ~= 0 then
-        local box = padLeftRight(ast, name, _ast.left, hl)
+        local box = padLeftRight(ast, name, _ast.left, hl, #ret.lines)
         box:append(ret, nil)
         ret = box
     end
     if ast[name][_ast.right].value ~= 0 then
-        local box = padLeftRight(ast, name, _ast.right, hl)
+        local box = padLeftRight(ast, name, _ast.right, hl, #ret.lines)
         ret:append(box, nil)
     end
     if ast[name][_ast.top].value ~= 0 then
@@ -178,11 +183,15 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
     end
     if ast.style['width'] ~= nil then
         ---@diagnostic disable-next-line: cast-local-type
-        parentWidth = math.min(ast.style['width'][1].value.computed, parentWidth)
+        parentWidth = math.min(
+            ast.style['width'][1].value.computed + ast.margin[_ast.left].value + ast.margin[_ast.right].value,
+            parentWidth)
     end
     if ast.style['height'] ~= nil then
         ---@diagnostic disable-next-line: cast-local-type
-        parentHeight = math.min(ast.style['height'][1].value.computed, parentHeight)
+        parentHeight = math.min(
+            ast.style['height'][1].value.computed + ast.margin[_ast.top].value + ast.margin[_ast.bottom].value,
+            parentHeight)
     end
     if position ~= "static" then
         if ast.style.left ~= nil then
@@ -196,6 +205,8 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
             startY = startY - ast.style.bottom[1].value.computed
         end
     end
+    startX = startX + ast.margin[_ast.left].value
+    startY = startY + ast.margin[_ast.top].value
     ---@type Banana.Ast.BoundingBox
     local boundBox = {
         leftX   = startX,
@@ -203,8 +214,8 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
         rightX  = 0,
         bottomY = 0,
     }
-    startX = startX + ast.padding[_ast.left].value + ast.margin[_ast.left].value
-    startY = startY + ast.padding[_ast.top].value + ast.margin[_ast.top].value
+    startX = startX + ast.padding[_ast.left].value
+    startY = startY + ast.padding[_ast.top].value
     ---@cast parentWidth number
     ---@cast parentHeight number
     local ret = self:render(ast, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra)
@@ -237,7 +248,8 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
         ret:clean()
     end
     if ast.style['height'] ~= nil and not ast:parent():isNil() then
-        local height = ast.style['height'][1].value.computed
+        local height = ast.style['height'][1].value.computed - ast.padding[_ast.top].value -
+            ast.padding[_ast.bottom].value
         ---@cast height number
         local above = require('banana.box').Box:new(ret.hlgroup)
         above:appendStr(' ')
@@ -246,7 +258,7 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
             goto skip
         end
         while #ret.lines + #above.lines < height do
-            table.insert(above.lines, above.lines[1])
+            table.insert(above.lines, vim.deepcopy(above.lines[1]))
         end
         above:appendBoxBelow(ret)
         ret = above
@@ -272,8 +284,8 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
         end
         table.insert(root.relativeBoxes, {
             box = ret,
-            left = startX - 1,
-            top = startY - 1,
+            left = startX - 1 - ast.padding[_ast.left].value,
+            top = startY - 1 - ast.padding[_ast.top].value,
             z = (ast.style['z-index'] or { {} })[1].value or 0
         })
         ret = newRet
@@ -515,6 +527,10 @@ function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX
             startX = startX + rendered.width
             local overflow = nil
             currentLine, overflow = handleOverflow(ast, i, currentLine, rendered, width)
+            if #rendered.lines > #currentLine.lines and overflow == nil and tag.formatType == M.FormatType.Inline then
+                --FIX: go back through passed inlines and say yo dawg you gotta change yo bounds
+                local yInc = #rendered.lines - #currentLine.lines
+            end
             if overflow ~= nil then
                 if extra == nil then
                     extra = currentLine

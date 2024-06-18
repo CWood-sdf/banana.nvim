@@ -184,14 +184,6 @@ function Parser:getNextInlineNcssParser()
     return node
 end
 
--- ---@param str string
--- ---@return string
--- function Parser:resolveEntity(str)
---     local stripped = str:sub(2, _str.charCount(str))
---     ---TODO: process entity string
---     return stripped
--- end
-
 ---@param tree TSNode
 ---@param parent Banana.Ast?
 ---@param isSpecial? boolean

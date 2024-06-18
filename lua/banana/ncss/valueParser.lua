@@ -11,7 +11,6 @@ local Value = {
 
 }
 
---TODO: Need some sort of deferred value for calc
 
 ---@alias Banana.Ncss.StyleValue.Types "color"|"integer"|"plain"|"float"|"string"|"unit"|"boolean"
 
@@ -217,7 +216,6 @@ local cssParsers = {
         return M.newPlainValue(str)
     end,
     color_value = function(_, _, str)
-        --TODO: Might need to process the string a lil bit
         return M.newColorValue(str)
     end,
     call_expression = function(tree, parser, _)

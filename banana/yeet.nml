@@ -9,8 +9,8 @@
       width: 8ch;
       height: 3ch;
       hl-bg: #143c87;
-      margin-left: 0ch;
       position: initial;
+      padding: 1ch;
     }
     .rel {
       position: relative;

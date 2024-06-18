@@ -204,8 +204,6 @@ function Query:find(ast)
                 end
             end
         elseif v.filterType == M.FilterType.Selector then
-            --PERF: This might be slow because duplicates
-
             ---@type { [Banana.Ast]: boolean }
             local newRet = {}
             ---@cast v Banana.Ncss.Selector

@@ -87,6 +87,14 @@ function M.Box:clean()
             table.insert(self.lines[i], self:fillString(self.width - w))
         end
     end
+    ---@type { [Banana.Word[]]: boolean }
+    local foundLines = {}
+    for i, v in ipairs(self.lines) do
+        if foundLines[v] ~= nil then
+            self.lines[i] = vim.deepcopy(v)
+            foundLines[v] = true
+        end
+    end
     self.dirty = false
 end
 
