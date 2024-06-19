@@ -27,6 +27,8 @@ jobs:
           chmod a+x ./actions_init_ts
           ./actions_init_ts
           tree-sitter --version
+          chmod a+x ./build.sh
+          ./build.sh
       - name: Run Tests
         run: |
           nvim --version
