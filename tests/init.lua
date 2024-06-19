@@ -76,26 +76,24 @@ function M.setup()
     ---@diagnostic disable-next-line: inject-field
     parser_config.nml = {
         install_info = {
-            url = M.root("./tree-sitter-ncss"),
-            files = { "src/parser.c" },            -- note that some parsers also require src/scanner.c or src/scanner.cc
-            -- optional entries:
-            branch = "main",                       -- default branch in case of git repo if different from master
-            generate_requires_npm = false,         -- if stand-alone parser without npm dependencies
-            requires_generate_from_grammar = true, -- if folder contains pre-generated src/parser.c
+            url = M.root("./tree-sitter-nml"),
+            files = { "src/parser.c" },
+            branch = "main",
+            generate_requires_npm = false,
+            requires_generate_from_grammar = true,
         },
-        filetype = "nml",                          -- if filetype does not match the parser name
+        filetype = "nml",
     }
     ---@diagnostic disable-next-line: inject-field
     parser_config.ncss = {
         install_info = {
             url = M.root("./tree-sitter-ncss"),
-            files = { "src/parser.c", "src/scanner.c" }, -- note that some parsers also require src/scanner.c or src/scanner.cc
-            -- optional entries:
-            branch = "main",                             -- default branch in case of git repo if different from master
-            generate_requires_npm = false,               -- if stand-alone parser without npm dependencies
-            requires_generate_from_grammar = false,      -- if folder contains pre-generated src/parser.c
+            files = { "src/parser.c", "src/scanner.c" },
+            branch = "main",
+            generate_requires_npm = false,
+            requires_generate_from_grammar = false,
         },
-        filetype = "ncss",                               -- if filetype does not match the parser name
+        filetype = "ncss",
     }
     vim.treesitter.language.register("ncss", "ncss")
     vim.cmd("TSInstallSync! nml")

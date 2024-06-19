@@ -29,6 +29,19 @@ function M.nmlLoad(filename)
     return ast, parser.styleSets, parser.scripts
 end
 
+---@param str string
+---@return Banana.Ast, Banana.Ncss.RuleSet[], string[]
+function M.nmlLoadString(str)
+    local parser = require('banana.nml.parser').fromString(str)
+    assert(parser ~= nil,
+        "Could not generate parser for string")
+    local ast = parser:parse()
+    assert(ast ~= nil,
+        "Unable to parse string ")
+    require("banana.nml.cleanAst").cleanAst(ast)
+    return ast, parser.styleSets, parser.scripts
+end
+
 --- https://stackoverflow.com/questions/1340230/check-if-directory-exists-in-lua
 ---@param file string
 ---@return boolean

@@ -19,7 +19,7 @@ This plugin seeks to turn neovim into a hypermedia client through its own custom
 - [x] Title tag sets title of buf
 - [x] Meta tags set attributes (like maybe float...)
 - [x] Nml width height sets win width/height
-- [ ] Nml left, right, top, bottom sets win position
+- [x] Nml left, right, top, bottom sets win position
 
 ### Markup Language
 

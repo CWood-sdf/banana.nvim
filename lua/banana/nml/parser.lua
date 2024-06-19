@@ -368,15 +368,9 @@ function M.getTree()
     return tree
 end
 
----@return Banana.Nml.Parser?
-function M.fromFile(path)
-    local file = io.open(path)
-    if file == nil then
-        print("Failed to open code file")
-        return nil
-    end
-    local content = file:read("*a")
-    file:close()
+---@param content string
+---@return Banana.Nml.Parser
+function M.fromString(content)
     local buf = vim.api.nvim_create_buf(false, true)
     vim.api.nvim_set_option_value("modifiable", true, { buf = buf })
     vim.api.nvim_buf_set_lines(buf, 0, -1, false, vim.split(content, "\n"))
@@ -409,6 +403,18 @@ function M.fromFile(path)
 
     local parser = Parser:new(lex, tree, ncssParsers)
     return parser
+end
+
+---@return Banana.Nml.Parser?
+function M.fromFile(path)
+    local file = io.open(path)
+    if file == nil then
+        print("Failed to open code file")
+        return nil
+    end
+    local content = file:read("*a")
+    file:close()
+    return M.fromString(content)
 end
 
 return M

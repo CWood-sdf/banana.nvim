@@ -23,6 +23,7 @@ local instances = {}
 ---@field disabled boolean?
 
 ---@class (exact) Banana.Instance
+---@field DEBUG boolean
 ---@field winid? number
 ---@field bufnr? number
 ---@field bufname string
@@ -42,6 +43,7 @@ local instances = {}
 ---@field bufOpts { [string]: any }
 ---@field _body Banana.Ast?
 ---@field augroup number
+---@field stripRight boolean
 local Instance = {}
 
 ---@class (exact) Banana.Word
@@ -66,8 +68,12 @@ function Instance:virtualRender(ast, width, height)
             text_align = "left",
             position = "static",
         }, extra)
-        rendered:stripRightSpace()
-        rendered:appendBoxBelow(extra.trace)
+        if self.stripRight then
+            rendered:stripRightSpace()
+        end
+        if extra.debug then
+            rendered:appendBoxBelow(extra.trace)
+        end
         for _, line in ipairs(rendered.lines) do
             table.insert(ret, line)
         end
@@ -80,7 +86,7 @@ function Instance:setBufName(str)
 end
 
 ---@return Banana.Instance
-function Instance:new(filename, bufferName)
+function Instance:new()
     if nilAst == nil then
         nilAst = {}
         for k, v in pairs(require('banana.nml.ast').Ast) do
@@ -97,22 +103,24 @@ function Instance:new(filename, bufferName)
             end
         end
     end
-    local ast, styleRules, scripts = require('banana.require').nmlRequire(filename)
     table.insert(instances, {})
     local id = #instances
     ---@type Banana.Instance
     local inst = {
+        stripRight = true,
+        DEBUG = true,
         isVisible = false,
         foreignStyles = {},
         renderStart = 0,
         renderRequested = false,
         keymaps = {},
-        bufname = bufferName,
+        bufname = "Banana empty " .. id,
         highlightNs = vim.api.nvim_create_namespace("banana_instance_" .. ids),
         augroup = vim.api.nvim_create_augroup("banana_instance_" .. ids, {}),
-        ast = ast,
-        styleRules = styleRules,
-        scripts = scripts,
+        ---@diagnostic disable-next-line: assign-type-mismatch
+        ast = nilAst,
+        styleRules = {},
+        scripts = {},
         -- parser = parser,
         instanceId = id,
         winhl = {
@@ -128,10 +136,27 @@ function Instance:new(filename, bufferName)
     }
     setmetatable(inst, { __index = Instance })
     instances[id] = inst
-    inst:applyId(ast)
     vim.api.nvim_set_hl(inst.highlightNs, M.defaultWinHighlight, inst.winhl)
     inst:_attachAutocmds()
     return inst
+end
+
+---@param filename string
+function Instance:useFile(filename)
+    local ast, styleRules, scripts = require('banana.require').nmlRequire(filename)
+    self.scripts = scripts
+    self.styleRules = styleRules
+    self.ast = ast
+    self:applyId(ast)
+end
+
+---@param nml string
+function Instance:useNml(nml)
+    local ast, styleRules, scripts = require('banana.require').nmlLoadString(nml)
+    self.scripts = scripts
+    self.styleRules = styleRules
+    self.ast = ast
+    self:applyId(ast)
 end
 
 function Instance:_attachAutocmds()
@@ -365,7 +390,7 @@ function Instance:createWinAndBuf()
             text_align = "left",
         }, {
             trace = require('banana.box').Box:new(),
-            debug = false,
+            debug = self.DEBUG,
         })
     end
     local containerWidth = vim.o.columns
@@ -437,6 +462,11 @@ function Instance:_requestRender()
     end, 20)
 end
 
+function Instance:forceRerender()
+    self.renderRequested = false
+    self:render()
+end
+
 function Instance:render()
     if not self.isVisible then
         return
@@ -489,22 +519,24 @@ function Instance:render()
     self.scripts = {}
     local hlTime = vim.loop.hrtime() - startTime
     totalTime = totalTime + vim.loop.hrtime() - actualStart
-    local extraLines = {
-        "",
-        astTime / 1e3 .. "μs to parse",
-        styleTime / 1e3 .. "μs to style",
-        renderTime / 1e6 .. "ms to render",
-        reductionTime / 1e3 .. "μs to reduce",
-        hlTime / 1e3 .. "μs to highlight",
-        totalTime / 1e6 .. "ms total",
-    }
-    vim.api.nvim_set_option_value("modifiable", true, {
-        buf = self.bufnr
-    })
-    vim.api.nvim_buf_set_lines(self.bufnr, #lines, -1, false, extraLines)
-    vim.api.nvim_set_option_value("modifiable", false, {
-        buf = self.bufnr
-    })
+    if self.DEBUG then
+        local extraLines = {
+            "",
+            astTime / 1e3 .. "μs to parse",
+            styleTime / 1e3 .. "μs to style",
+            renderTime / 1e6 .. "ms to render",
+            reductionTime / 1e3 .. "μs to reduce",
+            hlTime / 1e3 .. "μs to highlight",
+            totalTime / 1e6 .. "ms total",
+        }
+        vim.api.nvim_set_option_value("modifiable", true, {
+            buf = self.bufnr
+        })
+        vim.api.nvim_buf_set_lines(self.bufnr, #lines, -1, false, extraLines)
+        vim.api.nvim_set_option_value("modifiable", false, {
+            buf = self.bufnr
+        })
+    end
     self.renderRequested = false
 end
 
@@ -516,9 +548,6 @@ function Instance:highlight(lines, offset)
     if self.highlightNs ~= nil then
         vim.api.nvim_buf_clear_namespace(0, self.highlightNs, offset, offset + #lines)
         -- self.highlightNs = nil
-    end
-    if self.highlightNs == nil then
-        self.highlightNs = vim.api.nvim_create_namespace("Spaceport")
     end
     vim.api.nvim_win_set_hl_ns(self.winid, self.highlightNs)
     assert(self.bufnr ~= nil or not vim.api.nvim_buf_is_valid(self.bufnr),
@@ -557,7 +586,7 @@ function Instance:highlight(lines, offset)
                 elseif usedHighlights[optsStr] ~= nil then
                     hlGroup = usedHighlights[optsStr]
                 else
-                    hlGroup = "spaceport_hl_" .. hlId
+                    hlGroup = "banana_hl_" .. hlId
                     vim.api.nvim_set_hl(self.highlightNs, hlGroup, word.style)
                     hlId = hlId + 1
                     usedHighlights[optsStr] = hlGroup
@@ -683,8 +712,15 @@ end
 ---@param bufferName string
 ---@return Banana.Instance
 function M.newInstance(filename, bufferName)
-    local instance = Instance:new(filename, bufferName)
+    local instance = Instance:new()
+    instance:setBufName(bufferName)
+    instance:useFile(filename)
     return instance
+end
+
+---@return Banana.Instance
+function M.emptyInstance()
+    return Instance:new()
 end
 
 ---@param id number
