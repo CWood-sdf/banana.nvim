@@ -89,7 +89,7 @@ function Instance:new(filename, bufferName)
                     nilAst['isNil'] = function() return true end
                 else
                     nilAst[k] = function()
-                        print("Calling '" .. k .. "' on the nil ast\n")
+                        vim.notify("Calling '" .. k .. "' on the nil ast\n")
                     end
                 end
             else
@@ -425,22 +425,26 @@ function Instance:createWinAndBuf()
     return width, height
 end
 
+function Instance:_requestRender()
+    if self.renderRequested then
+        return
+    end
+    self.renderRequested = true
+    self.renderStart = vim.loop.hrtime()
+    vim.defer_fn(function()
+        self.renderRequested = false
+        self:render()
+    end, 20)
+end
+
 function Instance:render()
     if not self.isVisible then
         return
     end
     local totalTime = 0
-    if self.renderRequested and (vim.loop.hrtime() - self.renderStart) > 2e9 then
-        self.renderRequested = false
-    end
     if self.renderRequested then
-        vim.defer_fn(function()
-            self:render()
-        end, 10)
         return
     end
-    self.renderRequested = true
-    self.renderStart = vim.loop.hrtime()
     local startTime = vim.loop.hrtime()
     local actualStart = startTime
     local astTime = 0
@@ -600,6 +604,7 @@ function Instance:loadNmlTo(file, ast, preserve)
             params = params
         })
     end
+    self:_requestRender()
 end
 
 ---@param sel string
@@ -668,7 +673,7 @@ function Instance:createElement(name)
 end
 
 ---@param scripts string[]
-function Instance:addScripts(scripts)
+function Instance:_addScripts(scripts)
     for _, v in ipairs(scripts) do
         table.insert(self.scripts, v)
     end

@@ -176,42 +176,44 @@ function M.Ast:setAttribute(name, value)
         return
     end
     self.attributes[name] = value
+    self:_requestRender()
 end
 
 ---@param value string
 function M.Ast:setStyle(value)
     local parsed = require('banana.ncss.parser').parseText(value)
     self.inlineStyle = parsed[1].declarations
+    self:_requestRender()
 end
 
----@param name string
----@param value string
-function M.Ast:setStyleValue(name, value)
-    local p = require('banana.ncss.valueParser')
-    ---@type Banana.Ncss.StyleValue
-    local cssVal = nil
-    if value:sub(1, 1) == '#' then
-        cssVal = p.newColorValue(value)
-    elseif value:sub(1, 1) == '"' or value:sub(1, 1) == "'" then
-        value = value:sub(2, #value)
-        value = value:sub(1, #value - 1)
-        cssVal = p.newStringValue(value)
-    else
-        vim.notify("Currently only sting values and color values are supported for ast:setStyleValue",
-            vim.log.levels.WARN)
-        cssVal = p.newPlainValue(value)
-    end
-    ---@type Banana.Ncss.StyleDeclaration
-    local decl = {
-        name = name,
-        values = { cssVal },
-        important = false,
-    }
-    if self.inlineStyle == nil then
-        self.inlineStyle = {}
-    end
-    table.insert(self.inlineStyle, decl)
-end
+-- ---@param name string
+-- ---@param value string
+-- function M.Ast:setStyleValue(name, value)
+--     local p = require('banana.ncss.valueParser')
+--     ---@type Banana.Ncss.StyleValue
+--     local cssVal = nil
+--     if value:sub(1, 1) == '#' then
+--         cssVal = p.newColorValue(value)
+--     elseif value:sub(1, 1) == '"' or value:sub(1, 1) == "'" then
+--         value = value:sub(2, #value)
+--         value = value:sub(1, #value - 1)
+--         cssVal = p.newStringValue(value)
+--     else
+--         vim.notify("Currently only sting values and color values are supported for ast:setStyleValue",
+--             vim.log.levels.WARN)
+--         cssVal = p.newPlainValue(value)
+--     end
+--     ---@type Banana.Ncss.StyleDeclaration
+--     local decl = {
+--         name = name,
+--         values = { cssVal },
+--         important = false,
+--     }
+--     if self.inlineStyle == nil then
+--         self.inlineStyle = {}
+--     end
+--     table.insert(self.inlineStyle, decl)
+-- end
 
 ---@param c string
 ---@return boolean
@@ -239,6 +241,7 @@ function M.Ast:removeClass(c)
     if self.classes[c] == true then
         self.classes[c] = false
     end
+    self:_requestRender()
 end
 
 ---@param c string
@@ -247,6 +250,7 @@ function M.Ast:addClass(c)
         self.classes = {}
     end
     self.classes[c] = true
+    self:_requestRender()
 end
 
 ---@param parentHl Banana.Highlight?
@@ -448,6 +452,7 @@ function M.Ast:remove()
     end
     require('banana.render').getInstance(self.instance):removeMapsFor(self)
     self._parent = nil
+    self:_requestRender()
 end
 
 ---@param name string
@@ -459,6 +464,7 @@ end
 ---@param text string
 function M.Ast:appendTextNode(text)
     table.insert(self.nodes, text)
+    self:_requestRender()
 end
 
 ---@param node Banana.Ast
@@ -468,6 +474,7 @@ function M.Ast:appendNode(node)
     if self.instance ~= nil then
         require('banana.render').getInstance(self.instance):applyId(node)
     end
+    self:_requestRender()
 end
 
 ---@return boolean
@@ -529,6 +536,7 @@ function M.Ast:removeChildren()
         end
     end
     self.nodes = {}
+    self:_requestRender()
 end
 
 ---@return Banana.Ast[]
@@ -574,6 +582,7 @@ end
 function M.Ast:setTextContent(str)
     self:removeChildren()
     self.nodes = { str }
+    self:_requestRender()
 end
 
 ---@param mod Banana.Remap.Constraint
@@ -636,6 +645,14 @@ function M.Ast:attachRemap(mode, lhs, mods, rhs, opts)
     end
     local inst = require('banana.render').getInstance(self.instance)
     inst:_setRemap(mode, lhs, actualRhs, opts, self)
+end
+
+function M.Ast:_requestRender()
+    if self.instance == nil then
+        return
+    end
+    local inst = require('banana.render').getInstance(self.instance)
+    inst:_requestRender()
 end
 
 return M
