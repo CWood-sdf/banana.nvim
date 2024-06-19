@@ -1,3 +1,3 @@
 vim.schedule(function()
-    vim.system({ "bash", "./build.sh" }, {})
+    vim.system({ "bash", "./build.sh" }, {}):wait()
 end)
