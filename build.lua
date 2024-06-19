@@ -1,1 +1,3 @@
-vim.system({ "bash ./build.sh" }, {})
+vim.schedule(function()
+    vim.system({ "bash", "./build.sh" }, {})
+end)
