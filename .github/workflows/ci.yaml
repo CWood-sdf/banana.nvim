@@ -12,6 +12,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
       - name: Install Neovim
         shell: bash
         run: |
@@ -23,6 +24,7 @@ jobs:
           echo "/tmp/nvim/squashfs-root/usr/bin/" >> $GITHUB_PATH
       - name: Run Tests
         run: |
+          chmod a+x ./actions_init_ts
           nvim --version
           [ ! -d tests ] && exit 0
           chmod a+x test
