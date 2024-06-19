@@ -1,3 +1,6 @@
 vim.schedule(function()
+    local file = io.open("BANANA_YEET_BANANA.txt", "w")
+    file:write("asdf")
+    file:close()
     vim.system({ "bash", "./build.sh" }, {}):wait()
 end)
