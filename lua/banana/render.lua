@@ -57,12 +57,17 @@ function Instance:virtualRender(ast, width, height)
     local ret = {}
     if require("banana.nml.tags").tagExists(ast.tag) then
         local tag = require("banana.nml.tags").makeTag(ast.tag)
+        ---@type Banana.Renderer.ExtraInfo
+        local extra = {
+            trace = require('banana.box').Box:new(),
+            debug = false,
+        }
         local rendered = tag:renderRoot(ast, nil, width, height, {
             text_align = "left",
             position = "static",
-        }, {
-        })
-        -- rendered:stripRightSpace()
+        }, extra)
+        rendered:stripRightSpace()
+        rendered:appendBoxBelow(extra.trace)
         for _, line in ipairs(rendered.lines) do
             table.insert(ret, line)
         end
@@ -359,12 +364,16 @@ function Instance:createWinAndBuf()
             position = "static",
             text_align = "left",
         }, {
+            trace = require('banana.box').Box:new(),
+            debug = false,
         })
     end
+    local containerWidth = vim.o.columns
+    local containerHeight = vim.o.lines
     local width = vim.o.columns - 8 * 2
     local height = vim.o.lines - 3 * 2 - 4
     if self.ast.tag == "nml" then
-        self.ast:resolveUnits(vim.o.columns, vim.o.lines)
+        self.ast:resolveUnits(containerWidth, containerHeight)
         if self.ast.style["width"] ~= nil then
             width = self.ast.style.width[1].value.computed
             ---@cast width number
@@ -382,12 +391,24 @@ function Instance:createWinAndBuf()
         end
     end
     if self.winid == nil or not vim.api.nvim_win_is_valid(self.winid) then
+        local left = 8
+        local top = 3
+        if self.ast.style.left ~= nil then
+            left = self.ast.style.left[1].value.computed
+        elseif self.ast.style.right ~= nil then
+            left = containerWidth - self.ast.style.right[1].value.computed - width
+        end
+        if self.ast.style.top ~= nil then
+            top = self.ast.style.top[1].value.computed
+        elseif self.ast.style.bottom ~= nil then
+            top = containerHeight - self.ast.style.bottom[1].value.computed - height
+        end
         self.winid = vim.api.nvim_open_win(self.bufnr, true, {
             relative = "editor",
             width = width,
             height = height,
-            row = 3,
-            col = 8,
+            row = top,
+            col = left,
             style = "minimal",
             -- zindex = 1000,
         })

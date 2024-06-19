@@ -18,6 +18,14 @@ local function kebabToSnake(str)
     return ret
 end
 
+---@param msg string
+---@return Banana.Box
+local function traceBreak(msg)
+    local ret = b.Box:new()
+    ret:appendStr("---- line: " .. msg)
+    return ret
+end
+
 ---@class (exact) Banana.Renderer.InheritedProperties
 ---@field text_align string
 ---@field position "static"|"absolute"|"sticky"|"relative"
@@ -37,6 +45,8 @@ M.FormatType = {
 
 ---@class (exact) Banana.Renderer.ExtraInfo
 ---@field box Banana.Box?
+---@field trace Banana.Box
+---@field debug boolean
 
 ---Gosh so many parameters i might die
 ---@alias Banana.Renderer fun(self: Banana.TagInfo, ast: Banana.Ast, parentHl: Banana.Highlight?, parentWidth: number, parentHeight: number, startX: number, startY: number, inherit: Banana.Renderer.InheritedProperties, extra: Banana.Renderer.ExtraInfo): Banana.RenderRet
@@ -67,6 +77,7 @@ local function padLeftRight(ast, name, i, hl, lines)
         local box = b.Box:new(hl)
         box:appendStr(' ', nil)
         box:expandWidthTo(ast[name][i].value)
+        box:clean()
         ret:appendBoxBelow(box)
     end
     return ret
@@ -92,27 +103,32 @@ end
 ---@param ast Banana.Ast
 ---@param ret Banana.Box
 ---@param hl Banana.Highlight?
----@return Banana.Box
+---@return Banana.Box, boolean
 local function applyPad(name, ast, ret, hl)
+    local changed = false
     if ast[name][_ast.left].value ~= 0 then
         local box = padLeftRight(ast, name, _ast.left, hl, #ret.lines)
         box:append(ret, nil)
         ret = box
+        changed = true
     end
     if ast[name][_ast.right].value ~= 0 then
         local box = padLeftRight(ast, name, _ast.right, hl, #ret.lines)
         ret:append(box, nil)
+        changed = true
     end
     if ast[name][_ast.top].value ~= 0 then
         local box = padTopBtm(ast, name, _ast.top, hl, b.lineWidth(ret.lines[1]))
         box:appendBoxBelow(ret)
         ret = box
+        changed = true
     end
     if ast[name][_ast.bottom].value ~= 0 then
         local box = padTopBtm(ast, name, _ast.top, hl, b.lineWidth(ret.lines[1]))
         ret:appendBoxBelow(box)
+        changed = true
     end
-    return ret
+    return ret, changed
 end
 
 ---@param ast Banana.Ast
@@ -220,6 +236,11 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
     ---@cast parentWidth number
     ---@cast parentHeight number
     local ret = self:render(ast, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra)
+    if extra.debug then
+        extra.trace:appendBoxBelow(traceBreak("Raw render"))
+        extra.trace:appendBoxBelow(ast:_testDumpBox())
+        extra.trace:appendBoxBelow(ret)
+    end
     local extraWidth =
         parentWidth - ret.width -
         ast.padding[_ast.left].value - ast.padding[_ast.right].value -
@@ -247,6 +268,11 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
             ret = left
         end
         ret:clean()
+        if extra.debug then
+            extra.trace:appendBoxBelow(traceBreak("Expansion w"))
+            extra.trace:appendBoxBelow(ast:_testDumpBox())
+            extra.trace:appendBoxBelow(ret)
+        end
     end
     if ast.style['height'] ~= nil and not ast:parent():isNil() then
         local height = ast.style['height'][1].value.computed - ast.padding[_ast.top].value -
@@ -263,10 +289,22 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
         end
         above:appendBoxBelow(ret)
         ret = above
-
+        if extra.debug then
+            extra.trace:appendBoxBelow(traceBreak("Expansion h"))
+            extra.trace:appendBoxBelow(ast:_testDumpBox())
+            extra.trace:appendBoxBelow(ret)
+        end
         ::skip::
     end
-    ret = applyPad('padding', ast, ret, ret.hlgroup)
+    local changed = false
+    ret, changed = applyPad('padding', ast, ret, ret.hlgroup)
+    if changed then
+        if extra.debug then
+            extra.trace:appendBoxBelow(traceBreak("pad"))
+            extra.trace:appendBoxBelow(ast:_testDumpBox())
+            extra.trace:appendBoxBelow(ret)
+        end
+    end
     boundBox.rightX = boundBox.leftX + ret.width
     boundBox.bottomY = boundBox.topY + #ret.lines
     ast.boundBox = boundBox
@@ -302,14 +340,21 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
             startY = startY + ast.style.bottom[1].value.computed
         end
     end
-    ret = applyPad('margin', ast, ret, parentHl)
+    ret, changed = applyPad('margin', ast, ret, parentHl)
+    if changed then
+        if extra.debug then
+            extra.trace:appendBoxBelow(traceBreak("margin"))
+            extra.trace:appendBoxBelow(ast:_testDumpBox())
+            extra.trace:appendBoxBelow(ret)
+        end
+    end
     if ast.absoluteAsts ~= nil then
         for _, v in ipairs(ast.absoluteAsts) do
             v:resolveUnits(parentWidth, parentHeight)
             v.style.position[1].value = "relative"
             v.actualTag:getRendered(
                 v, ret.hlgroup, parentWidth, parentHeight, startX, startY, inherit,
-                {})
+                extra)
             v.style.position[1].value = "absolute"
         end
     end
@@ -526,7 +571,7 @@ function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX
                 break
             end
             v:resolveUnits(width, height)
-            local rendered = tag:getRendered(v, currentLine.hlgroup, width, height, startX, startY, inherit, extra_)
+            local rendered = tag:getRendered(v, parentHl, width, height, startX, startY, inherit, extra_)
             startX = startX + rendered.width
             local overflow = nil
             local orgLines = #currentLine.lines

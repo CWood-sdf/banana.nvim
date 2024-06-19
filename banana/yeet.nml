@@ -5,6 +5,11 @@
       Yeet yeet
     </title>
     <style>
+    nml {
+      top: 10%;
+      left: 5%;
+
+    }
     .card {
       width: 8ch;
       height: 3ch;

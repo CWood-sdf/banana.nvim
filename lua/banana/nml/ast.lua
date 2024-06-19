@@ -491,9 +491,25 @@ function M.Ast:isHovering()
     return ret
 end
 
+---@return string
+function M.Ast:_testDumbAttr()
+    local ret = "<" .. self.tag .. "> "
+    for k, v in pairs(self.attributes) do
+        ret = ret .. k .. ": '" .. v .. "',"
+    end
+    return ret
+end
+
+---@return Banana.Box
+function M.Ast:_testDumpBox()
+    local ret = require('banana.box').Box:new()
+    ret:appendStr(self:_testDumbAttr())
+    return ret
+end
+
+---@param number number
 function M.Ast:_increaseTopBound(number)
     assert(self.boundBox ~= nil, "Expected the ast to be rendered")
-    print("Inc by " .. number)
     self.boundBox.bottomY = self.boundBox.bottomY + number
     self.boundBox.topY = self.boundBox.topY + number
     if self.relativeBoxId ~= nil then

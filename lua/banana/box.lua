@@ -179,7 +179,7 @@ function M.Box:appendBoxBelow(box)
         self:clean()
     end
     for _, v in ipairs(box.lines) do
-        table.insert(self.lines, v)
+        table.insert(self.lines, vim.deepcopy(v))
     end
     self.dirty = self.width ~= box.width
     self.width = newWidth
