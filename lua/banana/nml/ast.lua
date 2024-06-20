@@ -240,8 +240,8 @@ function M.Ast:removeClass(c)
     end
     if self.classes[c] == true then
         self.classes[c] = false
+        self:_requestRender()
     end
-    self:_requestRender()
 end
 
 ---@param c string
@@ -249,8 +249,10 @@ function M.Ast:addClass(c)
     if self.classes == nil then
         self.classes = {}
     end
-    self.classes[c] = true
-    self:_requestRender()
+    if not self.classes[c] then
+        self.classes[c] = true
+        self:_requestRender()
+    end
 end
 
 ---@param parentHl Banana.Highlight?
@@ -516,7 +518,9 @@ end
 
 ---@param number number
 function M.Ast:_increaseTopBound(number)
-    assert(self.boundBox ~= nil, "Expected the ast to be rendered")
+    if self.boundBox == nil then
+        return
+    end
     self.boundBox.bottomY = self.boundBox.bottomY + number
     self.boundBox.topY = self.boundBox.topY + number
     if self.relativeBoxId ~= nil then

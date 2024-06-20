@@ -275,12 +275,15 @@ function M.Box:renderOver(other, left, top)
             local str = line[wordIndex].word
             -- case 2
             if wordSize - count > other.width and count ~= 0 then
+                print("CASE 2!!!" .. count)
                 local leftStr = _str.sub(str, 1, count)
-                local rightStr = _str.sub(str, count + other.width, wordSize)
+                local rightStr = _str.sub(str, count + other.width + 1, wordSize)
                 line[wordIndex].word = leftStr
+                local style = line[wordIndex].style
+                wordIndex = wordIndex + 1
                 table.insert(line, wordIndex, {
                     word = rightStr,
-                    style = line[wordIndex].style,
+                    style = style,
                 })
                 break
             end
@@ -303,7 +306,7 @@ function M.Box:renderOver(other, left, top)
             end
             charsToCut = charsToCut - (wordSize - newLen)
             if line[wordIndex] == nil then
-                wordIndex = wordIndex - 1
+                break
             end
             if #line == 0 then
                 table.insert(line, {

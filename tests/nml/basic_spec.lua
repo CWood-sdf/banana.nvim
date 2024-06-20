@@ -23,7 +23,26 @@ asd
 </nml>
 ]]
 
-describe("Div rendering basic test", function()
+describe("Div rendering", function()
+    it("margins", function()
+        local inst = require('banana.render').emptyInstance()
+        inst:useNml(code)
+        inst.DEBUG = false
+        inst.stripRight = false
+        inst:open()
+
+        local div = inst:getElementsByTag("div")[1]
+        div:setStyle("width: 4ch; height: 2ch; margin-left: 1ch;")
+        local expectedMap = {
+            "     ",
+            " ~~~~",
+            " asd~",
+            "     ",
+            "     ",
+        }
+        inst:forceRerender()
+        h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
+    end)
     it("pads", function()
         local inst = require('banana.render').emptyInstance()
         inst:useNml(code)

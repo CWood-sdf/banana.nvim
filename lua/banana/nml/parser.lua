@@ -371,6 +371,7 @@ end
 ---@param content string
 ---@return Banana.Nml.Parser
 function M.fromString(content)
+    require('banana').initTsParsers()
     local buf = vim.api.nvim_create_buf(false, true)
     vim.api.nvim_set_option_value("modifiable", true, { buf = buf })
     vim.api.nvim_buf_set_lines(buf, 0, -1, false, vim.split(content, "\n"))

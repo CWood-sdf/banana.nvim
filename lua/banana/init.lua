@@ -47,4 +47,43 @@ function M.spam()
 	vim.notify((vim.uv.hrtime() - startTime) / 1e6 .. "ms\n")
 end
 
+function M.getInstallDir()
+	local ret = ""
+
+	for _, v in ipairs(vim.api.nvim_list_runtime_paths()) do
+		if v:match("banana.nvim$") ~= nil then
+			ret = v
+		end
+	end
+	return ret
+end
+
+function M.initTsParsers()
+	local parser_config = require("nvim-treesitter.parsers").get_parser_configs()
+	vim.treesitter.language.register("nml", "nml")
+	---@diagnostic disable-next-line: inject-field
+	parser_config.nml = {
+		install_info = {
+			url = M.getInstallDir() .. "/tree-sitter-nml",
+			files = { "src/parser.c" },
+			branch = "main",
+			generate_requires_npm = false,
+			requires_generate_from_grammar = true,
+		},
+		filetype = "nml",
+	}
+	---@diagnostic disable-next-line: inject-field
+	parser_config.ncss = {
+		install_info = {
+			url = M.getInstallDir() .. "/tree-sitter-ncss",
+			files = { "src/parser.c", "src/scanner.c" },
+			branch = "main",
+			generate_requires_npm = false,
+			requires_generate_from_grammar = false,
+		},
+		filetype = "ncss",
+	}
+	vim.treesitter.language.register("ncss", "ncss")
+end
+
 return M

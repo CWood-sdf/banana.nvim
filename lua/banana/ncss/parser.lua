@@ -277,12 +277,6 @@ function M.parseText(content)
     return M.parse(tree:root(), parser)
 end
 
----@param content string
----@return Banana.Ncss.RuleSet[]
-function M.parseTextSlow(content)
-    return M.parseLines(vim.split(content, '\n'))
-end
-
 ---@param name string
 ---@return Banana.Ncss.RuleSet[]
 function M.parseFile(name)
@@ -295,27 +289,7 @@ end
 ---@param lines string[]
 ---@return Banana.Ncss.RuleSet[]
 function M.parseLines(lines)
-    local buf = vim.api.nvim_create_buf(false, true)
-    vim.api.nvim_set_option_value("modifiable", true, { buf = buf })
-    vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
-    vim.api.nvim_set_option_value("modifiable", false, { buf = buf })
-    vim.api.nvim_set_option_value("modified", false, { buf = buf })
-    vim.api.nvim_set_option_value("filetype", "ncss", { buf = buf })
-    vim.api.nvim_set_option_value("buflisted", false, { buf = buf })
-    vim.api.nvim_set_option_value("swapfile", false, { buf = buf })
-    vim.treesitter.start(buf, "ncss")
-    local tree = vim.treesitter.get_parser(buf, "ncss"):parse(true)[1]
-    local parsed = tree:root()
-    local children = parsed:child(0)
-    assert(children ~= nil,
-        "y r u gay")
-
-    -- delete the buffer
-    vim.api.nvim_buf_delete(buf, { force = true })
-
-    local parser = ParseData:new(lines)
-
-    return M.parse(tree:root(), parser)
+    return M.parseText(vim.iter(lines):join("\n"))
 end
 
 return M

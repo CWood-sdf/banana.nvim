@@ -44,6 +44,7 @@ local instances = {}
 ---@field _body Banana.Ast?
 ---@field augroup number
 ---@field stripRight boolean
+---@field rendering boolean
 local Instance = {}
 
 ---@class (exact) Banana.Word
@@ -107,6 +108,7 @@ function Instance:new()
     local id = #instances
     ---@type Banana.Instance
     local inst = {
+        rendering = false,
         stripRight = true,
         DEBUG = true,
         isVisible = false,
@@ -451,14 +453,17 @@ function Instance:createWinAndBuf()
 end
 
 function Instance:_requestRender()
-    if self.renderRequested then
+    if self.renderRequested or self.rendering then
         return
     end
     self.renderRequested = true
     self.renderStart = vim.loop.hrtime()
     vim.defer_fn(function()
         self.renderRequested = false
+        self.renderStart = vim.loop.hrtime()
         self:render()
+        self.renderRequested = false
+        self.rendering = false
     end, 20)
 end
 
@@ -475,6 +480,7 @@ function Instance:render()
     if self.renderRequested then
         return
     end
+    self.rendering = true
     local startTime = vim.loop.hrtime()
     local actualStart = startTime
     local astTime = 0
@@ -538,6 +544,7 @@ function Instance:render()
         })
     end
     self.renderRequested = false
+    self.rendering = false
 end
 
 ---@param lines Banana.Line[]

@@ -3,6 +3,7 @@ return function(document)
   local spans = document:getElementsByClassName("card")
   document:on("CursorMoved", {
     callback = function()
+      print("yeet")
       for _, v in ipairs(spans) do
         if v:isHovering() then
           v:addClass("rel")
@@ -10,7 +11,6 @@ return function(document)
           v:removeClass("rel")
         end
       end
-      document:render()
     end,
   })
   document:body():attachRemap("n", "q", {}, function()
