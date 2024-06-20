@@ -518,12 +518,8 @@ end
 function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX, startY, inherit, extra_)
     local currentLine = b.Box:new(parentHl)
     local hasElements = false
-    local width = parentWidth
-        - ast.padding[_ast.left].value - ast.padding[_ast.right].value
-        - ast.margin[_ast.left].value - ast.margin[_ast.right].value
-    local height = parentHeight
-        - ast.padding[_ast.top].value - ast.padding[_ast.bottom].value
-        - ast.margin[_ast.top].value - ast.margin[_ast.bottom].value
+    local width = parentWidth - ast:_extraLr()
+    local height = parentHeight - ast:_extraTb()
     ---@type Banana.Box?
     local extra = nil
     local startI = i

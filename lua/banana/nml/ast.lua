@@ -100,9 +100,81 @@ function M.Ast:new(tag, parent)
     return ast
 end
 
+---@return number
+function M.Ast:_boundBottom()
+    return self.padding[M.bottom].value
+end
+
+---@return number
+function M.Ast:_extraBottom()
+    return self:_boundBottom() + self.margin[M.bottom].value
+end
+
+---@return number
+function M.Ast:_boundTop()
+    return self.padding[M.top].value
+end
+
+---@return number
+function M.Ast:_extraTop()
+    return self:_boundTop() + self.margin[M.top].value
+end
+
+function M.Ast:_boundTb()
+    return self:_boundTop() + self:_boundBottom()
+end
+
+function M.Ast:_extraTb()
+    return self:_extraTop() + self:_extraBottom()
+end
+
+function M.Ast:_boundLr()
+    return self:_boundLeft() + self:_boundRight()
+end
+
+function M.Ast:_extraLr()
+    return self:_extraLeft() + self:_extraRight()
+end
+
+---@return number
+function M.Ast:_boundRight()
+    return self.padding[M.right].value
+end
+
+---@return number
+function M.Ast:_extraRight()
+    return self:_boundRight() + self.margin[M.right].value
+end
+
+---@return number
+function M.Ast:_boundLeft()
+    return self.padding[M.left].value
+end
+
+---@return number
+function M.Ast:_extraLeft()
+    return self:_boundLeft() + self.margin[M.left].value
+end
+
 function M.Ast:_getInitialStyles()
     local tag = self.actualTag
     return tag.initialProps
+end
+
+function M.Ast:marginLeft()
+    return self.margin[M.left].value
+end
+
+function M.Ast:marginRight()
+    return self.margin[M.right].value
+end
+
+function M.Ast:marginTop()
+    return self.margin[M.top].value
+end
+
+function M.Ast:marginBottom()
+    return self.margin[M.bottom].value
 end
 
 function M.Ast:defaultStyles()
