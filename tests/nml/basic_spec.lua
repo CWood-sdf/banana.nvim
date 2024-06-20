@@ -83,6 +83,36 @@ describe("Div rendering", function()
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
     end)
+    it("centers odd text", function()
+        local inst = require('banana.render').emptyInstance()
+        inst:useNml(code)
+        inst.DEBUG = false
+        inst.stripRight = false
+        inst:open()
+
+        local div = inst:getElementsByTag("div")[1]
+        div:setStyle("width: 4ch; height: 100%; text-align: center;")
+        local expectedMap1 = {
+            "     ",
+            "~asd ",
+            "~~~~ ",
+            "~~~~ ",
+            "~~~~ ",
+            "~~~~ ",
+        }
+        local expectedMap1 = {
+            "     ",
+            "asd~ ",
+            "~~~~ ",
+            "~~~~ ",
+            "~~~~ ",
+            "~~~~ ",
+        }
+        inst:forceRerender()
+        local ok1, _ = pcall(h.assertBgMapsMatch,h.bufToBgMap(inst.bufnr), expectedMap1)
+        local ok2, _ = pcall(h.assertBgMapsMatch,h.bufToBgMap(inst.bufnr), expectedMap2)
+        assert(ok1 or ok2, "Expected one of the centers to work")
+    end)
     it("relative positions", function()
         local inst = require('banana.render').emptyInstance()
         inst:useNml(code)
