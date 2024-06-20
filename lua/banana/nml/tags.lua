@@ -278,7 +278,7 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
         local height = ast.style['height'][1].value.computed - ast.padding[_ast.top].value -
             ast.padding[_ast.bottom].value
         ---@cast height number
-        local above = require('banana.box').Box:new(ret.hlgroup)
+        local above = b.Box:new(ret.hlgroup)
         above:appendStr(' ')
         above:expandWidthTo(ret.width)
         if #ret.lines >= height then
@@ -287,8 +287,7 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
         while #ret.lines + #above.lines < height do
             table.insert(above.lines, vim.deepcopy(above.lines[1]))
         end
-        above:appendBoxBelow(ret)
-        ret = above
+        ret:appendBoxBelow(above)
         if extra.debug then
             extra.trace:appendBoxBelow(traceBreak("Expansion h"))
             extra.trace:appendBoxBelow(ast:_testDumpBox())

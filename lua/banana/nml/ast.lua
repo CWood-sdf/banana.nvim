@@ -258,34 +258,24 @@ function M.Ast:setStyle(value)
     self:_requestRender()
 end
 
--- ---@param name string
--- ---@param value string
--- function M.Ast:setStyleValue(name, value)
---     local p = require('banana.ncss.valueParser')
---     ---@type Banana.Ncss.StyleValue
---     local cssVal = nil
---     if value:sub(1, 1) == '#' then
---         cssVal = p.newColorValue(value)
---     elseif value:sub(1, 1) == '"' or value:sub(1, 1) == "'" then
---         value = value:sub(2, #value)
---         value = value:sub(1, #value - 1)
---         cssVal = p.newStringValue(value)
---     else
---         vim.notify("Currently only sting values and color values are supported for ast:setStyleValue",
---             vim.log.levels.WARN)
---         cssVal = p.newPlainValue(value)
---     end
---     ---@type Banana.Ncss.StyleDeclaration
---     local decl = {
---         name = name,
---         values = { cssVal },
---         important = false,
---     }
---     if self.inlineStyle == nil then
---         self.inlineStyle = {}
---     end
---     table.insert(self.inlineStyle, decl)
--- end
+---@param name string
+---@param value string
+function M.Ast:setStyleValue(name, value)
+    local text = name .. ": " .. value .. ';'
+    local parsed = require('banana.ncss.parser').parseText(text)
+    local decl = parsed[1].declarations[1]
+    local found = false
+    for i, v in ipairs(self.inlineStyle) do
+        if v.name == decl.name then
+            self.inlineStyle[i] = decl
+            found = true
+        end
+    end
+    if not found then
+        table.insert(self.inlineStyle, decl)
+    end
+    self:_requestRender()
+end
 
 ---@param c string
 ---@return boolean

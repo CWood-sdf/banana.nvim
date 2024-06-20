@@ -275,7 +275,6 @@ function M.Box:renderOver(other, left, top)
             local str = line[wordIndex].word
             -- case 2
             if wordSize - count > other.width and count ~= 0 then
-                print("CASE 2!!!" .. count)
                 local leftStr = _str.sub(str, 1, count)
                 local rightStr = _str.sub(str, count + other.width + 1, wordSize)
                 line[wordIndex].word = leftStr

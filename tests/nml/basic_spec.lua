@@ -35,8 +35,8 @@ describe("Div rendering", function()
         div:setStyle("width: 4ch; height: 2ch; margin-left: 1ch;")
         local expectedMap = {
             "     ",
-            " ~~~~",
             " asd~",
+            " ~~~~",
             "     ",
             "     ",
         }
@@ -51,13 +51,13 @@ describe("Div rendering", function()
         inst:open()
 
         local div = inst:getElementsByTag("div")[1]
-        div:setStyle("width: 100%; height: 100%; text-align: center; padding-bottom: 1ch;")
+        div:setStyle("width: 100%; height: 100%; text-align: center; padding-top: 1ch;")
         local expectedMap = {
             "     ",
             "~~~~~",
-            "~~~~~",
-            "~~~~~",
             "~asd~",
+            "~~~~~",
+            "~~~~~",
             "~~~~~",
         }
         inst:forceRerender()
@@ -74,11 +74,11 @@ describe("Div rendering", function()
         div:setStyle("width: 100%; height: 100%; text-align: center;")
         local expectedMap = {
             "     ",
-            "~~~~~",
-            "~~~~~",
-            "~~~~~",
-            "~~~~~",
             "~asd~",
+            "~~~~~",
+            "~~~~~",
+            "~~~~~",
+            "~~~~~",
         }
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
@@ -95,9 +95,9 @@ describe("Div rendering", function()
         local expectedMap = {
             "     ",
             "     ",
-            " ~~  ",
             " as  ",
             " d~  ",
+            " ~~  ",
         }
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
@@ -113,9 +113,9 @@ describe("Div rendering", function()
         div:setStyle("width: 2ch; height: 3ch;")
         local expectedMap = {
             "     ",
-            "~~   ",
             "as   ",
             "d~   ",
+            "~~   ",
             "     ",
         }
         inst:forceRerender()
@@ -129,10 +129,10 @@ describe("Div rendering", function()
         inst:open()
         local expectedMap = {
             "     ",
+            "asd~~",
             "~~~~~",
             "~~~~~",
             "~~~~~",
-            "asd~~"
         }
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
 
@@ -140,9 +140,9 @@ describe("Div rendering", function()
         div:setStyle("width: 3ch; height: 3ch;")
         expectedMap = {
             "     ",
-            "~~~  ",
-            "~~~  ",
             "asd  ",
+            "~~~  ",
+            "~~~  ",
             "     ",
         }
         inst:forceRerender()
