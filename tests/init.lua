@@ -40,7 +40,6 @@ function M.setup()
     vim.env.XDG_DATA_HOME = M.root(".tests/data")
     vim.env.XDG_STATE_HOME = M.root(".tests/state")
     vim.env.XDG_CACHE_HOME = M.root(".tests/cache")
-
     require('nvim-treesitter').setup()
     require("nvim-treesitter.install").compilers = { "zig", "clang" }
 
@@ -80,7 +79,7 @@ function M.setup()
             files = { "src/parser.c" },
             branch = "main",
             generate_requires_npm = false,
-            requires_generate_from_grammar = true,
+            requires_generate_from_grammar = false,
         },
         filetype = "nml",
     }

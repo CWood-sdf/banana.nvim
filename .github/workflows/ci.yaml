@@ -24,9 +24,6 @@ jobs:
           echo "/tmp/nvim/squashfs-root/usr/bin/" >> $GITHUB_PATH
       - name: install stuff
         run: |
-          chmod a+x ./actions_init_ts
-          ./actions_init_ts
-          tree-sitter --version
           chmod a+x ./build.sh
           ./build.sh
       - name: Run Tests
