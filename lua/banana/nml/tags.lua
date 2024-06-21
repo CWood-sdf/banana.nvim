@@ -503,6 +503,112 @@ local function handleOverflow(ast, i, currentLine, append, maxWidth)
     return preStuff, extra
 end
 
+---Renders everything in a flex block
+---@param ast Banana.Ast
+---@param parentHl Banana.Highlight?
+---@param i integer
+---@param parentWidth number
+---@param parentHeight number
+---@param startX number
+---@param startY number
+---@param inherit Banana.Renderer.InheritedProperties
+---@param extra_ Banana.Renderer.ExtraInfo
+---@return Banana.Box, integer
+function TagInfo:renderFlexBlock(ast, parentHl, i, parentWidth, parentHeight, startX, startY, inherit, extra_)
+    local currentLine = b.Box:new(parentHl)
+    local hasElements = false
+    local width = parentWidth - ast:_extraLr()
+    local height = parentHeight - ast:_extraTb()
+    ---@type Banana.Box?
+    local extra = nil
+    local startI = i
+    while i <= #ast.nodes do
+        local v = ast.nodes[i]
+        if v == nil then
+            break
+        end
+        if type(v) == 'string' then
+            if v:sub(1, 1) == "&" then
+                error("Entity support is nonexistent")
+            elseif v:sub(1, 1) == "%" then
+                if v:sub(2, 2) == "%" then
+                    v = "%"
+                else
+                    local attr = v:sub(2, #v)
+                    local el = ast
+                    while el.attributes[attr] == nil do
+                        if el:isNil() then
+                            break
+                        end
+                        el = el._parent
+                    end
+                    v = el:getAttribute(attr) or ""
+                end
+            end
+            local count = _str.charCount(v)
+            local box = b.Box:new(currentLine.hlgroup)
+            box:appendStr(v, nil)
+            local overflow = nil
+            currentLine, overflow = handleOverflow(ast, i, currentLine, box, width)
+            if overflow ~= nil then
+                if extra == nil then
+                    extra = currentLine
+                else
+                    extra:appendBoxBelow(currentLine)
+                end
+                currentLine = overflow
+            end
+            startX = startX + count
+            hasElements = true
+        else
+            local tag = M.makeTag(v.tag)
+            if (tag.formatType == M.FormatType.Block or tag.formatType == M.FormatType.BlockInline) and hasElements then
+                break
+            end
+            v:resolveUnits(width, height)
+            local rendered = tag:getRendered(v, parentHl, width, height, startX, startY, inherit, extra_)
+            startX = startX + rendered.width
+            local overflow = nil
+            local orgLines = #currentLine.lines
+            currentLine, overflow = handleOverflow(ast, i, currentLine, rendered, width)
+            if #rendered.lines > orgLines and overflow == nil then
+                local yInc = #rendered.lines - orgLines
+                local currentI = startI
+                while currentI < i do
+                    local node = ast.nodes[currentI]
+                    if type(node) == "string" then
+                        goto continue
+                    end
+                    node:_increaseTopBound(yInc)
+                    ::continue::
+                    currentI = currentI + 1
+                end
+            end
+            if overflow ~= nil then
+                if extra == nil then
+                    extra = currentLine
+                else
+                    extra:appendBoxBelow(currentLine)
+                end
+                currentLine = overflow
+            end
+
+            if tag.formatType == M.FormatType.Block or tag.formatType == M.FormatType.BlockInline then
+                i = i + 1
+                break
+            end
+
+            hasElements = true
+        end
+        i = i + 1
+    end
+    if extra ~= nil then
+        extra:appendBoxBelow(currentLine)
+        currentLine = extra
+    end
+    return currentLine, i
+end
+
 ---Renders everything in a block
 ---@param ast Banana.Ast
 ---@param parentHl Banana.Highlight?

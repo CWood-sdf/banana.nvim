@@ -360,6 +360,13 @@ function M.calcUnitNoMod(unit, parentWidth)
             unit = unit.unit,
             computed = unit.value,
         }
+    elseif unit.unit == "fr" then
+        local mult = unit.value
+        return {
+            value = unit.value,
+            computed = math.floor(mult * parentWidth),
+            unit = unit.unit,
+        }
     elseif unit.unit == "%" then
         local mult = unit.value / 100
         return {
@@ -368,8 +375,8 @@ function M.calcUnitNoMod(unit, parentWidth)
             unit = unit.unit,
         }
     end
+    error("Undefined unit '" .. unit.unit .. "'")
     return unit
-    -- error("Undefined unit '" .. unit.unit .. "'")
 end
 
 function M.Ast:getWidth()
