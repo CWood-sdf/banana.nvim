@@ -547,6 +547,21 @@ local function handleOverflow(ast, i, currentLine, append, maxWidth)
     return preStuff, extra
 end
 
+-- also need to make default box renderSide loc top, not bottom
+-- Flex todo:
+-- Render the boxes
+-- Finish partial renderer proto (inside the getRendered fn)
+-- render boxes that dont have fr
+-- calc remaining display width
+-- render boxes with fr
+-- redo box height
+-- recalc remaining
+-- impl flex basis
+-- impl flex grow
+-- impl flex shrink
+-- impl emergency deflex
+-- impl double emergency float rendering
+
 ---Renders everything in a flex block
 ---@param ast Banana.Ast
 ---@param parentHl Banana.Highlight?
