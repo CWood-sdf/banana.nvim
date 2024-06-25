@@ -75,6 +75,7 @@ function Instance:virtualRender(ast, width, height)
         if extra.debug then
             rendered:appendBoxBelow(extra.trace)
         end
+        ---@diagnostic disable-next-line: invisible
         for _, line in ipairs(rendered.lines) do
             table.insert(ret, line)
         end

@@ -16,35 +16,119 @@ local b = require('banana.box')
 ---@field widthExpansion number
 ---@field heightExpansion number
 ---@field center Banana.Box
+---@field marginColor Banana.Highlight
+---@field mainColor Banana.Highlight
+---@field renderingLeft boolean
 local PartialRendered = {}
+
+---@return Banana.Renderer.PartialRendered
+local function emptyPartialRendered()
+    ---@type Banana.Renderer.PartialRendered
+    local ret = {
+        renderingLeft = false,
+        mainColor = {},
+        marginColor = {},
+        center = b.Box:new(),
+        heightExpansion = 0,
+        widthExpansion = 0,
+        margin = {
+            top    = 0,
+            left   = 0,
+            right  = 0,
+            bottom = 0,
+        },
+        padding = {
+            top    = 0,
+            left   = 0,
+            right  = 0,
+            bottom = 0,
+        },
+
+    }
+    setmetatable(ret, {
+        __index = PartialRendered,
+    })
+    return ret
+end
 
 ---@return number
 function PartialRendered:getWidth()
     return self.margin.left + self.margin.right
         + self.padding.left + self.padding.right
-        + self.widthExpansion + self.center.width
+        + self.widthExpansion + self.center:width()
 end
 
 ---@return number
 function PartialRendered:getHeight()
     return self.margin.top + self.margin.bottom
         + self.padding.top + self.padding.bottom
-        + self.heightExpansion + #self.center.lines
+        + self.heightExpansion + self.center:height()
 end
 
 ---@param num number
 function PartialRendered:expandWidthTo(num)
-
+    self.widthExpansion = num - (self:getWidth() - self.widthExpansion)
 end
 
 ---@param num number
 function PartialRendered:expandHeightTo(num)
+    self.heightExpansion = num - (self:getHeight() - self.heightExpansion)
+end
 
+---comment
+---@param box Banana.Box
+---@param pad Banana.Renderer.Surround
+---@param color Banana.Highlight
+---@return Banana.Box
+function PartialRendered:padWith(box, pad, color)
+    local topBox = b.Box:new(color)
+    topBox:appendStr('', nil)
+    topBox:expandWidthTo(box:width())
+    topBox:cloneHeightTo(pad.top)
+    topBox:appendBoxBelow(box)
+    box = topBox
+    local btmBox = b.Box:new(color)
+    btmBox:appendStr('', nil)
+    btmBox:expandWidthTo(box:width())
+    btmBox:cloneHeightTo(pad.bottom)
+    btmBox:appendBoxBelow(box)
+    box:appendBoxBelow(btmBox)
+    local leftBox = b.Box:new(color)
+    leftBox:appendStr('', nil)
+    leftBox:expandWidthTo(pad.left)
+    leftBox:cloneHeightTo(box:height())
+    leftBox:append(box)
+    box = leftBox
+    local rightBox = b.Box:new(color)
+    rightBox:appendStr('', nil)
+    rightBox:expandWidthTo(pad.right)
+    rightBox:cloneHeightTo(box:height())
+    box:append(rightBox)
+    return box
 end
 
 ---@return Banana.Box
 function PartialRendered:render()
-
+    local box = self.center
+    local btmBox = b.Box:new(self.mainColor)
+    btmBox:appendStr('', nil)
+    btmBox:expandWidthTo(box:width())
+    btmBox:cloneHeightTo(self.heightExpansion)
+    btmBox:appendBoxBelow(box)
+    box:appendBoxBelow(btmBox)
+    local left = b.Box:new(self.mainColor)
+    left:appendStr('', nil)
+    left:expandWidthTo(self.widthExpansion)
+    left:cloneHeightTo(box:height())
+    if self.renderingLeft then
+        left:append(box)
+        box = left
+    else
+        box:append(left)
+    end
+    box = self:padWith(box, self.padding, self.mainColor)
+    box = self:padWith(box, self.margin, self.marginColor)
+    return box
 end
 
 ---@param str string
@@ -117,13 +201,9 @@ local TagInfo = {
 ---@return Banana.Box
 local function padLeftRight(ast, name, i, hl, lines)
     local ret = b.Box:new(hl);
-    while #ret.lines < lines do
-        local box = b.Box:new(hl)
-        box:appendStr(' ', nil)
-        box:expandWidthTo(ast[name][i].value)
-        box:clean()
-        ret:appendBoxBelow(box)
-    end
+    ret:appendStr(' ', nil)
+    ret:expandWidthTo(ast[name][i].value)
+    ret:cloneHeightTo(lines)
     return ret
 end
 
@@ -137,9 +217,7 @@ local function padTopBtm(ast, name, i, hl, width)
     local box = b.Box:new(hl);
     box:appendStr(' ', nil)
     box:expandWidthTo(width)
-    while #box.lines < ast[name][i].value do
-        table.insert(box.lines, vim.deepcopy(box.lines[1]))
-    end
+    box:cloneHeightTo(ast[name][i].value)
     return box
 end
 
@@ -151,24 +229,24 @@ end
 local function applyPad(name, ast, ret, hl)
     local changed = false
     if ast[name][_ast.left].value ~= 0 then
-        local box = padLeftRight(ast, name, _ast.left, hl, #ret.lines)
+        local box = padLeftRight(ast, name, _ast.left, hl, ret:height())
         box:append(ret, nil)
         ret = box
         changed = true
     end
     if ast[name][_ast.right].value ~= 0 then
-        local box = padLeftRight(ast, name, _ast.right, hl, #ret.lines)
+        local box = padLeftRight(ast, name, _ast.right, hl, ret:height())
         ret:append(box, nil)
         changed = true
     end
     if ast[name][_ast.top].value ~= 0 then
-        local box = padTopBtm(ast, name, _ast.top, hl, b.lineWidth(ret.lines[1]))
+        local box = padTopBtm(ast, name, _ast.top, hl, ret:width())
         box:appendBoxBelow(ret)
         ret = box
         changed = true
     end
     if ast[name][_ast.bottom].value ~= 0 then
-        local box = padTopBtm(ast, name, _ast.top, hl, b.lineWidth(ret.lines[1]))
+        local box = padTopBtm(ast, name, _ast.top, hl, ret:width())
         ret:appendBoxBelow(box)
         changed = true
     end
@@ -204,7 +282,7 @@ end
 ---@param startY number
 ---@param inherit Banana.Renderer.InheritedProperties
 ---@param extra Banana.Renderer.ExtraInfo
----@return Banana.RenderRet
+---@return Banana.Renderer.PartialRendered
 function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra)
     ast.relativeBoxId = nil
     local inheritOld = {}
@@ -231,7 +309,7 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
         for k, _ in pairs(inheritOld) do
             inherit[k] = inheritOld[k]
         end
-        return b.Box:new()
+        return emptyPartialRendered()
     end
     local d = "display"
     local disp = ast.style[d]
@@ -240,7 +318,7 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
             inherit[k] = inheritOld[k]
         end
 
-        return b.Box:new(nil)
+        return emptyPartialRendered()
     end
     if ast.style['width'] ~= nil then
         ---@diagnostic disable-next-line: cast-local-type
@@ -279,14 +357,28 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
     startY = startY + ast.padding[_ast.top].value
     ---@cast parentWidth number
     ---@cast parentHeight number
-    local ret = self:render(ast, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra)
+    local centerBox = self:render(ast, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra)
+    ---@type Banana.Renderer.Surround
+    local margin = {
+        left = 0,
+        right = 0,
+        top = 0,
+        bottom = 0,
+    }
+    ---@type Banana.Renderer.Surround
+    local padding = {
+        left = 0,
+        right = 0,
+        top = 0,
+        bottom = 0,
+    }
     if extra.debug then
         extra.trace:appendBoxBelow(traceBreak("Raw render"))
         extra.trace:appendBoxBelow(ast:_testDumpBox())
-        extra.trace:appendBoxBelow(ret)
+        extra.trace:appendBoxBelow(centerBox)
     end
     local extraWidth =
-        parentWidth - ret.width -
+        parentWidth - ret:width() -
         ast.padding[_ast.left].value - ast.padding[_ast.right].value -
         ast.margin[_ast.left].value - ast.margin[_ast.right].value
     if isExpandable(ast, extraWidth) then
@@ -324,13 +416,11 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
         ---@cast height number
         local above = b.Box:new(ret.hlgroup)
         above:appendStr(' ')
-        above:expandWidthTo(ret.width)
-        if #ret.lines >= height then
+        above:expandWidthTo(ret:width())
+        if ret:height() >= height then
             goto skip
         end
-        while #ret.lines + #above.lines < height do
-            table.insert(above.lines, vim.deepcopy(above.lines[1]))
-        end
+        above:cloneHeightTo(height - ret:height())
         ret:appendBoxBelow(above)
         if extra.debug then
             extra.trace:appendBoxBelow(traceBreak("Expansion h"))
@@ -348,15 +438,15 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
             extra.trace:appendBoxBelow(ret)
         end
     end
-    boundBox.rightX = boundBox.leftX + ret.width
-    boundBox.bottomY = boundBox.topY + #ret.lines
+    boundBox.rightX = boundBox.leftX + ret:width()
+    boundBox.bottomY = boundBox.topY + ret:height()
     ast.boundBox = boundBox
     if position == "static" then
     else
         local newRet = b.Box:new(parentHl)
-        while #newRet.lines < #ret.lines do
+        while newRet:height() < ret:height() do
             local newBox = b.Box:new(newRet.hlgroup)
-            newBox:appendStr(string.rep(' ', ret.width))
+            newBox:appendStr(string.rep(' ', ret:width()))
             newRet:appendBoxBelow(newBox)
         end
         newRet:clean()
@@ -444,7 +534,7 @@ function TagInfo:blockIter(ast, parentHl, parentWidth, parentHeight, startX, sta
                 ast, parentHl, i, parentWidth, parentHeight,
                 startX, startY, inherit, extra)
         end
-        startY = startY + #render.lines
+        startY = startY + render:height()
         return oldI, render, i - oldI
     end
 end
@@ -468,37 +558,34 @@ end
 ---@param box Banana.Box
 ---@return Banana.Box, Banana.Box
 local function splitLineBoxOnce(targetWidth, box)
-    if box.width < targetWidth then
+    if box:width() < targetWidth then
         return box, b.Box:new(box.hlgroup)
     end
     local left = b.Box:new(box.hlgroup)
-    left.lines = { {} }
-    left.width = 0
+    left:appendStr("", nil)
     local right = b.Box:new(box.hlgroup)
-    right.lines = { {} }
-    right.width = 0
+    right:appendStr("", nil)
     local i = 1
-    while left.width + _str.charCount(box.lines[1][i].word) < targetWidth do
-        table.insert(left.lines[1], box.lines[1][i])
-        left.width = left.width + _str.charCount(box.lines[1][i].word)
+    while left:width() + _str.charCount(box:getLine(1)[i].word) < targetWidth do
+        left:appendWord(box:getLine(1)[i])
         i = i + 1
     end
-    local leftIns = _str.sub(box.lines[1][i].word, 1, targetWidth - b.lineWidth(left.lines[1]))
-    local rightIns = _str.sub(box.lines[1][i].word, targetWidth - b.lineWidth(left.lines[1]) + 1, #box.lines[1][i].word)
-    table.insert(left.lines[1], {
+    local word = box:getLine(1)[i]
+    local leftIns = _str.sub(word.word, 1, targetWidth - left:width())
+    --Allow unsafe #word.word, bc #word.word is always >= str.charCount(word.word)
+    --so since we are just reading to end of string
+    local rightIns = _str.sub(word.word, targetWidth - left:width() + 1, #word.word)
+    left:appendWord({
         word = leftIns,
-        style = box.lines[1][i].style,
+        style = word.style,
     })
-    left.width = left.width + _str.charCount(leftIns)
-    table.insert(right.lines[1], {
+    right:appendWord({
         word = rightIns,
-        style = box.lines[1][i].style,
+        style = word.style,
     })
-    right.width = right.width + _str.charCount(rightIns)
     i = i + 1
-    while i <= #box.lines[1] do
-        table.insert(right.lines[1], box.lines[1][i])
-        right.width = right.width + _str.charCount(box.lines[1][i].word)
+    while i <= #box:getLine(1) do
+        right:appendWord(box:getLine(1)[i])
         i = i + 1
     end
     return left, right
@@ -521,18 +608,18 @@ end
 ---@param maxWidth number
 ---@return Banana.Box, Banana.Box?
 local function handleOverflow(ast, i, currentLine, append, maxWidth)
-    if #currentLine.lines == 0 then
+    if currentLine:height() == 0 then
         currentLine:appendStr("", nil)
     end
-    if currentLine.width + append.width <= maxWidth then
+    if currentLine:width() + append:width() <= maxWidth then
         currentLine:append(append, nil)
         return currentLine, nil
     end
-    if #append.lines ~= 1 or not breakable(ast.nodes[i]) then
+    if append:height() ~= 1 or not breakable(ast.nodes[i]) then
         return currentLine, append
     end
-    if #currentLine.lines ~= 1 then
-        local ap, extra = splitLineBoxOnce(maxWidth - currentLine.width, append)
+    if currentLine:height() ~= 1 then
+        local ap, extra = splitLineBoxOnce(maxWidth - currentLine:width(), append)
         currentLine:append(ap, nil)
         return currentLine, extra
     end
@@ -543,7 +630,7 @@ local function handleOverflow(ast, i, currentLine, append, maxWidth)
         currentLine, extra = splitLineBoxOnce(maxWidth, currentLine)
         preStuff:appendBoxBelow(currentLine)
         currentLine = extra
-    until extra.width <= maxWidth
+    until extra:width() <= maxWidth
     return preStuff, extra
 end
 
@@ -642,12 +729,12 @@ function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX
             end
             v:resolveUnits(width, height)
             local rendered = tag:getRendered(v, parentHl, width, height, startX, startY, inherit, extra_)
-            startX = startX + rendered.width
+            startX = startX + rendered:width()
             local overflow = nil
-            local orgLines = #currentLine.lines
+            local orgLines = currentLine:height()
             currentLine, overflow = handleOverflow(ast, i, currentLine, rendered, width)
-            if #rendered.lines > orgLines and overflow == nil then
-                local yInc = #rendered.lines - orgLines
+            if rendered:height() > orgLines and overflow == nil then
+                local yInc = rendered:height() - orgLines
                 local currentI = startI
                 while currentI < i do
                     local node = ast.nodes[currentI]
