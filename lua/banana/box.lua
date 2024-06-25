@@ -72,10 +72,22 @@ function M.Box:expandWidthTo(width)
     self:clean()
 end
 
+---@return Banana.Box
+function M.Box:clone()
+    local b = M.Box:new(self.hlgroup)
+    for _, v in ipairs(self.lines) do
+        table.insert(b.lines, cloneLine(v))
+    end
+    b._width = self._width
+    return b
+end
+
 ---Expands the height by cloning the last line
 ---@param height number
 function M.Box:cloneHeightTo(height)
-    assert(height >= #self.lines, "Height is smaller than possible")
+    if height < #self.lines then
+        return
+    end
     assert(#self.lines ~= 0, "No contents to clone")
     local i = #self.lines
     while #self.lines < height do
@@ -148,7 +160,7 @@ end
 ---@param box Banana.Box
 ---@param strat Banana.Box.MergeStrategy?
 function M.Box:append(box, strat)
-    strat = strat or M.MergeStrategy.Bottom
+    strat = strat or M.MergeStrategy.Top
     self:clean()
     while #self.lines < #box.lines do
         if self._width == 0 then
@@ -255,6 +267,11 @@ function M.Box:appendBoxBelow(box)
         self._width = newWidth
         self.dirty = true
         self:clean()
+    end
+    if newWidth > box:width() then
+        box._width = newWidth
+        box.dirty = true
+        box:clean()
     end
     for _, v in ipairs(box.lines) do
         table.insert(self.lines, vim.deepcopy(v))

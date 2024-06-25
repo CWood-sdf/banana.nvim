@@ -54,8 +54,10 @@ function M.formatBlockContext(ast)
             ---@cast node Banana.Ast
             if node.actualTag.formatType == tags.FormatType.Block then
                 M.formatBlockContext(node)
+                clearFirst = true
             elseif node.actualTag.formatType == tags.FormatType.BlockInline then
                 M.formatInlineContext(node, true, true)
+                clearFirst = true
             elseif node.actualTag.formatType == tags.FormatType.Inline then
                 local clearLast = false
                 local nextNode = ast.nodes[i + 1]

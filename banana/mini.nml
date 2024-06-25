@@ -1,0 +1,24 @@
+<nml>
+  <head>
+    <style>
+      body {
+        width: 5ch;
+        height: 5ch;
+      }
+      div {
+        hl-bg: #ff0000;
+        width: 100%;
+        height: 100%;
+        text-align: center;
+        padding-top: 1ch;
+      }
+    </style>
+  </head>
+
+  <body>
+    <br>
+    <div>
+      asd
+    </div>
+  </body>
+</nml>

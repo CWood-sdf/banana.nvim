@@ -63,7 +63,7 @@ function Instance:virtualRender(ast, width, height)
         ---@type Banana.Renderer.ExtraInfo
         local extra = {
             trace = require('banana.box').Box:new(),
-            debug = false,
+            debug = self.DEBUG,
         }
         local rendered = tag:renderRoot(ast, nil, width, height, {
             text_align = "left",

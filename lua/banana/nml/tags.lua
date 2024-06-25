@@ -16,16 +16,16 @@ local b = require('banana.box')
 ---@field widthExpansion number
 ---@field heightExpansion number
 ---@field center Banana.Box
----@field marginColor Banana.Highlight
----@field mainColor Banana.Highlight
----@field renderingLeft boolean
+---@field marginColor? Banana.Highlight
+---@field mainColor? Banana.Highlight
+---@field renderAlign "left"|"center"|"right"
 local PartialRendered = {}
 
 ---@return Banana.Renderer.PartialRendered
 local function emptyPartialRendered()
     ---@type Banana.Renderer.PartialRendered
     local ret = {
-        renderingLeft = false,
+        renderAlign = "left",
         mainColor = {},
         marginColor = {},
         center = b.Box:new(),
@@ -81,50 +81,77 @@ end
 ---@param color Banana.Highlight
 ---@return Banana.Box
 function PartialRendered:padWith(box, pad, color)
-    local topBox = b.Box:new(color)
-    topBox:appendStr('', nil)
-    topBox:expandWidthTo(box:width())
-    topBox:cloneHeightTo(pad.top)
-    topBox:appendBoxBelow(box)
-    box = topBox
-    local btmBox = b.Box:new(color)
-    btmBox:appendStr('', nil)
-    btmBox:expandWidthTo(box:width())
-    btmBox:cloneHeightTo(pad.bottom)
-    btmBox:appendBoxBelow(box)
-    box:appendBoxBelow(btmBox)
-    local leftBox = b.Box:new(color)
-    leftBox:appendStr('', nil)
-    leftBox:expandWidthTo(pad.left)
-    leftBox:cloneHeightTo(box:height())
-    leftBox:append(box)
-    box = leftBox
-    local rightBox = b.Box:new(color)
-    rightBox:appendStr('', nil)
-    rightBox:expandWidthTo(pad.right)
-    rightBox:cloneHeightTo(box:height())
-    box:append(rightBox)
+    if pad.top ~= 0 then
+        local topBox = b.Box:new(color)
+        topBox:appendStr('', nil)
+        topBox:expandWidthTo(box:width())
+        topBox:cloneHeightTo(pad.top)
+        topBox:appendBoxBelow(box)
+        box = topBox
+    end
+    if pad.bottom ~= 0 then
+        local btmBox = b.Box:new(color)
+        btmBox:appendStr('', nil)
+        btmBox:expandWidthTo(box:width())
+        btmBox:cloneHeightTo(pad.bottom)
+        box:appendBoxBelow(btmBox)
+    end
+    if pad.left ~= 0 then
+        local leftBox = b.Box:new(color)
+        leftBox:appendStr('', nil)
+        leftBox:expandWidthTo(pad.left)
+        leftBox:cloneHeightTo(box:height())
+        leftBox:append(box)
+        box = leftBox
+    end
+    if pad.right ~= 0 then
+        local rightBox = b.Box:new(color)
+        rightBox:appendStr('', nil)
+        rightBox:expandWidthTo(pad.right)
+        rightBox:cloneHeightTo(box:height())
+        box:append(rightBox)
+    end
     return box
 end
 
+---@param clone boolean?
 ---@return Banana.Box
-function PartialRendered:render()
+function PartialRendered:render(clone)
+    clone = clone or false
     local box = self.center
-    local btmBox = b.Box:new(self.mainColor)
-    btmBox:appendStr('', nil)
-    btmBox:expandWidthTo(box:width())
-    btmBox:cloneHeightTo(self.heightExpansion)
-    btmBox:appendBoxBelow(box)
-    box:appendBoxBelow(btmBox)
-    local left = b.Box:new(self.mainColor)
-    left:appendStr('', nil)
-    left:expandWidthTo(self.widthExpansion)
-    left:cloneHeightTo(box:height())
-    if self.renderingLeft then
-        left:append(box)
-        box = left
-    else
-        box:append(left)
+    if clone then
+        box = box:clone()
+    end
+    if self.heightExpansion > 0 then
+        local btmBox = b.Box:new(self.mainColor)
+        btmBox:appendStr('', nil)
+        btmBox:expandWidthTo(box:width())
+        btmBox:cloneHeightTo(self.heightExpansion)
+        box:appendBoxBelow(btmBox)
+    end
+    if self.widthExpansion > 0 then
+        local left = b.Box:new(self.mainColor)
+        left:appendStr('', nil)
+        left:expandWidthTo(self.widthExpansion)
+        left:cloneHeightTo(box:height())
+        if self.renderAlign == "right" then
+            left:append(box)
+            box = left
+        elseif self.renderAlign == "left" then
+            box:append(left)
+        else
+            local l = b.Box:new(self.mainColor)
+            l:appendStr('', nil)
+            l:expandWidthTo(math.ceil(self.widthExpansion / 2))
+            l:cloneHeightTo(box:height())
+            local r = b.Box:new(self.mainColor)
+            r:appendStr('', nil)
+            r:expandWidthTo(math.floor(self.widthExpansion / 2))
+            r:cloneHeightTo(box:height())
+            l:append(box)
+            l:append(r)
+            box = l
+        end
     end
     box = self:padWith(box, self.padding, self.mainColor)
     box = self:padWith(box, self.margin, self.marginColor)
@@ -192,62 +219,53 @@ local TagInfo = {
     selfClosing = false,
     render = function(_) return {} end,
 }
-
----@param ast Banana.Ast
----@param name string
----@param i number
----@param hl Banana.Highlight?
----@param lines number
----@return Banana.Box
-local function padLeftRight(ast, name, i, hl, lines)
-    local ret = b.Box:new(hl);
-    ret:appendStr(' ', nil)
-    ret:expandWidthTo(ast[name][i].value)
-    ret:cloneHeightTo(lines)
-    return ret
-end
-
----@param ast Banana.Ast
----@param name string
----@param i number
----@param hl Banana.Highlight?
----@param width number
----@return Banana.Box
-local function padTopBtm(ast, name, i, hl, width)
-    local box = b.Box:new(hl);
-    box:appendStr(' ', nil)
-    box:expandWidthTo(width)
-    box:cloneHeightTo(ast[name][i].value)
-    return box
-end
+-- ---@param ast Banana.Ast @param name string
+-- ---@param i number
+-- ---@param hl Banana.Highlight?
+-- ---@param lines number
+-- ---@return Banana.Box
+-- local function padLeftRight(ast, name, i, hl, lines)
+--     local ret = b.Box:new(hl);
+--     ret:appendStr(' ', nil)
+--     ret:expandWidthTo(ast[name][i].value)
+--     ret:cloneHeightTo(lines)
+--     return ret
+-- end
+--
+-- ---@param ast Banana.Ast
+-- ---@param name string
+-- ---@param i number
+-- ---@param hl Banana.Highlight?
+-- ---@param width number
+-- ---@return Banana.Box
+-- local function padTopBtm(ast, name, i, hl, width)
+--     local box = b.Box:new(hl);
+--     box:appendStr(' ', nil)
+--     box:expandWidthTo(width)
+--     box:cloneHeightTo(ast[name][i].value)
+--     return box
+-- end
 
 ---@param name string
 ---@param ast Banana.Ast
----@param ret Banana.Box
----@param hl Banana.Highlight?
----@return Banana.Box, boolean
-local function applyPad(name, ast, ret, hl)
+---@param ret Banana.Renderer.PartialRendered
+---@return Banana.Renderer.PartialRendered, boolean
+local function applyPad(name, ast, ret)
     local changed = false
     if ast[name][_ast.left].value ~= 0 then
-        local box = padLeftRight(ast, name, _ast.left, hl, ret:height())
-        box:append(ret, nil)
-        ret = box
+        ret[name].left = ast[name][_ast.left].value
         changed = true
     end
     if ast[name][_ast.right].value ~= 0 then
-        local box = padLeftRight(ast, name, _ast.right, hl, ret:height())
-        ret:append(box, nil)
+        ret[name].right = ast[name][_ast.right].value
         changed = true
     end
     if ast[name][_ast.top].value ~= 0 then
-        local box = padTopBtm(ast, name, _ast.top, hl, ret:width())
-        box:appendBoxBelow(ret)
-        ret = box
+        ret[name].top = ast[name][_ast.top].value
         changed = true
     end
     if ast[name][_ast.bottom].value ~= 0 then
-        local box = padTopBtm(ast, name, _ast.top, hl, ret:width())
-        ret:appendBoxBelow(box)
+        ret[name].bottom = ast[name][_ast.bottom].value
         changed = true
     end
     return ret, changed
@@ -269,6 +287,13 @@ local function isExpandable(ast, extraWidth)
         or ast.style['width'] ~= nil
 end
 
+---@param ast Banana.Ast
+---@param startHl Banana.Highlight?
+---@param winWidth number
+---@param winHeight number
+---@param inherit Banana.Renderer.InheritedProperties
+---@param extra Banana.Renderer.ExtraInfo
+---@return Banana.Box
 function TagInfo:renderRoot(ast, startHl, winWidth, winHeight, inherit, extra)
     local ret = self:render(ast, startHl, winWidth, winHeight, 1, 1, inherit, extra)
     return ret
@@ -377,91 +402,99 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
         extra.trace:appendBoxBelow(ast:_testDumpBox())
         extra.trace:appendBoxBelow(centerBox)
     end
+    ---@type Banana.Renderer.PartialRendered
+    local ret = {
+        margin = margin,
+        padding = padding,
+        center = centerBox,
+        widthExpansion = 0,
+        heightExpansion = 0,
+        marginColor = parentHl,
+        mainColor = centerBox.hlgroup,
+        renderAlign = "left",
+    }
+    setmetatable(ret, {
+        __index = PartialRendered,
+    })
     local extraWidth =
-        parentWidth - ret:width() -
+        parentWidth - ret:getWidth() -
         ast.padding[_ast.left].value - ast.padding[_ast.right].value -
         ast.margin[_ast.left].value - ast.margin[_ast.right].value
     if isExpandable(ast, extraWidth) then
-        local width = parentWidth - ast.padding[_ast.left].value
-            - ast.padding[_ast.right].value - ast.margin[_ast.left].value
-            - ast.margin[_ast.right].value
+        ret.widthExpansion = extraWidth
         if inherit.text_align == "left" then
-            ret:expandWidthTo(width)
         elseif inherit.text_align == "right" then
-            local prepend = require('banana.box').Box:new(ret.hlgroup)
-            prepend:appendStr('', nil)
-            prepend:expandWidthTo(extraWidth)
-            prepend:append(ret)
-            ret = prepend
+            ret.renderAlign = "right"
         elseif inherit.text_align == "center" then
-            local leftWidth = math.floor(extraWidth / 2)
-            local left = require('banana.box').Box:new(ret.hlgroup)
-            left:appendStr('', nil)
-            left:expandWidthTo(leftWidth)
-            left:clean()
-            left:append(ret)
-            left:expandWidthTo(width)
-            ret = left
+            ret.renderAlign = "center"
         end
-        ret:clean()
         if extra.debug then
             extra.trace:appendBoxBelow(traceBreak("Expansion w"))
             extra.trace:appendBoxBelow(ast:_testDumpBox())
-            extra.trace:appendBoxBelow(ret)
+            extra.trace:appendBoxBelow(ret:render(true))
         end
     end
     if ast.style['height'] ~= nil and not ast:parent():isNil() then
-        local height = ast.style['height'][1].value.computed - ast.padding[_ast.top].value -
-            ast.padding[_ast.bottom].value
+        local height = ast.style['height'][1].value.computed
+            - ast.padding[_ast.top].value
+            - ast.padding[_ast.bottom].value
+        ret.heightExpansion = height - ret.center:height()
         ---@cast height number
-        local above = b.Box:new(ret.hlgroup)
-        above:appendStr(' ')
-        above:expandWidthTo(ret:width())
-        if ret:height() >= height then
-            goto skip
-        end
-        above:cloneHeightTo(height - ret:height())
-        ret:appendBoxBelow(above)
         if extra.debug then
             extra.trace:appendBoxBelow(traceBreak("Expansion h"))
             extra.trace:appendBoxBelow(ast:_testDumpBox())
-            extra.trace:appendBoxBelow(ret)
+            extra.trace:appendBoxBelow(ret:render(true))
         end
-        ::skip::
     end
     local changed = false
-    ret, changed = applyPad('padding', ast, ret, ret.hlgroup)
+    ret, changed = applyPad('padding', ast, ret)
     if changed then
         if extra.debug then
             extra.trace:appendBoxBelow(traceBreak("pad"))
             extra.trace:appendBoxBelow(ast:_testDumpBox())
-            extra.trace:appendBoxBelow(ret)
+            extra.trace:appendBoxBelow(ret:render(true))
         end
     end
-    boundBox.rightX = boundBox.leftX + ret:width()
-    boundBox.bottomY = boundBox.topY + ret:height()
+    boundBox.rightX = boundBox.leftX + ret:getWidth()
+    boundBox.bottomY = boundBox.topY + ret:getHeight()
     ast.boundBox = boundBox
     if position == "static" then
     else
         local newRet = b.Box:new(parentHl)
-        while newRet:height() < ret:height() do
+        local render = ret:render(true)
+        while newRet:height() < render:height() do
             local newBox = b.Box:new(newRet.hlgroup)
-            newBox:appendStr(string.rep(' ', ret:width()))
+            newBox:appendStr(string.rep(' ', render:width()))
             newRet:appendBoxBelow(newBox)
         end
         newRet:clean()
+        if extra.debug then
+            extra.trace:appendBoxBelow(traceBreak("float render"))
+            extra.trace:appendBoxBelow(ast:_testDumpBox())
+            extra.trace:appendBoxBelow(render:clone())
+            extra.trace:appendBoxBelow(traceBreak("extraRender render"))
+            extra.trace:appendBoxBelow(ast:_testDumpBox())
+            extra.trace:appendBoxBelow(newRet:clone())
+        end
         local root = ast
         while root.relativeBoxes == nil do
             root = root._parent
         end
         table.insert(root.relativeBoxes, {
-            box = ret,
+            box = render,
             left = startX - 1 - ast.padding[_ast.left].value,
             top = startY - 1 - ast.padding[_ast.top].value,
             z = (ast.style['z-index'] or { {} })[1].value or 0
         })
         ast.relativeBoxId = #root.relativeBoxes
-        ret = newRet
+        ret.center = newRet
+        ret.mainColor = parentHl
+        ret.padding.left = 0
+        ret.padding.right = 0
+        ret.padding.top = 0
+        ret.padding.bottom = 0
+        ret.widthExpansion = 0
+        ret.heightExpansion = 0
         if ast.style.left ~= nil then
             startX = startX - ast.style.left[1].value.computed
         elseif ast.style.right ~= nil then
@@ -472,13 +505,18 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
         elseif ast.style.bottom ~= nil then
             startY = startY + ast.style.bottom[1].value.computed
         end
+        if extra.debug then
+            extra.trace:appendBoxBelow(traceBreak("new render"))
+            extra.trace:appendBoxBelow(ast:_testDumpBox())
+            extra.trace:appendBoxBelow(ret:render(true))
+        end
     end
-    ret, changed = applyPad('margin', ast, ret, parentHl)
+    ret, changed = applyPad('margin', ast, ret)
     if changed then
         if extra.debug then
             extra.trace:appendBoxBelow(traceBreak("margin"))
             extra.trace:appendBoxBelow(ast:_testDumpBox())
-            extra.trace:appendBoxBelow(ret)
+            extra.trace:appendBoxBelow(ret:render(true))
         end
     end
     if ast.absoluteAsts ~= nil then
@@ -486,7 +524,7 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
             v:resolveUnits(parentWidth, parentHeight)
             v.style.position[1].value = "relative"
             v.actualTag:getRendered(
-                v, ret.hlgroup, parentWidth, parentHeight, startX, startY, inherit,
+                v, ret.mainColor, parentWidth, parentHeight, startX, startY, inherit,
                 extra)
             v.style.position[1].value = "absolute"
         end
@@ -495,9 +533,19 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
         table.sort(ast.relativeBoxes, function(l, r)
             return l.z < r.z
         end)
+        local rendered = ret:render()
         for _, data in ipairs(ast.relativeBoxes) do
-            ret:renderOver(data.box, data.left, data.top)
+            rendered:renderOver(data.box, data.left, data.top)
         end
+        ret.center = rendered
+        ret.margin.left = 0
+        ret.margin.right = 0
+        ret.margin.top = 0
+        ret.margin.bottom = 0
+        ret.padding.left = 0
+        ret.padding.right = 0
+        ret.padding.top = 0
+        ret.padding.bottom = 0
     end
     for k, _ in pairs(inheritOld) do
         inherit[k] = inheritOld[k]
@@ -556,14 +604,15 @@ end
 
 ---@param targetWidth number
 ---@param box Banana.Box
+---@param hl Banana.Highlight?
 ---@return Banana.Box, Banana.Box
-local function splitLineBoxOnce(targetWidth, box)
+local function splitLineBoxOnce(targetWidth, box, hl)
     if box:width() < targetWidth then
-        return box, b.Box:new(box.hlgroup)
+        return box, b.Box:new(hl)
     end
-    local left = b.Box:new(box.hlgroup)
+    local left = b.Box:new(hl)
     left:appendStr("", nil)
-    local right = b.Box:new(box.hlgroup)
+    local right = b.Box:new(hl)
     right:appendStr("", nil)
     local i = 1
     while left:width() + _str.charCount(box:getLine(1)[i].word) < targetWidth do
@@ -606,8 +655,9 @@ end
 ---@param currentLine Banana.Box
 ---@param append Banana.Box
 ---@param maxWidth number
+---@param hl Banana.Highlight?
 ---@return Banana.Box, Banana.Box?
-local function handleOverflow(ast, i, currentLine, append, maxWidth)
+local function handleOverflow(ast, i, currentLine, append, maxWidth, hl)
     if currentLine:height() == 0 then
         currentLine:appendStr("", nil)
     end
@@ -619,15 +669,15 @@ local function handleOverflow(ast, i, currentLine, append, maxWidth)
         return currentLine, append
     end
     if currentLine:height() ~= 1 then
-        local ap, extra = splitLineBoxOnce(maxWidth - currentLine:width(), append)
+        local ap, extra = splitLineBoxOnce(maxWidth - currentLine:width(), append, hl)
         currentLine:append(ap, nil)
         return currentLine, extra
     end
     currentLine:append(append, nil)
-    local preStuff = b.Box:new(currentLine.hlgroup)
+    local preStuff = b.Box:new(hl)
     local extra = nil
     repeat
-        currentLine, extra = splitLineBoxOnce(maxWidth, currentLine)
+        currentLine, extra = splitLineBoxOnce(maxWidth, currentLine, hl)
         preStuff:appendBoxBelow(currentLine)
         currentLine = extra
     until extra:width() <= maxWidth
@@ -708,14 +758,20 @@ function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX
                 end
             end
             local count = _str.charCount(v)
-            local box = b.Box:new(currentLine.hlgroup)
+            local box = b.Box:new(parentHl)
             box:appendStr(v, nil)
             local overflow = nil
-            currentLine, overflow = handleOverflow(ast, i, currentLine, box, width)
+            currentLine, overflow = handleOverflow(ast, i, currentLine, box, width, parentHl)
             if overflow ~= nil then
                 if extra == nil then
                     extra = currentLine
                 else
+                    if extra:width() < currentLine:width() then
+                        extra:expandWidthTo(currentLine:width())
+                    end
+                    if currentLine:width() < extra:width() then
+                        currentLine:expandWidthTo(extra:width())
+                    end
                     extra:appendBoxBelow(currentLine)
                 end
                 currentLine = overflow
@@ -728,11 +784,11 @@ function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX
                 break
             end
             v:resolveUnits(width, height)
-            local rendered = tag:getRendered(v, parentHl, width, height, startX, startY, inherit, extra_)
+            local rendered = tag:getRendered(v, parentHl, width, height, startX, startY, inherit, extra_):render()
             startX = startX + rendered:width()
             local overflow = nil
             local orgLines = currentLine:height()
-            currentLine, overflow = handleOverflow(ast, i, currentLine, rendered, width)
+            currentLine, overflow = handleOverflow(ast, i, currentLine, rendered, width, parentHl)
             if rendered:height() > orgLines and overflow == nil then
                 local yInc = rendered:height() - orgLines
                 local currentI = startI

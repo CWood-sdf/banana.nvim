@@ -56,8 +56,8 @@ function M.assertBgMapsMatch(bufMap, expectedMap)
     local i = 1
     while i <= #bufMap and i <= #expectedMap do
         if bufMap[i] ~= expectedMap[i] then
-            error("Expected line " ..
-                i .. " to be the same, but got '" .. bufMap[i] .. "' and '" .. expectedMap[i] .. "'")
+            error("line " ..
+                i .. " expected '" .. bufMap[i] .. "' to be '" .. expectedMap[i] .. "'")
         end
         i = i + 1
     end

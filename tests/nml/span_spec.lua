@@ -7,23 +7,22 @@ nml {
     width: 5ch;
     height: 5ch;
 }
-div {
+span {
     hl-bg: #ff0000;
-    height: 4ch;
 }
 </style>
 </head>
 
 <body>
 <br>
-<div>
+<span>
 asd
-</div>
+</span>
 </body>
 </nml>
 ]]
 
-describe("Div rendering", function()
+describe("span rendering", function()
     it("margins", function()
         local inst = require('banana.render').emptyInstance()
         inst:useNml(code)
@@ -31,12 +30,11 @@ describe("Div rendering", function()
         inst.stripRight = false
         inst:open()
 
-        local div = inst:getElementsByTag("div")[1]
-        div:setStyle("width: 4ch; height: 2ch; margin-left: 1ch;")
+        local span = inst:getElementsByTag("span")[1]
+        span:setStyle(" margin-left: 1ch;")
         local expectedMap = {
             "     ",
             " asd~",
-            " ~~~~",
             "     ",
             "     ",
         }
@@ -50,8 +48,8 @@ describe("Div rendering", function()
         inst.stripRight = false
         inst:open()
 
-        local div = inst:getElementsByTag("div")[1]
-        div:setStyle("width: 100%; height: 100%; text-align: center; padding-top: 1ch;")
+        local span = inst:getElementsByTag("span")[1]
+        span:setStyle("width: 100%; height: 100%; text-align: center; padding-top: 1ch;")
         local expectedMap = {
             "     ",
             "~~~~~",
@@ -70,15 +68,14 @@ describe("Div rendering", function()
         inst.stripRight = false
         inst:open()
 
-        local div = inst:getElementsByTag("div")[1]
-        div:setStyle("width: 100%; height: 100%; text-align: center;")
+        local span = inst:getElementsByTag("span")[1]
+        span:setStyle(" text-align: center;")
         local expectedMap = {
             "     ",
-            "~asd~",
-            "~~~~~",
-            "~~~~~",
-            "~~~~~",
-            "~~~~~",
+            "asd~ ",
+            "     ",
+            "     ",
+            "     ",
         }
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
@@ -90,8 +87,8 @@ describe("Div rendering", function()
         inst.stripRight = false
         inst:open()
 
-        local div = inst:getElementsByTag("div")[1]
-        div:setStyle("width: 4ch; height: 100%; text-align: center;")
+        local span = inst:getElementsByTag("span")[1]
+        span:setStyle("width: 4ch; height: 100%; text-align: center;")
         local expectedMap1 = {
             "     ",
             "~asd ",
@@ -109,8 +106,8 @@ describe("Div rendering", function()
             "~~~~ ",
         }
         inst:forceRerender()
-        local ok1, _ = pcall(h.assertBgMapsMatch,h.bufToBgMap(inst.bufnr), expectedMap1)
-        local ok2, _ = pcall(h.assertBgMapsMatch,h.bufToBgMap(inst.bufnr), expectedMap2)
+        local ok1, _ = pcall(h.assertBgMapsMatch, h.bufToBgMap(inst.bufnr), expectedMap1)
+        local ok2, _ = pcall(h.assertBgMapsMatch, h.bufToBgMap(inst.bufnr), expectedMap2)
         assert(ok1 or ok2, "Expected one of the centers to work")
     end)
     it("relative positions", function()
@@ -120,8 +117,8 @@ describe("Div rendering", function()
         inst.stripRight = false
         inst:open()
 
-        local div = inst:getElementsByTag("div")[1]
-        div:setStyle("width: 2ch; height: 3ch; position: relative; left: 1ch; top: 1ch;")
+        local span = inst:getElementsByTag("span")[1]
+        span:setStyle("width: 2ch; height: 3ch; position: relative; left: 1ch; top: 1ch;")
         local expectedMap = {
             "     ",
             "     ",
@@ -139,8 +136,8 @@ describe("Div rendering", function()
         inst.stripRight = false
         inst:open()
 
-        local div = inst:getElementsByTag("div")[1]
-        div:setStyle("width: 2ch; height: 3ch;")
+        local span = inst:getElementsByTag("span")[1]
+        span:setStyle("width: 2ch; height: 3ch;")
         local expectedMap = {
             "     ",
             "as   ",
@@ -151,7 +148,7 @@ describe("Div rendering", function()
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
     end)
-    it("Renders the div", function()
+    it("Renders the span", function()
         local inst = require('banana.render').emptyInstance()
         inst:useNml(code)
         inst.DEBUG = false
@@ -159,15 +156,15 @@ describe("Div rendering", function()
         inst:open()
         local expectedMap = {
             "     ",
-            "asd~~",
-            "~~~~~",
-            "~~~~~",
-            "~~~~~",
+            "asd~ ",
+            "     ",
+            "     ",
+            "     ",
         }
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
 
-        local div = inst:getElementsByTag("div")[1]
-        div:setStyle("width: 3ch; height: 3ch;")
+        local span = inst:getElementsByTag("span")[1]
+        span:setStyle("width: 3ch; height: 3ch;")
         expectedMap = {
             "     ",
             "asd  ",

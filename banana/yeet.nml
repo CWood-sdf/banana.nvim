@@ -8,14 +8,17 @@
     nml {
       top: 10%;
       left: 5%;
+    }
+    body {
 
+      hl-bg: #ffff00;
     }
     .card {
       width: 8ch;
       height: 3ch;
       hl-bg: #143c87;
       position: initial;
-      padding: 1ch;
+      padding: 0ch;
     }
     .rel {
       position: relative;
