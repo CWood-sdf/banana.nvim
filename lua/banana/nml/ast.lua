@@ -624,6 +624,22 @@ function M.Ast:children()
     return ret
 end
 
+---@return fun(): Banana.Ast?
+function M.Ast:childIter()
+    local i = 0
+    return function()
+        i = i + 1
+        while type(self.nodes[i]) ~= "table" do
+            i = i + 1
+            if i > #self.nodes then
+                return nil
+            end
+        end
+        ---@diagnostic disable-next-line: return-type-mismatch
+        return self.nodes[i]
+    end
+end
+
 ---@return Banana.Ast
 function M.Ast:child(i)
     for _, v in ipairs(self.nodes) do

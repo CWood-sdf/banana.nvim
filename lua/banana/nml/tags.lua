@@ -712,6 +712,7 @@ end
 ---@return Banana.Box, integer
 function TagInfo:renderFlexBlock(ast, parentHl, i, parentWidth, parentHeight, startX, startY, inherit, extra_)
     local width = 0
+    local widths = {}
     error("Not implemented")
 end
 
