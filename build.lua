@@ -3,7 +3,7 @@ vim.schedule(function()
     vim.system({ "bash", "./build.sh" }, {
         cwd = dir
     }):wait()
-    -- require('banana').initTsParsers()
-    -- vim.cmd("TSInstallSync nml")
-    -- vim.cmd("TSInstallSync ncss")
+    require('banana').initTsParsers()
+    vim.cmd("TSInstallSync nml")
+    vim.cmd("TSInstallSync ncss")
 end)
