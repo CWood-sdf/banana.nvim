@@ -1,5 +1,5 @@
 local h = require('tests.helpers')
-local code = [[
+local code = nml([[
 <nml>
 <head>
 <style>
@@ -36,7 +36,7 @@ position: absolute;
 </div>
 </body>
 </nml>
-]]
+]])
 
 
 describe("Div rendering", function()

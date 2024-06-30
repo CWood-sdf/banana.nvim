@@ -1,6 +1,10 @@
 --- from folke/noice.nvim
 local M = {}
 
+function nml(str)
+    return str
+end
+
 function M.root(root)
     local f = debug.getinfo(1, "S").source:sub(2)
     return vim.fn.fnamemodify(f, ":p:h:h") .. "/" .. (root or "")
