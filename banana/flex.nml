@@ -1,0 +1,28 @@
+<nml>
+  <head>
+
+    <title>
+      Flex
+    </title>
+    <style>
+      nml {
+        top: 10%;
+        left: 5%;
+      }
+      body > div {
+        display: flex;
+      }
+    </style>
+  </head>
+  <body>
+
+    <div>
+      <div>
+        asdf
+      </div>
+      <div>
+        asdf
+      </div>
+    </div>
+  </body>
+</nml>

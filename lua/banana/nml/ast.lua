@@ -20,8 +20,8 @@ M.padNames = { "left", "top", "right", "bottom" }
 ---@field actualTag Banana.TagInfo
 ---@field style { [string]: Banana.Ncss.StyleValue[] }
 ---@field hl Banana.Highlight?
----@field padding Banana.Ncss.UnitValue[]
----@field margin Banana.Ncss.UnitValue[]
+---@field private padding Banana.Ncss.UnitValue[]
+---@field private margin Banana.Ncss.UnitValue[]
 ---@field classes? { [string]: boolean }
 ---@field boundBox? Banana.Ast.BoundingBox
 ---@field precedences { [string]: number }
@@ -100,24 +100,58 @@ function M.Ast:new(tag, parent)
     return ast
 end
 
+---@return Banana.Ncss.StyleValue?
+---@param style string
+function M.Ast:firstStyle(style)
+    if self.style[style] == nil then
+        return nil
+    end
+    return self.style[style][1]
+end
+
+---@param style string
+---@param default Banana.Ncss.StyleValueType
+---@return Banana.Ncss.StyleValueType
+---@overload fun(self: Banana.Ast, style: string): Banana.Ncss.StyleValueType?
+function M.Ast:firstStyleValue(style, default)
+    local val = self:firstStyle(style)
+    if val == nil and default ~= nil then
+        return default
+    end
+    if val == nil then
+        return nil
+    end
+    return val.value
+end
+
+---@param style string
+---@return boolean
+function M.Ast:hasStyle(style)
+    return self.style[style] ~= nil
+end
+
+function M.Ast:assertHasStyle(style)
+    assert(self:firstStyle(style) ~= nil)
+end
+
 ---@return number
 function M.Ast:_boundBottom()
-    return self.padding[M.bottom].value
+    return self.padding[M.bottom].computed
 end
 
 ---@return number
 function M.Ast:_extraBottom()
-    return self:_boundBottom() + self.margin[M.bottom].value
+    return self:_boundBottom() + self.margin[M.bottom].computed
 end
 
 ---@return number
 function M.Ast:_boundTop()
-    return self.padding[M.top].value
+    return self.padding[M.top].computed
 end
 
 ---@return number
 function M.Ast:_extraTop()
-    return self:_boundTop() + self.margin[M.top].value
+    return self:_boundTop() + self.margin[M.top].computed
 end
 
 function M.Ast:_boundTb()
@@ -138,22 +172,22 @@ end
 
 ---@return number
 function M.Ast:_boundRight()
-    return self.padding[M.right].value
+    return self.padding[M.right].computed
 end
 
 ---@return number
 function M.Ast:_extraRight()
-    return self:_boundRight() + self.margin[M.right].value
+    return self:_boundRight() + self.margin[M.right].computed
 end
 
 ---@return number
 function M.Ast:_boundLeft()
-    return self.padding[M.left].value
+    return self.padding[M.left].computed
 end
 
 ---@return number
 function M.Ast:_extraLeft()
-    return self:_boundLeft() + self.margin[M.left].value
+    return self:_boundLeft() + self.margin[M.left].computed
 end
 
 function M.Ast:_getInitialStyles()
@@ -161,56 +195,80 @@ function M.Ast:_getInitialStyles()
     return tag.initialProps
 end
 
+function M.Ast:paddingLeft()
+    return self.padding[M.left].computed
+end
+
+function M.Ast:paddingRight()
+    return self.padding[M.right].computed
+end
+
+function M.Ast:paddingTop()
+    return self.padding[M.top].computed
+end
+
+function M.Ast:paddingBottom()
+    return self.padding[M.bottom].computed
+end
+
 function M.Ast:marginLeft()
-    return self.margin[M.left].value
+    return self.margin[M.left].computed
 end
 
 function M.Ast:marginRight()
-    return self.margin[M.right].value
+    return self.margin[M.right].computed
 end
 
 function M.Ast:marginTop()
-    return self.margin[M.top].value
+    return self.margin[M.top].computed
 end
 
 function M.Ast:marginBottom()
-    return self.margin[M.bottom].value
+    return self.margin[M.bottom].computed
 end
 
 function M.Ast:defaultStyles()
     self.padding = {
         {
             value = 0,
+            computed = 0,
             unit = "ch",
         },
         {
             value = 0,
+            computed = 0,
             unit = "ch",
         },
         {
             value = 0,
+            computed = 0,
             unit = "ch",
         },
         {
             value = 0,
+            computed = 0,
             unit = "ch",
         },
     }
     self.margin = {
         {
             value = 0,
+            computed = 0,
             unit = "ch",
         },
         {
             value = 0,
+            computed = 0,
             unit = "ch",
         },
         {
             value = 0,
+            computed = 0,
             unit = "ch",
         },
         {
             value = 0,
+            computed = 0,
             unit = "ch",
         },
     }
@@ -333,27 +391,25 @@ function M.Ast:mixHl(parentHl)
     return ret
 end
 
----@param unit Banana.Ncss.UnitValue
----@param parentWidth number
----@return Banana.Ncss.UnitValue
-function M.calcUnit(unit, parentWidth)
-    if unit.unit == "ch" then
-        return unit
-    elseif unit.unit == "%" then
-        local mult = unit.value / 100
-        return {
-            value = math.floor(mult * parentWidth),
-            unit = "ch",
-        }
-    end
-    return unit
-    -- error("Undefined unit '" .. unit.unit .. "'")
-end
+-- function M.calcUnit(unit, parentWidth, extras)
+--     if unit.unit == "ch" then
+--         return unit
+--     elseif unit.unit == "%" then
+--         local mult = unit.value / 100
+--         return {
+--             value = math.floor(mult * parentWidth),
+--             unit = "ch",
+--         }
+--     end
+--     return unit
+--     -- error("Undefined unit '" .. unit.unit .. "'")
+-- end
 
 ---@param unit Banana.Ncss.UnitValue
 ---@param parentWidth number
+---@param extras number[]
 ---@return Banana.Ncss.UnitValue
-function M.calcUnitNoMod(unit, parentWidth)
+function M.calcUnitNoMod(unit, parentWidth, extras)
     if unit.unit == "ch" then
         return {
             value = unit.value,
@@ -361,10 +417,11 @@ function M.calcUnitNoMod(unit, parentWidth)
             computed = unit.value,
         }
     elseif unit.unit == "fr" then
+        assert(extras[1] ~= nil, "fr unit requires an extra parameter")
         local mult = unit.value
         return {
             value = unit.value,
-            computed = math.floor(mult * parentWidth),
+            computed = math.floor(mult * extras[1]),
             unit = unit.unit,
         }
     elseif unit.unit == "%" then
@@ -387,38 +444,45 @@ function M.Ast:getHeight()
     return self.boundBox.bottomY - self.boundBox.topY
 end
 
-function M.Ast:_computeUnitFor(prop, basedOn)
+---@param prop string
+---@param basedOn number
+---@param extras number[]
+function M.Ast:_computeUnitFor(prop, basedOn, extras)
     local style = self.style[prop]
     if style ~= nil then
-        ---@diagnostic disable-next-line: param-type-mismatch
-        style[1].value = M.calcUnitNoMod(style[1].value, basedOn)
+        for i, _ in ipairs(style) do
+            ---@diagnostic disable-next-line: param-type-mismatch
+            style[i].value = M.calcUnitNoMod(style[i].value, basedOn, extras)
+        end
     end
 end
 
 ---@param parentWidth number
 ---@param parentHeight number
-function M.Ast:resolveUnits(parentWidth, parentHeight)
+---@param extras? number[]
+function M.Ast:resolveUnits(parentWidth, parentHeight, extras)
+    extras = extras or {}
     for i, v in ipairs(self.margin) do
         if i % 2 == 1 then
-            self.margin[i] = M.calcUnit(v, parentWidth)
+            self.margin[i] = M.calcUnitNoMod(v, parentWidth, extras)
         else
-            self.margin[i] = M.calcUnit(v, parentHeight)
+            self.margin[i] = M.calcUnitNoMod(v, parentHeight, extras)
         end
     end
     for i, v in ipairs(self.padding) do
         if i % 2 == 1 then
-            self.padding[i] = M.calcUnit(v, parentWidth)
+            self.padding[i] = M.calcUnitNoMod(v, parentWidth, extras)
         else
-            self.padding[i] = M.calcUnit(v, parentHeight)
+            self.padding[i] = M.calcUnitNoMod(v, parentHeight, extras)
         end
     end
-    self:_computeUnitFor("list-base-width", parentWidth)
-    self:_computeUnitFor("width", parentWidth)
-    self:_computeUnitFor("height", parentHeight)
-    self:_computeUnitFor("top", parentHeight)
-    self:_computeUnitFor("bottom", parentHeight)
-    self:_computeUnitFor("left", parentWidth)
-    self:_computeUnitFor("right", parentWidth)
+    self:_computeUnitFor("list-base-width", parentWidth, extras)
+    self:_computeUnitFor("width", parentWidth, extras)
+    self:_computeUnitFor("height", parentHeight, extras)
+    self:_computeUnitFor("top", parentHeight, extras)
+    self:_computeUnitFor("bottom", parentHeight, extras)
+    self:_computeUnitFor("left", parentWidth, extras)
+    self:_computeUnitFor("right", parentWidth, extras)
 end
 
 function M.Ast:applyInlineStyleDeclarations()

@@ -186,6 +186,8 @@ end
 ---@field position "static"|"absolute"|"sticky"|"relative"
 
 ---@class (exact) Banana.Renderer.InitialProperties: Banana.Renderer.InheritedProperties
+---@field flex_shrink number
+---@field flex_wrap "nowrap"|"wrap"
 
 ---@enum Banana.Nml.FormatType
 M.FormatType = {
@@ -275,16 +277,16 @@ end
 ---@param extraWidth number
 ---@return boolean
 local function isExpandable(ast, extraWidth)
-    local isFlexChild = ast._parent ~= nil and ast._parent.style ~= nil and ast._parent.style['display'] == "flex"
+    local isFlexChild = ast._parent ~= nil and ast._parent:firstStyleValue('display') == "flex"
     if isFlexChild then
         return extraWidth > 0 and
             (ast.actualTag.formatType == M.FormatType.Block or ast.actualTag.formatType == M.FormatType.BlockInline) and
-            ast.style.width ~= nil
+            ast:hasStyle('width')
     end
 
     return (ast.actualTag.formatType == M.FormatType.Block or ast.actualTag.formatType == M.FormatType.BlockInline
         ) and extraWidth > 0
-        or ast.style['width'] ~= nil
+        or ast:hasStyle('width')
 end
 
 ---@param ast Banana.Ast
@@ -313,15 +315,15 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
     local inheritOld = {}
     for k, _ in pairs(inherit) do
         local style = snakeToKebab(k)
-        if ast.style[style] ~= nil then
+        if ast:hasStyle(style) then
             inheritOld[k] = inherit[k]
-            inherit[k] = ast.style[style][1].value
+            inherit[k] = ast:firstStyleValue(style)
             if inherit[k] == "initial" then
-                inherit[k] = ast:_getInitialStyles()[style]
+                inherit[k] = ast:_getInitialStyles()[k]
             end
         end
     end
-    local position = (ast.style.position or { {} })[1].value
+    local position = ast:firstStyleValue("position")
     if position == nil or position == "initial" then
         position = ast:_getInitialStyles().position
     end
@@ -336,41 +338,40 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
         end
         return emptyPartialRendered()
     end
-    local d = "display"
-    local disp = ast.style[d]
-    if disp ~= nil and disp[1] ~= nil and disp[1].value == "hidden" then
+    local disp = ast:firstStyleValue("display")
+    if disp == "hidden" then
         for k, _ in pairs(inheritOld) do
             inherit[k] = inheritOld[k]
         end
 
         return emptyPartialRendered()
     end
-    if ast.style['width'] ~= nil then
+    if ast:hasStyle('width') then
         ---@diagnostic disable-next-line: cast-local-type
         parentWidth = math.min(
-            ast.style['width'][1].value.computed + ast.margin[_ast.left].value + ast.margin[_ast.right].value,
+            ast:firstStyleValue('width').computed + ast:marginLeft() + ast:marginRight(),
             parentWidth)
     end
-    if ast.style['height'] ~= nil then
+    if ast:hasStyle('height') then
         ---@diagnostic disable-next-line: cast-local-type
         parentHeight = math.min(
-            ast.style['height'][1].value.computed + ast.margin[_ast.top].value + ast.margin[_ast.bottom].value,
+            ast:firstStyleValue('height').computed + ast:marginTop() + ast:marginBottom(),
             parentHeight)
     end
     if position ~= "static" then
-        if ast.style.left ~= nil then
-            startX = startX + ast.style.left[1].value.computed
-        elseif ast.style.right ~= nil then
-            startX = startX - ast.style.right[1].value.computed
+        if ast:hasStyle("left") then
+            startX = startX + ast:firstStyleValue("left").computed
+        elseif ast:hasStyle("right") then
+            startX = startX - ast:firstStyleValue("right").computed
         end
-        if ast.style.top ~= nil then
-            startY = startY + ast.style.top[1].value.computed
-        elseif ast.style.bottom ~= nil then
-            startY = startY - ast.style.bottom[1].value.computed
+        if ast:hasStyle("top") then
+            startY = startY + ast:firstStyleValue("top").computed
+        elseif ast:hasStyle("bottom") then
+            startY = startY + ast:firstStyleValue("bottom").computed
         end
     end
-    startX = startX + ast.margin[_ast.left].value
-    startY = startY + ast.margin[_ast.top].value
+    startX = startX + ast:marginLeft()
+    startY = startY + ast:marginTop()
     ---@type Banana.Ast.BoundingBox
     local boundBox = {
         leftX   = startX,
@@ -378,8 +379,8 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
         rightX  = 0,
         bottomY = 0,
     }
-    startX = startX + ast.padding[_ast.left].value
-    startY = startY + ast.padding[_ast.top].value
+    startX = startX + ast:paddingLeft()
+    startY = startY + ast:paddingTop()
     ---@cast parentWidth number
     ---@cast parentHeight number
     local centerBox = self:render(ast, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra)
@@ -416,10 +417,7 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
     setmetatable(ret, {
         __index = PartialRendered,
     })
-    local extraWidth =
-        parentWidth - ret:getWidth() -
-        ast.padding[_ast.left].value - ast.padding[_ast.right].value -
-        ast.margin[_ast.left].value - ast.margin[_ast.right].value
+    local extraWidth = parentWidth - ret:getWidth() - ast:_extraLr()
     if isExpandable(ast, extraWidth) then
         ret.widthExpansion = extraWidth
         if inherit.text_align == "left" then
@@ -436,8 +434,7 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
     end
     if ast.style['height'] ~= nil and not ast:parent():isNil() then
         local height = ast.style['height'][1].value.computed
-            - ast.padding[_ast.top].value
-            - ast.padding[_ast.bottom].value
+            - ast:paddingTop() - ast:paddingBottom()
         ret.heightExpansion = height - ret.center:height()
         ---@cast height number
         if extra.debug then
@@ -482,8 +479,8 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
         end
         table.insert(root.relativeBoxes, {
             box = render,
-            left = startX - 1 - ast.padding[_ast.left].value,
-            top = startY - 1 - ast.padding[_ast.top].value,
+            left = startX - 1 - ast:paddingLeft(),
+            top = startY - 1 - ast:paddingTop(),
             z = (ast.style['z-index'] or { {} })[1].value or 0
         })
         ast.relativeBoxId = #root.relativeBoxes
@@ -495,14 +492,14 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
         ret.padding.bottom = 0
         ret.widthExpansion = 0
         ret.heightExpansion = 0
-        if ast.style.left ~= nil then
+        if ast:hasStyle("left") then
             startX = startX - ast.style.left[1].value.computed
-        elseif ast.style.right ~= nil then
+        elseif ast:hasStyle("right") then
             startX = startX + ast.style.right[1].value.computed
         end
-        if ast.style.top ~= nil then
+        if ast:hasStyle("top") then
             startY = startY - ast.style.top[1].value.computed
-        elseif ast.style.bottom ~= nil then
+        elseif ast:hasStyle("bottom") then
             startY = startY + ast.style.bottom[1].value.computed
         end
         if extra.debug then
@@ -571,12 +568,12 @@ function TagInfo:blockIter(ast, parentHl, parentWidth, parentHeight, startX, sta
         end
         local oldI = i
         local render = nil
-        if ast.style.display ~= nil and ast.style["display"][1].value == "flex" then
-            error("impl flex")
-            -- render = self:renderFlexBlock(
-            --     ast, parentHl, parentWidth, parentHeight,
-            --     startX, startY, inherit, extra)
-            -- i = #ast.nodes + 1
+        if ast:firstStyleValue("display") == "flex" then
+            -- error("impl flex")
+            render = self:renderFlexBlock(
+                ast, parentHl, parentWidth, parentHeight,
+                startX, startY, inherit, extra)
+            i = #ast.nodes + 1
         else
             render, i = self:renderBlock(
                 ast, parentHl, i, parentWidth, parentHeight,
@@ -646,7 +643,7 @@ local function breakable(ast)
     if type(ast) == "string" then
         return true
     end
-    return ast.padding[_ast.right].value == 0 and ast.padding[_ast.left].value == 0 and ast.style.width == nil
+    return ast:paddingRight() == 0 and ast:paddingLeft() == 0 and not ast:hasStyle("width")
 end
 
 
@@ -684,25 +681,39 @@ local function handleOverflow(ast, i, currentLine, append, maxWidth, hl)
     return preStuff, extra
 end
 
--- also need to make default box renderSide loc top, not bottom
 -- Flex todo:
 -- Render the boxes
--- Finish partial renderer proto (inside the getRendered fn)
--- render boxes that dont have fr
+-- Resize with flex-shrink and flex-basis
 -- calc remaining display width
--- render boxes with fr
--- redo box height
+-- Allow flex-basis, margin, and padding to be included in fr calcs
+-- render boxes that have fr
+-- redo box heights
 -- recalc remaining
 -- impl flex basis
 -- impl flex grow
 -- impl flex shrink
--- impl emergency deflex
+-- impl emergency shrink
 -- impl double emergency float rendering
+
+---@param ast Banana.Ast
+---@return boolean
+local function hasNoFrUnits(ast)
+    for _, nodes in pairs(ast.style) do
+        for _, v in ipairs(nodes) do
+            if v.type == "unit" and v.value.unit == "fr" then
+                assert(ast:hasStyle("width"), "an ast with fractional units must have a width/height")
+                assert(ast:firstStyleValue("width").unit == "fr",
+                    "an ast with fractional units must have a width/height with unit fr")
+                return false
+            end
+        end
+    end
+    return true
+end
 
 ---Renders everything in a flex block
 ---@param ast Banana.Ast
 ---@param parentHl Banana.Highlight?
----@param i integer
 ---@param parentWidth number
 ---@param parentHeight number
 ---@param startX number
@@ -710,10 +721,51 @@ end
 ---@param inherit Banana.Renderer.InheritedProperties
 ---@param extra_ Banana.Renderer.ExtraInfo
 ---@return Banana.Box, integer
-function TagInfo:renderFlexBlock(ast, parentHl, i, parentWidth, parentHeight, startX, startY, inherit, extra_)
-    local width = 0
-    local widths = {}
-    error("Not implemented")
+function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra_)
+    local takenWidth = 0
+    local hl = ast:mixHl(parentHl)
+    ---@type ([Banana.Renderer.PartialRendered, Banana.Ast]?)[]
+    local renders = {}
+    ---@type integer[]
+    local needed = {}
+    for i, v in ipairs(ast.nodes) do
+        if type(v) == "string" then
+            goto continue
+        end
+
+        if not hasNoFrUnits(v) then
+            table.insert(renders, nil)
+            table.insert(needed, i)
+            goto continue
+        end
+
+        v:resolveUnits(parentWidth, parentHeight)
+        local rendered = v.actualTag:getRendered(v, hl, parentWidth, parentHeight, startX, startY, inherit, extra_)
+
+        table.insert(renders, { rendered, v })
+
+        takenWidth = takenWidth + rendered:getWidth()
+
+        ::continue::
+    end
+    local widthLeft = parentWidth - takenWidth
+    local frProp = "width"
+    local totalFrs = 0
+    for _, i in ipairs(needed) do
+        local v = ast.nodes[i]
+        ---@cast v Banana.Ast
+        totalFrs = totalFrs + v:firstStyleValue(frProp).value
+    end
+    local frWidth = widthLeft / totalFrs
+    for _, i in ipairs(needed) do
+        local v = ast.nodes[i]
+        ---@cast v Banana.Ast
+        v:resolveUnits(parentWidth, parentHeight, {
+            frWidth
+        })
+    end
+
+    return b.Box:new(), #ast.nodes + 1
 end
 
 ---Renders everything in a block
@@ -850,6 +902,8 @@ end
 function M.defaultInitials()
     ---@type Banana.Renderer.InitialProperties
     local initialProps = {
+        flex_shrink = 1,
+        flex_wrap = "nowrap",
         text_align = "left",
         position = "static",
     }

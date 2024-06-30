@@ -14,8 +14,10 @@ local Value = {
 
 ---@alias Banana.Ncss.StyleValue.Types "color"|"integer"|"plain"|"float"|"string"|"unit"|"boolean"
 
+---@alias Banana.Ncss.StyleValueType number|string|Banana.Ncss.UnitValue|boolean
+
 ---@class (exact) Banana.Ncss.StyleValue
----@field value number|string|Banana.Ncss.UnitValue|boolean
+---@field value Banana.Ncss.StyleValueType
 ---@field type Banana.Ncss.StyleValue.Types
 local StyleValue = {
 

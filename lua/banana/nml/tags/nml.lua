@@ -11,7 +11,7 @@ local function renderer(self, ast, parentHl, parentWidth, parentHeight, startX, 
         end
         ---@cast node Banana.Ast
         if node.tag == "head" then
-            node.actualTag:renderRoot(node, parentHl, parentWidth, parentHeight)
+            node.actualTag:renderRoot(node, parentHl, parentWidth, parentHeight, inherit, extra)
         elseif node.tag == "body" then
             node:resolveUnits(parentWidth, parentHeight)
             ret = node.actualTag:getRendered(node, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra)
