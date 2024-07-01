@@ -184,6 +184,8 @@ end
 ---@class (exact) Banana.Renderer.InheritedProperties
 ---@field text_align string
 ---@field position "static"|"absolute"|"sticky"|"relative"
+---@field min_size boolean
+---@field min_size_direction "horizontal"|"vertical"
 
 ---@class (exact) Banana.Renderer.InitialProperties: Banana.Renderer.InheritedProperties
 ---@field flex_shrink number
@@ -351,12 +353,18 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
         parentWidth = math.min(
             ast:firstStyleValue('width').computed + ast:marginLeft() + ast:marginRight(),
             parentWidth)
+        if inherit.min_size_direction == "horizontal" and inherit.min_size then
+            inherit.min_size = false
+        end
     end
     if ast:hasStyle('height') then
         ---@diagnostic disable-next-line: cast-local-type
         parentHeight = math.min(
             ast:firstStyleValue('height').computed + ast:marginTop() + ast:marginBottom(),
             parentHeight)
+        if inherit.min_size_direction == "vertical" and inherit.min_size then
+            inherit.min_size = false
+        end
     end
     if position ~= "static" then
         if ast:hasStyle("left") then
@@ -419,6 +427,7 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
     })
     local extraWidth = parentWidth - ret:getWidth() - ast:_extraLr()
     if isExpandable(ast, extraWidth) then
+        ret.center:clean()
         ret.widthExpansion = extraWidth
         if inherit.text_align == "left" then
         elseif inherit.text_align == "right" then
@@ -433,6 +442,7 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
         end
     end
     if ast.style['height'] ~= nil and not ast:parent():isNil() then
+        ret.center:clean()
         local height = ast.style['height'][1].value.computed
             - ast:paddingTop() - ast:paddingBottom()
         ret.heightExpansion = height - ret.center:height()
@@ -675,7 +685,7 @@ local function handleOverflow(ast, i, currentLine, append, maxWidth, hl)
     local extra = nil
     repeat
         currentLine, extra = splitLineBoxOnce(maxWidth, currentLine, hl)
-        preStuff:appendBoxBelow(currentLine)
+        preStuff:appendBoxBelow(currentLine, false)
         currentLine = extra
     until extra:width() <= maxWidth
     return preStuff, extra
@@ -722,6 +732,8 @@ end
 ---@param extra_ Banana.Renderer.ExtraInfo
 ---@return Banana.Box, integer
 function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra_)
+    inherit.min_size = true
+    inherit.min_size_direction = "horizontal"
     local takenWidth = 0
     local hl = ast:mixHl(parentHl)
     ---@type ([Banana.Renderer.PartialRendered, Banana.Ast]?)[]
@@ -741,6 +753,10 @@ function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, start
 
         v:resolveUnits(parentWidth, parentHeight)
         local rendered = v.actualTag:getRendered(v, hl, parentWidth, parentHeight, startX, startY, inherit, extra_)
+
+        if v:firstStyleValue("flex-shrink") ~= 0 then
+            rendered.widthExpansion = 0
+        end
 
         table.insert(renders, { rendered, v })
 
@@ -764,8 +780,12 @@ function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, start
             frWidth
         })
     end
+    local ret = b.Box:new(hl)
+    for _, v in ipairs(renders) do
+        ret:append(v[1]:render(), nil)
+    end
 
-    return b.Box:new(), #ast.nodes + 1
+    return ret, #ast.nodes + 1
 end
 
 ---Renders everything in a block
@@ -825,7 +845,7 @@ function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX
                     if currentLine:width() < extra:width() then
                         currentLine:expandWidthTo(extra:width())
                     end
-                    extra:appendBoxBelow(currentLine)
+                    extra:appendBoxBelow(currentLine, false)
                 end
                 currentLine = overflow
             end
@@ -859,7 +879,7 @@ function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX
                 if extra == nil then
                     extra = currentLine
                 else
-                    extra:appendBoxBelow(currentLine)
+                    extra:appendBoxBelow(currentLine, false)
                 end
                 currentLine = overflow
             end
@@ -874,7 +894,7 @@ function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX
         i = i + 1
     end
     if extra ~= nil then
-        extra:appendBoxBelow(currentLine)
+        extra:appendBoxBelow(currentLine, false)
         currentLine = extra
     end
     return currentLine, i

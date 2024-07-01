@@ -23,6 +23,33 @@ asd
 ]]
 
 describe("span rendering", function()
+    it("doesnt completely overflow", function()
+        local inst = require('banana.render').emptyInstance()
+        inst:useNml(code)
+        inst.DEBUG = false
+        inst.stripRight = false
+        inst:open()
+
+        local span = inst:getElementsByTag("span")[1]
+        span:setTextContent("asd asd")
+        local expectedMap = {
+            "     ",
+            "asd~a",
+            "sd   ",
+            "     ",
+        }
+        inst:forceRerender()
+        h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
+        span:setStyleValue("width", "5ch")
+        expectedMap = {
+            "     ",
+            "asd~a",
+            "sd~~~",
+            "     ",
+        }
+        inst:forceRerender()
+        h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
+    end)
     it("margins", function()
         local inst = require('banana.render').emptyInstance()
         inst:useNml(code)
@@ -97,7 +124,7 @@ describe("span rendering", function()
             "~~~~ ",
             "~~~~ ",
         }
-        local expectedMap1 = {
+        local expectedMap2 = {
             "     ",
             "asd~ ",
             "~~~~ ",

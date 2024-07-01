@@ -10,7 +10,6 @@
       left: 5%;
     }
     body {
-
       hl-bg: #ffff00;
     }
     .card {

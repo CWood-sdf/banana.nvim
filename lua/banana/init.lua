@@ -4,7 +4,7 @@ local render = require('banana.render')
 
 M.yeet = function()
 	if instance == nil then
-		instance = render.newInstance("flex", "asdf")
+		instance = render.newInstance("yeet", "asdf")
 		instance.DEBUG = false
 	end
 	-- local filename = os.getenv("HOME") .. '/projects/banana.nvim/test.nml'
@@ -69,7 +69,7 @@ function M.initTsParsers()
 			files = { "src/parser.c" },
 			branch = "main",
 			generate_requires_npm = false,
-			requires_generate_from_grammar = true,
+			requires_generate_from_grammar = false,
 		},
 		filetype = "nml",
 	}

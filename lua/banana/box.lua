@@ -260,15 +260,19 @@ function M.Box:getLine(i)
 end
 
 ---@param box Banana.Box
-function M.Box:appendBoxBelow(box)
+---@param expand boolean?
+function M.Box:appendBoxBelow(box, expand)
+    if expand == nil then
+        expand = true
+    end
     box:clean()
     local newWidth = math.max(self._width, box._width)
-    if newWidth > self._width then
+    if newWidth > self._width and expand then
         self._width = newWidth
         self.dirty = true
         self:clean()
     end
-    if newWidth > box:width() then
+    if newWidth > box:width() and expand then
         box._width = newWidth
         box.dirty = true
         box:clean()
@@ -284,27 +288,20 @@ end
 --
 -- end
 
-function M.Box:stripRightSpace()
+---@param expectedBg string?
+function M.Box:stripRightSpace(expectedBg)
     for _, row in ipairs(self.lines) do
         for i = #row, 1, -1 do
-            if row[i].style == self.hlgroup then
-                goto skip
+            if row[i].style.bg ~= expectedBg then
+                goto continue
             end
-            if
-                (row[i].style.fg ~= nil
-                    and row[i].style.fg ~= self.hlgroup.fg)
-                or (row[i].style.bg ~= nil
-                    and row[i].style.bg ~= self.hlgroup.bg)
-            then
-                break
-            end
-            ::skip::
             row[i].word = row[i].word:gsub('[ ]+$', '')
             if #row[i].word == 0 then
                 table.remove(row, i)
             else
                 break
             end
+            ::continue::
         end
     end
 end
@@ -443,10 +440,14 @@ function M.Box:renderOver(other, left, top)
                 style = self.hlgroup,
             }
         }
-        table.insert(self.lines, newLine)
         for _, v in ipairs(other.lines[j]) do
-            table.insert(self.lines[#self.lines], v)
+            table.insert(newLine, v)
         end
+        table.insert(newLine, {
+            word = string.rep(self.fillChar, self._width - M.lineWidth(newLine)),
+            style = self.hlgroup,
+        })
+        table.insert(self.lines, newLine)
         j = j + 1
     end
 end

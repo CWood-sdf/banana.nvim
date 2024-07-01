@@ -68,9 +68,19 @@ function Instance:virtualRender(ast, width, height)
         local rendered = tag:renderRoot(ast, nil, width, height, {
             text_align = "left",
             position = "static",
+            min_size = false,
+            min_size_direction = "horizontal",
         }, extra)
         if self.stripRight then
-            rendered:stripRightSpace()
+            local bgNum = vim.api.nvim_get_hl(0, {
+                name = M.defaultWinHighlight,
+                -- name = self.
+            }).bg
+            local bg = nil
+            if bgNum ~= nil then
+                bg = string.format("#%06x", bgNum)
+            end
+            rendered:stripRightSpace(bg)
         end
         if extra.debug then
             rendered:appendBoxBelow(extra.trace)
@@ -391,6 +401,8 @@ function Instance:createWinAndBuf()
         headTag[1].actualTag:renderRoot(headTag[1], nil, 0, 0, {
             position = "static",
             text_align = "left",
+            min_size_direction = "horizontal",
+            min_size = false,
         }, {
             trace = require('banana.box').Box:new(),
             debug = self.DEBUG,
@@ -495,6 +507,7 @@ function Instance:render()
     styleTime = vim.loop.hrtime() - startTime
     startTime = vim.loop.hrtime()
     local width, height = self:createWinAndBuf()
+    -- self:body():resolveUnits(width, height, {})
     local stuffToRender = self:virtualRender(self.ast, width, height)
     local renderTime = vim.loop.hrtime() - startTime
 
