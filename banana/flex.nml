@@ -9,14 +9,18 @@
         top: 10%;
         left: 5%;
       }
-      body > div {
-        display: flex;
+      #flex {
+        /*display: flex;*/
       }
-      body > div > div {
+      #flex > div {
         hl-bg: red;
         margin-left: 1ch;
         padding: 2ch 1ch;
-        flex-shrink: 1;
+        /*flex-shrink: 1;*/
+      }
+
+      .asdf {
+        hl-bg: blue !important;
       }
 
       .one {
@@ -24,11 +28,12 @@
         height: 5ch;
         flex-grow: 1;
       }
+
     </style>
   </head>
   <body>
 
-    <div>
+    <div id="flex">
     <div>
       <bound >
       </div>
@@ -36,5 +41,9 @@
       <bound >
       </div>
     </div>
+
+    <script src="flexStuff">
+
+    </script>
   </body>
 </nml>

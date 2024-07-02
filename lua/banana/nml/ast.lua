@@ -277,6 +277,13 @@ function M.Ast:defaultStyles()
     self.precedences = {}
 end
 
+function M.Ast:clearStyles()
+    self:defaultStyles()
+    for node in self:childIter() do
+        node:clearStyles()
+    end
+end
+
 ---@param ast Banana.Ast
 local function applyAstMeta(ast)
     setmetatable(ast, { __index = M.Ast })

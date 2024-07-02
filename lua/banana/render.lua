@@ -498,6 +498,7 @@ function Instance:render()
     local actualStart = startTime
     local astTime = 0
     local styleTime = 0
+    self.ast:clearStyles()
     self:applyStyleDeclarations(self.ast, self.styleRules)
     for ast, rules in pairs(self.foreignStyles) do
         self:applyStyleDeclarations(ast, rules)
