@@ -117,6 +117,14 @@ end
 ---@param clone boolean?
 ---@return Banana.Box
 function PartialRendered:render(clone)
+    if clone then
+        local new = vim.fn.deepcopy(self)
+        setmetatable(new, {
+            __index = PartialRendered,
+        })
+        new.center = self.center:clone()
+        return new:render()
+    end
     clone = clone or false
     local box = self.center
     if clone then
@@ -409,7 +417,7 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
     if extra.debug then
         extra.trace:appendBoxBelow(traceBreak("Raw render"))
         extra.trace:appendBoxBelow(ast:_testDumpBox())
-        extra.trace:appendBoxBelow(centerBox)
+        extra.trace:appendBoxBelow(centerBox:clone())
     end
     ---@type Banana.Renderer.PartialRendered
     local ret = {
@@ -690,19 +698,6 @@ local function handleOverflow(ast, i, currentLine, append, maxWidth, hl)
     return preStuff, extra
 end
 
--- Flex todo:
--- Render the boxes
--- Resize with flex-shrink and flex-basis
--- calc remaining display width
--- Allow flex-basis, margin, and padding to be included in fr calcs
--- render boxes that have fr
--- redo box heights
--- recalc remaining
--- impl flex basis
--- impl flex grow
--- impl flex shrink
--- impl emergency shrink
--- impl double emergency float rendering
 
 ---@param ast Banana.Ast
 ---@return boolean
@@ -720,6 +715,13 @@ local function hasNoFrUnits(ast)
     return true
 end
 
+-- Flex todo:
+-- impl flex grow
+-- impl flex shrink
+-- impl emergency shrink
+-- impl double emergency float rendering
+
+
 ---Renders everything in a flex block
 ---@param ast Banana.Ast
 ---@param parentHl Banana.Highlight?
@@ -728,9 +730,9 @@ end
 ---@param startX number
 ---@param startY number
 ---@param inherit Banana.Renderer.InheritedProperties
----@param extra_ Banana.Renderer.ExtraInfo
+---@param extra Banana.Renderer.ExtraInfo
 ---@return Banana.Box, integer
-function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra_)
+function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra)
     inherit.min_size = true
     inherit.min_size_direction = "horizontal"
     local takenWidth = 0
@@ -759,7 +761,7 @@ function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, start
         if v:firstStyleValue("flex-shrink") == 0 then
             inherit.min_size = false
         end
-        local rendered = v.actualTag:getRendered(v, hl, parentWidth, parentHeight, startX, startY, inherit, extra_)
+        local rendered = v.actualTag:getRendered(v, hl, parentWidth, parentHeight, startX, startY, inherit, extra)
         if rendered:getHeight() < currentHeight then
             rendered:expandHeightTo(currentHeight)
         end
@@ -786,6 +788,17 @@ function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, start
         takenWidth = takenWidth + rendered:getWidth()
 
         ::continue::
+    end
+
+    if extra.debug then
+        extra.trace:appendBoxBelow(traceBreak("flex w/o fr"))
+        extra.trace:appendBoxBelow(ast:_testDumpBox())
+        for i, v in ipairs(renders) do
+            if v ~= nil then
+                extra.trace:appendBoxBelow(traceBreak(i .. ""))
+                extra.trace:appendBoxBelow(v[1]:render(true))
+            end
+        end
     end
 
     -- compute frs
@@ -819,7 +832,7 @@ function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, start
         v:resolveUnits(parentWidth, parentHeight, {
             width
         })
-        local rendered = v.actualTag:getRendered(v, hl, parentWidth, parentHeight, startX, startY, inherit, extra_)
+        local rendered = v.actualTag:getRendered(v, hl, parentWidth, parentHeight, startX, startY, inherit, extra)
         if rendered:getHeight() < currentHeight then
             rendered:expandHeightTo(currentHeight)
         end
@@ -842,6 +855,16 @@ function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, start
         end
 
         takenWidth = takenWidth + rendered:getWidth()
+    end
+    if extra.debug then
+        extra.trace:appendBoxBelow(traceBreak("flex w/ fr"))
+        extra.trace:appendBoxBelow(ast:_testDumpBox())
+        for i, v in ipairs(renders) do
+            if v ~= nil then
+                extra.trace:appendBoxBelow(traceBreak(i .. ""))
+                extra.trace:appendBoxBelow(v[1]:render(true))
+            end
+        end
     end
 
     -- flex-grow
@@ -866,6 +889,16 @@ function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, start
                     renders[i][2]:_increaseWidthBoundBy(grow)
                 end
                 i = i + 1
+            end
+        end
+    end
+    if extra.debug then
+        extra.trace:appendBoxBelow(traceBreak("flex-grow"))
+        extra.trace:appendBoxBelow(ast:_testDumpBox())
+        for i, v in ipairs(renders) do
+            if v ~= nil then
+                extra.trace:appendBoxBelow(traceBreak(i .. ""))
+                extra.trace:appendBoxBelow(v[1]:render(true))
             end
         end
     end

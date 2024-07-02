@@ -5,7 +5,7 @@ local render = require('banana.render')
 M.yeet = function()
 	if instance == nil then
 		instance = render.newInstance("flex", "asdf")
-		instance.DEBUG = false
+		-- instance.DEBUG = false
 	end
 	-- local filename = os.getenv("HOME") .. '/projects/banana.nvim/test.nml'
 	instance:open()
