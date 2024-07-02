@@ -12,16 +12,28 @@
       body > div {
         display: flex;
       }
+      body > div > div {
+        hl-bg: red;
+        margin-left: 1ch;
+        padding: 2ch 1ch;
+        flex-shrink: 1;
+      }
+
+      .one {
+
+        height: 5ch;
+        flex-grow: 1;
+      }
     </style>
   </head>
   <body>
 
     <div>
-      <div>
-        asdf
+    <div>
+      <bound >
       </div>
-      <div>
-        asdf
+    <div>
+      <bound >
       </div>
     </div>
   </body>

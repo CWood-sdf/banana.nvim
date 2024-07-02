@@ -52,7 +52,20 @@ function Validation:passes(value, name)
         end
         if passes then return true end
     end
-    return false
+    local msg = "Validation for property " .. name .. " failed. Expected:\n"
+    for _, v in ipairs(validations) do
+        local line = "  "
+        for _, tp in ipairs(v) do
+            line = line .. tp .. ", or"
+        end
+        line = line .. "\n"
+        msg = msg .. line
+    end
+    msg = msg .. "but got:\n  "
+    for _, v in ipairs(value) do
+        msg = msg .. v.type .. ","
+    end
+    error(msg)
 end
 
 ---@param a Banana.Ncss.StyleValue[]
@@ -78,6 +91,7 @@ local singleUnit = Validation:new(function(a)
     return #a == 1 and a[1].type == "unit"
 end)
 local singlePlain = Validation:new({ [1] = { { "plain" } } })
+local singleInt = Validation:new({ [1] = { { "integer" } } })
 local singleStringOrPlain = Validation:new({ [1] = { { "string" }, { "plain" } } })
 ---@type { [string]: Banana.Ncss.PropertyValidation }
 local validations = {
@@ -93,6 +107,8 @@ local validations = {
     ['width'] = singleUnit,
     ['height'] = singleUnit,
     ['display'] = singlePlain,
+    ['flex-shrink'] = singleInt,
+    ['flex-grow'] = singleInt,
     ['text-align'] = singlePlain,
     ['position'] = singlePlain,
     ['z-index'] = Validation:new({ [1] = { { "integer" } } }),

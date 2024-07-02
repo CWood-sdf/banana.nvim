@@ -426,7 +426,7 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
         __index = PartialRendered,
     })
     local extraWidth = parentWidth - ret:getWidth() - ast:_extraLr()
-    if isExpandable(ast, extraWidth) then
+    if isExpandable(ast, extraWidth) and (not inherit.min_size or inherit.min_size_direction == "vertical") then
         ret.center:clean()
         ret.widthExpansion = extraWidth
         if inherit.text_align == "left" then
@@ -441,7 +441,7 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
             extra.trace:appendBoxBelow(ret:render(true))
         end
     end
-    if ast.style['height'] ~= nil and not ast:parent():isNil() then
+    if ast.style['height'] ~= nil and not ast:parent():isNil() and (not inherit.min_size or inherit.min_size_direction == "horizontal") then
         ret.center:clean()
         local height = ast.style['height'][1].value.computed
             - ast:paddingTop() - ast:paddingBottom()
@@ -465,8 +465,7 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
     boundBox.rightX = boundBox.leftX + ret:getWidth()
     boundBox.bottomY = boundBox.topY + ret:getHeight()
     ast.boundBox = boundBox
-    if position == "static" then
-    else
+    if position ~= "static" then
         local newRet = b.Box:new(parentHl)
         local render = ret:render(true)
         while newRet:height() < render:height() do
@@ -740,6 +739,10 @@ function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, start
     local renders = {}
     ---@type integer[]
     local needed = {}
+    local currentHeight = 0
+    local rendersLen = 1
+
+    -- base render for non fr els
     for i, v in ipairs(ast.nodes) do
         if type(v) == "string" then
             goto continue
@@ -748,23 +751,53 @@ function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, start
         if not hasNoFrUnits(v) then
             table.insert(renders, nil)
             table.insert(needed, i)
+            rendersLen = rendersLen + 1
             goto continue
         end
 
         v:resolveUnits(parentWidth, parentHeight)
+        if v:firstStyleValue("flex-shrink") == 0 then
+            inherit.min_size = false
+        end
         local rendered = v.actualTag:getRendered(v, hl, parentWidth, parentHeight, startX, startY, inherit, extra_)
-
-        if v:firstStyleValue("flex-shrink") ~= 0 then
-            rendered.widthExpansion = 0
+        if rendered:getHeight() < currentHeight then
+            rendered:expandHeightTo(currentHeight)
         end
 
+        inherit.min_size = true
+
         table.insert(renders, { rendered, v })
+        rendersLen = rendersLen + 1
+        if rendered:getHeight() > currentHeight then
+            currentHeight = rendered:getHeight()
+            for j = 1, rendersLen - 1 do
+                local render = renders[j]
+                if render == nil then
+                    goto continue
+                end
+                local inc = currentHeight - render[1]:getHeight()
+
+                render[1]:expandHeightTo(currentHeight)
+                render[2]:_increaseWidthBoundBy(inc)
+                ::continue::
+            end
+        end
 
         takenWidth = takenWidth + rendered:getWidth()
 
         ::continue::
     end
+
+    -- compute frs
     local widthLeft = parentWidth - takenWidth
+    for _, i in ipairs(needed) do
+        local v = ast.nodes[i]
+        ---@cast v Banana.Ast
+        v:resolveUnits(parentWidth, parentHeight, {
+            0
+        })
+        widthLeft = widthLeft - v:marginLeft() - v:marginRight()
+    end
     local frProp = "width"
     local totalFrs = 0
     for _, i in ipairs(needed) do
@@ -772,14 +805,94 @@ function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, start
         ---@cast v Banana.Ast
         totalFrs = totalFrs + v:firstStyleValue(frProp).value
     end
-    local frWidth = widthLeft / totalFrs
+    local frWidth = math.floor(widthLeft / totalFrs)
+    local extraCharsNeeded = widthLeft - totalFrs * frWidth
+    inherit.min_size = true
     for _, i in ipairs(needed) do
         local v = ast.nodes[i]
+        local width = frWidth
+        if extraCharsNeeded > 0 then
+            width = width + 1
+            extraCharsNeeded = extraCharsNeeded - 1
+        end
         ---@cast v Banana.Ast
         v:resolveUnits(parentWidth, parentHeight, {
-            frWidth
+            width
         })
+        local rendered = v.actualTag:getRendered(v, hl, parentWidth, parentHeight, startX, startY, inherit, extra_)
+        if rendered:getHeight() < currentHeight then
+            rendered:expandHeightTo(currentHeight)
+        end
+
+        table.insert(renders, { rendered, v })
+        rendersLen = rendersLen + 1
+        if rendered:getHeight() > currentHeight then
+            currentHeight = rendered:getHeight()
+            for j = 1, rendersLen - 1 do
+                local render = renders[j]
+                if render == nil then
+                    goto continue
+                end
+                local inc = currentHeight - render[1]:getHeight()
+
+                render[1]:expandHeightTo(currentHeight)
+                render[2]:_increaseWidthBoundBy(inc)
+                ::continue::
+            end
+        end
+
+        takenWidth = takenWidth + rendered:getWidth()
     end
+
+    -- flex-grow
+    if takenWidth < parentWidth then
+        local totalGrows = 0
+        for node in ast:childIter() do
+            totalGrows = totalGrows + node:firstStyleValue("flex-grow", 0)
+        end
+        if totalGrows > 0 then
+            local growPer = math.floor((parentWidth - takenWidth) / totalGrows)
+            local extraGrow = parentWidth - takenWidth - growPer * totalGrows
+            -- compute flex grow
+            local i = 1
+            for node in ast:childIter() do
+                if node:firstStyleValue("flex-grow", 0) ~= 0 then
+                    local grow = growPer * node:firstStyleValue("flex-grow", 0)
+                    if extraGrow > 0 then
+                        grow = grow + 1
+                        extraGrow = extraGrow - 1
+                    end
+                    renders[i][1].widthExpansion = renders[i][1].widthExpansion + grow
+                    renders[i][2]:_increaseWidthBoundBy(grow)
+                end
+                i = i + 1
+            end
+        end
+    end
+
+
+    local inc = 0
+    --- post processing cleanup to readjust bound boxes
+    if #renders == 0 then
+        -- use goto to save indentation
+        goto skip
+    end
+
+    for i = 2, #renders do
+        local prev = renders[i - 1]
+        if prev == nil then
+            error("Unreachable: rendered value does not exist in flex box")
+        end
+        inc = inc + prev[1]:getWidth()
+        local v = renders[i]
+        if v == nil then
+            error("Unreachable: rendered value does not exist in flex box")
+        end
+        v[2]:_increaseLeftBound(inc)
+    end
+
+    ::skip::
+
     local ret = b.Box:new(hl)
     for _, v in ipairs(renders) do
         ret:append(v[1]:render(), nil)

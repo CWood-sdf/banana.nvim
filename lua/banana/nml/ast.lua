@@ -650,6 +650,29 @@ function M.Ast:_testDumpBox()
 end
 
 ---@param number number
+function M.Ast:_increaseLeftBound(number)
+    if self.boundBox == nil then
+        return
+    end
+    self.boundBox.leftX = self.boundBox.leftX + number
+    self.boundBox.rightX = self.boundBox.rightX + number
+    if self.relativeBoxId ~= nil then
+        local root = self
+        repeat
+            root = root._parent
+            if root == nil then
+                return
+            end
+        until root.relativeBoxes ~= nil
+        local box = root.relativeBoxes[self.relativeBoxId]
+        box.left = box.left + number
+    end
+    for child in self:childIter() do
+        child:_increaseLeftBound(number)
+    end
+end
+
+---@param number number
 function M.Ast:_increaseTopBound(number)
     if self.boundBox == nil then
         return
@@ -660,10 +683,24 @@ function M.Ast:_increaseTopBound(number)
         local root = self
         repeat
             root = root._parent
+            if root == nil then
+                return
+            end
         until root.relativeBoxes ~= nil
         local box = root.relativeBoxes[self.relativeBoxId]
         box.top = box.top + number
     end
+    for child in self:childIter() do
+        child:_increaseTopBound(number)
+    end
+end
+
+function M.Ast:_increaseHeightBoundBy(delta)
+    self.boundBox.bottomY = self.boundBox.bottomY + delta
+end
+
+function M.Ast:_increaseWidthBoundBy(delta)
+    self.boundBox.rightX = self.boundBox.rightX + delta
 end
 
 function M.Ast:removeChildren()
