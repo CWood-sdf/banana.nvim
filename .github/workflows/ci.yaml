@@ -21,10 +21,6 @@ jobs:
           chmod a+x ./nvim.appimage
           ./nvim.appimage --appimage-extract
           echo "/tmp/nvim/squashfs-root/usr/bin/" >> $GITHUB_PATH
-      - name: install stuff
-        run: |
-          chmod a+x ./build.sh
-          ./build.sh
       - name: Run Tests
         run: |
           nvim --version
