@@ -45,7 +45,6 @@ module.exports = grammar({
                 "meta",
                 "br",
                 "hr",
-                //NOTE: BOUND IS TEMPORARY FOR TESTING
                 "bound",
             ),
 

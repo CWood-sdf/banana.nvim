@@ -45,6 +45,7 @@ local instances = {}
 ---@field augroup number
 ---@field stripRight boolean
 ---@field rendering boolean
+---@field showPerf boolean
 local Instance = {}
 
 ---@class (exact) Banana.Word
@@ -119,9 +120,10 @@ function Instance:new()
     local id = #instances
     ---@type Banana.Instance
     local inst = {
+        showPerf = false,
         rendering = false,
         stripRight = true,
-        DEBUG = true,
+        DEBUG = false,
         isVisible = false,
         foreignStyles = {},
         renderStart = 0,
@@ -540,7 +542,7 @@ function Instance:render()
     self.scripts = {}
     local hlTime = vim.loop.hrtime() - startTime
     totalTime = totalTime + vim.loop.hrtime() - actualStart
-    if self.DEBUG then
+    if self.DEBUG or self.showPerf then
         local extraLines = {
             "",
             astTime / 1e3 .. "μs to parse",

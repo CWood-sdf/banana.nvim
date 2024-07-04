@@ -1,2 +1,0 @@
-#!/bin/bash
-clang scanner.c secondParser.c parser.c -shared -o ncssParser2.so -I.

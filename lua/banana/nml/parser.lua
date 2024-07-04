@@ -371,17 +371,7 @@ end
 ---@param content string
 ---@return Banana.Nml.Parser
 function M.fromString(content)
-    require('banana').initTsParsers()
-    local buf = vim.api.nvim_create_buf(false, true)
-    vim.api.nvim_set_option_value("modifiable", true, { buf = buf })
-    vim.api.nvim_buf_set_lines(buf, 0, -1, false, vim.split(content, "\n"))
-    vim.api.nvim_set_option_value("modifiable", false, { buf = buf })
-    vim.api.nvim_set_option_value("modified", false, { buf = buf })
-    vim.api.nvim_set_option_value("filetype", "nml", { buf = buf })
-    vim.api.nvim_set_option_value("buflisted", false, { buf = buf })
-    vim.api.nvim_set_option_value("swapfile", false, { buf = buf })
-    vim.treesitter.start(buf, "nml")
-    local langTree = vim.treesitter.get_parser(buf, "nml")
+    local langTree = vim.treesitter.get_string_parser(content, "nml", {})
     local arr = langTree:parse(true)
     local ncssChild = langTree:children()['ncss']
     local ncssParsers = {}
@@ -398,7 +388,6 @@ function M.fromString(content)
         "y r u gay")
 
     -- delete the buffer
-    vim.api.nvim_buf_delete(buf, { force = true })
 
     local lex = lexer.fromString(content)
 

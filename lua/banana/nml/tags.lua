@@ -716,8 +716,8 @@ local function hasNoFrUnits(ast)
 end
 
 -- Flex todo:
--- impl flex grow
--- impl flex shrink
+-- flex-direction
+-- flex-wrap
 -- impl emergency shrink
 -- impl double emergency float rendering
 

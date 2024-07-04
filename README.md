@@ -30,7 +30,7 @@ This plugin seeks to turn neovim into a hypermedia client through its own custom
 - [x] Good attributes api
 - [x] DOM Manipulation
 - [ ] Hypermedia attributes
-- [ ] Basic templating (maybe just substitution of attribute values)
+- [x] Basic templating (maybe just substitution of attribute values)
 - [x] Read File
 
 ### Styling Language
@@ -54,6 +54,15 @@ This plugin seeks to turn neovim into a hypermedia client through its own custom
 - [x] list-style-type (needed for ol)
 - [ ] max/min-\*size
 - [ ] float: seems hard, do later
+
+### Flex box
+
+- [x] flex-grow
+- [ ] flex-direction
+- [ ] flex-wrap
+- [ ] flex-basis
+- [x] fr units
+- [x] flex-shrink
 
 ### Abs/float position
 
