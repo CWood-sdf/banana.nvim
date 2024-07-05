@@ -1,14 +1,14 @@
 ---@param document Banana.Instance
 return function(document)
-  local children = document:querySelectorAll("#flex > div")
-  vim.defer_fn(function()
-    children[1]:addClass("asdf")
-  end, 1000)
-
-  vim.defer_fn(function()
-    children[1]:removeClass("asdf")
-    children[2]:addClass("asdf")
-  end, 4000)
+  -- local children = document:querySelectorAll("#flex > div")
+  -- vim.defer_fn(function()
+  --   children[1]:addClass("asdf")
+  -- end, 1000)
+  --
+  -- vim.defer_fn(function()
+  --   children[1]:removeClass("asdf")
+  --   children[2]:addClass("asdf")
+  -- end, 4000)
   -- document.DEBUG = true
   -- local flex = document:getElementById("flex")
   -- local i = 1

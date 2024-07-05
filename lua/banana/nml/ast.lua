@@ -31,6 +31,7 @@ M.padNames = { "left", "top", "right", "bottom" }
 ---@field absoluteAsts? Banana.Ast[]
 ---@field relativeBoxId? number
 ---@field relativeBoxes? { box: Banana.Box, left: number, top: number, z: number}[]
+---@field listCounter? number
 M.Ast = {
     nodes = {},
     tag = "",
@@ -96,6 +97,9 @@ function M.Ast:new(tag, parent)
         },
         style = {},
     }
+    if tag == "li" then
+        ast.listCounter = 1
+    end
     setmetatable(ast, { __index = M.Ast })
     return ast
 end
@@ -227,7 +231,19 @@ function M.Ast:marginBottom()
     return self.margin[M.bottom].computed
 end
 
+---@return string
+function M.Ast:_getNextListItem()
+    if self.listCounter == nil then
+        return "- "
+    end
+    local ret = self.listCounter .. ". "
+    return ret
+end
+
 function M.Ast:defaultStyles()
+    if self.listCounter ~= nil then
+        self.listCounter = 1
+    end
     self.padding = {
         {
             value = 0,

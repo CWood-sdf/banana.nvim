@@ -19,12 +19,14 @@ local b = require('banana.box')
 ---@field marginColor? Banana.Highlight
 ---@field mainColor? Banana.Highlight
 ---@field renderAlign "left"|"center"|"right"
+---@field maxWidth number
 local PartialRendered = {}
 
 ---@return Banana.Renderer.PartialRendered
 local function emptyPartialRendered()
     ---@type Banana.Renderer.PartialRendered
     local ret = {
+        maxWidth = 0,
         renderAlign = "left",
         mainColor = {},
         marginColor = {},
@@ -420,19 +422,13 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
         extra.trace:appendBoxBelow(centerBox:clone())
     end
     ---@type Banana.Renderer.PartialRendered
-    local ret = {
-        margin = margin,
-        padding = padding,
-        center = centerBox,
-        widthExpansion = 0,
-        heightExpansion = 0,
-        marginColor = parentHl,
-        mainColor = centerBox.hlgroup,
-        renderAlign = "left",
-    }
-    setmetatable(ret, {
-        __index = PartialRendered,
-    })
+    local ret = emptyPartialRendered()
+    ret.margin = margin
+    ret.padding = padding
+    ret.center = centerBox
+    ret.marginColor = parentHl
+    ret.mainColor = centerBox.hlgroup
+    ret.renderAlign = "left"
     local extraWidth = parentWidth - ret:getWidth() - ast:_extraLr()
     if isExpandable(ast, extraWidth) and (not inherit.min_size or inherit.min_size_direction == "vertical") then
         ret.center:clean()
@@ -621,9 +617,15 @@ end
 ---@param hl Banana.Highlight?
 ---@return Banana.Box, Banana.Box
 local function splitLineBoxOnce(targetWidth, box, hl)
+    if targetWidth < 1 then
+        targetWidth = 1
+    end
     if box:width() < targetWidth then
         return box, b.Box:new(hl)
     end
+    -- if targetWidth == 0 then
+    --     targetWidth = 1
+    -- end
     local left = b.Box:new(hl)
     left:appendStr("", nil)
     local right = b.Box:new(hl)
@@ -721,7 +723,6 @@ end
 -- impl emergency shrink
 -- impl double emergency float rendering
 
-
 ---Renders everything in a flex block
 ---@param ast Banana.Ast
 ---@param parentHl Banana.Highlight?
@@ -733,8 +734,8 @@ end
 ---@param extra Banana.Renderer.ExtraInfo
 ---@return Banana.Box, integer
 function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra)
+    local oldMinSize = inherit.min_size
     inherit.min_size = true
-    inherit.min_size_direction = "horizontal"
     local takenWidth = 0
     local hl = ast:mixHl(parentHl)
     ---@type ([Banana.Renderer.PartialRendered, Banana.Ast]?)[]
@@ -780,7 +781,7 @@ function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, start
                 local inc = currentHeight - render[1]:getHeight()
 
                 render[1]:expandHeightTo(currentHeight)
-                render[2]:_increaseWidthBoundBy(inc)
+                render[2]:_increaseHeightBoundBy(inc)
                 ::continue::
             end
         end
@@ -930,6 +931,7 @@ function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, start
     for _, v in ipairs(renders) do
         ret:append(v[1]:render(), nil)
     end
+    inherit.min_size = oldMinSize
 
     return ret, #ast.nodes + 1
 end

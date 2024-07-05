@@ -6,7 +6,7 @@ function M.bufToBgMap(bufnr)
     local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
     local ret = {}
     local bgI = 1
-    local bgTypes = " ~!@#$%^&*"
+    local bgTypes = " ~!@#$%^&*()_+"
     local foundBgs = {
 
     }
@@ -47,12 +47,6 @@ end
 ---@param bufMap string[]
 ---@param expectedMap string[]
 function M.assertBgMapsMatch(bufMap, expectedMap)
-    for i, v in ipairs(bufMap) do
-        bufMap[i] = v:gsub("%s*$", "")
-    end
-    for i, v in ipairs(expectedMap) do
-        expectedMap[i] = v:gsub("%s*$", "")
-    end
     local i = 1
     while i <= #bufMap and i <= #expectedMap do
         if bufMap[i] ~= expectedMap[i] then
@@ -62,13 +56,13 @@ function M.assertBgMapsMatch(bufMap, expectedMap)
         i = i + 1
     end
     while i <= #expectedMap do
-        if expectedMap[i] ~= "" then
+        if expectedMap[i]:gsub("%s*$", "") ~= "" then
             error("Expected no more lines after end")
         end
         i = i + 1
     end
     while i <= #bufMap do
-        if bufMap[i] ~= "" then
+        if bufMap[i]:gsub("%s*$", "") ~= "" then
             error("Expected no more lines after end of expected")
         end
         i = i + 1

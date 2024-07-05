@@ -33,13 +33,25 @@
   </head>
   <body>
 
-    <div id="flex">
+    <!--<div id="flex">
     <div>
       asdf
       </div>
     <div>
       asdf
       </div>
+    </div>-->
+    <span style="width: 5ch; hl-bg: black;">
+    asd asd
+    </span>
+    <div id="flex" >
+    <div>
+    asdfadf
+    </div>
+    </div>
+
+    <div style="width: 10ch; hl-bg: blue; padding-left: 10ch;">
+    asdf
     </div>
 
     <script src="flexStuff">
