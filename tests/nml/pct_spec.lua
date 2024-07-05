@@ -32,6 +32,27 @@ describe("Percentage tests", function()
         inst.DEBUG = false
         inst.stripRight = false
         inst:open()
+        inst:getElementsByTag("div")[1]:setStyleValue("margin-left", "50%")
+
+        local expectedMap = {
+            "        ",
+            "    ~~~~",
+            "    ~~~~",
+            "    ~~~~",
+            "    ~~~~",
+            "        ",
+            "        ",
+            "        ",
+        }
+        inst:forceRerender()
+        h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
+    end)
+    it("regular percents", function()
+        local inst = require('banana.render').emptyInstance()
+        inst:useNml(code)
+        inst.DEBUG = false
+        inst.stripRight = false
+        inst:open()
 
         local expectedMap = {
             "        ",
