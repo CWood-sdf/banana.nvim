@@ -417,9 +417,9 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
         bottom = 0,
     }
     if extra.debug then
-        extra.trace:appendBoxBelow(traceBreak("Raw render"))
-        extra.trace:appendBoxBelow(ast:_testDumpBox())
-        extra.trace:appendBoxBelow(centerBox:clone())
+        extra.trace:appendBoxBelow(traceBreak("Raw render"), false)
+        extra.trace:appendBoxBelow(ast:_testDumpBox(), false)
+        extra.trace:appendBoxBelow(centerBox:clone(), false)
     end
     ---@type Banana.Renderer.PartialRendered
     local ret = emptyPartialRendered()
@@ -440,9 +440,9 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
             ret.renderAlign = "center"
         end
         if extra.debug then
-            extra.trace:appendBoxBelow(traceBreak("Expansion w"))
-            extra.trace:appendBoxBelow(ast:_testDumpBox())
-            extra.trace:appendBoxBelow(ret:render(true))
+            extra.trace:appendBoxBelow(traceBreak("Expansion w"), false)
+            extra.trace:appendBoxBelow(ast:_testDumpBox(), false)
+            extra.trace:appendBoxBelow(ret:render(true), false)
         end
     end
     if ast.style['height'] ~= nil and not ast:parent():isNil() and (not inherit.min_size or inherit.min_size_direction == "horizontal") then
@@ -452,18 +452,18 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
         ret.heightExpansion = height - ret.center:height()
         ---@cast height number
         if extra.debug then
-            extra.trace:appendBoxBelow(traceBreak("Expansion h"))
-            extra.trace:appendBoxBelow(ast:_testDumpBox())
-            extra.trace:appendBoxBelow(ret:render(true))
+            extra.trace:appendBoxBelow(traceBreak("Expansion h"), false)
+            extra.trace:appendBoxBelow(ast:_testDumpBox(), false)
+            extra.trace:appendBoxBelow(ret:render(true), false)
         end
     end
     local changed = false
     ret, changed = applyPad('padding', ast, ret)
     if changed then
         if extra.debug then
-            extra.trace:appendBoxBelow(traceBreak("pad"))
-            extra.trace:appendBoxBelow(ast:_testDumpBox())
-            extra.trace:appendBoxBelow(ret:render(true))
+            extra.trace:appendBoxBelow(traceBreak("pad"), false)
+            extra.trace:appendBoxBelow(ast:_testDumpBox(), false)
+            extra.trace:appendBoxBelow(ret:render(true), false)
         end
     end
     boundBox.rightX = boundBox.leftX + ret:getWidth()
@@ -479,12 +479,12 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
         end
         newRet:clean()
         if extra.debug then
-            extra.trace:appendBoxBelow(traceBreak("float render"))
-            extra.trace:appendBoxBelow(ast:_testDumpBox())
-            extra.trace:appendBoxBelow(render:clone())
-            extra.trace:appendBoxBelow(traceBreak("extraRender render"))
-            extra.trace:appendBoxBelow(ast:_testDumpBox())
-            extra.trace:appendBoxBelow(newRet:clone())
+            extra.trace:appendBoxBelow(traceBreak("float render"), false)
+            extra.trace:appendBoxBelow(ast:_testDumpBox(), false)
+            extra.trace:appendBoxBelow(render:clone(), false)
+            extra.trace:appendBoxBelow(traceBreak("extraRender render"), false)
+            extra.trace:appendBoxBelow(ast:_testDumpBox(), false)
+            extra.trace:appendBoxBelow(newRet:clone(), false)
         end
         local root = ast
         while root.relativeBoxes == nil do
@@ -516,17 +516,17 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
             startY = startY + ast.style.bottom[1].value.computed
         end
         if extra.debug then
-            extra.trace:appendBoxBelow(traceBreak("new render"))
-            extra.trace:appendBoxBelow(ast:_testDumpBox())
-            extra.trace:appendBoxBelow(ret:render(true))
+            extra.trace:appendBoxBelow(traceBreak("new render"), false)
+            extra.trace:appendBoxBelow(ast:_testDumpBox(), false)
+            extra.trace:appendBoxBelow(ret:render(true), false)
         end
     end
     ret, changed = applyPad('margin', ast, ret)
     if changed then
         if extra.debug then
-            extra.trace:appendBoxBelow(traceBreak("margin"))
-            extra.trace:appendBoxBelow(ast:_testDumpBox())
-            extra.trace:appendBoxBelow(ret:render(true))
+            extra.trace:appendBoxBelow(traceBreak("margin"), false)
+            extra.trace:appendBoxBelow(ast:_testDumpBox(), false)
+            extra.trace:appendBoxBelow(ret:render(true), false)
         end
     end
     if ast.absoluteAsts ~= nil then
@@ -792,12 +792,12 @@ function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, start
     end
 
     if extra.debug then
-        extra.trace:appendBoxBelow(traceBreak("flex w/o fr"))
-        extra.trace:appendBoxBelow(ast:_testDumpBox())
+        extra.trace:appendBoxBelow(traceBreak("flex w/o fr"), false)
+        extra.trace:appendBoxBelow(ast:_testDumpBox(), false)
         for i, v in ipairs(renders) do
             if v ~= nil then
-                extra.trace:appendBoxBelow(traceBreak(i .. ""))
-                extra.trace:appendBoxBelow(v[1]:render(true))
+                extra.trace:appendBoxBelow(traceBreak(i .. ""), false)
+                extra.trace:appendBoxBelow(v[1]:render(true), false)
             end
         end
     end
@@ -858,12 +858,12 @@ function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, start
         takenWidth = takenWidth + rendered:getWidth()
     end
     if extra.debug then
-        extra.trace:appendBoxBelow(traceBreak("flex w/ fr"))
-        extra.trace:appendBoxBelow(ast:_testDumpBox())
+        extra.trace:appendBoxBelow(traceBreak("flex w/ fr"), false)
+        extra.trace:appendBoxBelow(ast:_testDumpBox(), false)
         for i, v in ipairs(renders) do
             if v ~= nil then
-                extra.trace:appendBoxBelow(traceBreak(i .. ""))
-                extra.trace:appendBoxBelow(v[1]:render(true))
+                extra.trace:appendBoxBelow(traceBreak(i .. ""), false)
+                extra.trace:appendBoxBelow(v[1]:render(true), false)
             end
         end
     end
@@ -894,12 +894,12 @@ function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, start
         end
     end
     if extra.debug then
-        extra.trace:appendBoxBelow(traceBreak("flex-grow"))
-        extra.trace:appendBoxBelow(ast:_testDumpBox())
+        extra.trace:appendBoxBelow(traceBreak("flex-grow"), false)
+        extra.trace:appendBoxBelow(ast:_testDumpBox(), false)
         for i, v in ipairs(renders) do
             if v ~= nil then
-                extra.trace:appendBoxBelow(traceBreak(i .. ""))
-                extra.trace:appendBoxBelow(v[1]:render(true))
+                extra.trace:appendBoxBelow(traceBreak(i .. ""), false)
+                extra.trace:appendBoxBelow(v[1]:render(true), false)
             end
         end
     end
