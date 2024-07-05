@@ -1,6 +1,7 @@
 --- from folke/noice.nvim
 local M = {}
 
+-- literally just so that I can have treesitter highlighting for tests
 function nml(str)
     return str
 end

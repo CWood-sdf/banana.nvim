@@ -195,7 +195,6 @@ end
 ---@field text_align string
 ---@field position "static"|"absolute"|"sticky"|"relative"
 ---@field min_size boolean
----@field min_size_direction "horizontal"|"vertical"
 
 ---@class (exact) Banana.Renderer.InitialProperties: Banana.Renderer.InheritedProperties
 ---@field flex_shrink number
@@ -266,20 +265,20 @@ local TagInfo = {
 ---@return Banana.Renderer.PartialRendered, boolean
 local function applyPad(name, ast, ret)
     local changed = false
-    if ast[name][_ast.left].value ~= 0 then
-        ret[name].left = ast[name][_ast.left].value
+    if ast[name][_ast.left].computed ~= 0 then
+        ret[name].left = ast[name][_ast.left].computed
         changed = true
     end
-    if ast[name][_ast.right].value ~= 0 then
-        ret[name].right = ast[name][_ast.right].value
+    if ast[name][_ast.right].computed ~= 0 then
+        ret[name].right = ast[name][_ast.right].computed
         changed = true
     end
-    if ast[name][_ast.top].value ~= 0 then
-        ret[name].top = ast[name][_ast.top].value
+    if ast[name][_ast.top].computed ~= 0 then
+        ret[name].top = ast[name][_ast.top].computed
         changed = true
     end
-    if ast[name][_ast.bottom].value ~= 0 then
-        ret[name].bottom = ast[name][_ast.bottom].value
+    if ast[name][_ast.bottom].computed ~= 0 then
+        ret[name].bottom = ast[name][_ast.bottom].computed
         changed = true
     end
     return ret, changed
@@ -359,11 +358,12 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
         return emptyPartialRendered()
     end
     if ast:hasStyle('width') then
+        -- add margins bc width only sets content-width + padding
         ---@diagnostic disable-next-line: cast-local-type
         parentWidth = math.min(
             ast:firstStyleValue('width').computed + ast:marginLeft() + ast:marginRight(),
             parentWidth)
-        if inherit.min_size_direction == "horizontal" and inherit.min_size then
+        if inherit.min_size then
             inherit.min_size = false
         end
     end
@@ -372,7 +372,7 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
         parentHeight = math.min(
             ast:firstStyleValue('height').computed + ast:marginTop() + ast:marginBottom(),
             parentHeight)
-        if inherit.min_size_direction == "vertical" and inherit.min_size then
+        if inherit.min_size then
             inherit.min_size = false
         end
     end
@@ -399,9 +399,10 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
     }
     startX = startX + ast:paddingLeft()
     startY = startY + ast:paddingTop()
+    local contentWidth = parentWidth - ast:_extraLr()
     ---@cast parentWidth number
     ---@cast parentHeight number
-    local centerBox = self:render(ast, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra)
+    local centerBox = self:render(ast, parentHl, contentWidth, parentHeight, startX, startY, inherit, extra)
     ---@type Banana.Renderer.Surround
     local margin = {
         left = 0,
@@ -430,7 +431,7 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
     ret.mainColor = centerBox.hlgroup
     ret.renderAlign = "left"
     local extraWidth = parentWidth - ret:getWidth() - ast:_extraLr()
-    if isExpandable(ast, extraWidth) and (not inherit.min_size or inherit.min_size_direction == "vertical") then
+    if isExpandable(ast, extraWidth) and not inherit.min_size then
         ret.center:clean()
         ret.widthExpansion = extraWidth
         if inherit.text_align == "left" then
@@ -445,7 +446,7 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
             extra.trace:appendBoxBelow(ret:render(true), false)
         end
     end
-    if ast.style['height'] ~= nil and not ast:parent():isNil() and (not inherit.min_size or inherit.min_size_direction == "horizontal") then
+    if ast.style['height'] ~= nil and not ast:parent():isNil() then
         ret.center:clean()
         local height = ast.style['height'][1].value.computed
             - ast:paddingTop() - ast:paddingBottom()
@@ -950,8 +951,8 @@ end
 function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX, startY, inherit, extra_)
     local currentLine = b.Box:new(parentHl)
     local hasElements = false
-    local width = parentWidth - ast:_extraLr()
-    local height = parentHeight - ast:_extraTb()
+    local width = parentWidth
+    local height = parentHeight
     ---@type Banana.Box?
     local extra = nil
     local startI = i

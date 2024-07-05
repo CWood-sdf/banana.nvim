@@ -457,6 +457,7 @@ function Instance:createWinAndBuf()
         vim.api.nvim_set_current_win(self.winid)
         vim.api.nvim_win_set_buf(self.winid, self.bufnr)
         vim.api.nvim_set_option_value("signcolumn", "no", { win = self.winid })
+        vim.api.nvim_set_option_value("wrap", false, { win = self.winid })
         for k, v in pairs(self.winOpts) do
             vim.api.nvim_set_option_value(k, v, { win = self.winid })
         end
@@ -523,6 +524,9 @@ function Instance:render()
         local lineStr = ""
         for _, word in ipairs(line) do
             lineStr = lineStr .. word.word
+        end
+        if _str.charCount(lineStr) > width and self.DEBUG then
+            print("overflow")
         end
         table.insert(lines, lineStr)
     end

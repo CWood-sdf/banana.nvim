@@ -26,8 +26,6 @@ return function(document)
     end
     root:appendNode(newAst)
   end
-  document:render()
-
 
   for i, v in ipairs(tabline:children()) do
     if type(v) ~= "string" then
@@ -53,12 +51,8 @@ return function(document)
           end
           ::continue::
         end
-        document:render()
       end, {})
     end
   end
   print((vim.uv.hrtime() - startTime) / 1e6 .. "ms")
-
-
-  -- print(document:getElementById("root"):getTextContent())
 end

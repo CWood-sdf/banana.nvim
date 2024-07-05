@@ -13,6 +13,13 @@ This plugin seeks to turn neovim into a hypermedia client through its own custom
 
 ## Roadmap
 
+### Upcoming big projects
+
+- Float
+- Grid
+- Animations + Transitions
+- List stuff
+
 ### Api
 
 - [x] Easy to load nml files
@@ -48,7 +55,7 @@ This plugin seeks to turn neovim into a hypermedia client through its own custom
 - [x] handles overflow
 - [x] text-align (missing justify)
 - [ ] aspect-ratio
-- [ ] display: flexbox, grid, inline, inline-block, none, block
+- [ ] display: flex, grid, inline, inline-block, none, block
 - [x] height/width
 - [ ] list-style
 - [x] list-style-type (needed for ol)

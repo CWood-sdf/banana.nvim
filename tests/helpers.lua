@@ -44,12 +44,24 @@ function M.bufToBgMap(bufnr)
     return ret
 end
 
+function M.printRenders(bufMap, expectedMap)
+    print("Buffer: ")
+    for _, v in ipairs(bufMap) do
+        print(v)
+    end
+    print("Expected: ")
+    for _, v in ipairs(expectedMap) do
+        print(v)
+    end
+end
+
 ---@param bufMap string[]
 ---@param expectedMap string[]
 function M.assertBgMapsMatch(bufMap, expectedMap)
     local i = 1
     while i <= #bufMap and i <= #expectedMap do
         if bufMap[i] ~= expectedMap[i] then
+            M.printRenders(bufMap, expectedMap)
             error("line " ..
                 i .. " expected '" .. bufMap[i] .. "' to be '" .. expectedMap[i] .. "'")
         end
@@ -57,12 +69,14 @@ function M.assertBgMapsMatch(bufMap, expectedMap)
     end
     while i <= #expectedMap do
         if expectedMap[i]:gsub("%s*$", "") ~= "" then
+            M.printRenders(bufMap, expectedMap)
             error("Expected no more lines after end")
         end
         i = i + 1
     end
     while i <= #bufMap do
         if bufMap[i]:gsub("%s*$", "") ~= "" then
+            M.printRenders(bufMap, expectedMap)
             error("Expected no more lines after end of expected")
         end
         i = i + 1

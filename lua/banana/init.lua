@@ -4,7 +4,7 @@ local render = require('banana.render')
 
 M.yeet = function()
 	if instance == nil then
-		instance = render.newInstance("flex", "asdf")
+		instance = render.newInstance("test2", "asdf")
 		instance.DEBUG = true
 	end
 	instance.showPerf = true
