@@ -124,7 +124,7 @@ local function parseNumValue(tree, parser, new)
     if unit ~= nil then
         local unitStr = parser:getStringFromRange({ unit:start() }, { unit:end_() })
 
-        local valStr = valueString:sub(1, _str.charCount(valueString) - _str.charCount(unitStr))
+        local valStr = valueString:sub(1, _str.charWidth(valueString) - _str.charWidth(unitStr))
 
         local val = tonumber(valStr)
         assert(val ~= nil,

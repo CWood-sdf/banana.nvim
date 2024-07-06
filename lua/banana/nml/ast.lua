@@ -231,12 +231,116 @@ function M.Ast:marginBottom()
     return self.margin[M.bottom].computed
 end
 
+---@param styleTp string
 ---@return string
-function M.Ast:_getNextListItem()
-    if self.listCounter == nil then
-        return "- "
+local function getListItemUl(styleTp)
+    if _str.charWidth(styleTp) < 3 then
+        return styleTp
     end
-    local ret = self.listCounter .. ". "
+    if styleTp == "star" then
+        return "*"
+    elseif styleTp == "dash" then
+        return "-"
+    end
+    return "*"
+end
+
+---@param num number
+---@return string
+function M.numToRoman(num)
+    local roman = {
+        { 1000, "M" },
+        { 900,  "CM" },
+        { 500,  "D" },
+        { 400,  "CD" },
+        { 100,  "C" },
+        { 90,   "XC" },
+        { 50,   "L" },
+        { 40,   "XL" },
+        { 10,   "X" },
+        { 9,    "IX" },
+        { 5,    "V" },
+        { 4,    "IV" },
+        { 1,    "I" },
+    }
+    local ret = ""
+    for _, v in ipairs(roman) do
+        while num >= v[1] do
+            ret = ret .. v[2]
+            num = num - v[1]
+        end
+    end
+    return ret
+end
+
+---@param styleTp string
+---@param counter number
+---@return string
+local function getListItemOl(styleTp, counter)
+    if styleTp == "Roman" then
+        return M.numToRoman(counter) .. "."
+    end
+    if styleTp == "roman" then
+        return string.lower(M.numToRoman(counter) .. ".")
+    end
+    if styleTp == "Alpha" then
+        local code = string.byte('A') + counter
+        return string.char(code) .. "."
+    end
+    if styleTp == "alpha" then
+        local code = string.byte('a') + counter
+        return string.char(code) .. "."
+    end
+    if _str.codepointLen(styleTp:sub(1, 1)) == #styleTp then
+        local code = string.byte(styleTp, 1, #styleTp) + counter
+        return string.char(code)
+    end
+    local code = string.byte('1') + counter
+    return string.char(code) .. "."
+end
+
+---Returns a heuristic *guess* at the biggest list item for ol
+---Accurate for ul
+---@return number
+function M.Ast:_getMaxListWidth(styleTp)
+    if self.listCounter == nil then
+        return _str.charWidth(getListItemUl(styleTp)) + 1
+    end
+    local len = #self.nodes
+    if styleTp == "alpha" or styleTp == "Alpha" then
+        return 3
+    end
+    if styleTp == "roman" or styleTp == "Roman" then
+        -- if someone has roman numerals going to over 888 then im kinda scared
+        if len >= 888 then
+            local add = math.floor((len - 888) / 1000)
+            return add + 12
+        end
+        if len >= 388 then return 11 end
+        if len >= 288 then return 10 end
+        if len >= 188 then return 9 end
+        if len >= 88 then return 8 end
+        if len >= 38 then return 7 end
+        if len >= 28 then return 6 end
+        if len >= 18 then return 5 end
+        if len >= 8 then return 4 end
+        if len >= 3 then return 3 end
+        if len >= 2 then return 2 end
+        if len >= 1 then return 1 end
+        return 0
+    end
+
+    return math.ceil(math.log10(len)) + 2
+end
+
+---@param styleTp string
+---@return string
+function M.Ast:_getNextListItem(styleTp)
+    if self.listCounter == nil then
+        return getListItemUl(styleTp) .. " "
+    end
+    local ret        = getListItemOl(styleTp, self.listCounter) .. ' '
+    self.listCounter = self.listCounter + 1
     return ret
 end
 
@@ -537,7 +641,7 @@ function M.Ast:applyStyleDeclarations(declarations, basePrec)
         self.precedences[v.name] = prec
         if v.name:sub(1, 3) == "hl-" then
             self.hl = self.hl or {}
-            local name = v.name:sub(4, _str.charCount(v.name))
+            local name = v.name:sub(4, _str.charWidth(v.name))
 
             local value = v.values[1]
             if value.type == "plain" and value.value == "inherit" then

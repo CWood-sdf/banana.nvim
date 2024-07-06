@@ -8,25 +8,25 @@ local function renderer(self, ast, parentHl, parentWidth, parentHeight, startX, 
     local ret = b.Box:new()
     ret.hlgroup = ast:mixHl(parentHl)
 
-    local count = 1
-    local numSize = 5
-    if ast.style["list-base-width"] ~= nil then
-        numSize = ast.style["list-base-width"][1].value.computed
-        ---@cast numSize number
-    end
-    for i, box, _ in self:blockIter(ast, ret.hlgroup, parentWidth - numSize, parentHeight, startX, startY, inherit, extra) do
-        local v = ast.nodes[i]
-        local currentLine = b.Box:new(ret.hlgroup)
-        if type(v) ~= "string" and t.makeTag(v.tag).name == 'li' then
-            local str = count .. ". "
-            currentLine:appendStr("", nil)
-            currentLine:expandWidthTo(numSize - _str.charCount(str))
-            currentLine:appendStr(count .. ". ", nil)
-            count = count + 1
-        end
-        currentLine:expandWidthTo(numSize)
-        currentLine:append(box, b.MergeStrategy.Bottom)
-        ret:appendBoxBelow(currentLine)
+    -- local count = 1
+    -- local numSize = 5
+    -- if ast.style["list-base-width"] ~= nil then
+    --     numSize = ast.style["list-base-width"][1].value.computed
+    --     ---@cast numSize number
+    -- end
+    for _, box, _ in self:blockIter(ast, ret.hlgroup, parentWidth, parentHeight, startX, startY, inherit, extra) do
+        -- local v = ast.nodes[i]
+        -- local currentLine = b.Box:new(ret.hlgroup)
+        -- if type(v) ~= "string" and t.makeTag(v.tag).name == 'li' then
+        --     local str = count .. ". "
+        --     currentLine:appendStr("", nil)
+        --     currentLine:expandWidthTo(numSize - _str.charWidth(str))
+        --     currentLine:appendStr(count .. ". ", nil)
+        --     count = count + 1
+        -- end
+        -- currentLine:expandWidthTo(numSize)
+        -- currentLine:append(box, b.MergeStrategy.Bottom)
+        ret:appendBoxBelow(box)
     end
     return ret
 end

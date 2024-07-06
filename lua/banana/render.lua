@@ -71,6 +71,7 @@ function Instance:virtualRender(ast, width, height)
             position = "static",
             min_size = false,
             min_size_direction = "horizontal",
+            list_style_type = "star",
         }, extra)
         if self.stripRight then
             local bgNum = vim.api.nvim_get_hl(0, {
@@ -525,7 +526,7 @@ function Instance:render()
         for _, word in ipairs(line) do
             lineStr = lineStr .. word.word
         end
-        if _str.charCount(lineStr) > width and self.DEBUG then
+        if _str.charWidth(lineStr) > width and self.DEBUG then
             print("overflow")
         end
         table.insert(lines, lineStr)
@@ -624,8 +625,8 @@ function Instance:highlight(lines, offset)
                 hlGroup = "NormalFloat"
                 ns = 0
             end
-            vim.api.nvim_buf_add_highlight(self.bufnr, ns, hlGroup, row, col, col + _str.charCount(word.word))
-            col = col + _str.charCount(word.word)
+            vim.api.nvim_buf_add_highlight(self.bufnr, ns, hlGroup, row, col, col + _str.charWidth(word.word))
+            col = col + _str.charWidth(word.word)
         end
         col = 0
         row = row + 1

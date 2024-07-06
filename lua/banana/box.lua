@@ -45,7 +45,7 @@ M.TrimStrategy = {
 function M.lineWidth(line)
     local ret = 0
     for _, v in ipairs(line) do
-        ret = ret + _str.charCount(v.word)
+        ret = ret + _str.charWidth(v.word)
     end
     return ret
 end
@@ -159,6 +159,15 @@ end
 
 ---@param box Banana.Box
 ---@param strat Banana.Box.MergeStrategy?
+function M.Box:appendLeft(box, strat)
+    box:append(self, strat)
+    self.lines = box.lines
+    self.dirty = box.dirty
+    self._width = box._width
+end
+
+---@param box Banana.Box
+---@param strat Banana.Box.MergeStrategy?
 function M.Box:append(box, strat)
     strat = strat or M.MergeStrategy.Top
     self:clean()
@@ -202,6 +211,7 @@ end
 ---@param str string
 ---@param strat Banana.Box.MergeStrategy?
 function M.Box:appendStr(str, strat)
+    strat = strat or M.MergeStrategy.Top
     self:clean()
     ---@type Banana.Word
     local word = {
@@ -210,20 +220,19 @@ function M.Box:appendStr(str, strat)
     }
     if #self.lines == 0 then
         self.lines = { { word } }
-        self._width = _str.charCount(str)
+        self._width = _str.charWidth(str)
         self.dirty = false
     elseif #self.lines == 1 then
         table.insert(self.lines[1], word)
-        self._width = self._width + _str.charCount(str)
+        self._width = self._width + _str.charWidth(str)
         self.dirty = false
+    elseif strat == M.MergeStrategy.Top then
+        table.insert(self.lines[1], word)
+        self._width = math.max(M.lineWidth(self.lines[1]), self._width)
+        self.dirty = true
     else
-        if strat == M.MergeStrategy.Top then
-            table.insert(self.lines[1], word)
-            self._width = math.max(M.lineWidth(self.lines[1]), self._width)
-        else
-            table.insert(self.lines[#self.lines], word)
-            self._width = math.max(M.lineWidth(self.lines[#self.lines]), self._width)
-        end
+        table.insert(self.lines[#self.lines], word)
+        self._width = math.max(M.lineWidth(self.lines[#self.lines]), self._width)
         self.dirty = true
     end
 end
@@ -235,11 +244,11 @@ function M.Box:appendWord(word, strat)
     ---@type Banana.Word
     if #self.lines == 0 then
         self.lines = { { word } }
-        self._width = _str.charCount(word.word)
+        self._width = _str.charWidth(word.word)
         self.dirty = false
     elseif #self.lines == 1 then
         table.insert(self.lines[1], word)
-        self._width = self._width + _str.charCount(word.word)
+        self._width = self._width + _str.charWidth(word.word)
         self.dirty = false
     else
         if strat == M.MergeStrategy.Top then
@@ -337,14 +346,14 @@ function M.Box:renderOver(other, left, top)
         local line = self.lines[i]
         local count = left
         local wordIndex = 1
-        local wordSize = _str.charCount(line[wordIndex].word)
+        local wordSize = _str.charWidth(line[wordIndex].word)
         while count >= wordSize do
             count = count - wordSize
             wordIndex = wordIndex + 1
             if line[wordIndex] == nil then
                 break
             end
-            wordSize = _str.charCount(line[wordIndex].word)
+            wordSize = _str.charWidth(line[wordIndex].word)
         end
         -- 4 rendering cases:
         -- 1:
@@ -386,7 +395,7 @@ function M.Box:renderOver(other, left, top)
             else
                 newStr = _str.sub(str, 1, count)
             end
-            local newLen = _str.charCount(newStr)
+            local newLen = _str.charWidth(newStr)
             if newStr == "" then
                 table.remove(line, wordIndex)
             elseif count ~= 0 then
@@ -408,7 +417,7 @@ function M.Box:renderOver(other, left, top)
                 })
                 break
             end
-            wordSize = _str.charCount(line[wordIndex].word)
+            wordSize = _str.charWidth(line[wordIndex].word)
             count = 0
         end
         if M.lineWidth(line) < left then

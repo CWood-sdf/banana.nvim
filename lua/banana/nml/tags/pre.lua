@@ -18,12 +18,12 @@
 --                         word = split[1],
 --                         style = word.style
 --                     })
---                     currentLine._width = currentLine._width + _str.charCount(split[1])
+--                     currentLine._width = currentLine._width + _str.charWidth(split[1])
 --                     local i = 2
 --                     while i <= #split do
 --                         ret:appendBoxBelow(currentLine)
 --                         currentLine = b.Box:new(ret.hlgroup)
---                         currentLine._width = _str.charCount(split[i])
+--                         currentLine._width = _str.charWidth(split[i])
 --                         currentLine.lines = { { {
 --                             word = split[i],
 --                             style = word.style,
@@ -32,7 +32,7 @@
 --                     end
 --                 else
 --                     table.insert(currentLine.lines[1], word)
---                     currentLine._width = currentLine._width + _str.charCount(word.word)
+--                     currentLine._width = currentLine._width + _str.charWidth(word.word)
 --                 end
 --             end
 --             ret:appendBoxBelow(currentLine)

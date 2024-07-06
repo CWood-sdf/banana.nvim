@@ -195,6 +195,7 @@ end
 ---@field text_align string
 ---@field position "static"|"absolute"|"sticky"|"relative"
 ---@field min_size boolean
+---@field list_style_type string
 
 ---@class (exact) Banana.Renderer.InitialProperties: Banana.Renderer.InheritedProperties
 ---@field flex_shrink number
@@ -232,32 +233,6 @@ local TagInfo = {
     selfClosing = false,
     render = function(_) return {} end,
 }
--- ---@param ast Banana.Ast @param name string
--- ---@param i number
--- ---@param hl Banana.Highlight?
--- ---@param lines number
--- ---@return Banana.Box
--- local function padLeftRight(ast, name, i, hl, lines)
---     local ret = b.Box:new(hl);
---     ret:appendStr(' ', nil)
---     ret:expandWidthTo(ast[name][i].value)
---     ret:cloneHeightTo(lines)
---     return ret
--- end
---
--- ---@param ast Banana.Ast
--- ---@param name string
--- ---@param i number
--- ---@param hl Banana.Highlight?
--- ---@param width number
--- ---@return Banana.Box
--- local function padTopBtm(ast, name, i, hl, width)
---     local box = b.Box:new(hl);
---     box:appendStr(' ', nil)
---     box:expandWidthTo(width)
---     box:cloneHeightTo(ast[name][i].value)
---     return box
--- end
 
 ---@param name string
 ---@param ast Banana.Ast
@@ -400,9 +375,30 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
     startX = startX + ast:paddingLeft()
     startY = startY + ast:paddingTop()
     local contentWidth = parentWidth - ast:_extraLr()
+    -- techincally this should be in li renderer BUT we would have to reresolve
+    -- units (maybe?) but this would fall apart if something is an fr?
+    -- cant really ignore frs bc someone could have a ul flex
+    -- or we could have a thing that ensures only not frs are recalced
+    local listTick = nil
+    local widthAlloted = nil
+    if self.name == "li" then
+        listTick = ast:parent():_getNextListItem(inherit.list_style_type)
+        widthAlloted = _str.charWidth(listTick)
+        if ast:parent().listCounter ~= nil then
+            widthAlloted = ast:parent():_getMaxListWidth(inherit.list_style_type)
+        end
+        contentWidth = contentWidth - widthAlloted
+    end
     ---@cast parentWidth number
     ---@cast parentHeight number
     local centerBox = self:render(ast, parentHl, contentWidth, parentHeight, startX, startY, inherit, extra)
+    if listTick ~= nil then
+        listTick = string.rep(' ', widthAlloted - _str.charWidth(listTick))
+        local box = b.Box:new(parentHl)
+        box:appendStr(listTick)
+        box:expandHeightTo(centerBox:height())
+        centerBox:appendLeft(box)
+    end
     ---@type Banana.Renderer.Surround
     local margin = {
         left = 0,
@@ -632,13 +628,13 @@ local function splitLineBoxOnce(targetWidth, box, hl)
     local right = b.Box:new(hl)
     right:appendStr("", nil)
     local i = 1
-    while left:width() + _str.charCount(box:getLine(1)[i].word) < targetWidth do
+    while left:width() + _str.charWidth(box:getLine(1)[i].word) < targetWidth do
         left:appendWord(box:getLine(1)[i])
         i = i + 1
     end
     local word = box:getLine(1)[i]
     local leftIns = _str.sub(word.word, 1, targetWidth - left:width())
-    --Allow unsafe #word.word, bc #word.word is always >= str.charCount(word.word)
+    --Allow unsafe #word.word, bc #word.word is always >= str.charWidth(word.word)
     --so since we are just reading to end of string
     local rightIns = _str.sub(word.word, targetWidth - left:width() + 1, #word.word)
     left:appendWord({
@@ -979,7 +975,7 @@ function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX
                     v = el:getAttribute(attr) or ""
                 end
             end
-            local count = _str.charCount(v)
+            local count = _str.charWidth(v)
             local box = b.Box:new(parentHl)
             box:appendStr(v, nil)
             local overflow = nil

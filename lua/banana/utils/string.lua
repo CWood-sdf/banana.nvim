@@ -1,6 +1,7 @@
 local M = {}
 -- Returns the length in bytes of the utf8 character
 -- Copilot wrote this and it actually works :O
+-- Also stolen from CWood-sdf/spaceport.nvim
 
 ---returns the bytelength of a single code point
 ---@param utf8Char string
@@ -17,22 +18,14 @@ function M.codepointLen(utf8Char)
     end
 end
 
----Returns the number of characters (not bytes) in a string
+---Returns the width the characters will take up on screen
 ---@param str string
 ---@return number
-function M.charCount(str)
-    -- local len = 0
-    -- local i = 1
-    -- while i <= #str do
-    --     local c = str:sub(i, i)
-    --     local inc = M.codepointLen(c)
-    --     len = len + 1
-    --     i = i + inc
-    -- end
-    -- return len󰩁
+function M.charWidth(str)
     return vim.api.nvim_strwidth(str)
 end
 
+---Substring using character widths
 ---@param str string
 ---@param start number
 ---@param e number
