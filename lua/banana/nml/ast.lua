@@ -231,6 +231,12 @@ function M.Ast:marginBottom()
     return self.margin[M.bottom].computed
 end
 
+---@param i number
+---@return Banana.Ncss.UnitValue
+function M.Ast:_marginUnit(i)
+    return self.margin[i]
+end
+
 ---@param styleTp string
 ---@return string
 local function getListItemUl(styleTp)

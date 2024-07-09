@@ -3,15 +3,37 @@
 
 <head>
   <style>
-    body {
-      padding-left: 40%;
+    .flex {
+      display: flex;
+      background-color: red;
+      flex-wrap: wrap;
+    }
+    .item1 {
+      flex-basis: 40%;
+      background-color: green;
+      flex-grow: 1;
+      /* padding: 10px; */
+    }
+    .item2 {
+      flex-basis: 50%;
+      flex-grow: 1;
+      background-color: blue;
     }
   </style>
 
 <body>
   <br>
-  <div style="width: 50%; height: 50%; background-color: red;">
-    asdfasdf
+  <div class="flex">
+    <div class="item1">
+      a asd fasf
+    </div>
+    <div class="item1">
+      asdfasf
+    </div>
+    <div class="item2">
+      asdfasf
+    </div>
+
   </div>
 
 </html>

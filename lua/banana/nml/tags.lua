@@ -720,6 +720,7 @@ end
 -- impl emergency shrink
 -- impl double emergency float rendering
 
+
 ---Renders everything in a flex block
 ---@param ast Banana.Ast
 ---@param parentHl Banana.Highlight?
@@ -756,10 +757,17 @@ function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, start
         end
 
         v:resolveUnits(parentWidth, parentHeight)
-        if v:firstStyleValue("flex-shrink") == 0 then
+        local basis = v:firstStyleValue("flex-basis", {
+            computed = parentWidth,
+            unit = "ch",
+            value = parentWidth,
+        })
+        ---@cast basis Banana.Ncss.UnitValue
+        local basisVal = math.min(basis.computed or parentWidth, parentWidth)
+        if v:firstStyleValue("flex-shrink") == 0 or v:hasStyle('flex-basis') then
             inherit.min_size = false
         end
-        local rendered = v.actualTag:getRendered(v, hl, parentWidth, parentHeight, startX, startY, inherit, extra)
+        local rendered = v.actualTag:getRendered(v, hl, basisVal, parentHeight, startX, startY, inherit, extra)
         if rendered:getHeight() < currentHeight then
             rendered:expandHeightTo(currentHeight)
         end
@@ -770,17 +778,6 @@ function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, start
         rendersLen = rendersLen + 1
         if rendered:getHeight() > currentHeight then
             currentHeight = rendered:getHeight()
-            for j = 1, rendersLen - 1 do
-                local render = renders[j]
-                if render == nil then
-                    goto continue
-                end
-                local inc = currentHeight - render[1]:getHeight()
-
-                render[1]:expandHeightTo(currentHeight)
-                render[2]:_increaseHeightBoundBy(inc)
-                ::continue::
-            end
         end
 
         takenWidth = takenWidth + rendered:getWidth()
@@ -801,6 +798,7 @@ function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, start
 
     -- compute frs
     local widthLeft = parentWidth - takenWidth
+    -- go through and add margins so that they are accounted for
     for _, i in ipairs(needed) do
         local v = ast.nodes[i]
         ---@cast v Banana.Ast
@@ -809,12 +807,17 @@ function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, start
         })
         widthLeft = widthLeft - v:marginLeft() - v:marginRight()
     end
-    local frProp = "width"
     local totalFrs = 0
     for _, i in ipairs(needed) do
         local v = ast.nodes[i]
         ---@cast v Banana.Ast
-        totalFrs = totalFrs + v:firstStyleValue(frProp).value
+        totalFrs = totalFrs + v:firstStyleValue("width").value
+        if v:_marginUnit(_ast.left).unit == "fr" then
+            totalFrs = totalFrs + v:firstStyleValue("margin-left").value
+        end
+        if v:_marginUnit(_ast.right).unit == "fr" then
+            totalFrs = totalFrs + v:firstStyleValue("margin-right").value
+        end
     end
     local frWidth = math.floor(widthLeft / totalFrs)
     local extraCharsNeeded = widthLeft - totalFrs * frWidth
@@ -830,7 +833,17 @@ function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, start
         v:resolveUnits(parentWidth, parentHeight, {
             width
         })
-        local rendered = v.actualTag:getRendered(v, hl, parentWidth, parentHeight, startX, startY, inherit, extra)
+        local basis = v:firstStyleValue("flex-basis", {
+            computed = parentWidth,
+            unit = "ch",
+            value = parentWidth,
+        })
+        ---@cast basis Banana.Ncss.UnitValue
+        local basisVal = math.min(basis.computed or parentWidth, parentWidth)
+        if v:firstStyleValue("flex-shrink") == 0 or v:hasStyle('flex-basis') then
+            inherit.min_size = false
+        end
+        local rendered = v.actualTag:getRendered(v, hl, basisVal, parentHeight, startX, startY, inherit, extra)
         if rendered:getHeight() < currentHeight then
             rendered:expandHeightTo(currentHeight)
         end
@@ -839,17 +852,6 @@ function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, start
         rendersLen = rendersLen + 1
         if rendered:getHeight() > currentHeight then
             currentHeight = rendered:getHeight()
-            for j = 1, rendersLen - 1 do
-                local render = renders[j]
-                if render == nil then
-                    goto continue
-                end
-                local inc = currentHeight - render[1]:getHeight()
-
-                render[1]:expandHeightTo(currentHeight)
-                render[2]:_increaseWidthBoundBy(inc)
-                ::continue::
-            end
         end
 
         takenWidth = takenWidth + rendered:getWidth()
@@ -903,13 +905,16 @@ function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, start
 
 
     local inc = 0
-    --- post processing cleanup to readjust bound boxes
-    if #renders == 0 then
-        -- use goto to save indentation
-        goto skip
-    end
 
-    for i = 2, #renders do
+    --- post processing cleanup to readjust bound boxes
+    for i = 1, #renders do
+        if renders[i][1]:getHeight() < currentHeight then
+            renders[i][2]:_increaseHeightBoundBy(currentHeight - renders[i][1]:getHeight())
+            renders[i][1]:expandHeightTo(currentHeight)
+        end
+        if i == 1 then
+            goto continue
+        end
         local prev = renders[i - 1]
         if prev == nil then
             error("Unreachable: rendered value does not exist in flex box")
@@ -920,9 +925,8 @@ function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, start
             error("Unreachable: rendered value does not exist in flex box")
         end
         v[2]:_increaseLeftBound(inc)
+        ::continue::
     end
-
-    ::skip::
 
     local ret = b.Box:new(hl)
     for _, v in ipairs(renders) do

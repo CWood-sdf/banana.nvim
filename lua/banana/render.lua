@@ -402,9 +402,9 @@ function Instance:createWinAndBuf()
     local headTag = headQuery:getMatches(self.ast)
     if #headTag ~= 0 then
         headTag[1].actualTag:renderRoot(headTag[1], nil, 0, 0, {
+            list_style_type = "*",
             position = "static",
             text_align = "left",
-            min_size_direction = "horizontal",
             min_size = false,
         }, {
             trace = require('banana.box').Box:new(),
