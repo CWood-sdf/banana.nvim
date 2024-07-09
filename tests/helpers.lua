@@ -83,4 +83,52 @@ function M.assertBgMapsMatch(bufMap, expectedMap)
     end
 end
 
+---@param spec string
+---@param document Banana.Instance
+---@return Banana.Ast
+local function parseSpec(spec, document)
+    -- print("parsing spec '" .. spec .. "'")
+    local name = vim.split(spec, '#')[1]
+    -- print("el name '" .. name .. "'")
+    spec = vim.split(spec, '#')[2]
+    -- print("new spec '" .. spec .. "'")
+    local ret = document:createElement(name)
+    local split = vim.split(spec, ':')
+    local contents = split[#split]
+    -- print("contents '" .. contents .. "'")
+    ret:setTextContent(contents)
+    spec = split[1]
+    -- print("new spec '" .. spec .. "'")
+    local rest = vim.split(spec, '%.')
+    local id = rest[1]
+    -- print("id '" .. id .. "'")
+    if id ~= "" then
+        -- print("setting id")
+        ret:setAttribute('id', id)
+    end
+    for i = 2, #rest do
+        -- print("adding class '" .. rest[i] .. "'")
+        ret:addClass(rest[i])
+    end
+
+    return ret
+end
+
+---@param specs string[]
+---@param document Banana.Instance
+---@param target Banana.Ast?
+---@return Banana.Ast[]
+function M.createElements(specs, document, target)
+    local ret = {}
+    for _, v in ipairs(specs) do
+        local el = parseSpec(v, document)
+        if target ~= nil then
+            target:appendNode(el)
+        else
+            table.insert(ret, el)
+        end
+    end
+    return ret
+end
+
 return M

@@ -87,14 +87,15 @@ local marginValid = Validation:new(function(a)
 end)
 
 
-local singleUnit = Validation:new(function(a)
+local singleUnit          = Validation:new(function(a)
     return #a == 1 and a[1].type == "unit"
 end)
-local singlePlain = Validation:new({ [1] = { { "plain" } } })
-local singleInt = Validation:new({ [1] = { { "integer" } } })
+local singlePlain         = Validation:new({ [1] = { { "plain" } } })
+local singleInt           = Validation:new({ [1] = { { "integer" } } })
 local singleStringOrPlain = Validation:new({ [1] = { { "string" }, { "plain" } } })
+local singleNumber        = Validation:new({ [1] = { { "integer" }, { "float" } } })
 ---@type { [string]: Banana.Ncss.PropertyValidation }
-local validations = {
+local validations         = {
     ['hl-underline'] = boolValid,
     ['hl-italic'] = boolValid,
     ['hl-bold'] = boolValid,
@@ -107,11 +108,12 @@ local validations = {
     ['width'] = singleUnit,
     ['height'] = singleUnit,
     ['display'] = singlePlain,
-    ['flex-shrink'] = singleInt,
-    ['flex-grow'] = singleInt,
+    ['flex-basis'] = singleUnit,
+    ['flex-shrink'] = singleNumber,
+    ['flex-grow'] = singleNumber,
     ['text-align'] = singlePlain,
     ['position'] = singlePlain,
-    ['z-index'] = Validation:new({ [1] = { { "integer" } } }),
+    ['z-index'] = singleInt,
     ['left'] = singleUnit,
     ['right'] = singleUnit,
     ['top'] = singleUnit,
@@ -134,4 +136,5 @@ return {
             "Unable to validate property '" .. name .. "'")
         return validation:passes(value, name)
     end,
+    _validations = validations,
 }

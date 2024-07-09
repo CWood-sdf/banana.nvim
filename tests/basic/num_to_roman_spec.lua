@@ -169,11 +169,9 @@ describe("Num to roman tests", function()
         { 1032, "MXXXII" },
         { 1033, "MXXXIII" },
     }
-    describe("Test num to roman", function()
+    it("works", function()
         for _, test in ipairs(tests) do
-            it("should convert " .. test[1] .. " to " .. test[2], function()
-                assert.equal(test[2], numToRoman(test[1]), "Failed to convert " .. test[1] .. " to " .. test[2])
-            end)
+            assert.equal(test[2], numToRoman(test[1]), "Failed to convert " .. test[1] .. " to " .. test[2])
         end
     end)
 end)
