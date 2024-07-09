@@ -741,7 +741,7 @@ function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, start
     ---@type integer[]
     local needed = {}
     local currentHeight = 0
-    local rendersLen = 1
+    local rendersLen = 0
 
     -- base render for non fr els
     for i, v in ipairs(ast.nodes) do
@@ -750,7 +750,7 @@ function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, start
         end
 
         if not hasNoFrUnits(v) then
-            table.insert(renders, nil)
+            renders[rendersLen + 1] = nil
             table.insert(needed, i)
             rendersLen = rendersLen + 1
             goto continue
@@ -774,7 +774,7 @@ function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, start
 
         inherit.min_size = true
 
-        table.insert(renders, { rendered, v })
+        renders[rendersLen + 1] = { rendered, v }
         rendersLen = rendersLen + 1
         if rendered:getHeight() > currentHeight then
             currentHeight = rendered:getHeight()
@@ -792,6 +792,11 @@ function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, start
             if v ~= nil then
                 extra.trace:appendBoxBelow(traceBreak(i .. ""), false)
                 extra.trace:appendBoxBelow(v[1]:render(true), false)
+            else
+                extra.trace:appendBoxBelow(traceBreak(i .. ""), false)
+                local box = b.Box:new()
+                box:appendStr("empty")
+                extra.trace:appendBoxBelow(box, false)
             end
         end
     end
@@ -813,10 +818,10 @@ function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, start
         ---@cast v Banana.Ast
         totalFrs = totalFrs + v:firstStyleValue("width").value
         if v:_marginUnit(_ast.left).unit == "fr" then
-            totalFrs = totalFrs + v:firstStyleValue("margin-left").value
+            totalFrs = totalFrs + v:_marginUnit(_ast.left).value
         end
         if v:_marginUnit(_ast.right).unit == "fr" then
-            totalFrs = totalFrs + v:firstStyleValue("margin-right").value
+            totalFrs = totalFrs + v:_marginUnit(_ast.right).value
         end
     end
     local frWidth = math.floor(widthLeft / totalFrs)
@@ -848,8 +853,8 @@ function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, start
             rendered:expandHeightTo(currentHeight)
         end
 
-        table.insert(renders, { rendered, v })
-        rendersLen = rendersLen + 1
+        renders[i] = { rendered, v }
+        -- rendersLen = rendersLen + 1
         if rendered:getHeight() > currentHeight then
             currentHeight = rendered:getHeight()
         end
@@ -860,10 +865,8 @@ function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, start
         extra.trace:appendBoxBelow(traceBreak("flex w/ fr"), false)
         extra.trace:appendBoxBelow(ast:_testDumpBox(), false)
         for i, v in ipairs(renders) do
-            if v ~= nil then
-                extra.trace:appendBoxBelow(traceBreak(i .. ""), false)
-                extra.trace:appendBoxBelow(v[1]:render(true), false)
-            end
+            extra.trace:appendBoxBelow(traceBreak(i .. ""), false)
+            extra.trace:appendBoxBelow(v[1]:render(true), false)
         end
     end
 
@@ -908,6 +911,10 @@ function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, start
 
     --- post processing cleanup to readjust bound boxes
     for i = 1, #renders do
+        if renders[i] == nil then
+            print("rendered " .. i .. " was nil!")
+            goto continue
+        end
         if renders[i][1]:getHeight() < currentHeight then
             renders[i][2]:_increaseHeightBoundBy(currentHeight - renders[i][1]:getHeight())
             renders[i][1]:expandHeightTo(currentHeight)
@@ -917,12 +924,14 @@ function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, start
         end
         local prev = renders[i - 1]
         if prev == nil then
-            error("Unreachable: rendered value does not exist in flex box")
+            print("Unreachable: rendered value does not exist in flex box")
+        else
+            inc = inc + prev[1]:getWidth()
         end
-        inc = inc + prev[1]:getWidth()
         local v = renders[i]
         if v == nil then
-            error("Unreachable: rendered value does not exist in flex box")
+            print("Unreachable: rendered value does not exist in flex box")
+            goto continue
         end
         v[2]:_increaseLeftBound(inc)
         ::continue::
@@ -930,7 +939,9 @@ function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, start
 
     local ret = b.Box:new(hl)
     for _, v in ipairs(renders) do
-        ret:append(v[1]:render(), nil)
+        if v ~= nil then
+            ret:append(v[1]:render(), nil)
+        end
     end
     inherit.min_size = oldMinSize
 

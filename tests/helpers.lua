@@ -15,6 +15,9 @@ function M.bufToBgMap(bufnr)
         for j = 1, #v do
             local char = v:sub(j, j)
             local ext = vim.inspect_pos(bufnr, i - 1, j - 1).extmarks[1]
+            if ext == nil then
+                goto continue
+            end
             local opts = {
                 name = ext.opts.hl_group,
                 link = false,
@@ -38,6 +41,7 @@ function M.bufToBgMap(bufnr)
             else
                 line = line .. bgChar
             end
+            ::continue::
         end
         table.insert(ret, line)
     end

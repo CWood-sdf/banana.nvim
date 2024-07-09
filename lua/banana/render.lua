@@ -527,7 +527,7 @@ function Instance:render()
             lineStr = lineStr .. word.word
         end
         if _str.charWidth(lineStr) > width and self.DEBUG then
-            print("overflow")
+            -- print("overflow")
         end
         table.insert(lines, lineStr)
     end

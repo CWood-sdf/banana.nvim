@@ -30,6 +30,12 @@ nml {
 .green {
     hl-bg: green;
 }
+.fr-margin-left {
+    margin-left: 1fr;
+}
+.w2 {
+    width: 2ch;
+}
 </style>
 </head>
 
@@ -43,6 +49,49 @@ nml {
 ]])
 
 describe("Flex test", function()
+    it("margin frs", function()
+        local inst = require('banana.render').emptyInstance()
+        inst:useNml(code)
+        inst.stripRight = false
+        inst:open()
+        h.createElements({
+            "div#.fr1.fr-margin-left.green:a",
+            "div#.w2:a",
+            "div#.fr-margin-left.fr1.green:a",
+            "div#.fr-margin-left.fr1.green:a",
+        }, inst, inst:getElementById("flex"))
+
+        local expectedMap = {
+            "         ",
+            "~~aa~~a~a",
+            "         ",
+        }
+        inst:forceRerender()
+        print(inst:querySelectorAll("#flex > div")[1]:_marginUnit(1).value)
+        print(inst:querySelectorAll("#flex > div")[1]:_marginUnit(1).value)
+        h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
+    end)
+    it("out of order frs", function()
+        local inst = require('banana.render').emptyInstance()
+        inst:useNml(code)
+        inst.DEBUG = false
+        inst.stripRight = false
+        inst:open()
+        h.createElements({
+            "div#.fr1:a",
+            "div#:a",
+            "div#.fr1:a",
+            "div#.fr1:a",
+        }, inst, inst:getElementById("flex"))
+
+        local expectedMap = {
+            "         ",
+            "~a~~aa~a~",
+            "         ",
+        }
+        inst:forceRerender()
+        h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
+    end)
     it("uneven frs work", function()
         local inst = require('banana.render').emptyInstance()
         inst:useNml(code)
