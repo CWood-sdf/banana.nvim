@@ -97,7 +97,7 @@ function M.Ast:new(tag, parent)
         },
         style = {},
     }
-    if tag == "li" then
+    if tag == "ol" then
         ast.listCounter = 1
     end
     setmetatable(ast, { __index = M.Ast })
@@ -301,8 +301,7 @@ local function getListItemOl(styleTp, counter)
         local code = string.byte(styleTp, 1, #styleTp) + counter
         return string.char(code)
     end
-    local code = string.byte('1') + counter
-    return string.char(code) .. "."
+    return counter .. "."
 end
 
 ---Returns a heuristic *guess* at the biggest list item for ol
@@ -341,7 +340,10 @@ end
 
 ---@param styleTp string
 ---@return string
-function M.Ast:_getNextListItem(styleTp)
+function M.Ast:_getNextListItem(styleTp, extra)
+    if self.tag == "ol" and self.listCounter == nil then
+        self.listCounter = 1
+    end
     if self.listCounter == nil then
         return getListItemUl(styleTp) .. " "
     end
@@ -616,6 +618,7 @@ function M.Ast:resolveUnits(parentWidth, parentHeight, extras)
     self:_computeUnitFor("bottom", parentHeight, extras)
     self:_computeUnitFor("left", parentWidth, extras)
     self:_computeUnitFor("right", parentWidth, extras)
+    self:_computeUnitFor("flex-basis", parentWidth, extras)
 end
 
 function M.Ast:applyInlineStyleDeclarations()

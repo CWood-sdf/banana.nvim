@@ -1,12 +1,14 @@
+---@alias Banana.Ncss.PropertyValidation.Type string|Banana.Ncss.StyleValue.Types
+
 ---@class (exact) Banana.Ncss.PropertyValidation
----@field validations? { [integer]: Banana.Ncss.StyleValue.Types[][] }
+---@field validations? { [integer]: Banana.Ncss.PropertyValidation.Type[][] }
 ---@field custom? fun(value: Banana.Ncss.StyleValue[]): boolean
 local Validation = {
 
 }
 
 
----@param val { [integer]: Banana.Ncss.StyleValue.Types[][] }|fun(value: Banana.Ncss.StyleValue[]): boolean
+---@param val { [integer]: Banana.Ncss.PropertyValidation.Type[][] }|fun(value: Banana.Ncss.StyleValue[]): boolean
 ---@return Banana.Ncss.PropertyValidation
 function Validation:new(val)
     ---@type Banana.Ncss.PropertyValidation
@@ -45,7 +47,16 @@ function Validation:passes(value, name)
     for _, v in pairs(validations) do
         local passes = true
         for i, tp in ipairs(v) do
-            if tp ~= value[i].type then
+            if tp:sub(1, 1) == "|" then
+                if value[i].type ~= "plain" then
+                    passes = false
+                    break
+                end
+                if tp ~= "|" .. value[i].value then
+                    passes = false
+                    break
+                end
+            elseif tp ~= value[i].type then
                 passes = false
                 break
             end
@@ -56,6 +67,10 @@ function Validation:passes(value, name)
     for _, v in ipairs(validations) do
         local line = "  "
         for _, tp in ipairs(v) do
+            if tp:sub(1, 1) == "|" then
+                tp = tp:sub(2, #tp)
+                tp = "'" .. tp .. "'"
+            end
             line = line .. tp .. ", or"
         end
         line = line .. "\n"
@@ -104,13 +119,14 @@ local validations         = {
     ['hl-link'] = singleStringOrPlain,
     ['hl-__name'] = singleStringOrPlain,
     ['list-style-type'] = Validation:new({ [1] = { { "string" } } }),
-    ['list-base-width'] = singleUnit,
+    -- ['list-base-width'] = singleUnit,
     ['width'] = singleUnit,
     ['height'] = singleUnit,
     ['display'] = singlePlain,
     ['flex-basis'] = singleUnit,
     ['flex-shrink'] = singleNumber,
     ['flex-grow'] = singleNumber,
+    ['flex-wrap'] = Validation:new({ [1] = { { "|wrap" }, { "|nowrap" } } }),
     ['text-align'] = singlePlain,
     ['position'] = singlePlain,
     ['z-index'] = singleInt,

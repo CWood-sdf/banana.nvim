@@ -267,7 +267,7 @@ local function isExpandable(ast, extraWidth)
     if isFlexChild then
         return extraWidth > 0 and
             (ast.actualTag.formatType == M.FormatType.Block or ast.actualTag.formatType == M.FormatType.BlockInline) and
-            ast:hasStyle('width')
+            (ast:hasStyle('width') or ast:hasStyle("flex-basis"))
     end
 
     return (ast.actualTag.formatType == M.FormatType.Block or ast.actualTag.formatType == M.FormatType.BlockInline
@@ -347,9 +347,6 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
         parentHeight = math.min(
             ast:firstStyleValue('height').computed + ast:marginTop() + ast:marginBottom(),
             parentHeight)
-        if inherit.min_size then
-            inherit.min_size = false
-        end
     end
     if position ~= "static" then
         if ast:hasStyle("left") then
@@ -381,7 +378,7 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
     -- or we could have a thing that ensures only not frs are recalced
     local listTick = nil
     local widthAlloted = nil
-    if self.name == "li" then
+    if ast.actualTag.name == "li" then
         listTick = ast:parent():_getNextListItem(inherit.list_style_type)
         widthAlloted = _str.charWidth(listTick)
         if ast:parent().listCounter ~= nil then
@@ -393,11 +390,22 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
     ---@cast parentHeight number
     local centerBox = self:render(ast, parentHl, contentWidth, parentHeight, startX, startY, inherit, extra)
     if listTick ~= nil then
-        listTick = string.rep(' ', widthAlloted - _str.charWidth(listTick))
+        if extra.debug then
+            extra.trace:appendBoxBelow(traceBreak("Adding list item '" .. listTick .. "'"), false)
+        end
+        listTick = string.rep(' ', widthAlloted - _str.charWidth(listTick)) .. listTick
         local box = b.Box:new(parentHl)
         box:appendStr(listTick)
         box:expandHeightTo(centerBox:height())
-        centerBox:appendLeft(box)
+        if extra.debug then
+            extra.trace:appendBoxBelow(traceBreak("List item box"), false)
+            extra.trace:appendBoxBelow(box, false)
+        end
+        box:append(centerBox)
+        local oldHl = centerBox.hlgroup
+        centerBox = box
+        centerBox.hlgroup = oldHl
+        -- centerBox:appendLeft(box)
     end
     ---@type Banana.Renderer.Surround
     local margin = {
@@ -720,6 +728,50 @@ end
 -- impl emergency shrink
 -- impl double emergency float rendering
 
+---@param renders ([Banana.Renderer.PartialRendered, Banana.Ast]?)[]
+---@param parentWidth number
+---@param takenWidth number
+---@param start number
+---@param e number
+local function flexGrowSection(parentWidth, takenWidth, renders, start, e)
+    if takenWidth > parentWidth then
+        return
+    end
+    local totalGrows = 0
+    for i = start, e do
+        local val = renders[i]
+        if val == nil then
+            goto continue
+        end
+        local node = val[2]
+        totalGrows = totalGrows + node:firstStyleValue("flex-grow", 0)
+        ::continue::
+    end
+    if totalGrows > 0 then
+        local growPer = math.floor((parentWidth - takenWidth) / totalGrows)
+        local extraGrow = parentWidth - takenWidth - growPer * totalGrows
+        -- compute flex grow
+        for i = start, e do
+            local val = renders[i]
+            if val == nil then
+                goto continue
+            end
+            local node = val[2]
+            if node:firstStyleValue("flex-grow", 0) ~= 0 then
+                local flexGrow = node:firstStyleValue("flex-grow", 0)
+                ---@cast flexGrow number
+                local grow = growPer * flexGrow
+                if extraGrow > 0 then
+                    grow = grow + math.ceil(flexGrow)
+                    extraGrow = extraGrow - math.ceil(flexGrow)
+                end
+                renders[i][1].widthExpansion = renders[i][1].widthExpansion + grow
+                renders[i][2]:_increaseWidthBoundBy(grow)
+            end
+            ::continue::
+        end
+    end
+end
 
 ---Renders everything in a flex block
 ---@param ast Banana.Ast
@@ -740,7 +792,7 @@ function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, start
     local renders = {}
     ---@type integer[]
     local needed = {}
-    local currentHeight = 0
+    -- local currentHeight = 0
     local rendersLen = 0
 
     -- base render for non fr els
@@ -768,17 +820,17 @@ function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, start
             inherit.min_size = false
         end
         local rendered = v.actualTag:getRendered(v, hl, basisVal, parentHeight, startX, startY, inherit, extra)
-        if rendered:getHeight() < currentHeight then
-            rendered:expandHeightTo(currentHeight)
-        end
+        -- if rendered:getHeight() < currentHeight then
+        --     rendered:expandHeightTo(currentHeight)
+        -- end
 
         inherit.min_size = true
 
         renders[rendersLen + 1] = { rendered, v }
         rendersLen = rendersLen + 1
-        if rendered:getHeight() > currentHeight then
-            currentHeight = rendered:getHeight()
-        end
+        -- if rendered:getHeight() > currentHeight then
+        --     currentHeight = rendered:getHeight()
+        -- end
 
         takenWidth = takenWidth + rendered:getWidth()
 
@@ -849,15 +901,15 @@ function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, start
             inherit.min_size = false
         end
         local rendered = v.actualTag:getRendered(v, hl, basisVal, parentHeight, startX, startY, inherit, extra)
-        if rendered:getHeight() < currentHeight then
-            rendered:expandHeightTo(currentHeight)
-        end
+        -- if rendered:getHeight() < currentHeight then
+        --     rendered:expandHeightTo(currentHeight)
+        -- end
 
         renders[i] = { rendered, v }
         -- rendersLen = rendersLen + 1
-        if rendered:getHeight() > currentHeight then
-            currentHeight = rendered:getHeight()
-        end
+        -- if rendered:getHeight() > currentHeight then
+        --     currentHeight = rendered:getHeight()
+        -- end
 
         takenWidth = takenWidth + rendered:getWidth()
     end
@@ -870,30 +922,52 @@ function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, start
         end
     end
 
-    -- flex-grow
+    -- flex-grow and half of flex-wrap
     if takenWidth < parentWidth then
-        local totalGrows = 0
-        for node in ast:childIter() do
-            totalGrows = totalGrows + node:firstStyleValue("flex-grow", 0)
-        end
-        if totalGrows > 0 then
-            local growPer = math.floor((parentWidth - takenWidth) / totalGrows)
-            local extraGrow = parentWidth - takenWidth - growPer * totalGrows
-            -- compute flex grow
-            local i = 1
-            for node in ast:childIter() do
-                if node:firstStyleValue("flex-grow", 0) ~= 0 then
-                    local grow = growPer * node:firstStyleValue("flex-grow", 0)
-                    if extraGrow > 0 then
-                        grow = grow + 1
-                        extraGrow = extraGrow - 1
-                    end
-                    renders[i][1].widthExpansion = renders[i][1].widthExpansion + grow
-                    renders[i][2]:_increaseWidthBoundBy(grow)
-                end
-                i = i + 1
+        flexGrowSection(parentWidth, takenWidth, renders, 1, #renders)
+        -- local totalGrows = 0
+        -- for node in ast:childIter() do
+        --     totalGrows = totalGrows + node:firstStyleValue("flex-grow", 0)
+        -- end
+        -- if totalGrows > 0 then
+        --     local growPer = math.floor((parentWidth - takenWidth) / totalGrows)
+        --     local extraGrow = parentWidth - takenWidth - growPer * totalGrows
+        --     -- compute flex grow
+        --     local i = 1
+        --     for node in ast:childIter() do
+        --         if node:firstStyleValue("flex-grow", 0) ~= 0 then
+        --             local grow = growPer * node:firstStyleValue("flex-grow", 0)
+        --             if extraGrow > 0 then
+        --                 grow = grow + 1
+        --                 extraGrow = extraGrow - 1
+        --             end
+        --             renders[i][1].widthExpansion = renders[i][1].widthExpansion + grow
+        --             renders[i][2]:_increaseWidthBoundBy(grow)
+        --         end
+        --         i = i + 1
+        --     end
+        -- end
+    elseif ast:firstStyleValue("flex-wrap", "nowrap") == "wrap" then
+        local taken = 0
+        local startI = 1
+        -- local yInc = 0
+        for i, v in ipairs(renders) do
+            if v == nil then
+                error("Unreachable")
             end
+            -- if yInc > 0 then
+            --     v[2]:_increaseTopBound(yInc)
+            -- end
+            local render = v[1]
+            if taken + render:getWidth() > parentWidth then
+                flexGrowSection(parentWidth, taken, renders, startI, i - 1)
+                taken = 0
+                startI = i
+                -- yInc = yInc + renders[startI][1]:getHeight()
+            end
+            taken = taken + render:getWidth()
         end
+        flexGrowSection(parentWidth, taken, renders, startI, #renders)
     end
     if extra.debug then
         extra.trace:appendBoxBelow(traceBreak("flex-grow"), false)
@@ -907,42 +981,71 @@ function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, start
     end
 
 
-    local inc = 0
 
     --- post processing cleanup to readjust bound boxes
+    local inc = 0
+    local yInc = 0
+    local isWrap = ast:firstStyleValue("flex-wrap", "nowrap") == "wrap"
+    ---@type [Banana.Renderer.PartialRendered, Banana.Ast][][]
+    local lines = {}
+    ---@type [Banana.Renderer.PartialRendered, Banana.Ast][]
+    local line = {}
     for i = 1, #renders do
-        if renders[i] == nil then
-            print("rendered " .. i .. " was nil!")
-            goto continue
-        end
-        if renders[i][1]:getHeight() < currentHeight then
-            renders[i][2]:_increaseHeightBoundBy(currentHeight - renders[i][1]:getHeight())
-            renders[i][1]:expandHeightTo(currentHeight)
-        end
-        if i == 1 then
-            goto continue
-        end
-        local prev = renders[i - 1]
-        if prev == nil then
-            print("Unreachable: rendered value does not exist in flex box")
-        else
-            inc = inc + prev[1]:getWidth()
-        end
         local v = renders[i]
         if v == nil then
-            print("Unreachable: rendered value does not exist in flex box")
-            goto continue
+            error("rendered " .. i .. " was nil!")
         end
+        if yInc > 0 then
+            renders[i][2]:_increaseTopBound(yInc)
+        end
+        if inc + renders[i][1]:getWidth() > parentWidth and #line > 0 and isWrap then
+            table.insert(lines, line)
+            local maxH = 0
+            for _, el in ipairs(line) do
+                maxH = math.max(el[1]:getHeight(), maxH)
+            end
+            for _, el in ipairs(line) do
+                if el[1]:getHeight() < maxH then
+                    el[1]:expandHeightTo(maxH)
+                    el[2]:_increaseHeightBoundBy(maxH - el[1]:getHeight())
+                end
+            end
+            yInc = yInc + line[1][1]:getHeight()
+            line = {}
+            inc = 0
+        end
+        table.insert(line, renders[i])
         v[2]:_increaseLeftBound(inc)
-        ::continue::
+        inc = inc + v[1]:getWidth()
+    end
+    table.insert(lines, line)
+    local maxH = 0
+    for _, v in ipairs(line) do
+        maxH = math.max(v[1]:getHeight(), maxH)
+    end
+    for _, v in ipairs(line) do
+        if v[1]:getHeight() < maxH then
+            v[1]:expandHeightTo(maxH)
+            v[2]:_increaseHeightBoundBy(maxH - v[1]:getHeight())
+        end
+    end
+    if extra.debug then
+        extra.trace:appendBoxBelow(traceBreak("Wrapping into " .. #lines .. " lines"), false)
     end
 
     local ret = b.Box:new(hl)
-    for _, v in ipairs(renders) do
-        if v ~= nil then
-            ret:append(v[1]:render(), nil)
+    for _, l in ipairs(lines) do
+        local box = b.Box:new(hl)
+        for _, val in ipairs(l) do
+            box:append(val[1]:render(), nil)
         end
+        ret:appendBoxBelow(box)
     end
+    -- for _, v in ipairs(renders) do
+    --     if v ~= nil then
+    --         ret:append(v[1]:render(), nil)
+    --     end
+    -- end
     inherit.min_size = oldMinSize
 
     return ret, #ast.nodes + 1

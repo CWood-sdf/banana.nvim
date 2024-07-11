@@ -11,12 +11,16 @@
       }
       #flex {
         display: flex;
+        flex-wrap: wrap;
       }
       #flex > div {
         hl-bg: red;
         margin-left: 1ch;
+        margin-top: 1ch;
         padding: 2ch 1ch;
-        flex-shrink: 1;
+        flex-grow: 1;
+        flex-basis: 40%;
+        flex-shrink: 0;
       }
 
       .asdf {
@@ -27,6 +31,10 @@
 
         height: 5ch;
         flex-grow: 1;
+      }
+
+      .first {
+        padding-top:3ch !important;
       }
 
     </style>
@@ -41,18 +49,19 @@
       asdf
       </div>
     </div>-->
-    <span style="width: 5ch; hl-bg: black;">
-    asd asd
-    </span>
     <div id="flex" >
-    <div>
+    <div class="first">
     asdfadf
+    </div>
+    <div>
+    asdf
+    </div>
+    <div>
+    asdf
     </div>
     </div>
 
-    <div style="width: 10ch; hl-bg: blue; padding-left: 10ch;">
-    asdf
-    </div>
+
 
     <script src="flexStuff">
 
