@@ -66,8 +66,8 @@ This plugin seeks to turn neovim into a hypermedia client through its own custom
 
 - [x] flex-grow
 - [ ] flex-direction
-- [ ] flex-wrap
-- [ ] flex-basis
+- [x] flex-wrap
+- [x] flex-basis
 - [x] fr units
 - [x] flex-shrink
 
@@ -151,4 +151,4 @@ This plugin seeks to turn neovim into a hypermedia client through its own custom
 
 ### Rewrite in rust (or zig)
 
-Rewrite into rust or zig using nvim-oxi or ffi and stuff so that it can be much faster.
+Rewrite into rust or zig using nvim-oxi or ffi and stuff so that it can be much faster. Maybe rewrite just core rendering stuff (ast.lua/tags.lua and leave remaps and stuff in lua)

@@ -24,6 +24,36 @@ local pseudoClasses = {
             return true
         end, spec
     end,
+    ["last-child"] = function(node, _)
+        assert(node == nil, "last-child cannot have any arguments")
+        local spec = q.Specificity.Class
+        ---@type Banana.Ncss.PseudoGenRet
+        local fn = function(ast)
+            local parent = ast:parent()
+            local i = #parent.nodes
+            while type(parent.nodes[i]) == "string" do
+                i = i - 1
+            end
+            return parent.nodes[i] == ast
+        end
+        return fn, spec
+    end,
+    ["first-child"] = function(node, _)
+        assert(node == nil, "first-child cannot have any arguments")
+        local spec = q.Specificity.Class
+        ---@type Banana.Ncss.PseudoGenRet
+        local fn = function(ast)
+            local parent = ast:parent()
+            for n in parent:childIter() do
+                if n == ast then
+                    return true
+                end
+                break
+            end
+            return false
+        end
+        return fn, spec
+    end,
 
 }
 local ts_types = require('banana.ncss.tsTypes')
@@ -38,7 +68,7 @@ M.queryParsers = {
             nameTag = node:child(1)
             argsIndex = argsIndex - 1
         end
-        assert(nameTag ~= nil or nameTag:type() ~= ts_types.class_name,
+        assert(nameTag ~= nil and nameTag:type() == ts_types.class_name,
             "Could not parse pseudo class as got no class_name node at the expected spots")
 
         local name = parser:getStringFromRange({ nameTag:start() }, { nameTag:end_() })

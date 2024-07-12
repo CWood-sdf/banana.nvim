@@ -722,12 +722,6 @@ local function hasNoFrUnits(ast)
     return true
 end
 
--- Flex todo:
--- flex-direction
--- flex-wrap
--- impl emergency shrink
--- impl double emergency float rendering
-
 ---@param renders ([Banana.Renderer.PartialRendered, Banana.Ast]?)[]
 ---@param parentWidth number
 ---@param takenWidth number
@@ -784,6 +778,10 @@ end
 ---@param extra Banana.Renderer.ExtraInfo
 ---@return Banana.Box, integer
 function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra)
+    -- possible todos:
+    --   abstract out base rendering into a function
+    --   inline the current height / line calculation
+    --   maybe some other stuff
     local oldMinSize = inherit.min_size
     inherit.min_size = true
     local takenWidth = 0

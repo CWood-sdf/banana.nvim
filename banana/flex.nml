@@ -13,6 +13,12 @@
         display: flex;
         flex-wrap: wrap;
       }
+      #flex :last-child {
+        hl-bg: green;
+      }
+      #flex :first-child {
+        hl-bg: blue;
+      }
       #flex > div {
         hl-bg: red;
         margin-left: 1ch;
