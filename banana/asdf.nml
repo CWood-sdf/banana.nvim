@@ -1,34 +1,37 @@
 <nml>
 <head>
-  <style>
-  nml {
-    width: 9ch;
-    height: 3ch;
-  }
-#flex {
-    display: flex;
-    padding-left: 1ch;
-    hl-bg: red;
+<style>
+nml {
+    width: 5ch;
+    height: 5ch;
 }
-.green {
-    hl-bg: green;
+#one {
+    hl-bg: #ff0000;
+position: absolute;
+ left: 1ch;
+ top: 1ch;
+ width: 3ch;
+ height: 3ch;
+ z-index: 1;
+
 }
-.grow {
-    flex-grow: 1;
-}
-.basis-2ch {
-    flex-basis: 2ch;
+#two {
+    hl-bg: #00ff00;
+position: absolute;
+ left: 2ch;
+ top: 2ch;
+ width: 3ch;
+ height: 3ch;
+
 }
 </style>
-
 </head>
-<body>
 
+<body>
 <br>
-<div id="flex">
-            <div class="basis-2ch grow">a</div>
-            <div class="grow">a</div>
-            <div class="grow">a</div>
+<div id="one">
+</div>
+<div id="two">
 </div>
 </body>
 </nml>

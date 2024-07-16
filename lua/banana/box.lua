@@ -336,6 +336,11 @@ function M.Box:renderOver(other, left, top)
     other:clean()
     left = math.max(left, 0)
     top = math.max(top, 0)
+    while #self.lines < top do
+        local box = M.Box:new(self.hlgroup)
+        box:appendStr("", nil)
+        self:appendBoxBelow(box)
+    end
     -- assert(left + other._width <= self._width, "Cannot right overflow a box with renderOver()")
     local j = 1
     -- need + 1 so that top:0 sets it to be on the actual top
