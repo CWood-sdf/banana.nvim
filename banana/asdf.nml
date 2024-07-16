@@ -1,0 +1,34 @@
+<nml>
+<head>
+  <style>
+  nml {
+    width: 9ch;
+    height: 3ch;
+  }
+#flex {
+    display: flex;
+    padding-left: 1ch;
+    hl-bg: red;
+}
+.green {
+    hl-bg: green;
+}
+.grow {
+    flex-grow: 1;
+}
+.basis-2ch {
+    flex-basis: 2ch;
+}
+</style>
+
+</head>
+<body>
+
+<br>
+<div id="flex">
+            <div class="basis-2ch grow">a</div>
+            <div class="grow">a</div>
+            <div class="grow">a</div>
+</div>
+</body>
+</nml>

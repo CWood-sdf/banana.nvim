@@ -50,13 +50,17 @@ end
 
 function M.printRenders(bufMap, expectedMap)
     print("Buffer: ")
+    print("--------")
     for _, v in ipairs(bufMap) do
         print(v)
     end
+    print("--------")
     print("Expected: ")
+    print("--------")
     for _, v in ipairs(expectedMap) do
         print(v)
     end
+    print("--------")
 end
 
 ---@param bufMap string[]

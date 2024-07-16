@@ -36,6 +36,12 @@ nml {
 .w2 {
     width: 2ch;
 }
+.wrap {
+    flex-wrap: wrap;
+}
+.basis-2ch {
+    flex-basis: 2ch;
+}
 </style>
 </head>
 
@@ -261,6 +267,75 @@ describe("Flex test", function()
             "         ",
             "~asg~~asd",
             "         ",
+        }
+        inst:forceRerender()
+        h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
+    end)
+
+    it("flex-basis property", function()
+        local inst = require('banana.render').emptyInstance()
+        inst:useNml(code)
+        inst.DEBUG = false
+        inst.stripRight = false
+        inst:open()
+        h.createElements({
+            "div#.basis-2ch.grow:a",
+            "div#.grow:a",
+            "div#.grow:a",
+        }, inst, inst:getElementById("flex"))
+
+        local expectedMap = {
+            "         ",
+            "~a~~~a~a~",
+            "         ",
+        }
+        inst:forceRerender()
+        h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
+    end)
+
+    it("flex-wrap property with wrapping", function()
+        local inst = require('banana.render').emptyInstance()
+        inst:useNml(code)
+        inst.DEBUG = false
+        inst.stripRight = false
+        inst:open()
+        h.createElements({
+            "div#.basis-2ch.grow.green:a",
+            "div#.basis-2ch.grow.green:a",
+            "div#.basis-2ch.grow.green:a",
+            "div#.basis-2ch.grow.green:a",
+            "div#.basis-2ch.grow.green:a",
+        }, inst, inst:getElementById("flex"))
+
+        inst:getElementById("flex"):addClass("wrap")
+
+        local expectedMap = {
+            "         ",
+            "~a!a!a!a!",
+            "~a!!!!!!!",
+        }
+        inst:forceRerender()
+        h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
+    end)
+
+    it("flex-wrap property without wrapping", function()
+        local inst = require('banana.render').emptyInstance()
+        inst:useNml(code)
+        inst.DEBUG = false
+        inst.stripRight = false
+        inst:open()
+        h.createElements({
+            "div#.basis-2ch.grow:a",
+            "div#.basis-2ch.grow:a",
+            "div#.basis-2ch.grow:a",
+            "div#.basis-2ch.grow:a",
+            "div#.basis-2ch.grow:a",
+        }, inst, inst:getElementById("flex"))
+
+        local expectedMap = {
+            "           ",
+            "~a~a~a~a~a~",
+            "           ",
         }
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)

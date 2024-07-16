@@ -679,9 +679,9 @@ end
 ---@param hl Banana.Highlight?
 ---@return Banana.Box, Banana.Box?
 local function handleOverflow(ast, i, currentLine, append, maxWidth, hl)
-    if currentLine:height() == 0 then
-        currentLine:appendStr("", nil)
-    end
+    -- if currentLine:height() == 0 then
+    --     currentLine:appendStr("", nil)
+    -- end
     if currentLine:width() + append:width() <= maxWidth then
         currentLine:append(append, nil)
         return currentLine, nil
@@ -689,7 +689,7 @@ local function handleOverflow(ast, i, currentLine, append, maxWidth, hl)
     if append:height() ~= 1 or not breakable(ast.nodes[i]) then
         return currentLine, append
     end
-    if currentLine:height() ~= 1 then
+    if currentLine:height() > 1 then
         local ap, extra = splitLineBoxOnce(maxWidth - currentLine:width(), append, hl)
         currentLine:append(ap, nil)
         return currentLine, extra
