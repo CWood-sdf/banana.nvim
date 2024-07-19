@@ -1,3 +1,5 @@
+---@module 'banana.utils.log'
+local log = require('banana.lazyRequire')('banana.utils.log')
 ---@module 'banana.nml.render'
 local t = require('banana.lazyRequire')('banana.nml.render')
 ---@param str string
@@ -11,11 +13,17 @@ end
 local function renderer(_, ast)
     local inst = require('banana.instance').getInstance(ast.instance)
     local name = ast:getAttribute("name")
-    assert(name ~= nil,
-        "Expected a name attribute on a meta tag")
+    if name == nil then
+        log.assert(false,
+            "Expected a name attribute on a meta tag")
+        error("")
+    end
     local value = ast:getAttribute("value")
-    assert(value ~= nil,
-        "Expected a value attribute on a meta tag")
+    if value == nil then
+        log.assert(false,
+            "Expected a value attribute on a meta tag")
+        error("")
+    end
     if startsWith(name, "buf-") then
         inst.bufOpts[name:sub(#"buf-" + 1, #name)] = tonumber(value) or value
     elseif startsWith(name, "win-") then

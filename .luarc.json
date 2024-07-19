@@ -1,5 +1,4 @@
 {
-    "diagnostics.globals": [
-        "nml"
-    ]
+  "diagnostics.globals": ["nml"]
 }
+

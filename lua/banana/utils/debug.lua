@@ -11,4 +11,9 @@ function M.traceBreak(msg)
     return ret
 end
 
+function M.isdev()
+    local ok, _ = pcall(require, "banana.dev")
+    return ok
+end
+
 return M

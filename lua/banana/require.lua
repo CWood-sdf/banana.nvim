@@ -1,3 +1,5 @@
+---@module 'banana.utils.log'
+local log = require('banana.lazyRequire')('banana.utils.log')
 local M = {}
 
 local baseFolder = "banana"
@@ -19,11 +21,17 @@ function M.nmlLoad(filename)
         return nmlAsts[filename][2], nmlAsts[filename][1].styleSets, nmlAsts[filename][1].scripts
     end
     local parser = require('banana.nml.parser').fromFile(filename)
-    assert(parser ~= nil,
-        "Could not generate parser for file '" .. filename .. "'")
+    if parser == nil then
+        log.assert(false,
+            "Could not generate parser for file '" .. filename .. "'")
+        error("")
+    end
     local ast = parser:parse()
-    assert(ast ~= nil,
-        "Unable to parse file '" .. filename .. "'")
+    if ast == nil then
+        log.assert(false,
+            "Unable to parse file '" .. filename .. "'")
+        error("")
+    end
     require("banana.nml.cleanAst").cleanAst(ast)
     nmlAsts[filename] = { parser, ast }
     return ast, parser.styleSets, parser.scripts
@@ -33,11 +41,17 @@ end
 ---@return Banana.Ast, Banana.Ncss.RuleSet[], string[]
 function M.nmlLoadString(str)
     local parser = require('banana.nml.parser').fromString(str)
-    assert(parser ~= nil,
-        "Could not generate parser for string")
+    if parser == nil then
+        log.assert(false,
+            "Could not generate parser for string")
+        error("")
+    end
     local ast = parser:parse()
-    assert(ast ~= nil,
-        "Unable to parse string ")
+    if ast == nil then
+        log.assert(false,
+            "Unable to parse string ")
+        error("")
+    end
     require("banana.nml.cleanAst").cleanAst(ast)
     return ast, parser.styleSets, parser.scripts
 end

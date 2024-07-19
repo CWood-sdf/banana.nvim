@@ -1,3 +1,5 @@
+---@module 'banana.utils.log'
+local log = require('banana.lazyRequire')('banana.utils.log')
 local M = {}
 ---@enum FilterType
 M.FilterType = {
@@ -48,8 +50,11 @@ function Selector:getMatches(ast)
     if self.manualSelect ~= nil then
         return self.manualSelect(ast)
     end
-    assert(not (self.select == nil),
-        "Both selector functions are nil in Ncss Selector")
+    if self.select == nil then
+        log.assert(false,
+            "Both selector functions are nil in Ncss Selector")
+        error("")
+    end
     local ret = {}
     self:_getMatches(ast, ret)
     return ret
@@ -192,8 +197,11 @@ local Query = {
 ---@param ast Banana.Ast
 ---@return Banana.Ast[]
 function Query:find(ast)
-    assert(not (self.rootSelector == nil),
-        "rootSelector is nil in Ncss Query")
+    if self.rootSelector == nil then
+        log.assert(false,
+            "rootSelector is nil in Ncss Query")
+        error("")
+    end
     local ret = self.rootSelector:getMatches(ast)
     for _, v in ipairs(self.filters) do
         if v.filterType == M.FilterType.Where then
@@ -238,8 +246,11 @@ end
 ---@param sel Banana.Ncss.Selector
 ---@param force boolean
 function Query:setRootSelector(sel, force)
-    assert(self.rootSelector == nil or force,
-        "Overwriting the root selector of an Ncss Query")
+    if self.rootSelector ~= nil and not force then
+        log.assert(false,
+            "Overwriting the root selector of an Ncss Query")
+        error("")
+    end
     self.rootSelector = sel
     self.specificity = self.specificity + sel.specificity
 end

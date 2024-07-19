@@ -1,3 +1,5 @@
+---@module 'banana.utils.log'
+local log = require('banana.lazyRequire')('banana.utils.log')
 local M = {}
 ---@module 'banana.nml.render'
 local tags = require('banana.lazyRequire')('banana.nml.render')
@@ -105,10 +107,16 @@ function M.formatInlineContext(ast, clearFirst, clearLast)
             end
         else
             ---@cast node Banana.Ast
-            assert(
-                node.actualTag.formatType ~= tags.FormatType.Block and
-                node.actualTag.formatType ~= tags.FormatType.BlockInline,
-                "A Block or BlockInline format type element is nested in an inline formatting context")
+            if node.actualTag.formatType == tags.FormatType.Block then
+                log.assert(false,
+                    "A Block or BlockInline format type element is nested in an inline formatting context")
+                error("")
+            end
+            if node.actualTag.formatType == tags.FormatType.BlockInline then
+                log.assert(false,
+                    "A Block or BlockInline format type element is nested in an inline formatting context")
+                error("")
+            end
             clearFirst = M.formatInlineContext(node, clearFirst, clearLast and last)
         end
         if inc then

@@ -1,3 +1,5 @@
+---@module 'banana.utils.log'
+local log = require('banana.lazyRequire')('banana.utils.log')
 local M = {}
 ---@module 'banana.ncss.query'
 local q = require('banana.lazyRequire')('banana.ncss.query')
@@ -5,20 +7,35 @@ local q = require('banana.lazyRequire')('banana.ncss.query')
 ---@type { [string]: fun(node: TSNode?, parser: Banana.Ncss.ParseData): Banana.Ncss.PseudoGenRet, number?}
 local pseudoClasses = {
     ["not"] = function(node, parser)
-        assert(node ~= nil, ":not requires a selector argument")
-        assert(node:child_count() == 3, ":not can only take one argument")
+        if node == nil then
+            log.assert(false, ":not requires a selector argument")
+            error("")
+        end
+        if node:child_count() ~= 3 then
+            log.assert(false, ":not can only take one argument")
+            error("")
+        end
         local child = node:child(1)
-        assert(child ~= nil, "Unreachable")
+        if child == nil then
+            log.assert(false, "Unreachable")
+            error("")
+        end
         local query = q.newQuery()
         M.parseQueryComponent(child, query, parser)
         local spec = query.specificity
         return function(ast)
-            assert(query.rootSelector.select ~= nil,
-                "Expected a whereable root selector in :not")
+            if query.rootSelector.select == nil then
+                log.assert(false,
+                    "Expected a whereable root selector in :not")
+                error("")
+            end
             if query.rootSelector.select(ast) then return false end
             for _, sel in ipairs(query.filters) do
-                assert(sel.filterType ~= q.FilterType.Selector,
-                    "Exected only where filters in :not")
+                if sel.filterType == q.FilterType.Selector then
+                    log.assert(false,
+                        "Exected only where filters in :not")
+                    error("")
+                end
                 ---@cast sel Banana.Ncss.Where
                 if sel.satisfies(ast) then return false end
             end
@@ -26,7 +43,10 @@ local pseudoClasses = {
         end, spec
     end,
     ["last-child"] = function(node, _)
-        assert(node == nil, "first-child cannot have any arguments")
+        if node ~= nil then
+            log.assert(false, "first-child cannot have any arguments")
+            error("")
+        end
         local spec = q.Specificity.Class
         ---@type Banana.Ncss.PseudoGenRet
         local fn = function(ast)
@@ -40,7 +60,10 @@ local pseudoClasses = {
         return fn, spec
     end,
     ["first-child"] = function(node, _)
-        assert(node == nil, "first-child cannot have any arguments")
+        if node ~= nil then
+            log.assert(false, "first-child cannot have any arguments")
+            error("")
+        end
         local spec = q.Specificity.Class
         ---@type Banana.Ncss.PseudoGenRet
         local fn = function(ast)
@@ -70,13 +93,19 @@ M.queryParsers = {
             nameTag = node:child(1)
             argsIndex = argsIndex - 1
         end
-        assert(nameTag ~= nil and nameTag:type() == ts_types.class_name,
-            "Could not parse pseudo class as got no class_name node at the expected spots")
+        if nameTag == nil or nameTag:type() ~= ts_types.class_name then
+            log.assert(false,
+                "Could not parse pseudo class as got no class_name node at the expected spots")
+            error("")
+        end
 
         local name = parser:getStringFromRange({ nameTag:start() }, { nameTag:end_() })
         local parse = pseudoClasses[name]
-        assert(parse ~= nil,
-            "Could not find pseudo class parser for pseudo class '" .. name .. "'")
+        if parse == nil then
+            log.assert(false,
+                "Could not find pseudo class parser for pseudo class '" .. name .. "'")
+            error("")
+        end
         local fn, spec = parse(node:child(argsIndex), parser)
         spec = spec or q.Specificity.Pseudoclass
         if isSel then
@@ -89,15 +118,24 @@ M.queryParsers = {
     end,
     [ts_types.descendant_selector] = function(node, parser)
         local el = node:child(1)
-        assert(el ~= nil,
-            "Unreachable")
+        if el == nil then
+            log.assert(false,
+                "Unreachable")
+            error("")
+        end
 
         local query = q.newQuery()
         M.parseQueryComponent(el, query, parser)
-        assert(query.rootSelector ~= nil,
-            "Unexpected nil root selector on query")
-        assert(query.rootSelector.select ~= nil,
-            "descendant_selector requires the rootSelector to have a select function, not manualSelect")
+        if query.rootSelector == nil then
+            log.assert(false,
+                "Unexpected nil root selector on query")
+            error("")
+        end
+        if query.rootSelector.select == nil then
+            log.assert(false,
+                "descendant_selector requires the rootSelector to have a select function, not manualSelect")
+            error("")
+        end
 
         ---@type fun(ast: Banana.Ast, arr: Banana.Ast[]): Banana.Ast[]
         local sel = nil
@@ -115,8 +153,11 @@ M.queryParsers = {
                 end
                 local i = 1
                 while canInsert and query.filters[i] ~= nil do
-                    assert(query.filters[i].filterType == q.FilterType.Where,
-                        "descendant_selector can only have where filters")
+                    if query.filters[i].filterType ~= q.FilterType.Where then
+                        log.assert(false,
+                            "descendant_selector can only have where filters")
+                        error("")
+                    end
                     canInsert = query.filters[i].satisfies(v)
                     i         = i + 1
                 end
@@ -138,15 +179,24 @@ M.queryParsers = {
     end,
     [ts_types.child_selector] = function(node, parser)
         local el = node:child(2)
-        assert(el ~= nil,
-            "Unreachable")
+        if el == nil then
+            log.assert(false,
+                "Unreachable")
+            error("")
+        end
 
         local query = q.newQuery()
         M.parseQueryComponent(el, query, parser)
-        assert(query.rootSelector ~= nil,
-            "Unexpected nil root selector on query")
-        assert(query.rootSelector.select ~= nil,
-            "child_selector requires the rootSelector to have a select function, not manualSelect")
+        if query.rootSelector == nil then
+            log.assert(false,
+                "Unexpected nil root selector on query")
+            error("")
+        end
+        if query.rootSelector.select == nil then
+            log.assert(false,
+                "child_selector requires the rootSelector to have a select function, not manualSelect")
+            error("")
+        end
 
         return q.newManualSelector(function(ast)
             local ret = {}
@@ -160,8 +210,11 @@ M.queryParsers = {
                 end
                 local i = 1
                 while canInsert and query.filters[i] ~= nil do
-                    assert(query.filters[i].filterType == q.FilterType.Where,
-                        "child_selector can only have where filters")
+                    if query.filters[i].filterType ~= q.FilterType.Where then
+                        log.assert(false,
+                            "child_selector can only have where filters")
+                        error("")
+                    end
                     canInsert = query.filters[i].satisfies(v)
                     i         = i + 1
                 end
@@ -181,10 +234,16 @@ M.queryParsers = {
             isSel = true
             nameTag = node:child(1)
         end
-        assert(nameTag ~= nil,
-            "Expected class_name to not be nil")
-        assert(nameTag:type() == ts_types.class_name,
-            "Expected nameTag to have type class_name, got '" .. nameTag:type() .. "'")
+        if nameTag == nil then
+            log.assert(false,
+                "Expected class_name to not be nil")
+            error("")
+        end
+        if nameTag:type() ~= ts_types.class_name then
+            log.assert(false,
+                "Expected nameTag to have type class_name, got '" .. nameTag:type() .. "'")
+            error("")
+        end
 
         local name = parser:getStringFromRange({ nameTag:start() }, { nameTag:end_() })
         if isSel then
@@ -197,10 +256,16 @@ M.queryParsers = {
     end,
     [ts_types.id_selector] = function(node, parser)
         local nameTag = node:child(1)
-        assert(nameTag ~= nil,
-            "Expected id_name to not be nil")
-        assert(nameTag:type() == ts_types.id_name,
-            "Expected nameTag to have type id_name, got '" .. nameTag:type() .. "'")
+        if nameTag == nil then
+            log.assert(false,
+                "Expected id_name to not be nil")
+            error("")
+        end
+        if nameTag:type() ~= ts_types.id_name then
+            log.assert(false,
+                "Expected nameTag to have type id_name, got '" .. nameTag:type() .. "'")
+            error("")
+        end
 
         local name = parser:getStringFromRange({ nameTag:start() }, { nameTag:end_() })
 
@@ -223,8 +288,11 @@ function M.parseQueryComponent(tree, query, parser)
         end
         M.parseQueryComponent(child, query, parser)
         local p = M.queryParsers[tree:type()]
-        assert(p ~= nil,
-            "Could not find parser for '" .. tree:type() .. "'")
+        if p == nil then
+            log.assert(false,
+                "Could not find parser for '" .. tree:type() .. "'")
+            error("")
+        end
         local comp = p(tree, parser)
         query:appendFilter(comp, true)
     end

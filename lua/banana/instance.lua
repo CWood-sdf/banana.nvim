@@ -1,3 +1,5 @@
+---@module 'banana.utils.log'
+local log = require('banana.lazyRequire')('banana.utils.log')
 ---@module 'banana.utils.string'
 local _str = require('banana.lazyRequire')('banana.utils.string')
 
@@ -269,8 +271,11 @@ function Instance:_setRemap(mode, lhs, rhs, opts, dep)
     if self.keymaps[mode] == nil then
         self.keymaps[mode] = {}
     end
-    assert(self.bufnr ~= nil,
-        "Buf does not exist")
+    if self.bufnr == nil then
+        log.assert(false,
+            "Buf does not exist")
+        error("")
+    end
     if self.keymaps[mode][lhs] == nil then
         self.keymaps[mode][lhs] = {}
         vim.keymap.set(mode, lhs, function()
@@ -328,8 +333,11 @@ function Instance:body()
     end
     local sel = require('banana.ncss.query').selectors.oneTag("body")
     local arr = sel:getMatches(self.ast)
-    assert(#arr ~= 0,
-        "Could not find a body tag in Instance:body()")
+    if #arr == 0 then
+        log.assert(false,
+            "Could not find a body tag in Instance:body()")
+        error("")
+    end
     self._body = arr[1]
     return arr[1]
 end
@@ -362,8 +370,11 @@ end
 ---@param ast Banana.Ast?
 ---@param rules Banana.Ncss.RuleSet[]
 function Instance:applyStyleDeclarations(ast, rules)
-    assert(ast ~= nil,
-        "Ast is nil")
+    if ast == nil then
+        log.assert(false,
+            "Ast is nil")
+        error("")
+    end
     self:applyInlineStyles(ast)
     for _, v in ipairs(rules) do
         if v.query == nil then
@@ -392,8 +403,11 @@ function Instance:runScript(script, opts)
         script = "local document = require('banana.instance').getInstance(" .. self.instanceId .. ")\n" .. script
         f = loadstring(script)
     end
-    assert(f ~= nil,
-        "Could not convert script tag to runnable lua function")
+    if f == nil then
+        log.assert(false,
+            "Could not convert script tag to runnable lua function")
+        error("")
+    end
     f(opts)
 end
 
@@ -580,8 +594,11 @@ function Instance:highlight(lines, offset)
         -- self.highlightNs = nil
     end
     vim.api.nvim_win_set_hl_ns(self.winid, self.highlightNs)
-    assert(self.bufnr ~= nil or not vim.api.nvim_buf_is_valid(self.bufnr),
-        "Unreachable (buf is invalid in higlightBuffer)")
+    if self.bufnr == nil or not vim.api.nvim_buf_is_valid(self.bufnr) then
+        log.assert(false,
+            "Unreachable (buf is invalid in higlightBuffer)")
+        error("")
+    end
     local row = offset
     local col = 0
     local hlId = 0
@@ -607,8 +624,11 @@ function Instance:highlight(lines, offset)
                     if hlNotExists and keysCount > 1 then
                         local opts = vim.deepcopy(word.style)
                         opts.__name = nil
-                        assert(opts ~= nil,
-                            "Unreachable [highlightBuffer colorOpts is nil]")
+                        if opts == nil then
+                            log.assert(false,
+                                "Unreachable [highlightBuffer colorOpts is nil]")
+                            error("")
+                        end
                         vim.api.nvim_set_hl(0, hlGroup, opts)
                     elseif hlNotExists then
                         hlGroup = M.defaultWinHighlight
@@ -682,11 +702,17 @@ end
 ---@param name string
 ---@return Banana.Ast[]
 function Instance:getElementsByClassName(name)
-    assert(nilAst ~= nil,
-        "Unreachable")
+    if nilAst == nil then
+        log.assert(false,
+            "Unreachable")
+        error("")
+    end
     local query = require('banana.ncss.query').selectors.class(name)
-    assert(self.ast ~= nil,
-        "Instance hasnt parsed yet (should be unreachable)")
+    if self.ast == nil then
+        log.assert(false,
+            "Instance hasnt parsed yet (should be unreachable)")
+        error("")
+    end
     local asts = query:getMatches(self.ast)
     return asts
 end
@@ -694,11 +720,17 @@ end
 ---@param name string
 ---@return Banana.Ast
 function Instance:getElementById(name)
-    assert(nilAst ~= nil,
-        "Unreachable")
+    if nilAst == nil then
+        log.assert(false,
+            "Unreachable")
+        error("")
+    end
     local query = require('banana.ncss.query').selectors.id(name)
-    assert(self.ast ~= nil,
-        "Instance hasnt parsed yet (should be unreachable)")
+    if self.ast == nil then
+        log.assert(false,
+            "Instance hasnt parsed yet (should be unreachable)")
+        error("")
+    end
     local asts = query:getMatches(self.ast)
     if #asts ~= 1 then
         ---@diagnostic disable-next-line: return-type-mismatch
@@ -710,11 +742,17 @@ end
 ---@param name string
 ---@return Banana.Ast[]
 function Instance:getElementsByTag(name)
-    assert(nilAst ~= nil,
-        "Unreachable")
+    if nilAst == nil then
+        log.assert(false,
+            "Unreachable")
+        error("")
+    end
     local query = require('banana.ncss.query').selectors.tag(name)
-    assert(self.ast ~= nil,
-        "Instance hasnt parsed yet (should be unreachable)")
+    if self.ast == nil then
+        log.assert(false,
+            "Instance hasnt parsed yet (should be unreachable)")
+        error("")
+    end
     local asts = query:getMatches(self.ast)
     if #asts ~= 1 then
         ---@diagnostic disable-next-line: return-type-mismatch
@@ -742,6 +780,7 @@ end
 ---@param bufferName string
 ---@return Banana.Instance
 function M.newInstance(filename, bufferName)
+    log.trace("Creating instance with file " .. filename .. " and buffername " .. bufferName)
     local instance = Instance:new()
     instance:setBufName(bufferName)
     instance:useFile(filename)
@@ -756,10 +795,16 @@ end
 ---@param id number
 ---@return Banana.Instance
 function M.getInstance(id)
-    assert(id ~= nil,
-        "Given a nil instance id")
-    assert(instances[id] ~= nil,
-        "Could not find instance with id " .. id)
+    if id == nil then
+        log.assert(false,
+            "Given a nil instance id")
+        error("")
+    end
+    if instances[id] == nil then
+        log.assert(false,
+            "Could not find instance with id " .. id)
+        error("")
+    end
     return instances[id]
 end
 

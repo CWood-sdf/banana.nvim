@@ -1,3 +1,5 @@
+---@module 'banana.utils.log'
+local log = require('banana.lazyRequire')('banana.utils.log')
 ---@module 'banana.utils.string'
 local _str = require('banana.lazyRequire')('banana.utils.string')
 
@@ -65,9 +67,12 @@ end
 
 ---@param width number
 function M.Box:expandWidthTo(width)
-    assert(width >= self._width,
-        "width is smaller than possible (given target width " ..
-        width .. " when current width is " .. self._width .. ")")
+    if width < self._width then
+        log.assert(false,
+            "width is smaller than possible (given target width " ..
+            width .. " when current width is " .. self._width .. ")")
+        error("")
+    end
     self._width = width
     self.dirty = true
     self:clean()
@@ -89,7 +94,10 @@ function M.Box:cloneHeightTo(height)
     if height < #self.lines then
         return
     end
-    assert(#self.lines ~= 0, "No contents to clone")
+    if #self.lines == 0 then
+        log.assert(false, "No contents to clone")
+        error("")
+    end
     local i = #self.lines
     while #self.lines < height do
         table.insert(self.lines, cloneLine(self.lines[i]))
@@ -108,7 +116,10 @@ end
 
 ---@param height number
 function M.Box:expandHeightTo(height)
-    assert(height >= #self.lines, "Height is smaller than possible")
+    if height < #self.lines then
+        log.assert(false, "Height is smaller than possible")
+        error("")
+    end
     while #self.lines < height do
         table.insert(self.lines, {
             {
@@ -141,8 +152,11 @@ function M.Box:clean()
     end
     for i, _ in ipairs(self.lines) do
         local w = M.lineWidth(self.lines[i])
-        assert(w <= self._width,
-            "Unreachable (line width is greater than max width)")
+        if w > self._width then
+            log.assert(false,
+                "Unreachable (line width is greater than max width)")
+            error("")
+        end
         if w < self._width then
             table.insert(self.lines[i], self:fillString(self._width - w))
         end
@@ -323,8 +337,11 @@ function M.Box:trimWidthLastLine(width, trimStrat)
     local maxWidth = 0
     for i = 1, #self.lines - 1 do
         maxWidth = math.max(maxWidth, M.lineWidth(self.lines[i]))
-        assert(maxWidth <= width,
-            "Can not trim non last line in Box:trimWidthLastLine")
+        if maxWidth > width then
+            log.assert(false,
+                "Can not trim non last line in Box:trimWidthLastLine")
+            error("")
+        end
     end
 end
 

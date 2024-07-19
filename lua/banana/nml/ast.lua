@@ -1,3 +1,5 @@
+---@module 'banana.utils.log'
+local log = require('banana.lazyRequire')('banana.utils.log')
 local M = {}
 ---@module 'banana.utils.string'
 local _str = require('banana.lazyRequire')('banana.utils.string')
@@ -136,7 +138,10 @@ function M.Ast:hasStyle(style)
 end
 
 function M.Ast:assertHasStyle(style)
-    assert(self:firstStyle(style) ~= nil)
+    if self:firstStyle(style) == nil then
+        log.assert(false, "needs style")
+        error("")
+    end
 end
 
 ---@return number
@@ -553,7 +558,10 @@ function M.calcUnitNoMod(unit, parentWidth, extras)
             computed = unit.value,
         }
     elseif unit.unit == "fr" then
-        assert(extras[1] ~= nil, "fr unit requires an extra parameter")
+        if extras[1] == nil then
+            log.assert(false, "fr unit requires an extra parameter")
+            error("")
+        end
         local mult = unit.value
         return {
             value = unit.value,
@@ -663,8 +671,11 @@ function M.Ast:applyStyleDeclarations(declarations, basePrec)
 
             local value = v.values[1]
             local index = M[side]
-            assert(index ~= nil,
-                "Undefined side '" .. side .. "'")
+            if index == nil then
+                log.assert(false,
+                    "Undefined side '" .. side .. "'")
+                error("")
+            end
             local val = value.value
             ---@cast val Banana.Ncss.UnitValue
             self.padding[index] = val
@@ -673,8 +684,11 @@ function M.Ast:applyStyleDeclarations(declarations, basePrec)
 
             local value = v.values[1]
             local index = M[side]
-            assert(index ~= nil,
-                "Undefined side '" .. side .. "'")
+            if index == nil then
+                log.assert(false,
+                    "Undefined side '" .. side .. "'")
+                error("")
+            end
             local val = value.value
             ---@cast val Banana.Ncss.UnitValue
             self.margin[index] = val
@@ -714,8 +728,11 @@ function M.Ast:applyStyleDeclarations(declarations, basePrec)
 end
 
 function M.Ast:remove()
-    assert(self._parent ~= require('banana.instance').getNilAst(),
-        "Attempting to remove the root node")
+    if self._parent == require('banana.instance').getNilAst() then
+        log.assert(false,
+            "Attempting to remove the root node")
+        error("")
+    end
     for i, v in ipairs(self._parent.nodes) do
         if v == self then
             table.remove(self._parent.nodes, i)
@@ -944,8 +961,11 @@ end
 ---@param mods Banana.Remap.Constraint[]
 ---@param opts vim.keymap.set.Opts
 function M.Ast:attachRemap(mode, lhs, mods, rhs, opts)
-    assert(type(mods) == "table",
-        "Banana attachRemap requires the 4th parameter (before rhs) to be a table of modifiers")
+    if type(mods) ~= "table" then
+        log.assert(false,
+            "Banana attachRemap requires the 4th parameter (before rhs) to be a table of modifiers")
+        error("")
+    end
     local modFns = vim.iter(mods)
         :map(function(mod) return self:parseRemapMod(mod) end):totable()
     if type(rhs) == "string" then

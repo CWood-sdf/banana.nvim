@@ -1,3 +1,5 @@
+---@module 'banana.utils.log'
+local log = require('banana.lazyRequire')('banana.utils.log')
 ---@module 'banana.utils.string'
 local _str = require('banana.lazyRequire')('banana.utils.string')
 local M = {}
@@ -129,13 +131,19 @@ local function parseNumValue(tree, parser, new)
         local valStr = valueString:sub(1, _str.charWidth(valueString) - _str.charWidth(unitStr))
 
         local val = tonumber(valStr)
-        assert(val ~= nil,
-            "Value is nil (from value string of '" .. valStr .. "')")
+        if val == nil then
+            log.assert(false,
+                "Value is nil (from value string of '" .. valStr .. "')")
+            error("")
+        end
         return M.newUnitValue(val, unitStr)
     end
     local num = tonumber(valueString)
-    assert(num ~= nil,
-        "Got a nil value when num parsing '" .. valueString .. "'")
+    if num == nil then
+        log.assert(false,
+            "Got a nil value when num parsing '" .. valueString .. "'")
+        error("")
+    end
     return new(num)
 end
 
@@ -150,8 +158,11 @@ local Function = {
 ---@param fn fun(params: Banana.Ncss.StyleValue[], parser: Banana.Ncss.ParseData): Banana.Ncss.StyleValue[]|Banana.Ncss.StyleValue
 ---@param argsType (Banana.Ncss.StyleValue.Types|Banana.Ncss.StyleValue.Types[])[]
 function Function:new(fn, args, argsType)
-    assert(#argsType == args,
-        "Could not match argument size to type size")
+    if #argsType ~= args then
+        log.assert(false,
+            "Could not match argument size to type size")
+        error("")
+    end
     ---@type Banana.Ncss.Function
     local ret = {
         argsCount = args,
@@ -224,19 +235,34 @@ local cssParsers = {
     end,
     call_expression = function(tree, parser, _)
         local fNameNode = tree:child(0)
-        assert(fNameNode ~= nil,
-            "function_name node is nil in call_expression")
-        assert(fNameNode:type() == ts_types.function_name,
-            "Expected fNameNode to be 'function_name' type, but got '" .. fNameNode:type() .. "'")
+        if fNameNode == nil then
+            log.assert(false,
+                "function_name node is nil in call_expression")
+            error("")
+        end
+        if fNameNode:type() ~= ts_types.function_name then
+            log.assert(false,
+                "Expected fNameNode to be 'function_name' type, but got '" .. fNameNode:type() .. "'")
+            error("")
+        end
         local fName = parser:getStringFromRange({ fNameNode:start() }, { fNameNode:end_() })
         local fn = cssFunctions[fName]
-        assert(fn ~= nil,
-            "Could not find function definition for function '" .. fName .. "'")
+        if fn == nil then
+            log.assert(false,
+                "Could not find function definition for function '" .. fName .. "'")
+            error("")
+        end
         local paramsNode = tree:child(1)
-        assert(paramsNode ~= nil,
-            "Expected arguments node to not be nil")
-        assert(paramsNode:type() == ts_types.arguments,
-            "Expected paramsNode to have type 'arguments', instead got '" .. paramsNode:type() .. "'")
+        if paramsNode == nil then
+            log.assert(false,
+                "Expected arguments node to not be nil")
+            error("")
+        end
+        if paramsNode:type() ~= ts_types.arguments then
+            log.assert(false,
+                "Expected paramsNode to have type 'arguments', instead got '" .. paramsNode:type() .. "'")
+            error("")
+        end
         ---@type Banana.Ncss.StyleValue[]
         local params = {}
         local i = 0
@@ -255,17 +281,23 @@ local cssParsers = {
             i = i + 1
             param = paramsNode:child(i)
         end
-        assert(#params == fn.argsCount,
-            "Got incorrect number of arguments for function '" ..
-            fName .. "', expected " .. fn.argsCount .. ", but got " .. #params)
+        if #params ~= fn.argsCount then
+            log.assert(false,
+                "Got incorrect number of arguments for function '" ..
+                fName .. "', expected " .. fn.argsCount .. ", but got " .. #params)
+            error("")
+        end
         for j, v in ipairs(params) do
             local pType = v.type
             local expected = fn.argsType[j]
             if type(expected) == "string" then
-                assert(pType == expected,
-                    "Expected type '" ..
-                    expected ..
-                    "' for parameter " .. j .. " of ncss function '" .. fName .. "', but got type '" .. pType .. "'")
+                if pType ~= expected then
+                    log.assert(false,
+                        "Expected type '" ..
+                        expected ..
+                        "' for parameter " .. j .. " of ncss function '" .. fName .. "', but got type '" .. pType .. "'")
+                    error("")
+                end
             else
                 local match = false
                 for _, e in ipairs(expected) do
@@ -291,8 +323,11 @@ local cssParsers = {
     end,
     parenthesized_value = function(tree, parser, _)
         local child = tree:child(1)
-        assert(child ~= nil,
-            "Unreachable")
+        if child == nil then
+            log.assert(false,
+                "Unreachable")
+            error("")
+        end
         return M.parseCssValue(child, parser)
     end,
 }
@@ -302,12 +337,18 @@ local cssParsers = {
 ---@return Banana.Ncss.StyleValue[]
 function M.parseCssValue(tree, parser)
     local p = cssParsers[tree:type()]
-    assert(p ~= nil,
-        "Could not find value parser for node of type '" .. tree:type() .. "'")
+    if p == nil then
+        log.assert(false,
+            "Could not find value parser for node of type '" .. tree:type() .. "'")
+        error("")
+    end
     local str = parser:getStringFromRange({ tree:start() }, { tree:end_() })
     local ret = p(tree, parser, str)
-    assert(ret ~= nil,
-        "Unreachable")
+    if ret == nil then
+        log.assert(false,
+            "Unreachable")
+        error("")
+    end
     if ret[1] ~= nil then
         return ret
     end

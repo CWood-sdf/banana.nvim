@@ -1,3 +1,5 @@
+---@module 'banana.utils.log'
+local log = require('banana.lazyRequire')('banana.utils.log')
 ---@alias Banana.Ncss.PropertyValidation.Type string|Banana.Ncss.StyleValue.Types
 
 ---@class (exact) Banana.Ncss.PropertyValidation
@@ -16,8 +18,11 @@ function Validation:new(val)
     if type(val) == "table" then
         for k, v in pairs(val) do
             for _, y in ipairs(v) do
-                assert(#y == k,
-                    "Validation does not have the proper size")
+                if #y ~= k then
+                    log.assert(false,
+                        "Validation does not have the proper size")
+                    error("")
+                end
             end
         end
         ret = {
@@ -42,8 +47,11 @@ function Validation:passes(value, name)
         return self.custom(value)
     end
     local validations = self.validations[#value]
-    assert(validations ~= nil,
-        "No validation for size " .. #value .. " exists for property '" .. name .. "'")
+    if validations == nil then
+        log.assert(false,
+            "No validation for size " .. #value .. " exists for property '" .. name .. "'")
+        error("")
+    end
     for _, v in pairs(validations) do
         local passes = true
         for i, tp in ipairs(v) do
@@ -148,8 +156,11 @@ local validations         = {
 return {
     validate = function(name, value)
         local validation = validations[name]
-        assert(validation ~= nil,
-            "Unable to validate property '" .. name .. "'")
+        if validation == nil then
+            log.assert(false,
+                "Unable to validate property '" .. name .. "'")
+            error("")
+        end
         return validation:passes(value, name)
     end,
     _validations = validations,

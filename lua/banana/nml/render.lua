@@ -1,3 +1,5 @@
+---@module 'banana.utils.log'
+local log = require('banana.lazyRequire')('banana.utils.log')
 local M = {}
 ---@module 'banana.utils.string'
 local _str = require('banana.lazyRequire')('banana.utils.string')
@@ -228,9 +230,15 @@ local function hasNoFrUnits(ast)
     for _, nodes in pairs(ast.style) do
         for _, v in ipairs(nodes) do
             if v.type == "unit" and v.value.unit == "fr" then
-                assert(ast:hasStyle("width"), "an ast with fractional units must have a width/height")
-                assert(ast:firstStyleValue("width").unit == "fr",
-                    "an ast with fractional units must have a width/height with unit fr")
+                if not ast:hasStyle("width") then
+                    log.assert(false, "an ast with fractional units must have a width/height")
+                    error("")
+                end
+                if ast:firstStyleValue("width").unit ~= "fr" then
+                    log.assert(false,
+                        "an ast with fractional units must have a width/height with unit fr")
+                    error("")
+                end
                 return false
             end
         end
@@ -740,8 +748,11 @@ end
 ---@param name string
 function M.makeTag(name)
     local ok, mgr = pcall(require, 'banana.nml.tags.' .. name)
-    assert(ok,
-        "Error while trying to load tag '" .. name .. "'")
+    if not ok then
+        log.assert(false,
+            "Error while trying to load tag '" .. name .. "'")
+        error("")
+    end
     return mgr
 end
 
