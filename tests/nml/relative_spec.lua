@@ -13,6 +13,9 @@ local code = nml([[
         position: relative;
         top: 1ch;
     }
+    span.rel-left {
+        left: 1ch;
+    }
     span {
         hl-bg: #000000;
         width: 4ch;
@@ -56,6 +59,12 @@ describe("Relative", function()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
 
         local el = inst:getElementById("rel")
+        h.boundsMatch(el, {
+            leftX = 1,
+            rightX = 5,
+            topY = 2,
+            bottomY = 5,
+        })
         el:addClass("rel")
         expectedMap = {
             "          ",
@@ -65,6 +74,27 @@ describe("Relative", function()
             "!!!!      ",
         }
         inst:forceRerender()
+        h.boundsMatch(el, {
+            leftX = 1,
+            rightX = 5,
+            topY = 3,
+            bottomY = 6,
+        })
+        el:addClass("rel-left")
+        expectedMap = {
+            "          ",
+            "~~~~a!!!~~",
+            "~a!!!!!!~~",
+            "~!!!!!!!~~",
+            " !!!!     ",
+        }
+        inst:forceRerender()
+        h.boundsMatch(el, {
+            leftX = 2,
+            rightX = 6,
+            topY = 3,
+            bottomY = 6,
+        })
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
     end)
 end)

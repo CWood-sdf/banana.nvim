@@ -139,4 +139,16 @@ function M.createElements(specs, document, target)
     return ret
 end
 
+---@param ast Banana.Ast
+---@param bound Banana.Ast.BoundingBox
+function M.boundsMatch(ast, bound)
+    local box = ast.boundBox
+    assert(box ~= nil, "Expected a bounding box")
+    for k, v in pairs(bound) do
+        if box[k] ~= v then
+            error("Expected bound '" .. k .. "' to be " .. v .. " but got " .. box[k])
+        end
+    end
+end
+
 return M
