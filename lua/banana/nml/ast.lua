@@ -1,5 +1,6 @@
 local M = {}
-local _str = require('banana.utils.string')
+---@module 'banana.utils.string'
+local _str = require('banana.lazyRequire')('banana.utils.string')
 
 M.left = 1
 M.top = 2
@@ -56,7 +57,7 @@ function M.Ast:new(tag, parent)
         nodes = {},
         tag = tag,
         _parent = parent,
-        actualTag = require("banana.nml.tags").makeTag(tag),
+        actualTag = require("banana.nml.render").makeTag(tag),
         attributes = {},
         instance = nil,
         padding = {
@@ -713,7 +714,7 @@ function M.Ast:applyStyleDeclarations(declarations, basePrec)
 end
 
 function M.Ast:remove()
-    assert(self._parent ~= require('banana.render').getNilAst(),
+    assert(self._parent ~= require('banana.instance').getNilAst(),
         "Attempting to remove the root node")
     for i, v in ipairs(self._parent.nodes) do
         if v == self then
@@ -721,7 +722,7 @@ function M.Ast:remove()
             break
         end
     end
-    require('banana.render').getInstance(self.instance):removeMapsFor(self)
+    require('banana.instance').getInstance(self.instance):removeMapsFor(self)
     self._parent = nil
     self:_requestRender()
 end
@@ -743,7 +744,7 @@ function M.Ast:appendNode(node)
     node._parent = self
     table.insert(self.nodes, node)
     if self.instance ~= nil then
-        require('banana.render').getInstance(self.instance):applyId(node)
+        require('banana.instance').getInstance(self.instance):applyId(node)
     end
     self:_requestRender()
 end
@@ -888,7 +889,7 @@ function M.Ast:child(i)
             end
         end
     end
-    return require('banana.render').getNilAst()
+    return require('banana.instance').getNilAst()
 end
 
 ---@return string
@@ -969,7 +970,7 @@ function M.Ast:attachRemap(mode, lhs, mods, rhs, opts)
         end
         return true
     end
-    local inst = require('banana.render').getInstance(self.instance)
+    local inst = require('banana.instance').getInstance(self.instance)
     inst:_setRemap(mode, lhs, actualRhs, opts, self)
 end
 
@@ -977,7 +978,7 @@ function M.Ast:_requestRender()
     if self.instance == nil then
         return
     end
-    local inst = require('banana.render').getInstance(self.instance)
+    local inst = require('banana.instance').getInstance(self.instance)
     inst:_requestRender()
 end
 

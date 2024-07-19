@@ -35,7 +35,7 @@ local code = nml([[
 
 describe("Style clearing", function()
     it("should clear old styles", function()
-        local doc = require('banana.render').emptyInstance()
+        local doc = require('banana.instance').emptyInstance()
         doc:useNml(code)
         doc.DEBUG = false
         doc.stripRight = false

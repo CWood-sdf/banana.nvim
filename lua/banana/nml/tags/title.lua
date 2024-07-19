@@ -1,8 +1,9 @@
-local t = require('banana.nml.tags')
+---@module 'banana.nml.render'
+local t = require('banana.lazyRequire')('banana.nml.render')
 
 ---@type Banana.Renderer
 local function renderer(self, ast, _, parentWidth, parentHeight, startX, startY, inherit, extra)
-    local inst = require('banana.render').getInstance(ast.instance)
+    local inst = require('banana.instance').getInstance(ast.instance)
     inst:setBufName(ast:getTextContent())
     local b = require('banana.box')
     ---@type Banana.Box
@@ -15,7 +16,7 @@ local M = t.newTag(
     t.FormatType.BlockInline,
     false,
     renderer,
-    require('banana.nml.tags').defaultInitials()
+    require('banana.nml.render').defaultInitials()
 )
 
 return M

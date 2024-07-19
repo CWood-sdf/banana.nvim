@@ -1,19 +1,41 @@
 -- local _str = require('banana.utils.string')
-local t = require('banana.nml.tags')
+---@module 'banana.nml.render'
+local t = require('banana.lazyRequire')('banana.nml.render')
+---@module 'banana.utils.string'
+local _str = require('banana.lazyRequire')('banana.utils.string')
+---@module 'banana.utils.debug'
+local dbg = require('banana.lazyRequire')('banana.utils.debug')
+---@module 'banana.box'
+local b = require('banana.lazyRequire')('banana.box')
 
 ---@type Banana.Renderer
 local function renderer(self, ast, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra)
-    -- local listTick = nil
-    -- local widthAlloted = nil
-    -- if self.name == "li" then
-    --     listTick = ast:parent():_getNextListItem(inherit.list_style_type)
-    --     widthAlloted = _str.charWidth(listTick)
-    --     if ast:parent().listCounter ~= nil then
-    --         widthAlloted = ast:parent():_getMaxListWidth(inherit.list_style_type)
-    --     end
-    --     parentWidth = parentWidth - widthAlloted
-    -- end
-    return self:renderInlineEl(ast, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra)
+    local widthAlloted = nil
+    local listTick = ast:parent():_getNextListItem(inherit.list_style_type)
+    widthAlloted = _str.charWidth(listTick)
+    if ast:parent().listCounter ~= nil then
+        widthAlloted = ast:parent():_getMaxListWidth(inherit.list_style_type)
+    end
+    parentWidth = parentWidth - widthAlloted
+
+    local render = self:renderInlineEl(ast, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra)
+
+    if extra.debug then
+        extra.trace:appendBoxBelow(dbg.traceBreak("Adding list item '" .. listTick .. "'"), false)
+    end
+    listTick = string.rep(' ', widthAlloted - _str.charWidth(listTick)) .. listTick
+    local box = b.Box:new(parentHl)
+    box:appendStr(listTick)
+    box:expandHeightTo(render:height())
+    if extra.debug then
+        extra.trace:appendBoxBelow(dbg.traceBreak("List item box"), false)
+        extra.trace:appendBoxBelow(box, false)
+    end
+    box:append(render)
+    local oldHl = render.hlgroup
+    render = box
+    render.hlgroup = oldHl
+    return render
 end
 ---@type Banana.TagInfo
 local M = t.newTag(
@@ -21,7 +43,7 @@ local M = t.newTag(
     t.FormatType.BlockInline,
     false,
     renderer,
-    require('banana.nml.tags').defaultInitials()
+    require('banana.nml.render').defaultInitials()
 )
 
 return M

@@ -27,7 +27,7 @@ nml {
 
 describe("Percentage tests", function()
     it("regular percents", function()
-        local inst = require('banana.render').emptyInstance()
+        local inst = require('banana.instance').emptyInstance()
         inst:useNml(code)
         inst.DEBUG = false
         inst.stripRight = false
@@ -48,7 +48,7 @@ describe("Percentage tests", function()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
     end)
     it("regular percents", function()
-        local inst = require('banana.render').emptyInstance()
+        local inst = require('banana.instance').emptyInstance()
         inst:useNml(code)
         inst.DEBUG = false
         inst.stripRight = false
@@ -68,7 +68,7 @@ describe("Percentage tests", function()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
     end)
     it("percents with padding", function()
-        local inst = require('banana.render').emptyInstance()
+        local inst = require('banana.instance').emptyInstance()
         inst:useNml(code)
         inst.DEBUG = false
         inst.stripRight = false

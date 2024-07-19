@@ -41,7 +41,7 @@ position: absolute;
 
 describe("Div rendering", function()
     it("absolutes", function()
-        local inst = require('banana.render').emptyInstance()
+        local inst = require('banana.instance').emptyInstance()
         inst:useNml(code)
         inst.DEBUG = false
         inst.stripRight = false
@@ -58,7 +58,7 @@ describe("Div rendering", function()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
     end)
     it("z-index 2", function()
-        local inst = require('banana.render').emptyInstance()
+        local inst = require('banana.instance').emptyInstance()
         inst:useNml(code)
         inst.DEBUG = false
         inst.stripRight = false
@@ -78,7 +78,7 @@ describe("Div rendering", function()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
     end)
     it("z-index 1", function()
-        local inst = require('banana.render').emptyInstance()
+        local inst = require('banana.instance').emptyInstance()
         inst:useNml(code)
         inst.DEBUG = false
         inst.stripRight = false

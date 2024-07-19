@@ -1,4 +1,5 @@
-local t = require('banana.nml.tags')
+---@module 'banana.nml.render'
+local t = require('banana.lazyRequire')('banana.nml.render')
 ---@param str string
 ---@param other string
 ---@return boolean
@@ -8,7 +9,7 @@ end
 
 ---@type Banana.Renderer
 local function renderer(_, ast)
-    local inst = require('banana.render').getInstance(ast.instance)
+    local inst = require('banana.instance').getInstance(ast.instance)
     local name = ast:getAttribute("name")
     assert(name ~= nil,
         "Expected a name attribute on a meta tag")
@@ -34,7 +35,7 @@ local M = t.newTag(
     t.FormatType.Inline,
     true,
     renderer,
-    require('banana.nml.tags').defaultInitials()
+    require('banana.nml.render').defaultInitials()
 )
 
 return M

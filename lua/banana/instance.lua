@@ -1,4 +1,5 @@
-local _str = require('banana.utils.string')
+---@module 'banana.utils.string'
+local _str = require('banana.lazyRequire')('banana.utils.string')
 
 local M = {}
 M.defaultWinHighlight = "NormalFloat"
@@ -59,8 +60,8 @@ local Instance = {}
 function Instance:virtualRender(ast, width, height)
     ---@type Banana.Line[]
     local ret = {}
-    if require("banana.nml.tags").tagExists(ast.tag) then
-        local tag = require("banana.nml.tags").makeTag(ast.tag)
+    if require("banana.nml.render").tagExists(ast.tag) then
+        local tag = require("banana.nml.render").makeTag(ast.tag)
         ---@type Banana.Renderer.ExtraInfo
         local extra = {
             trace = require('banana.box').Box:new(),
@@ -388,7 +389,7 @@ function Instance:runScript(script, opts)
             self:runScriptAt(str, o)
         end
     else
-        script = "local document = require('banana.render').getInstance(" .. self.instanceId .. ")\n" .. script
+        script = "local document = require('banana.instance').getInstance(" .. self.instanceId .. ")\n" .. script
         f = loadstring(script)
     end
     assert(f ~= nil,

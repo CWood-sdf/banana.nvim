@@ -1,195 +1,16 @@
 local M = {}
-local _str = require('banana.utils.string')
-local _ast = require('banana.nml.ast')
-local b = require('banana.box')
-
----@class (exact) Banana.Renderer.Surround
----@field left number
----@field right number
----@field top number
----@field bottom number
----@field fillChar? string For borders if they ever happen
-
----@class (exact) Banana.Renderer.PartialRendered
----@field margin Banana.Renderer.Surround
----@field padding Banana.Renderer.Surround
----@field widthExpansion number
----@field heightExpansion number
----@field center Banana.Box
----@field marginColor? Banana.Highlight
----@field mainColor? Banana.Highlight
----@field renderAlign "left"|"center"|"right"
----@field maxWidth number
-local PartialRendered = {}
-
----@return Banana.Renderer.PartialRendered
-local function emptyPartialRendered()
-    ---@type Banana.Renderer.PartialRendered
-    local ret = {
-        maxWidth = 0,
-        renderAlign = "left",
-        mainColor = {},
-        marginColor = {},
-        center = b.Box:new(),
-        heightExpansion = 0,
-        widthExpansion = 0,
-        margin = {
-            top    = 0,
-            left   = 0,
-            right  = 0,
-            bottom = 0,
-        },
-        padding = {
-            top    = 0,
-            left   = 0,
-            right  = 0,
-            bottom = 0,
-        },
-
-    }
-    setmetatable(ret, {
-        __index = PartialRendered,
-    })
-    return ret
-end
-
----@return number
-function PartialRendered:getWidth()
-    return self.margin.left + self.margin.right
-        + self.padding.left + self.padding.right
-        + self.widthExpansion + self.center:width()
-end
-
----@return number
-function PartialRendered:getHeight()
-    return self.margin.top + self.margin.bottom
-        + self.padding.top + self.padding.bottom
-        + self.heightExpansion + self.center:height()
-end
-
----@param num number
-function PartialRendered:expandWidthTo(num)
-    self.widthExpansion = num - (self:getWidth() - self.widthExpansion)
-end
-
----@param num number
-function PartialRendered:expandHeightTo(num)
-    self.heightExpansion = num - (self:getHeight() - self.heightExpansion)
-end
-
----comment
----@param box Banana.Box
----@param pad Banana.Renderer.Surround
----@param color Banana.Highlight
----@return Banana.Box
-function PartialRendered:padWith(box, pad, color)
-    if pad.top ~= 0 then
-        local topBox = b.Box:new(color)
-        topBox:appendStr('', nil)
-        topBox:expandWidthTo(box:width())
-        topBox:cloneHeightTo(pad.top)
-        topBox:appendBoxBelow(box)
-        box = topBox
-    end
-    if pad.bottom ~= 0 then
-        local btmBox = b.Box:new(color)
-        btmBox:appendStr('', nil)
-        btmBox:expandWidthTo(box:width())
-        btmBox:cloneHeightTo(pad.bottom)
-        box:appendBoxBelow(btmBox)
-    end
-    if pad.left ~= 0 then
-        local leftBox = b.Box:new(color)
-        leftBox:appendStr('', nil)
-        leftBox:expandWidthTo(pad.left)
-        leftBox:cloneHeightTo(box:height())
-        leftBox:append(box)
-        box = leftBox
-    end
-    if pad.right ~= 0 then
-        local rightBox = b.Box:new(color)
-        rightBox:appendStr('', nil)
-        rightBox:expandWidthTo(pad.right)
-        rightBox:cloneHeightTo(box:height())
-        box:append(rightBox)
-    end
-    return box
-end
-
----@param clone boolean?
----@return Banana.Box
-function PartialRendered:render(clone)
-    if clone then
-        local new = vim.fn.deepcopy(self)
-        setmetatable(new, {
-            __index = PartialRendered,
-        })
-        new.center = self.center:clone()
-        return new:render()
-    end
-    clone = clone or false
-    local box = self.center
-    if clone then
-        box = box:clone()
-    end
-    if self.heightExpansion > 0 then
-        local btmBox = b.Box:new(self.mainColor)
-        btmBox:appendStr('', nil)
-        btmBox:expandWidthTo(box:width())
-        btmBox:cloneHeightTo(self.heightExpansion)
-        box:appendBoxBelow(btmBox)
-    end
-    if self.widthExpansion > 0 then
-        local left = b.Box:new(self.mainColor)
-        left:appendStr('', nil)
-        left:expandWidthTo(self.widthExpansion)
-        left:cloneHeightTo(box:height())
-        if self.renderAlign == "right" then
-            left:append(box)
-            box = left
-        elseif self.renderAlign == "left" then
-            box:append(left)
-        else
-            local l = b.Box:new(self.mainColor)
-            l:appendStr('', nil)
-            l:expandWidthTo(math.ceil(self.widthExpansion / 2))
-            l:cloneHeightTo(box:height())
-            local r = b.Box:new(self.mainColor)
-            r:appendStr('', nil)
-            r:expandWidthTo(math.floor(self.widthExpansion / 2))
-            r:cloneHeightTo(box:height())
-            l:append(box)
-            l:append(r)
-            box = l
-        end
-    end
-    box = self:padWith(box, self.padding, self.mainColor)
-    box = self:padWith(box, self.margin, self.marginColor)
-    return box
-end
-
----@param str string
----@return string
-local function snakeToKebab(str)
-    local ret, _ = str:gsub('_', '-')
-    return ret
-end
-
----@param str string
----@return string
----@diagnostic disable-next-line: unused-local, unused-function
-local function kebabToSnake(str)
-    local ret, _ = str:gsub('\\-', '_')
-    return ret
-end
-
----@param msg string
----@return Banana.Box
-local function traceBreak(msg)
-    local ret = b.Box:new()
-    ret:appendStr("---- line: " .. msg)
-    return ret
-end
+---@module 'banana.utils.string'
+local _str = require('banana.lazyRequire')('banana.utils.string')
+-- ---@module 'banana.utils.case'
+-- local case = require('banana.lazyRequire')('banana.utils.case')
+---@module 'banana.utils.dbg'
+local dbg = require('banana.lazyRequire')('banana.utils.dbg')
+---@module 'banana.nml.ast'
+local _ast = require('banana.lazyRequire')('banana.nml.ast')
+---@module 'banana.box'
+local b = require('banana.lazyRequire')('banana.box')
+-- ---@module 'banana.nml.render.partialRendered'
+-- local p = require('banana.lazyRequire')('banana.nml.render.partialRendered')
 
 ---@class (exact) Banana.Renderer.InheritedProperties
 ---@field text_align string
@@ -226,7 +47,7 @@ M.FormatType = {
 ---@field formatType Banana.Nml.FormatType
 ---@field selfClosing boolean
 ---@field initialProps Banana.Renderer.InitialProperties
----@field private render Banana.Renderer
+---@field render Banana.Renderer
 local TagInfo = {
     name = '',
     formatType = M.FormatType.Inline,
@@ -234,46 +55,7 @@ local TagInfo = {
     render = function(_) return {} end,
 }
 
----@param name string
----@param ast Banana.Ast
----@param ret Banana.Renderer.PartialRendered
----@return Banana.Renderer.PartialRendered, boolean
-local function applyPad(name, ast, ret)
-    local changed = false
-    if ast[name][_ast.left].computed ~= 0 then
-        ret[name].left = ast[name][_ast.left].computed
-        changed = true
-    end
-    if ast[name][_ast.right].computed ~= 0 then
-        ret[name].right = ast[name][_ast.right].computed
-        changed = true
-    end
-    if ast[name][_ast.top].computed ~= 0 then
-        ret[name].top = ast[name][_ast.top].computed
-        changed = true
-    end
-    if ast[name][_ast.bottom].computed ~= 0 then
-        ret[name].bottom = ast[name][_ast.bottom].computed
-        changed = true
-    end
-    return ret, changed
-end
 
----@param ast Banana.Ast
----@param extraWidth number
----@return boolean
-local function isExpandable(ast, extraWidth)
-    local isFlexChild = ast._parent ~= nil and ast._parent:firstStyleValue('display') == "flex"
-    if isFlexChild then
-        return extraWidth > 0 and
-            (ast.actualTag.formatType == M.FormatType.Block or ast.actualTag.formatType == M.FormatType.BlockInline) and
-            (ast:hasStyle('width') or ast:hasStyle("flex-basis"))
-    end
-
-    return (ast.actualTag.formatType == M.FormatType.Block or ast.actualTag.formatType == M.FormatType.BlockInline
-        ) and extraWidth > 0
-        or ast:hasStyle('width')
-end
 
 ---@param ast Banana.Ast
 ---@param startHl Banana.Highlight?
@@ -297,275 +79,9 @@ end
 ---@param extra Banana.Renderer.ExtraInfo
 ---@return Banana.Renderer.PartialRendered
 function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra)
-    ast.relativeBoxId = nil
-    local inheritOld = {}
-    for k, _ in pairs(inherit) do
-        local style = snakeToKebab(k)
-        if ast:hasStyle(style) then
-            inheritOld[k] = inherit[k]
-            inherit[k] = ast:firstStyleValue(style)
-            if inherit[k] == "initial" then
-                inherit[k] = ast:_getInitialStyles()[k]
-            end
-        end
-    end
-    local position = ast:firstStyleValue("position")
-    if position == nil or position == "initial" then
-        position = ast:_getInitialStyles().position
-    end
-    if position == "absolute" then
-        local root = ast
-        while root.absoluteAsts == nil do
-            root = root._parent
-        end
-        table.insert(root.absoluteAsts, ast)
-        for k, _ in pairs(inheritOld) do
-            inherit[k] = inheritOld[k]
-        end
-        return emptyPartialRendered()
-    end
-    local disp = ast:firstStyleValue("display")
-    if disp == "hidden" then
-        for k, _ in pairs(inheritOld) do
-            inherit[k] = inheritOld[k]
-        end
-
-        return emptyPartialRendered()
-    end
-    if ast:hasStyle('width') then
-        -- add margins bc width only sets content-width + padding
-        ---@diagnostic disable-next-line: cast-local-type
-        parentWidth = math.min(
-            ast:firstStyleValue('width').computed + ast:marginLeft() + ast:marginRight(),
-            parentWidth)
-        if inherit.min_size then
-            inherit.min_size = false
-        end
-    end
-    if ast:hasStyle('height') then
-        ---@diagnostic disable-next-line: cast-local-type
-        parentHeight = math.min(
-            ast:firstStyleValue('height').computed + ast:marginTop() + ast:marginBottom(),
-            parentHeight)
-    end
-    if position ~= "static" then
-        if ast:hasStyle("left") then
-            startX = startX + ast:firstStyleValue("left").computed
-        elseif ast:hasStyle("right") then
-            startX = startX - ast:firstStyleValue("right").computed
-        end
-        if ast:hasStyle("top") then
-            startY = startY + ast:firstStyleValue("top").computed
-        elseif ast:hasStyle("bottom") then
-            startY = startY + ast:firstStyleValue("bottom").computed
-        end
-    end
-    startX = startX + ast:marginLeft()
-    startY = startY + ast:marginTop()
-    ---@type Banana.Ast.BoundingBox
-    local boundBox = {
-        leftX   = startX,
-        topY    = startY,
-        rightX  = 0,
-        bottomY = 0,
-    }
-    startX = startX + ast:paddingLeft()
-    startY = startY + ast:paddingTop()
-    local contentWidth = parentWidth - ast:_extraLr()
-    -- techincally this should be in li renderer BUT we would have to reresolve
-    -- units (maybe?) but this would fall apart if something is an fr?
-    -- cant really ignore frs bc someone could have a ul flex
-    -- or we could have a thing that ensures only not frs are recalced
-    local listTick = nil
-    local widthAlloted = nil
-    if ast.actualTag.name == "li" then
-        listTick = ast:parent():_getNextListItem(inherit.list_style_type)
-        widthAlloted = _str.charWidth(listTick)
-        if ast:parent().listCounter ~= nil then
-            widthAlloted = ast:parent():_getMaxListWidth(inherit.list_style_type)
-        end
-        contentWidth = contentWidth - widthAlloted
-    end
-    ---@cast parentWidth number
-    ---@cast parentHeight number
-    local centerBox = self:render(ast, parentHl, contentWidth, parentHeight, startX, startY, inherit, extra)
-    if listTick ~= nil then
-        if extra.debug then
-            extra.trace:appendBoxBelow(traceBreak("Adding list item '" .. listTick .. "'"), false)
-        end
-        listTick = string.rep(' ', widthAlloted - _str.charWidth(listTick)) .. listTick
-        local box = b.Box:new(parentHl)
-        box:appendStr(listTick)
-        box:expandHeightTo(centerBox:height())
-        if extra.debug then
-            extra.trace:appendBoxBelow(traceBreak("List item box"), false)
-            extra.trace:appendBoxBelow(box, false)
-        end
-        box:append(centerBox)
-        local oldHl = centerBox.hlgroup
-        centerBox = box
-        centerBox.hlgroup = oldHl
-        -- centerBox:appendLeft(box)
-    end
-    ---@type Banana.Renderer.Surround
-    local margin = {
-        left = 0,
-        right = 0,
-        top = 0,
-        bottom = 0,
-    }
-    ---@type Banana.Renderer.Surround
-    local padding = {
-        left = 0,
-        right = 0,
-        top = 0,
-        bottom = 0,
-    }
-    if extra.debug then
-        extra.trace:appendBoxBelow(traceBreak("Raw render"), false)
-        extra.trace:appendBoxBelow(ast:_testDumpBox(), false)
-        extra.trace:appendBoxBelow(centerBox:clone(), false)
-    end
-    ---@type Banana.Renderer.PartialRendered
-    local ret = emptyPartialRendered()
-    ret.margin = margin
-    ret.padding = padding
-    ret.center = centerBox
-    ret.marginColor = parentHl
-    ret.mainColor = centerBox.hlgroup
-    ret.renderAlign = "left"
-    local extraWidth = parentWidth - ret:getWidth() - ast:_extraLr()
-    if isExpandable(ast, extraWidth) and not inherit.min_size then
-        ret.center:clean()
-        ret.widthExpansion = extraWidth
-        if inherit.text_align == "left" then
-        elseif inherit.text_align == "right" then
-            ret.renderAlign = "right"
-        elseif inherit.text_align == "center" then
-            ret.renderAlign = "center"
-        end
-        if extra.debug then
-            extra.trace:appendBoxBelow(traceBreak("Expansion w"), false)
-            extra.trace:appendBoxBelow(ast:_testDumpBox(), false)
-            extra.trace:appendBoxBelow(ret:render(true), false)
-        end
-    end
-    if ast.style['height'] ~= nil and not ast:parent():isNil() then
-        ret.center:clean()
-        local height = ast.style['height'][1].value.computed
-            - ast:paddingTop() - ast:paddingBottom()
-        ret.heightExpansion = height - ret.center:height()
-        ---@cast height number
-        if extra.debug then
-            extra.trace:appendBoxBelow(traceBreak("Expansion h"), false)
-            extra.trace:appendBoxBelow(ast:_testDumpBox(), false)
-            extra.trace:appendBoxBelow(ret:render(true), false)
-        end
-    end
-    local changed = false
-    ret, changed = applyPad('padding', ast, ret)
-    if changed then
-        if extra.debug then
-            extra.trace:appendBoxBelow(traceBreak("pad"), false)
-            extra.trace:appendBoxBelow(ast:_testDumpBox(), false)
-            extra.trace:appendBoxBelow(ret:render(true), false)
-        end
-    end
-    boundBox.rightX = boundBox.leftX + ret:getWidth()
-    boundBox.bottomY = boundBox.topY + ret:getHeight()
-    ast.boundBox = boundBox
-    if position ~= "static" then
-        local newRet = b.Box:new(parentHl)
-        local render = ret:render(true)
-        while newRet:height() < render:height() do
-            local newBox = b.Box:new(newRet.hlgroup)
-            newBox:appendStr(string.rep(' ', render:width()))
-            newRet:appendBoxBelow(newBox)
-        end
-        newRet:clean()
-        if extra.debug then
-            extra.trace:appendBoxBelow(traceBreak("float render"), false)
-            extra.trace:appendBoxBelow(ast:_testDumpBox(), false)
-            extra.trace:appendBoxBelow(render:clone(), false)
-            extra.trace:appendBoxBelow(traceBreak("extraRender render"), false)
-            extra.trace:appendBoxBelow(ast:_testDumpBox(), false)
-            extra.trace:appendBoxBelow(newRet:clone(), false)
-        end
-        local root = ast
-        while root.relativeBoxes == nil do
-            root = root._parent
-        end
-        table.insert(root.relativeBoxes, {
-            box = render,
-            left = startX - 1 - ast:paddingLeft(),
-            top = startY - 1 - ast:paddingTop(),
-            z = (ast.style['z-index'] or { {} })[1].value or 0
-        })
-        ast.relativeBoxId = #root.relativeBoxes
-        ret.center = newRet
-        ret.mainColor = parentHl
-        ret.padding.left = 0
-        ret.padding.right = 0
-        ret.padding.top = 0
-        ret.padding.bottom = 0
-        ret.widthExpansion = 0
-        ret.heightExpansion = 0
-        if ast:hasStyle("left") then
-            startX = startX - ast.style.left[1].value.computed
-        elseif ast:hasStyle("right") then
-            startX = startX + ast.style.right[1].value.computed
-        end
-        if ast:hasStyle("top") then
-            startY = startY - ast.style.top[1].value.computed
-        elseif ast:hasStyle("bottom") then
-            startY = startY + ast.style.bottom[1].value.computed
-        end
-        if extra.debug then
-            extra.trace:appendBoxBelow(traceBreak("new render"), false)
-            extra.trace:appendBoxBelow(ast:_testDumpBox(), false)
-            extra.trace:appendBoxBelow(ret:render(true), false)
-        end
-    end
-    ret, changed = applyPad('margin', ast, ret)
-    if changed then
-        if extra.debug then
-            extra.trace:appendBoxBelow(traceBreak("margin"), false)
-            extra.trace:appendBoxBelow(ast:_testDumpBox(), false)
-            extra.trace:appendBoxBelow(ret:render(true), false)
-        end
-    end
-    if ast.absoluteAsts ~= nil then
-        for _, v in ipairs(ast.absoluteAsts) do
-            v:resolveUnits(parentWidth, parentHeight)
-            v.style.position[1].value = "relative"
-            v.actualTag:getRendered(
-                v, ret.mainColor, parentWidth, parentHeight, startX, startY, inherit,
-                extra)
-            v.style.position[1].value = "absolute"
-        end
-    end
-    if ast.relativeBoxes ~= nil then
-        table.sort(ast.relativeBoxes, function(l, r)
-            return l.z < r.z
-        end)
-        local rendered = ret:render()
-        for _, data in ipairs(ast.relativeBoxes) do
-            rendered:renderOver(data.box, data.left, data.top)
-        end
-        ret.center = rendered
-        ret.margin.left = 0
-        ret.margin.right = 0
-        ret.margin.top = 0
-        ret.margin.bottom = 0
-        ret.padding.left = 0
-        ret.padding.right = 0
-        ret.padding.top = 0
-        ret.padding.bottom = 0
-    end
-    for k, _ in pairs(inheritOld) do
-        inherit[k] = inheritOld[k]
-    end
-    return ret
+    return require('banana.nml.render.main')(
+        self, ast, parentHl, parentWidth, parentHeight, startX, startY, inherit,
+        extra)
 end
 
 ---Returns an iterator that renders blocks
@@ -836,14 +352,14 @@ function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, start
     end
 
     if extra.debug then
-        extra.trace:appendBoxBelow(traceBreak("flex w/o fr"), false)
+        extra.trace:appendBoxBelow(dbg.traceBreak("flex w/o fr"), false)
         extra.trace:appendBoxBelow(ast:_testDumpBox(), false)
         for i, v in ipairs(renders) do
             if v ~= nil then
-                extra.trace:appendBoxBelow(traceBreak(i .. ""), false)
+                extra.trace:appendBoxBelow(dbg.traceBreak(i .. ""), false)
                 extra.trace:appendBoxBelow(v[1]:render(true), false)
             else
-                extra.trace:appendBoxBelow(traceBreak(i .. ""), false)
+                extra.trace:appendBoxBelow(dbg.traceBreak(i .. ""), false)
                 local box = b.Box:new()
                 box:appendStr("empty")
                 extra.trace:appendBoxBelow(box, false)
@@ -912,10 +428,10 @@ function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, start
         takenWidth = takenWidth + rendered:getWidth()
     end
     if extra.debug then
-        extra.trace:appendBoxBelow(traceBreak("flex w/ fr"), false)
+        extra.trace:appendBoxBelow(dbg.traceBreak("flex w/ fr"), false)
         extra.trace:appendBoxBelow(ast:_testDumpBox(), false)
         for i, v in ipairs(renders) do
-            extra.trace:appendBoxBelow(traceBreak(i .. ""), false)
+            extra.trace:appendBoxBelow(dbg.traceBreak(i .. ""), false)
             extra.trace:appendBoxBelow(v[1]:render(true), false)
         end
     end
@@ -968,11 +484,11 @@ function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, start
         flexGrowSection(parentWidth, taken, renders, startI, #renders)
     end
     if extra.debug then
-        extra.trace:appendBoxBelow(traceBreak("flex-grow"), false)
+        extra.trace:appendBoxBelow(dbg.traceBreak("flex-grow"), false)
         extra.trace:appendBoxBelow(ast:_testDumpBox(), false)
         for i, v in ipairs(renders) do
             if v ~= nil then
-                extra.trace:appendBoxBelow(traceBreak(i .. ""), false)
+                extra.trace:appendBoxBelow(dbg.traceBreak(i .. ""), false)
                 extra.trace:appendBoxBelow(v[1]:render(true), false)
             end
         end
@@ -1028,7 +544,7 @@ function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, start
         end
     end
     if extra.debug then
-        extra.trace:appendBoxBelow(traceBreak("Wrapping into " .. #lines .. " lines"), false)
+        extra.trace:appendBoxBelow(dbg.traceBreak("Wrapping into " .. #lines .. " lines"), false)
     end
 
     local ret = b.Box:new(hl)

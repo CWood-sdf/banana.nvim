@@ -24,7 +24,7 @@ asd
 
 describe("span rendering", function()
     it("doesnt completely overflow", function()
-        local inst = require('banana.render').emptyInstance()
+        local inst = require('banana.instance').emptyInstance()
         inst:useNml(code)
         inst.DEBUG = false
         inst.stripRight = false
@@ -51,7 +51,7 @@ describe("span rendering", function()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
     end)
     it("margins", function()
-        local inst = require('banana.render').emptyInstance()
+        local inst = require('banana.instance').emptyInstance()
         inst:useNml(code)
         inst.DEBUG = false
         inst.stripRight = false
@@ -69,7 +69,7 @@ describe("span rendering", function()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
     end)
     it("pads", function()
-        local inst = require('banana.render').emptyInstance()
+        local inst = require('banana.instance').emptyInstance()
         inst:useNml(code)
         inst.DEBUG = false
         inst.stripRight = false
@@ -89,7 +89,7 @@ describe("span rendering", function()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
     end)
     it("centers text", function()
-        local inst = require('banana.render').emptyInstance()
+        local inst = require('banana.instance').emptyInstance()
         inst:useNml(code)
         inst.DEBUG = false
         inst.stripRight = false
@@ -108,7 +108,7 @@ describe("span rendering", function()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
     end)
     it("centers odd text", function()
-        local inst = require('banana.render').emptyInstance()
+        local inst = require('banana.instance').emptyInstance()
         inst:useNml(code)
         inst.DEBUG = false
         inst.stripRight = false
@@ -138,7 +138,7 @@ describe("span rendering", function()
         assert(ok1 or ok2, "Expected one of the centers to work")
     end)
     it("relative positions", function()
-        local inst = require('banana.render').emptyInstance()
+        local inst = require('banana.instance').emptyInstance()
         inst:useNml(code)
         inst.DEBUG = false
         inst.stripRight = false
@@ -157,7 +157,7 @@ describe("span rendering", function()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
     end)
     it("Overflow works", function()
-        local inst = require('banana.render').emptyInstance()
+        local inst = require('banana.instance').emptyInstance()
         inst:useNml(code)
         inst.DEBUG = false
         inst.stripRight = false
@@ -176,7 +176,7 @@ describe("span rendering", function()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
     end)
     it("Renders the span", function()
-        local inst = require('banana.render').emptyInstance()
+        local inst = require('banana.instance').emptyInstance()
         inst:useNml(code)
         inst.DEBUG = false
         inst.stripRight = false

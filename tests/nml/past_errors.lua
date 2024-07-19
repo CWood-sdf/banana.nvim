@@ -31,7 +31,7 @@ nml {
 
 describe("Stupid things in the past", function()
     it("shouldnt massively overflow line below flex", function()
-        local document = require('banana.render').emptyInstance()
+        local document = require('banana.instance').emptyInstance()
         local flexbox = document:createElement("div")
         flexbox:addClass("flex")
         local setw = document:createElement("setw")

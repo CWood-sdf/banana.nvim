@@ -1,9 +1,13 @@
 local M = {}
 
-local q = require('banana.ncss.query')
-local ts_types = require('banana.ncss.tsTypes')
-local valueParser = require('banana.ncss.valueParser')
-local queryParser = require('banana.ncss.queryParser')
+---@module 'banana.ncss.query'
+local q = require('banana.lazyRequire')('banana.ncss.query')
+---@module 'banana.ncss.tsTypes'
+local ts_types = require('banana.lazyRequire')('banana.ncss.tsTypes')
+---@module 'banana.ncss.valueParser'
+local valueParser = require('banana.lazyRequire')('banana.ncss.valueParser')
+---@module 'banana.ncss.queryParser'
+local queryParser = require('banana.lazyRequire')('banana.ncss.queryParser')
 
 
 ---@class (exact) Banana.Ncss.ParseData
@@ -275,6 +279,8 @@ function M.parseText(content)
 
     })
     local tree = parse:parse(true)
+    -- local tree2 = tree[1]:root()
+    -- local tree = require('banana.ncss.ffiparser').getTree(content)
     local parser = ParseData:new(vim.split(content, '\n'))
     return M.parse(tree[1]:root(), parser)
 end

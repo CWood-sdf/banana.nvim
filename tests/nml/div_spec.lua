@@ -25,7 +25,7 @@ asd
 
 describe("Div rendering", function()
     it("margins", function()
-        local inst = require('banana.render').emptyInstance()
+        local inst = require('banana.instance').emptyInstance()
         inst:useNml(code)
         inst.DEBUG = false
         inst.stripRight = false
@@ -44,7 +44,7 @@ describe("Div rendering", function()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
     end)
     it("pads", function()
-        local inst = require('banana.render').emptyInstance()
+        local inst = require('banana.instance').emptyInstance()
         inst:useNml(code)
         inst.DEBUG = false
         inst.stripRight = false
@@ -64,7 +64,7 @@ describe("Div rendering", function()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
     end)
     it("centers text", function()
-        local inst = require('banana.render').emptyInstance()
+        local inst = require('banana.instance').emptyInstance()
         inst:useNml(code)
         inst.DEBUG = false
         inst.stripRight = false
@@ -84,7 +84,7 @@ describe("Div rendering", function()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
     end)
     it("centers odd text", function()
-        local inst = require('banana.render').emptyInstance()
+        local inst = require('banana.instance').emptyInstance()
         inst:useNml(code)
         inst.DEBUG = false
         inst.stripRight = false
@@ -114,7 +114,7 @@ describe("Div rendering", function()
         assert(ok1 or ok2, "Expected one of the centers to work")
     end)
     it("relative positions", function()
-        local inst = require('banana.render').emptyInstance()
+        local inst = require('banana.instance').emptyInstance()
         inst:useNml(code)
         inst.DEBUG = false
         inst.stripRight = false
@@ -133,7 +133,7 @@ describe("Div rendering", function()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
     end)
     it("Overflow works", function()
-        local inst = require('banana.render').emptyInstance()
+        local inst = require('banana.instance').emptyInstance()
         inst:useNml(code)
         inst.DEBUG = false
         inst.stripRight = false
@@ -152,7 +152,7 @@ describe("Div rendering", function()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
     end)
     it("Renders the div", function()
-        local inst = require('banana.render').emptyInstance()
+        local inst = require('banana.instance').emptyInstance()
         inst:useNml(code)
         inst.DEBUG = false
         inst.stripRight = false

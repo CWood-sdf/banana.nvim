@@ -1,6 +1,8 @@
-local _str = require('banana.utils.string')
+---@module 'banana.utils.string'
+local _str = require('banana.lazyRequire')('banana.utils.string')
 local M = {}
-local ts_types = require('banana.ncss.tsTypes')
+---@module 'banana.ncss.tsTypes'
+local ts_types = require('banana.lazyRequire')('banana.ncss.tsTypes')
 ---@class (exact) Banana.Ncss.UnitValue
 ---@field value number
 ---@field unit string

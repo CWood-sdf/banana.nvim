@@ -19,7 +19,7 @@ nml {
 
 describe("template test", function()
     it("renders", function()
-        local inst = require('banana.render').emptyInstance()
+        local inst = require('banana.instance').emptyInstance()
         inst:useNml(code)
         inst.DEBUG = false
         inst.stripRight = false

@@ -1,5 +1,6 @@
 local M = {}
-local tags = require('banana.nml.tags')
+---@module 'banana.nml.render'
+local tags = require('banana.lazyRequire')('banana.nml.render')
 
 ---@param str string
 ---@param clearFirst boolean

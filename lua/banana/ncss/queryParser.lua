@@ -1,5 +1,6 @@
 local M = {}
-local q = require('banana.ncss.query')
+---@module 'banana.ncss.query'
+local q = require('banana.lazyRequire')('banana.ncss.query')
 ---@alias Banana.Ncss.PseudoGenRet fun(ast: Banana.Ast): boolean
 ---@type { [string]: fun(node: TSNode?, parser: Banana.Ncss.ParseData): Banana.Ncss.PseudoGenRet, number?}
 local pseudoClasses = {
@@ -25,7 +26,7 @@ local pseudoClasses = {
         end, spec
     end,
     ["last-child"] = function(node, _)
-        assert(node == nil, "last-child cannot have any arguments")
+        assert(node == nil, "first-child cannot have any arguments")
         local spec = q.Specificity.Class
         ---@type Banana.Ncss.PseudoGenRet
         local fn = function(ast)
@@ -56,7 +57,8 @@ local pseudoClasses = {
     end,
 
 }
-local ts_types = require('banana.ncss.tsTypes')
+---@module 'banana.ncss.tsTypes'
+local ts_types = require('banana.lazyRequire')('banana.ncss.tsTypes')
 ---@type { [Banana.Ncss.TSTypes]: fun(node: TSNode, parser: Banana.Ncss.ParseData): Banana.Ncss.Where|Banana.Ncss.Selector }
 M.queryParsers = {
     [ts_types.pseudo_class_selector] = function(node, parser)

@@ -1,6 +1,7 @@
 local M = {}
 local instance = nil
-local render = require('banana.render')
+---@module 'banana.instance'
+local render = require('banana.lazyRequire')('banana.instance')
 
 M.yeet = function()
 	if instance == nil then

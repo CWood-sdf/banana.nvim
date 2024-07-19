@@ -1,4 +1,5 @@
-local t = require('banana.nml.tags')
+---@module 'banana.nml.render'
+local t = require('banana.lazyRequire')('banana.nml.render')
 
 ---@type Banana.Renderer
 local function renderer(_, ast, hl, parentWidth, parentHeight, _, _, inherit, extra)
@@ -17,7 +18,7 @@ local M = t.newTag(
     t.FormatType.Block,
     false,
     renderer,
-    require('banana.nml.tags').defaultInitials()
+    require('banana.nml.render').defaultInitials()
 )
 
 return M

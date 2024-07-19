@@ -1,5 +1,5 @@
-local _str = require('banana.utils.string')
-local lexer = require("banana.nml.lexer")
+---@module "banana.nml.lexer"
+local lexer = require('banana.lazyRequire')("banana.nml.lexer")
 local M = {}
 
 ---@enum Banana.Nml.TSTypes
@@ -344,7 +344,7 @@ function Parser:parse()
         assert(child ~= nil,
             "Unreachable: parsed child is 0 in not fullDocMode")
     end
-    local nilAst = require('banana.render').getNilAst()
+    local nilAst = require('banana.instance').getNilAst()
     assert(nilAst ~= nil,
         "Nil ast is not defined")
     ---@diagnostic disable-next-line: cast-type-mismatch
