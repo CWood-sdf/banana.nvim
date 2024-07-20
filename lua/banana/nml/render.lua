@@ -39,7 +39,6 @@ M.FormatType = {
 ---@field box Banana.Box?
 ---@field trace Banana.Box
 ---@field debug boolean
----@field head boolean
 
 ---Gosh so many parameters i might die
 ---@alias Banana.Renderer fun(self: Banana.TagInfo, ast: Banana.Ast, parentHl: Banana.Highlight?, parentWidth: number, parentHeight: number, startX: number, startY: number, inherit: Banana.Renderer.InheritedProperties, extra: Banana.Renderer.ExtraInfo): Banana.RenderRet

@@ -68,7 +68,6 @@ function Instance:virtualRender(ast, width, height)
         local extra = {
             trace = require('banana.box').Box:new(),
             debug = self.DEBUG,
-            head = false,
         }
         local rendered = tag:renderRoot(ast, nil, width, height, {
             text_align = "left",
@@ -425,7 +424,6 @@ function Instance:createWinAndBuf()
         }, {
             trace = require('banana.box').Box:new(),
             debug = self.DEBUG,
-            head = true,
         })
     end
     local containerWidth = vim.o.columns

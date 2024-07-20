@@ -11,13 +11,13 @@ local function renderer(self, ast, parentHl, parentWidth, parentHeight, startX, 
             goto continue
         end
         ---@cast node Banana.Ast
-        if node.tag == "head" and extra.head then
+        if node.tag == "head" then
             node.actualTag:renderRoot(node, parentHl, parentWidth, parentHeight, inherit, extra)
-        elseif node.tag == "body" and not extra.head then
+        elseif node.tag == "body" then
             node:resolveUnits(parentWidth, parentHeight)
             ret = node.actualTag:getRendered(node, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra)
                 :render()
-        elseif node.tag ~= "script" and node.tag ~= "style" and node.tag ~= "head" and node.tag ~= "body" then
+        elseif node.tag ~= "script" and node.tag ~= "style" then
             error("Only <head> and <body> tags allowed in <nml>, instead got <" .. node.tag .. ">")
         end
         ::continue::
