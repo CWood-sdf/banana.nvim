@@ -1,0 +1,3 @@
+*.nml linguist-language=html
+
+*.ncss linguist-language=css
