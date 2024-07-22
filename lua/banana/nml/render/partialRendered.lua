@@ -1,3 +1,5 @@
+---@module 'banana.utils.debug_flame'
+local flame = require('banana.lazyRequire')('banana.utils.debug_flame')
 ---@module 'banana.box'
 local b = require('banana.lazyRequire')('banana.box')
 ---@module 'banana.nml.ast'
@@ -119,15 +121,21 @@ end
 ---@param clone boolean?
 ---@return Banana.Box
 function PartialRendered:render(clone)
+    clone = clone or false
+    -- if clone == true then
+    --     print("has clone, ignoring")
+    --     return b.Box:new(nil)
+    -- end
+    flame.new("PartialRendered:render")
     if clone then
         local new = vim.fn.deepcopy(self)
         setmetatable(new, {
             __index = PartialRendered,
         })
         new.center = self.center:clone()
+        flame.pop()
         return new:render()
     end
-    clone = clone or false
     local box = self.center
     if clone then
         box = box:clone()
@@ -165,6 +173,7 @@ function PartialRendered:render(clone)
     end
     box = self:padWith(box, self.padding, self.mainColor)
     box = self:padWith(box, self.margin, self.marginColor)
+    flame.pop()
     return box
 end
 
@@ -172,6 +181,7 @@ end
 ---@param ast Banana.Ast
 ---@return boolean
 function PartialRendered:applyPad(name, ast)
+    flame.new("applyPad")
     local changed = false
     if ast[name][_ast.left].computed ~= 0 then
         self[name].left = ast[name][_ast.left].computed
@@ -189,6 +199,7 @@ function PartialRendered:applyPad(name, ast)
         self[name].bottom = ast[name][_ast.bottom].computed
         changed = true
     end
+    flame.pop()
     return changed
 end
 

@@ -11,6 +11,7 @@ function M.traceBreak(msg)
     return ret
 end
 
+---@return boolean
 function M.isdev()
     local ok, _ = pcall(require, "banana.dev")
     return ok

@@ -117,8 +117,16 @@ local singlePlain         = Validation:new({ [1] = { { "plain" } } })
 local singleInt           = Validation:new({ [1] = { { "integer" } } })
 local singleStringOrPlain = Validation:new({ [1] = { { "string" }, { "plain" } } })
 local singleNumber        = Validation:new({ [1] = { { "integer" }, { "float" } } })
+---@return Banana.Ncss.PropertyValidation
+local function explicit(...)
+    local arr = { ... }
+    for i, v in ipairs(arr) do
+        arr[i] = { "|" .. v }
+    end
+    return Validation:new({ [1] = arr })
+end
 ---@type { [string]: Banana.Ncss.PropertyValidation }
-local validations         = {
+local validations = {
     ['hl-underline'] = boolValid,
     ['hl-italic'] = boolValid,
     ['hl-bold'] = boolValid,
@@ -130,23 +138,26 @@ local validations         = {
     -- ['list-base-width'] = singleUnit,
     ['width'] = singleUnit,
     ['height'] = singleUnit,
-    ['display'] = singlePlain,
+    ['display'] = explicit("flex", "inherit", "initial", "none"),
     ['flex-basis'] = singleUnit,
     ['flex-shrink'] = singleNumber,
     ['flex-grow'] = singleNumber,
-    ['flex-wrap'] = Validation:new({ [1] = { { "|wrap" }, { "|nowrap" } } }),
-    ['text-align'] = singlePlain,
-    ['position'] = singlePlain,
+    ['flex-wrap'] = explicit("wrap", "nowrap"),
+    ['text-align'] = explicit("left", "right", "center", "initial", "inherit"),
+
+    ['position'] = explicit("absolute", "static", "relative", "inherit", "initial"),
     ['z-index'] = singleInt,
     ['left'] = singleUnit,
     ['right'] = singleUnit,
     ['top'] = singleUnit,
     ['bottom'] = singleUnit,
+
     ['padding'] = marginValid,
     ['padding-left'] = singleUnit,
     ['padding-right'] = singleUnit,
     ['padding-top'] = singleUnit,
     ['padding-bottom'] = singleUnit,
+
     ['margin'] = marginValid,
     ['margin-left'] = singleUnit,
     ['margin-right'] = singleUnit,

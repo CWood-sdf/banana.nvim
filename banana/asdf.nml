@@ -2,8 +2,8 @@
 <head>
 <style>
 nml {
-    width: 5ch;
-    height: 5ch;
+    width: 80%;
+    height: 80%;
 }
 #one {
     hl-bg: #ff0000;

@@ -70,6 +70,7 @@ log.new = function(config, standalone)
 
     local outfile = string.format('%s/%s.log', vim.api.nvim_call_function('stdpath', { 'data' }), config.plugin)
 
+    -- print("Log level: ", config.level)
     local obj
     if standalone then
         obj = log

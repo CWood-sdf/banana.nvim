@@ -1,3 +1,5 @@
+---@module 'banana.utils.debug_flame'
+local flame = require('banana.lazyRequire')('banana.utils.debug_flame')
 ---@module 'banana.utils.log'
 local log = require('banana.lazyRequire')('banana.utils.log')
 local M = {}
@@ -40,7 +42,6 @@ M.FormatType = {
 ---@field trace Banana.Box
 ---@field debug boolean
 
----Gosh so many parameters i might die
 ---@alias Banana.Renderer fun(self: Banana.TagInfo, ast: Banana.Ast, parentHl: Banana.Highlight?, parentWidth: number, parentHeight: number, startX: number, startY: number, inherit: Banana.Renderer.InheritedProperties, extra: Banana.Renderer.ExtraInfo): Banana.RenderRet
 
 
@@ -67,7 +68,9 @@ local TagInfo = {
 ---@param extra Banana.Renderer.ExtraInfo
 ---@return Banana.Box
 function TagInfo:renderRoot(ast, startHl, winWidth, winHeight, inherit, extra)
+    flame.new("element render")
     local ret = self:render(ast, startHl, winWidth, winHeight, 1, 1, inherit, extra)
+    flame.pop()
     return ret
 end
 
@@ -302,6 +305,7 @@ end
 ---@param extra Banana.Renderer.ExtraInfo
 ---@return Banana.Box, integer
 function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra)
+    flame:new("renderFlexBlock")
     -- possible todos:
     --   abstract out base rendering into a function
     --   inline the current height / line calculation
@@ -570,6 +574,7 @@ function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, start
     -- end
     inherit.min_size = oldMinSize
 
+    flame.pop()
     return ret, #ast.nodes + 1
 end
 
@@ -585,6 +590,7 @@ end
 ---@param extra_ Banana.Renderer.ExtraInfo
 ---@return Banana.Box, integer
 function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX, startY, inherit, extra_)
+    flame.new("renderBlock")
     local currentLine = b.Box:new(parentHl)
     local hasElements = false
     local width = parentWidth
@@ -637,7 +643,7 @@ function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX
             startX = startX + count
             hasElements = true
         else
-            local tag = M.makeTag(v.tag)
+            local tag = v.actualTag
             if (tag.formatType == M.FormatType.Block or tag.formatType == M.FormatType.BlockInline) and hasElements then
                 break
             end
@@ -682,6 +688,7 @@ function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX
         extra:appendBoxBelow(currentLine, false)
         currentLine = extra
     end
+    flame.pop()
     return currentLine, i
 end
 

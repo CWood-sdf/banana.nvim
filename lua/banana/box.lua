@@ -1,3 +1,5 @@
+---@module 'banana.utils.debug_flame'
+local flame = require('banana.lazyRequire')('banana.utils.debug_flame')
 ---@module 'banana.utils.log'
 local log = require('banana.lazyRequire')('banana.utils.log')
 ---@module 'banana.utils.string'
@@ -7,6 +9,7 @@ local M = {}
 ---@param line Banana.Line
 ---@return Banana.Line
 local function cloneLine(line)
+    flame.new("cloneLine")
     ---@type Banana.Line
     local ret = {}
     for _, v in ipairs(line) do
@@ -15,6 +18,7 @@ local function cloneLine(line)
             style = v.style
         })
     end
+    flame.pop()
     return ret
 end
 
@@ -184,6 +188,7 @@ end
 ---@param box Banana.Box
 ---@param strat Banana.Box.MergeStrategy?
 function M.Box:append(box, strat)
+    flame.new("Box:append")
     strat = strat or M.MergeStrategy.Top
     self:clean()
     while #self.lines < #box.lines do
@@ -221,6 +226,7 @@ function M.Box:append(box, strat)
     end
     self._width = self._width + box._width
     self.dirty = box.dirty
+    flame.pop()
 end
 
 ---@param str string
@@ -286,6 +292,7 @@ end
 ---@param box Banana.Box
 ---@param expand boolean?
 function M.Box:appendBoxBelow(box, expand)
+    flame.new("appendBoxBelow")
     if expand == nil then
         expand = true
     end
@@ -306,6 +313,7 @@ function M.Box:appendBoxBelow(box, expand)
     end
     self.dirty = self._width ~= box._width
     self._width = newWidth
+    flame.pop()
 end
 
 -- function M.Box:floatAppend()
@@ -345,10 +353,12 @@ function M.Box:trimWidthLastLine(width, trimStrat)
     end
 end
 
+--- This function is pretty expensive because all the string stuff
 ---@param other Banana.Box
 ---@param left number
 ---@param top number
 function M.Box:renderOver(other, left, top)
+    flame.new("Box:renderOver")
     -- lol dont look at this function i barely understand it
     self:clean()
     other:clean()
@@ -482,6 +492,7 @@ function M.Box:renderOver(other, left, top)
         table.insert(self.lines, newLine)
         j = j + 1
     end
+    flame.pop()
 end
 
 return M

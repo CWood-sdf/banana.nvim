@@ -2,6 +2,8 @@
 local log = require('banana.lazyRequire')('banana.utils.log')
 ---@module 'banana.utils.string'
 local _str = require('banana.lazyRequire')('banana.utils.string')
+---@module 'banana.utils.debug_flame'
+local flame = require('banana.lazyRequire')('banana.utils.debug_flame')
 
 local M = {}
 M.defaultWinHighlight = "NormalFloat"
@@ -60,10 +62,11 @@ local Instance = {}
 ---@param height number
 ---@return Banana.Line[]
 function Instance:virtualRender(ast, width, height)
+    flame.new("virtualRender")
     ---@type Banana.Line[]
     local ret = {}
     if require("banana.nml.render").tagExists(ast.tag) then
-        local tag = require("banana.nml.render").makeTag(ast.tag)
+        local tag = ast.actualTag
         ---@type Banana.Renderer.ExtraInfo
         local extra = {
             trace = require('banana.box').Box:new(),
@@ -95,6 +98,7 @@ function Instance:virtualRender(ast, width, height)
             table.insert(ret, line)
         end
     end
+    flame.pop()
     return ret
 end
 
@@ -426,6 +430,8 @@ function Instance:createWinAndBuf()
             debug = self.DEBUG,
         })
     end
+
+
     local containerWidth = vim.o.columns
     local containerHeight = vim.o.lines
     local width = vim.o.columns - 8 * 2
@@ -441,6 +447,8 @@ function Instance:createWinAndBuf()
             ---@cast height number
         end
     end
+
+
     if self.bufnr == nil or not vim.api.nvim_buf_is_valid(self.bufnr) then
         self.bufnr = vim.api.nvim_create_buf(false, false)
         vim.api.nvim_buf_set_name(self.bufnr, self.bufname)
@@ -448,6 +456,8 @@ function Instance:createWinAndBuf()
             vim.api.nvim_set_option_value(k, v, { buf = self.bufnr })
         end
     end
+
+
     if self.winid == nil or not vim.api.nvim_win_is_valid(self.winid) then
         local left = 8
         local top = 3
@@ -481,6 +491,7 @@ function Instance:createWinAndBuf()
         width = vim.api.nvim_win_get_width(self.winid)
         height = vim.api.nvim_win_get_height(self.winid)
     end
+
     return width, height
 end
 
@@ -504,6 +515,9 @@ function Instance:forceRerender()
     self:render()
 end
 
+local n = 0
+local avg = 0
+
 function Instance:render()
     if not self.isVisible then
         return
@@ -512,6 +526,7 @@ function Instance:render()
     if self.renderRequested then
         return
     end
+    -- flame.reset()
     self.rendering = true
     local startTime = vim.loop.hrtime()
     local actualStart = startTime
@@ -527,6 +542,8 @@ function Instance:render()
     styleTime = vim.loop.hrtime() - startTime
     startTime = vim.loop.hrtime()
     local width, height = self:createWinAndBuf()
+    local winTime = vim.loop.hrtime() - startTime
+    startTime = vim.loop.hrtime()
     -- self:body():resolveUnits(width, height, {})
     local stuffToRender = self:virtualRender(self.ast, width, height)
     local renderTime = vim.loop.hrtime() - startTime
@@ -563,15 +580,50 @@ function Instance:render()
     local hlTime = vim.loop.hrtime() - startTime
     totalTime = totalTime + vim.loop.hrtime() - actualStart
     if self.DEBUG or self.showPerf then
+        n = n + 1
+        avg = (avg * (n - 1) + renderTime) / n
+        if n < 200 then
+            vim.defer_fn(function()
+                self:_requestRender()
+            end, 20)
+        end
         local extraLines = {
             "",
-            astTime / 1e3 .. "μs to parse",
-            styleTime / 1e3 .. "μs to style",
+            astTime / 1e6 .. "ms to parse",
+            styleTime / 1e6 .. "ms to style",
+            winTime / 1e6 .. "ms to create win",
             renderTime / 1e6 .. "ms to render",
-            reductionTime / 1e3 .. "μs to reduce",
-            hlTime / 1e3 .. "μs to highlight",
+            reductionTime / 1e6 .. "ms to reduce",
+            hlTime / 1e6 .. "ms to highlight",
             totalTime / 1e6 .. "ms total",
+            avg / 1e6 .. "ms avg render",
+            "Instance id: " .. self.instanceId,
+            "",
         }
+        local flames = flame.getWorst("pct")
+        local flameMillis = flame.getFlames("millis")
+        local maxLen = 0
+        for _, val in ipairs(flames) do
+            maxLen = math.max(maxLen, #val[1] + 2)
+        end
+        for _, val in ipairs(flames) do
+            local str = val[1] .. ": "
+            if #str < maxLen then
+                str = str .. string.rep(' ', maxLen - #str)
+            end
+            local rep = math.floor(val[2] * 20)
+            local pct =
+                math.floor(val[2] * 1000) / 10 .. ""
+            if #pct < 4 then
+                pct = pct .. string.rep(" ", 4 - #pct)
+            end
+            local time = math.floor(flameMillis[val[1]] * 1000) / 1000 .. ""
+            if #time < 6 then
+                time = time .. string.rep(' ', 6 - #time)
+            end
+            local chart = " " .. pct .. " (" .. time .. ") " .. string.rep("#", rep)
+            table.insert(extraLines, str .. chart)
+        end
         vim.api.nvim_set_option_value("modifiable", true, {
             buf = self.bufnr
         })
