@@ -121,12 +121,12 @@ end
 ---@param clone boolean?
 ---@return Banana.Box
 function PartialRendered:render(clone)
-    clone = clone or false
     -- if clone == true then
     --     print("has clone, ignoring")
     --     return b.Box:new(nil)
     -- end
     flame.new("PartialRendered:render")
+    clone = clone or false
     if clone then
         local new = vim.fn.deepcopy(self)
         setmetatable(new, {

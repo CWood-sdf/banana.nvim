@@ -84,9 +84,13 @@ end
 ---@param extra Banana.Renderer.ExtraInfo
 ---@return Banana.Renderer.PartialRendered
 function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra)
-    return require('banana.nml.render.main')(
+    log.trace("TagInfo:getRendered " .. ast.tag .. "#" .. (ast:getAttribute('id') or ""))
+    flame.new("getRendered start")
+    local ret = require('banana.nml.render.main')(
         self, ast, parentHl, parentWidth, parentHeight, startX, startY, inherit,
         extra)
+    flame.pop()
+    return ret
 end
 
 ---Returns an iterator that renders blocks
@@ -133,7 +137,7 @@ end
 ---@return Banana.Box
 function TagInfo:renderInlineEl(ast, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra)
     ---@type Banana.Box
-    local ret, _ = self:renderBlock(ast, ast:mixHl(parentHl), 1, parentWidth, parentHeight, startX, startY, inherit,
+    local ret, _ = self:renderBlock(ast, ast:_mixHl(parentHl), 1, parentWidth, parentHeight, startX, startY, inherit,
         extra)
     return ret
 end
@@ -143,10 +147,12 @@ end
 ---@param hl Banana.Highlight?
 ---@return Banana.Box, Banana.Box
 local function splitLineBoxOnce(targetWidth, box, hl)
+    flame.new("splitLineBoxOnce")
     if targetWidth < 1 then
         targetWidth = 1
     end
     if box:width() < targetWidth then
+        flame.pop()
         return box, b.Box:new(hl)
     end
     -- if targetWidth == 0 then
@@ -179,6 +185,7 @@ local function splitLineBoxOnce(targetWidth, box, hl)
         right:appendWord(box:getLine(1)[i])
         i = i + 1
     end
+    flame.pop()
     return left, right
 end
 
@@ -200,19 +207,23 @@ end
 ---@param hl Banana.Highlight?
 ---@return Banana.Box, Banana.Box?
 local function handleOverflow(ast, i, currentLine, append, maxWidth, hl)
+    flame.new("handleOverflow")
     -- if currentLine:height() == 0 then
     --     currentLine:appendStr("", nil)
     -- end
     if currentLine:width() + append:width() <= maxWidth then
         currentLine:append(append, nil)
+        flame.pop()
         return currentLine, nil
     end
     if append:height() ~= 1 or not breakable(ast.nodes[i]) then
+        flame.pop()
         return currentLine, append
     end
     if currentLine:height() > 1 then
         local ap, extra = splitLineBoxOnce(maxWidth - currentLine:width(), append, hl)
         currentLine:append(ap, nil)
+        flame.pop()
         return currentLine, extra
     end
     currentLine:append(append, nil)
@@ -223,6 +234,7 @@ local function handleOverflow(ast, i, currentLine, append, maxWidth, hl)
         preStuff:appendBoxBelow(currentLine, false)
         currentLine = extra
     until extra:width() <= maxWidth
+    flame.pop()
     return preStuff, extra
 end
 
@@ -294,6 +306,45 @@ local function flexGrowSection(parentWidth, takenWidth, renders, start, e)
     end
 end
 
+-- Grid todo:
+-- repeat()
+-- grid-template-columns
+-- grid-template-rows
+-- grid-template-areas
+-- grid-template (shorthand prop)
+-- grid-auto-columns
+-- grid-auto-rows
+-- grid-auto-flow
+-- grid
+-- grid-row-start
+-- grid-column-start
+-- grid-row-end
+-- grid-column-end
+-- grid-row
+-- grid-column
+-- grid-area
+-- row-gap
+-- column-gap
+-- gap
+
+---@param ast Banana.Ast
+---@param parentHl Banana.Highlight?
+---@param parentWidth number
+---@param parentHeight number
+---@param startX number
+---@param startY number
+---@param inherit Banana.Renderer.InheritedProperties
+---@param extra Banana.Renderer.ExtraInfo
+---@return Banana.Box, integer
+function TagInfo:renderGridBlock(ast, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra)
+    -- TODO: Everything
+
+    -- so the plan sorta is basically make a grid of boxes that can be dynamically updated
+    -- (ie for auto els), then once initial box has been made, just determine where each box is
+    -- then fill it in
+    return b.Box:new(), #ast.nodes + 1
+end
+
 ---Renders everything in a flex block
 ---@param ast Banana.Ast
 ---@param parentHl Banana.Highlight?
@@ -305,7 +356,8 @@ end
 ---@param extra Banana.Renderer.ExtraInfo
 ---@return Banana.Box, integer
 function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra)
-    flame:new("renderFlexBlock")
+    log.trace("TagInfo:renderFlexBlock " .. ast.tag)
+    flame.new("renderFlexBlock")
     -- possible todos:
     --   abstract out base rendering into a function
     --   inline the current height / line calculation
@@ -313,7 +365,7 @@ function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, start
     local oldMinSize = inherit.min_size
     inherit.min_size = true
     local takenWidth = 0
-    local hl = ast:mixHl(parentHl)
+    local hl = ast:_mixHl(parentHl)
     ---@type ([Banana.Renderer.PartialRendered, Banana.Ast]?)[]
     local renders = {}
     ---@type integer[]
@@ -334,7 +386,7 @@ function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, start
             goto continue
         end
 
-        v:resolveUnits(parentWidth, parentHeight)
+        v:_resolveUnits(parentWidth, parentHeight)
         local basis = v:firstStyleValue("flex-basis", {
             computed = parentWidth,
             unit = "ch",
@@ -385,7 +437,7 @@ function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, start
     for _, i in ipairs(needed) do
         local v = ast.nodes[i]
         ---@cast v Banana.Ast
-        v:resolveUnits(parentWidth, parentHeight, {
+        v:_resolveUnits(parentWidth, parentHeight, {
             0
         })
         widthLeft = widthLeft - v:marginLeft() - v:marginRight()
@@ -413,7 +465,7 @@ function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, start
             extraCharsNeeded = extraCharsNeeded - 1
         end
         ---@cast v Banana.Ast
-        v:resolveUnits(parentWidth, parentHeight, {
+        v:_resolveUnits(parentWidth, parentHeight, {
             width
         })
         local basis = v:firstStyleValue("flex-basis", {
@@ -590,6 +642,7 @@ end
 ---@param extra_ Banana.Renderer.ExtraInfo
 ---@return Banana.Box, integer
 function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX, startY, inherit, extra_)
+    log.trace("TagInfo:renderBlock " .. ast.tag)
     flame.new("renderBlock")
     local currentLine = b.Box:new(parentHl)
     local hasElements = false
@@ -643,12 +696,18 @@ function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX
             startX = startX + count
             hasElements = true
         else
+            flame.new("renderBlock_primaryRender")
             local tag = v.actualTag
             if (tag.formatType == M.FormatType.Block or tag.formatType == M.FormatType.BlockInline) and hasElements then
+                flame.pop()
                 break
             end
-            v:resolveUnits(width, height)
+            v:_resolveUnits(width, height)
+            flame.pop()
+            flame.new("renderBlock_primaryRender3")
             local rendered = tag:getRendered(v, parentHl, width, height, startX, startY, inherit, extra_):render()
+            flame.pop()
+            flame.new("renderBlock_primaryRender2")
             startX = startX + rendered:width()
             local overflow = nil
             local orgLines = currentLine:height()
@@ -674,6 +733,7 @@ function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX
                 end
                 currentLine = overflow
             end
+            flame.pop()
 
             if tag.formatType == M.FormatType.Block or tag.formatType == M.FormatType.BlockInline then
                 i = i + 1

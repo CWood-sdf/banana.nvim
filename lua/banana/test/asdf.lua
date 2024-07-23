@@ -44,10 +44,10 @@ return function(document)
           end
           if i == j then
             u:addClass("selected")
-            u:defaultStyles()
+            u:_defaultStyles()
           else
             u:removeClass("selected")
-            u:defaultStyles()
+            u:_defaultStyles()
           end
           ::continue::
         end

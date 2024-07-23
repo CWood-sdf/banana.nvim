@@ -7,9 +7,9 @@ nml {
 }
 #one {
     hl-bg: #ff0000;
-position: absolute;
- left: 1ch;
- top: 1ch;
+/* position: absolute; */
+/*  left: 1ch; */
+/*  top: 1ch; */
  width: 3ch;
  height: 3ch;
  z-index: 1;
@@ -17,7 +17,7 @@ position: absolute;
 }
 #two {
     hl-bg: #00ff00;
-position: absolute;
+/* position: absolute; */
  left: 2ch;
  top: 2ch;
  width: 3ch;

@@ -6,7 +6,7 @@ local function renderer(_, ast, parentHl, _, _)
     local b = require('banana.box')
     ---@type Banana.Box
     local ret = b.Box:new()
-    ret.hlgroup = ast:mixHl(parentHl)
+    ret.hlgroup = ast:_mixHl(parentHl)
     ret:appendStr("")
     return ret
 end

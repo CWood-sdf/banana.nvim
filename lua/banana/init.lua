@@ -5,10 +5,11 @@ local render = require('banana.lazyRequire')('banana.instance')
 
 M.yeet = function()
 	if instance == nil then
-		instance = render.newInstance("asdf", "asdf")
+		instance = render.newInstance("test", "asdf")
 		-- instance.DEBUG = true
 	end
-	instance.showPerf = true
+	instance.DEBUG_showPerf = true
+	instance.DEBUG_stressTest = true
 	-- local filename = os.getenv("HOME") .. '/projects/banana.nvim/test.nml'
 	instance:open()
 

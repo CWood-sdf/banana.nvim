@@ -28,6 +28,7 @@ local instances = {}
 ---@field disabled boolean?
 
 ---@class (exact) Banana.Instance
+---@field DEBUG_stressTest boolean
 ---@field DEBUG boolean
 ---@field winid? number
 ---@field bufnr? number
@@ -50,7 +51,7 @@ local instances = {}
 ---@field augroup number
 ---@field stripRight boolean
 ---@field rendering boolean
----@field showPerf boolean
+---@field DEBUG_showPerf boolean
 local Instance = {}
 
 ---@class (exact) Banana.Word
@@ -128,7 +129,8 @@ function Instance:new()
     local id = #instances
     ---@type Banana.Instance
     local inst = {
-        showPerf = false,
+        DEBUG_stressTest = false,
+        DEBUG_showPerf = false,
         rendering = false,
         stripRight = true,
         DEBUG = false,
@@ -363,7 +365,7 @@ end
 
 ---@param ast Banana.Ast
 function Instance:applyInlineStyles(ast)
-    ast:applyInlineStyleDeclarations()
+    ast:_applyInlineStyleDeclarations()
     for _, v in ipairs(ast.nodes) do
         if type(v) ~= "string" then
             self:applyInlineStyles(v)
@@ -386,7 +388,7 @@ function Instance:applyStyleDeclarations(ast, rules)
         end
         local arr = v.query:find(ast)
         for _, a in ipairs(arr) do
-            a:applyStyleDeclarations(v.declarations, v.query.specificity)
+            a:_applyStyleDeclarations(v.declarations, v.query.specificity)
         end
 
         ::continue::
@@ -437,7 +439,7 @@ function Instance:createWinAndBuf()
     local width = vim.o.columns - 8 * 2
     local height = vim.o.lines - 3 * 2 - 4
     if self.ast.tag == "nml" then
-        self.ast:resolveUnits(containerWidth, containerHeight)
+        self.ast:_resolveUnits(containerWidth, containerHeight)
         if self.ast.style["width"] ~= nil then
             width = self.ast.style.width[1].value.computed
             ---@cast width number
@@ -495,19 +497,27 @@ function Instance:createWinAndBuf()
     return width, height
 end
 
-function Instance:_requestRender()
-    if self.renderRequested or self.rendering then
-        return
-    end
-    self.renderRequested = true
-    self.renderStart = vim.loop.hrtime()
+function Instance:_deferRender()
     vim.defer_fn(function()
+        if self.rendering then
+            self:_deferRender()
+            return
+        end
         self.renderRequested = false
         self.renderStart = vim.loop.hrtime()
         self:render()
         self.renderRequested = false
         self.rendering = false
     end, 20)
+end
+
+function Instance:_requestRender()
+    if self.renderRequested then
+        return
+    end
+    self.renderRequested = true
+    self.renderStart = vim.loop.hrtime()
+    self:_deferRender()
 end
 
 function Instance:forceRerender()
@@ -526,13 +536,14 @@ function Instance:render()
     if self.renderRequested then
         return
     end
+    log.trace("Instance:render")
     -- flame.reset()
     self.rendering = true
     local startTime = vim.loop.hrtime()
     local actualStart = startTime
     local astTime = 0
     local styleTime = 0
-    self.ast:clearStyles()
+    self.ast:_clearStyles()
     self:applyStyleDeclarations(self.ast, self.styleRules)
     for ast, rules in pairs(self.foreignStyles) do
         self:applyStyleDeclarations(ast, rules)
@@ -548,18 +559,12 @@ function Instance:render()
     local stuffToRender = self:virtualRender(self.ast, width, height)
     local renderTime = vim.loop.hrtime() - startTime
 
-    local lines = {
-        -- astTime / 1e3 .. "μs to parse",
-        -- renderTime / 1e3 .. "μs to render",
-    }
+    local lines = {}
     startTime = vim.loop.hrtime()
     for _, line in ipairs(stuffToRender) do
         local lineStr = ""
         for _, word in ipairs(line) do
             lineStr = lineStr .. word.word
-        end
-        if _str.charWidth(lineStr) > width and self.DEBUG then
-            -- print("overflow")
         end
         table.insert(lines, lineStr)
     end
@@ -579,13 +584,13 @@ function Instance:render()
     self.scripts = {}
     local hlTime = vim.loop.hrtime() - startTime
     totalTime = totalTime + vim.loop.hrtime() - actualStart
-    if self.DEBUG or self.showPerf then
+    if self.DEBUG or self.DEBUG_showPerf then
         n = n + 1
         avg = (avg * (n - 1) + renderTime) / n
-        if n < 200 then
-            vim.defer_fn(function()
-                self:_requestRender()
-            end, 20)
+        if self.DEBUG_stressTest then
+            if n < 200 then
+                self:_deferRender()
+            end
         end
         local extraLines = {
             "",
@@ -618,8 +623,8 @@ function Instance:render()
                 pct = pct .. string.rep(" ", 4 - #pct)
             end
             local time = math.floor(flameMillis[val[1]] * 1000) / 1000 .. ""
-            if #time < 6 then
-                time = time .. string.rep(' ', 6 - #time)
+            if #time < 7 then
+                time = time .. string.rep(' ', 7 - #time)
             end
             local chart = " " .. pct .. " (" .. time .. ") " .. string.rep("#", rep)
             table.insert(extraLines, str .. chart)
@@ -632,7 +637,6 @@ function Instance:render()
             buf = self.bufnr
         })
     end
-    self.renderRequested = false
     self.rendering = false
 end
 

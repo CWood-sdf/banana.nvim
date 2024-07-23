@@ -69,7 +69,7 @@ return function(self, ast, parentHl, parentWidth, parentHeight, startX, startY, 
         return p.emptyPartialRendered()
     end
     local disp = ast:firstStyleValue("display")
-    if disp == "hidden" then
+    if disp == "none" then
         for k, _ in pairs(inheritOld) do
             inherit[k] = inheritOld[k]
         end
@@ -259,7 +259,7 @@ return function(self, ast, parentHl, parentWidth, parentHeight, startX, startY, 
         flame.pop()
         flame.new("getRendered_abs")
         for _, v in ipairs(ast.absoluteAsts) do
-            v:resolveUnits(parentWidth, parentHeight)
+            v:_resolveUnits(parentWidth, parentHeight)
             v.style.position[1].value = "relative"
             v.actualTag:getRendered(
                 v, ret.mainColor, parentWidth, parentHeight, startX, startY, inherit,

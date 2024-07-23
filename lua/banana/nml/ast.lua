@@ -1,3 +1,5 @@
+---@module 'banana.utils.debug_flame'
+local flame = require('banana.lazyRequire')('banana.utils.debug_flame')
 ---@module 'banana.utils.log'
 local log = require('banana.lazyRequire')('banana.utils.log')
 local M = {}
@@ -358,7 +360,7 @@ function M.Ast:_getNextListItem(styleTp, extra)
     return ret
 end
 
-function M.Ast:defaultStyles()
+function M.Ast:_defaultStyles()
     if self.listCounter ~= nil then
         self.listCounter = 1
     end
@@ -411,10 +413,10 @@ function M.Ast:defaultStyles()
     self.precedences = {}
 end
 
-function M.Ast:clearStyles()
-    self:defaultStyles()
+function M.Ast:_clearStyles()
+    self:_defaultStyles()
     for node in self:childIter() do
-        node:clearStyles()
+        node:_clearStyles()
     end
 end
 
@@ -431,8 +433,39 @@ end
 
 ---@return Banana.Ast
 function M.Ast:clone()
-    local newAst = vim.fn.deepcopy(self)
+    local newAst = {}
+    newAst.nodes = {}
+    for _, v in ipairs(self.nodes) do
+        if type(v) ~= "string" then
+            table.insert(newAst.nodes, v:clone())
+        else
+            table.insert(newAst.nodes, v)
+        end
+    end
+    newAst.tag = self.tag
+    newAst.attributes = vim.fn.deepcopy(self.attributes)
+    newAst.actualTag = self.actualTag
+    newAst.style = vim.fn.deepcopy(self.style)
+    newAst.hl = vim.fn.deepcopy(self.hl)
+    newAst.padding = vim.fn.deepcopy(self.padding)
+    newAst.margin = vim.fn.deepcopy(self.margin)
+    if self.classes ~= nil then
+        newAst.classes = vim.fn.deepcopy(self.classes)
+    end
+    newAst.instance = self.instance
+    newAst._parent = require('banana.instance').getNilAst()
+    if self.inlineStyle ~= nil then
+        newAst.inlineStyle = vim.fn.deepcopy(self.inlineStyle)
+    end
+    if self.listCounter ~= nil then
+        newAst.listCounter = 1
+    end
     applyAstMeta(newAst)
+    ---@cast newAst Banana.Ast
+    newAst:_clearStyles()
+    if newAst.attributes["id"] ~= nil then
+        newAst.attributes["id"] = nil
+    end
     return newAst
 end
 
@@ -518,7 +551,7 @@ end
 
 ---@param parentHl Banana.Highlight?
 ---@return Banana.Highlight
-function M.Ast:mixHl(parentHl)
+function M.Ast:_mixHl(parentHl)
     local ret = {}
 
     for k, v in pairs(self.hl or {}) do
@@ -604,7 +637,8 @@ end
 ---@param parentWidth number
 ---@param parentHeight number
 ---@param extras? number[]
-function M.Ast:resolveUnits(parentWidth, parentHeight, extras)
+function M.Ast:_resolveUnits(parentWidth, parentHeight, extras)
+    flame.new("Ast:resolveUnits")
     extras = extras or {}
     for i, v in ipairs(self.margin) do
         if i % 2 == 1 then
@@ -628,13 +662,14 @@ function M.Ast:resolveUnits(parentWidth, parentHeight, extras)
     self:_computeUnitFor("left", parentWidth, extras)
     self:_computeUnitFor("right", parentWidth, extras)
     self:_computeUnitFor("flex-basis", parentWidth, extras)
+    flame.pop()
 end
 
-function M.Ast:applyInlineStyleDeclarations()
+function M.Ast:_applyInlineStyleDeclarations()
     if self.inlineStyle == nil then
         return
     end
-    self:applyStyleDeclarations(
+    self:_applyStyleDeclarations(
         self.inlineStyle,
         require('banana.ncss.query').Specificity.Inline
     )
@@ -647,7 +682,7 @@ end
 
 ---@param declarations Banana.Ncss.StyleDeclaration[]
 ---@param basePrec number
-function M.Ast:applyStyleDeclarations(declarations, basePrec)
+function M.Ast:_applyStyleDeclarations(declarations, basePrec)
     for _, v in ipairs(declarations) do
         local prec = basePrec
         if v.important then
@@ -788,7 +823,7 @@ function M.Ast:isHovering()
 end
 
 ---@return string
-function M.Ast:_testDumbAttr()
+function M.Ast:_testDumpAttr()
     local ret = "<" .. self.tag .. "> "
     for k, v in pairs(self.attributes) do
         ret = ret .. k .. ": '" .. v .. "',"
@@ -799,7 +834,7 @@ end
 ---@return Banana.Box
 function M.Ast:_testDumpBox()
     local ret = require('banana.box').Box:new()
-    ret:appendStr(self:_testDumbAttr())
+    ret:appendStr(self:_testDumpAttr())
     return ret
 end
 
@@ -931,7 +966,7 @@ end
 
 ---@param mod Banana.Remap.Constraint
 ---@return fun(): boolean
-function M.Ast:parseRemapMod(mod)
+function M.Ast:_parseRemapMod(mod)
     if mod == "hover" then
         return function()
             return self:isHovering()
@@ -967,7 +1002,7 @@ function M.Ast:attachRemap(mode, lhs, mods, rhs, opts)
         error("")
     end
     local modFns = vim.iter(mods)
-        :map(function(mod) return self:parseRemapMod(mod) end):totable()
+        :map(function(mod) return self:_parseRemapMod(mod) end):totable()
     if type(rhs) == "string" then
         local oldRhs = rhs
         rhs = function()

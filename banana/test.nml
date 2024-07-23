@@ -16,6 +16,8 @@
       }
 
       nml {
+        width: 80%;
+        height: 80%;
 
       }
 
@@ -58,17 +60,18 @@
       }
       ul.plugin-loaded {
         list-style-type: '● ';
-        list-base-width: 4ch;
       }
       ul:not(.plugin-loaded) {
         list-style-type: '○ ';
-        list-base-width: 4ch;
+      }
+      ul {
+        padding-left: 2ch;
       }
       ul > * {
         hl-fg: hl-extract(fg, Normal);
       }
       #plugin-template {
-        display: hidden;
+        display: none;
       }
 
       .widthyeet {
@@ -103,11 +106,11 @@
     <span class="header">Loaded: </span><span class="comment"> (44)</span>
     </div>
 
-    <div style="display: hidden;" id="plugin-template">
+    <div style="display: none;" id="plugin-template">
     <ul> <li> </li> </ul>
     </div>
 
-    <script src="asdf">
+    <script src="banana.test.asdf">
 
     </script>
   </body>

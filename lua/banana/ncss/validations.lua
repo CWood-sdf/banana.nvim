@@ -13,6 +13,8 @@ local Validation = {
 ---@param val { [integer]: Banana.Ncss.PropertyValidation.Type[][] }|fun(value: Banana.Ncss.StyleValue[]): boolean
 ---@return Banana.Ncss.PropertyValidation
 function Validation:new(val)
+    -- PERF: Possible optimization: store things in map instead of array
+
     ---@type Banana.Ncss.PropertyValidation
     local ret = nil
     if type(val) == "table" then
@@ -86,7 +88,11 @@ function Validation:passes(value, name)
     end
     msg = msg .. "but got:\n  "
     for _, v in ipairs(value) do
-        msg = msg .. v.type .. ","
+        if v.type == "plain" then
+            msg = msg .. v.type .. " ('" .. v.value .. "'),"
+        else
+            msg = msg .. v.type .. ","
+        end
     end
     error(msg)
 end

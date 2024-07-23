@@ -14,7 +14,7 @@ local function renderer(self, ast, parentHl, parentWidth, parentHeight, startX, 
         if node.tag == "head" then
             node.actualTag:renderRoot(node, parentHl, parentWidth, parentHeight, inherit, extra)
         elseif node.tag == "body" then
-            node:resolveUnits(parentWidth, parentHeight)
+            node:_resolveUnits(parentWidth, parentHeight)
             ret = node.actualTag:getRendered(node, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra)
                 :render()
         elseif node.tag ~= "script" and node.tag ~= "style" then

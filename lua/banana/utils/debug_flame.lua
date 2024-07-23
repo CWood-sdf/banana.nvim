@@ -17,6 +17,9 @@ local flameTimes = {}
 ---@type { [string]: number }
 local flameStarts = {}
 
+---@type { [string]: number }
+local flameCounts = {}
+
 local function recordTime()
     local flame = flameStack[#flameStack]
     if flame == nil then
@@ -41,6 +44,8 @@ function M.new(name)
     recordTime()
     table.insert(flameStack, name)
     startTime()
+    flameCounts[name] = flameCounts[name] or 0
+    flameCounts[name] = flameCounts[name] + 1
 end
 
 function M.pop()
@@ -55,9 +60,13 @@ function M.pop()
 end
 
 ---@param unit? "millis"|"micros"|"nanos"|"s"|"pct"
+---@param per? boolean
 ---@return { [string]: number }
-function M.getFlames(unit)
+function M.getFlames(unit, per)
     if not isdev() then return {} end
+    if #flameStack > 1 then
+        print("Flames not done")
+    end
     local div = 1
     if unit == "millis" then
         div = 1e6
@@ -69,11 +78,18 @@ function M.getFlames(unit)
     local ret = {}
     local total = 0
     for k, v in pairs(flameTimes) do
-        ret[k] = v / div
-        total = total + v / div
+        local vDiv = v / div
+        if per then
+            vDiv = vDiv / flameCounts[k]
+        end
+        ret[k] = vDiv
+        total = total + vDiv
     end
     if unit == "pct" then
         for k, v in pairs(flameTimes) do
+            if per then
+                v = v / flameCounts[k]
+            end
             ret[k] = v / total
         end
     end
@@ -81,11 +97,12 @@ function M.getFlames(unit)
 end
 
 ---@param unit? "millis"|"micros"|"nanos"|"s"|"pct"
+---@param per? boolean
 ---@return [string, number]
-function M.getWorst(unit)
+function M.getWorst(unit, per)
     if not isdev() then return {} end
     local ret = {}
-    for k, v in pairs(M.getFlames(unit)) do
+    for k, v in pairs(M.getFlames(unit, per)) do
         table.insert(ret, { k, v })
     end
     table.sort(ret, function(l, r)
