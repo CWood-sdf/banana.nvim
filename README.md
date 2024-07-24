@@ -9,9 +9,9 @@ A blazingly fast html renderer for neovim
 
 ## The problem
 
-I have made two large plugins for neovim: [pineapple](https://github.com/CWood-sdf/pineapple) and [spaceport](https://github.com/CWood-sdf/spaceport.nvim). For both of these plugins I ended up making my own specialized rendering frameworks. This was originally because I did not know about [nui](https://github.com/MunifTanjim/nui.nvim), but I did not switch my plugins over because there are a two major roadblocks with nui:
+I have made two large plugins for neovim: [pineapple](https://github.com/CWood-sdf/pineapple) and [spaceport](https://github.com/CWood-sdf/spaceport.nvim). For both of these plugins I ended up making my own specialized rendering frameworks. This was originally because I did not know about [nui](https://github.com/MunifTanjim/nui.nvim) (a great project btw), but I did not switch my plugins over because there are a two major roadblocks with nui:
 
-- It's a whole new set of tools that I have to learn
+- I don't like the idea of declaring a ui as an object structure. I find it a little hard to read as to what ends up where
 - It seems a little bit verbose
 
 ## The solution
