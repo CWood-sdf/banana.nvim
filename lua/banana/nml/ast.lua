@@ -774,7 +774,7 @@ function M.Ast:remove()
             break
         end
     end
-    require('banana.instance').getInstance(self.instance):removeMapsFor(self)
+    require('banana.instance').getInstance(self.instance):_removeMapsFor(self)
     self._parent = nil
     self:_requestRender()
 end
@@ -796,7 +796,7 @@ function M.Ast:appendNode(node)
     node._parent = self
     table.insert(self.nodes, node)
     if self.instance ~= nil then
-        require('banana.instance').getInstance(self.instance):applyId(node)
+        require('banana.instance').getInstance(self.instance):_applyId(node)
     end
     self:_requestRender()
 end

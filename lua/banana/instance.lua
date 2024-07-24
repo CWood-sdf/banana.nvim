@@ -62,7 +62,7 @@ local Instance = {}
 ---@param width number
 ---@param height number
 ---@return Banana.Line[]
-function Instance:virtualRender(ast, width, height)
+function Instance:_virtualRender(ast, width, height)
     flame.new("virtualRender")
     ---@type Banana.Line[]
     local ret = {}
@@ -172,7 +172,7 @@ function Instance:useFile(filename)
     self.scripts = scripts
     self.styleRules = styleRules
     self.ast = ast
-    self:applyId(ast)
+    self:_applyId(ast)
 end
 
 ---@param nml string
@@ -181,7 +181,7 @@ function Instance:useNml(nml)
     self.scripts = scripts
     self.styleRules = styleRules
     self.ast = ast
-    self:applyId(ast)
+    self:_applyId(ast)
 end
 
 function Instance:_attachAutocmds()
@@ -210,7 +210,7 @@ end
 
 function Instance:open()
     self.isVisible = true
-    self:render()
+    self:_render()
 end
 
 ---@return boolean
@@ -238,6 +238,11 @@ function Instance:useBuffer(bufnr)
     self.bufnr = bufnr
 end
 
+function Instance:getBufnr()
+    return self.bufnr
+end
+
+---@deprecated just use buffer =
 ---@param ev string|string[]
 ---@param opts vim.api.keyset.create_autocmd
 ---@return number
@@ -314,14 +319,14 @@ function Instance:_setRemap(mode, lhs, rhs, opts, dep)
 end
 
 ---@param ast Banana.Ast
-function Instance:removeMapsFor(ast)
+function Instance:_removeMapsFor(ast)
     for _, vals in ipairs(self.astMapDeps[ast] or {}) do
         local map = vals[3]
         map.disabled = true
     end
     for _, node in ipairs(ast.nodes) do
         if type(node) ~= "string" then
-            self:removeMapsFor(node)
+            self:_removeMapsFor(node)
         end
     end
     if self.foreignStyles[ast] ~= nil then
@@ -349,7 +354,7 @@ function Instance:body()
 end
 
 ---@param ast Banana.Ast
-function Instance:applyId(ast)
+function Instance:_applyId(ast)
     if ast.instance == nil then
         ast.instance = self.instanceId
     end
@@ -358,30 +363,30 @@ function Instance:applyId(ast)
             goto continue
         end
         ---@diagnostic disable-next-line: param-type-mismatch
-        self:applyId(ast.nodes[i])
+        self:_applyId(ast.nodes[i])
         ::continue::
     end
 end
 
 ---@param ast Banana.Ast
-function Instance:applyInlineStyles(ast)
+function Instance:_applyInlineStyles(ast)
     ast:_applyInlineStyleDeclarations()
     for _, v in ipairs(ast.nodes) do
         if type(v) ~= "string" then
-            self:applyInlineStyles(v)
+            self:_applyInlineStyles(v)
         end
     end
 end
 
 ---@param ast Banana.Ast?
 ---@param rules Banana.Ncss.RuleSet[]
-function Instance:applyStyleDeclarations(ast, rules)
+function Instance:_applyStyleDeclarations(ast, rules)
     if ast == nil then
         log.assert(false,
             "Ast is nil")
         error("")
     end
-    self:applyInlineStyles(ast)
+    self:_applyInlineStyles(ast)
     for _, v in ipairs(rules) do
         if v.query == nil then
             goto continue
@@ -397,7 +402,7 @@ end
 
 ---@param script string
 ---@param opts table
-function Instance:runScript(script, opts)
+function Instance:_runScript(script, opts)
     ---@type fun(opts: table)|nil
     local f = nil
     if #script > 0 and script:sub(1, 1) == "@" then
@@ -418,7 +423,7 @@ function Instance:runScript(script, opts)
 end
 
 ---@return number, number
-function Instance:createWinAndBuf()
+function Instance:_createWinAndBuf()
     local headQuery = require('banana.ncss.query').selectors.oneTag("head")
     local headTag = headQuery:getMatches(self.ast)
     if #headTag ~= 0 then
@@ -505,7 +510,7 @@ function Instance:_deferRender()
         end
         self.renderRequested = false
         self.renderStart = vim.loop.hrtime()
-        self:render()
+        self:_render()
         self.renderRequested = false
         self.rendering = false
     end, 20)
@@ -522,13 +527,13 @@ end
 
 function Instance:forceRerender()
     self.renderRequested = false
-    self:render()
+    self:_render()
 end
 
 local n = 0
 local avg = 0
 
-function Instance:render()
+function Instance:_render()
     if not self.isVisible then
         return
     end
@@ -544,19 +549,19 @@ function Instance:render()
     local astTime = 0
     local styleTime = 0
     self.ast:_clearStyles()
-    self:applyStyleDeclarations(self.ast, self.styleRules)
+    self:_applyStyleDeclarations(self.ast, self.styleRules)
     for ast, rules in pairs(self.foreignStyles) do
-        self:applyStyleDeclarations(ast, rules)
+        self:_applyStyleDeclarations(ast, rules)
     end
     self:body().relativeBoxes = {}
     self:body().absoluteAsts = {}
     styleTime = vim.loop.hrtime() - startTime
     startTime = vim.loop.hrtime()
-    local width, height = self:createWinAndBuf()
+    local width, height = self:_createWinAndBuf()
     local winTime = vim.loop.hrtime() - startTime
     startTime = vim.loop.hrtime()
     -- self:body():resolveUnits(width, height, {})
-    local stuffToRender = self:virtualRender(self.ast, width, height)
+    local stuffToRender = self:_virtualRender(self.ast, width, height)
     local renderTime = vim.loop.hrtime() - startTime
 
     local lines = {}
@@ -577,9 +582,9 @@ function Instance:render()
     })
     vim.api.nvim_buf_set_lines(self.bufnr, 0, -1, false, lines)
     startTime = vim.loop.hrtime()
-    self:highlight(stuffToRender, 0)
+    self:_highlight(stuffToRender, 0)
     for _, script in ipairs(self.scripts) do
-        self:runScript(script, {})
+        self:_runScript(script, {})
     end
     self.scripts = {}
     local hlTime = vim.loop.hrtime() - startTime
@@ -642,7 +647,7 @@ end
 
 ---@param lines Banana.Line[]
 ---@param offset number?
-function Instance:highlight(lines, offset)
+function Instance:_highlight(lines, offset)
     offset = offset or 0
     vim.api.nvim_win_set_hl_ns(self.winid, self.highlightNs)
     if self.highlightNs ~= nil then
@@ -735,7 +740,7 @@ function Instance:loadNmlTo(file, ast, preserve)
         end
     end
     for _, script in ipairs(scripts) do
-        self:runScript(script, {
+        self:_runScript(script, {
             params = params
         })
     end
@@ -821,7 +826,7 @@ end
 ---@return Banana.Ast
 function Instance:createElement(name)
     local ast = require('banana.nml.ast').Ast:new(name, M.getNilAst())
-    self:applyId(ast)
+    self:_applyId(ast)
     return ast
 end
 
