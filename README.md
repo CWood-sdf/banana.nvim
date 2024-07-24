@@ -26,6 +26,10 @@ In the future, I would also like to have a lot of "extra" features that usually 
 
 The banana renderer takes a design architecture that allows it to be blazingly fast: rendering is done in _one_ pass. There will be no reflowing of any elements ever because later elements were rendered. This also means that complicated box trees and render trees (for example, I believe ladybird uses two trees to render) are _not_ allowed in the renderer. This allows the renderer to be very simple (and fast) while also supporting most of the features of modern html and css. This rendering architecture does make some things (particularly floats) more complicated, but it lets everything else be very fast. This simplification is required because banana is written in lua (slower than the c++ that modern browsers use).
 
+## Building and running
+
+Currently the build.lua file does not work, so to run banana, you have to call `require('banana').initTsParsers()` in a setup function somewhere (lazy's setup() function for banana). Then run, at least once, `:TSInstall nml` and `:TSInstall ncss` 
+
 ## Features
 
 Partial or complete implementations exist for the following elements:
