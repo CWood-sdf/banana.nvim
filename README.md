@@ -28,7 +28,7 @@ The banana renderer takes a design architecture that allows it to be blazingly f
 
 ## Building and running
 
-Currently the build.lua file does not work, so to run banana, you have to call `require('banana').initTsParsers()` in a setup function somewhere (lazy's setup() function for banana). Then run, at least once, `:TSInstall nml` and `:TSInstall ncss` 
+Currently the build.lua file does not work, so to run banana, you have to call `require('banana').initTsParsers()` in a setup function somewhere (lazy's setup() function for banana). Then run, at least once, `:TSInstall nml` and `:TSInstall ncss`
 
 ## Features
 

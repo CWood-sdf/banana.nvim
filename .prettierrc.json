@@ -1,0 +1,10 @@
+{
+  "overrides": [
+    {
+      "files": "*.nml",
+      "options": {
+        "parser": "html"
+      }
+    }
+  ]
+}
