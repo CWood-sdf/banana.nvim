@@ -20,6 +20,9 @@ local function renderer(self, ast, parentHl, parentWidth, parentHeight, startX, 
 
     local render = self:renderInlineEl(ast, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra)
 
+    -- because expandHeightTo will fail later down
+    if render:height() == 0 then return render end
+
     if extra.debug then
         extra.trace:appendBoxBelow(dbg.traceBreak("Adding list item '" .. listTick .. "'"), false)
     end
