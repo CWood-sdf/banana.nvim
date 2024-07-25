@@ -1,26 +1,19 @@
 <nml>
-<head>
-<style>
-.w50 {
-    width: 50%;
-    height: 50%;
-}
-div {
-    hl-bg: red;
-}
-nml {
-    width: 80ch;
-    height: 50%;
-}
-body {
-    padding-left: 50%;
-}
-</style>
-</head>
-<body>
-<br>
-<div class="w50">
+  <head>
+    <style>
+      nml {
+        width: 50ch;
+        height: 80%;
+      }
+      span {
+        hl-bg: #ff0000;
+        margin-left: 1ch;
+      }
+    </style>
+  </head>
 
-</div>
-</body>
+  <body>
+    <br />
+    <span> asd </span>
+  </body>
 </nml>

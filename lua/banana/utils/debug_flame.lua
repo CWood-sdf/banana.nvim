@@ -60,10 +60,12 @@ function M.pop()
 end
 
 ---@param unit? "millis"|"micros"|"nanos"|"s"|"pct"
+---@param filter? string
 ---@param per? boolean
 ---@return { [string]: number }
-function M.getFlames(unit, per)
+function M.getFlames(unit, filter, per)
     if not isdev() then return {} end
+    filter = filter or "."
     if #flameStack > 1 then
         print("Flames not done")
     end
@@ -78,31 +80,40 @@ function M.getFlames(unit, per)
     local ret = {}
     local total = 0
     for k, v in pairs(flameTimes) do
+        if not string.match(k, filter) then
+            goto continue
+        end
         local vDiv = v / div
         if per then
             vDiv = vDiv / flameCounts[k]
         end
         ret[k] = vDiv
         total = total + vDiv
+        ::continue::
     end
     if unit == "pct" then
         for k, v in pairs(flameTimes) do
+            if not string.match(k, filter) then
+                goto continue
+            end
             if per then
                 v = v / flameCounts[k]
             end
             ret[k] = v / total
+            ::continue::
         end
     end
     return ret
 end
 
 ---@param unit? "millis"|"micros"|"nanos"|"s"|"pct"
+---@param filter? string
 ---@param per? boolean
 ---@return [string, number]
-function M.getWorst(unit, per)
+function M.getWorst(unit, filter, per)
     if not isdev() then return {} end
     local ret = {}
-    for k, v in pairs(M.getFlames(unit, per)) do
+    for k, v in pairs(M.getFlames(unit, filter, per)) do
         table.insert(ret, { k, v })
     end
     table.sort(ret, function(l, r)

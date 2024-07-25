@@ -53,12 +53,12 @@ describe("span rendering", function()
     it("margins", function()
         local inst = require('banana.instance').emptyInstance()
         inst:useNml(code)
-        inst.DEBUG = false
+        -- inst.DEBUG = true
         inst.stripRight = false
         inst:open()
 
         local span = inst:getElementsByTag("span")[1]
-        span:setStyle(" margin-left: 1ch;")
+        span:setStyle("margin-left: 1ch;")
         local expectedMap = {
             "     ",
             " asd~",

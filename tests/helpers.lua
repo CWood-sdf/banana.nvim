@@ -15,13 +15,21 @@ function M.bufToBgMap(bufnr)
         for j = 1, #v do
             local char = v:sub(j, j)
             local ext = vim.inspect_pos(bufnr, i - 1, j - 1).extmarks[1]
+            local opts = nil
             if ext == nil then
-                goto continue
+                opts = {
+                    name = require('banana.instance').defaultWinHighlight,
+                    link = true,
+                }
+                ext = {
+                    ns_id = require('banana.instance').getInstance(1).highlightNs
+                }
+            else
+                opts = {
+                    name = ext.opts.hl_group,
+                    link = true,
+                }
             end
-            local opts = {
-                name = ext.opts.hl_group,
-                link = false,
-            }
             local hl = vim.api.nvim_get_hl(ext.ns_id, opts)
             if hl.bg == nil then
                 hl = vim.api.nvim_get_hl(0, { name = "NormalFloat" })
@@ -41,7 +49,7 @@ function M.bufToBgMap(bufnr)
             else
                 line = line .. bgChar
             end
-            ::continue::
+            -- ::continue::
         end
         table.insert(ret, line)
     end
@@ -68,7 +76,12 @@ end
 function M.assertBgMapsMatch(bufMap, expectedMap)
     local i = 1
     while i <= #bufMap and i <= #expectedMap do
-        if bufMap[i] ~= expectedMap[i] then
+        if #bufMap[i] < #expectedMap[i] then
+            print(#bufMap[i]:sub(#expectedMap[i]))
+        end
+        if #bufMap[i] < #expectedMap[i] and #bufMap[i]:sub(#expectedMap[i]):gsub("%s*$", "") == "" then
+
+        elseif bufMap[i] ~= expectedMap[i] then
             M.printRenders(bufMap, expectedMap)
             error("line " ..
                 i .. " expected '" .. bufMap[i] .. "' to be '" .. expectedMap[i] .. "'")

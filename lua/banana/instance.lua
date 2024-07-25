@@ -541,7 +541,7 @@ function Instance:_render()
     if self.renderRequested then
         return
     end
-    log.trace("Instance:render")
+    log.trace("Instance:render with " .. #self.scripts .. " scripts")
     -- flame.reset()
     self.rendering = true
     local startTime = vim.loop.hrtime()
@@ -613,12 +613,14 @@ function Instance:_render()
             "Instance id: " .. self.instanceId,
             "",
         }
-        local flames = flame.getWorst("pct")
-        local flameMillis = flame.getFlames("millis")
+        local filter = "hl:"
+        local flames = flame.getWorst("pct", filter)
+        local flameMillis = flame.getFlames("millis", filter)
         local maxLen = 0
         for _, val in ipairs(flames) do
             maxLen = math.max(maxLen, #val[1] + 2)
         end
+        -- print(vim.inspect(flames))
         for _, val in ipairs(flames) do
             local str = val[1] .. ": "
             if #str < maxLen then
@@ -652,31 +654,47 @@ end
 ---@param offset number?
 function Instance:_highlight(lines, offset)
     offset = offset or 0
+    flame.new("hl:ns")
     vim.api.nvim_win_set_hl_ns(self.winid, self.highlightNs)
     if self.highlightNs ~= nil then
-        vim.api.nvim_buf_clear_namespace(0, self.highlightNs, offset, offset + #lines)
+        -- vim.api.nvim_buf_clear_namespace(0, self.highlightNs, offset, offset + #lines)
+        -- vim.api.nvim_win_set_hl_ns(self.winid, self.highlightNs)
         -- self.highlightNs = nil
     end
-    vim.api.nvim_win_set_hl_ns(self.winid, self.highlightNs)
+    flame.pop()
     if self.bufnr == nil or not vim.api.nvim_buf_is_valid(self.bufnr) then
         log.assert(false,
             "Unreachable (buf is invalid in higlightBuffer)")
         error("")
     end
+    flame.new("hl:loop_outer")
     local row = offset
     local col = 0
     local hlId = 0
     ---@type table<string, string>
     local usedHighlights = {}
     for _, v in ipairs(lines) do
-        for _, word in ipairs(v) do
+        flame.new("hl:loop_inner")
+        local i = 1
+        while i <= #v do
+            local word = v[i]
+            flame.new("hl:loop_inner2")
             local hlGroup = ""
             local ns = self.highlightNs
+            local delta = _str.charWidth(word.word)
             if word.style ~= nil then
+                flame.new("hl:inspect")
+                -- this is pretty inefficient
                 local optsStr = vim.inspect(word.style)
+                while i + 1 <= #v and v[i + 1].style == word.style do
+                    i = i + 1
+                    delta = delta + _str.charWidth(v[i].word)
+                end
+                flame.pop()
 
                 if word.style.__name ~= nil then
                     ns = 0
+                    flame.new("hl:named_hl")
                     hlGroup = word.style.__name or "Normal"
                     local hl = vim.api.nvim_get_hl(ns, {
                         name = hlGroup,
@@ -686,6 +704,7 @@ function Instance:_highlight(lines, offset)
                     local hlNotExists = vim.json.encode(hl) == "{}"
                     -- If there are default highlight options, and the highlight does not exist, create it
                     if hlNotExists and keysCount > 1 then
+                        flame.new("hl:create_named")
                         local opts = vim.deepcopy(word.style)
                         opts.__name = nil
                         if opts == nil then
@@ -694,28 +713,38 @@ function Instance:_highlight(lines, offset)
                             error("")
                         end
                         vim.api.nvim_set_hl(0, hlGroup, opts)
+                        flame.pop()
                     elseif hlNotExists then
                         hlGroup = M.defaultWinHighlight
                     end
+                    flame.pop()
                 elseif usedHighlights[optsStr] ~= nil then
                     hlGroup = usedHighlights[optsStr]
                 else
+                    flame.new("hl:set_hl")
                     hlGroup = "banana_hl_" .. hlId
                     vim.api.nvim_set_hl(self.highlightNs, hlGroup, word.style)
                     hlId = hlId + 1
                     usedHighlights[optsStr] = hlGroup
+                    flame.pop()
                 end
+                flame.new("hl:add_hl")
+                vim.api.nvim_buf_add_highlight(self.bufnr, ns, hlGroup, row, col, col + delta)
+                flame.pop()
             else
-                -- hlGroup = M.defaultWinHighlight
-                hlGroup = "NormalFloat"
+                hlGroup = M.defaultWinHighlight
+                -- hlGroup = "NormalFloat"
                 ns = 0
             end
-            vim.api.nvim_buf_add_highlight(self.bufnr, ns, hlGroup, row, col, col + _str.charWidth(word.word))
-            col = col + _str.charWidth(word.word)
+            col = col + delta
+            flame.pop()
+            i = i + 1
         end
         col = 0
         row = row + 1
+        flame.pop()
     end
+    flame.pop()
 end
 
 ---Loads a partial nml file at {file} to be the content of the ast
