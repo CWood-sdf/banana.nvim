@@ -581,6 +581,9 @@ function Instance:_render()
         buf = self.bufnr
     })
     vim.api.nvim_buf_set_lines(self.bufnr, 0, -1, false, lines)
+    vim.api.nvim_set_option_value("modifiable", false, {
+        buf = self.bufnr
+    })
     startTime = vim.loop.hrtime()
     self:_highlight(stuffToRender, 0)
     for _, script in ipairs(self.scripts) do

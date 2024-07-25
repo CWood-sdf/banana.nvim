@@ -1,5 +1,5 @@
 vim.schedule(function()
-    require('banana').initTsParsers()
-    vim.cmd("TSInstallSync nml")
-    vim.cmd("TSInstallSync ncss")
+    -- require('banana').initTsParsers()
+    -- vim.cmd("TSInstallSync nml")
+    -- vim.cmd("TSInstallSync ncss")
 end)

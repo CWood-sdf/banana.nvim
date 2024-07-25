@@ -289,6 +289,12 @@ function Parser:parseTag(tree, parent, isSpecial)
         ret.attributes = attrs
         ret.inlineStyle = decls
     end
+    local scriptStr = ""
+    if attrs["src"] ~= nil and isScript then
+        local req = attrs["src"]
+        scriptStr = "@" .. req
+        table.insert(self.scripts, scriptStr)
+    end
 
     local i = 1
     while i < tree:child_count() - 1 do
@@ -331,14 +337,10 @@ function Parser:parseTag(tree, parent, isSpecial)
             end
             ret:appendTextNode(self:getStrFromNode(child))
         elseif child:type() == M.ts_types.raw_text and isScript then
-            local scriptStr = ""
-            if attrs["src"] ~= nil then
-                local req = attrs["src"]
-                scriptStr = "@" .. req
-            else
+            if scriptStr ~= "" then
                 scriptStr = self.lexer:getStrFromRange({ child:start() }, { child:end_() })
+                table.insert(self.scripts, scriptStr)
             end
-            table.insert(self.scripts, scriptStr)
         elseif child:type() == M.ts_types.raw_text and isStyle then
             local ncssTree = self:getNextBlockNcssParser()
             local ncssParser = require('banana.ncss.parser').newParseData(self.lexer.program)
@@ -463,8 +465,22 @@ end
 ---@param content string
 ---@return Banana.Nml.Parser
 function M.fromString(content)
-    local langTree = vim.treesitter.get_string_parser(content, "nml", {})
-    local arr = langTree:parse(true)
+    require('banana').initTsParsers()
+    local arr = nil
+    local langTree = nil
+    local ok, _ = pcall(function()
+        langTree = vim.treesitter.get_string_parser(content, "nml", {})
+        arr = langTree:parse(true)
+    end)
+    if not ok then
+        require('banana').installTsParsers()
+        langTree = vim.treesitter.get_string_parser(content, "nml", {})
+        arr = langTree:parse(true)
+    end
+    if langTree == nil or arr == nil then
+        log.assert(false, "Could not parse nml tree")
+        error("")
+    end
     local ncssChild = langTree:children()['ncss']
     local ncssParsers = {}
     if ncssChild ~= nil then

@@ -316,10 +316,25 @@ end
 ---@param content string
 ---@return Banana.Ncss.RuleSet[]
 function M.parseText(content)
-    local parse = vim.treesitter.get_string_parser(content, "ncss", {
+    require('banana').initTsParsers()
+    local tree = nil
+    local ok, _ = pcall(function()
+        local parse = vim.treesitter.get_string_parser(content, "ncss", {
 
-    })
-    local tree = parse:parse(true)
+        })
+        tree = parse:parse(true)
+    end)
+    if not ok then
+        require('banana').installTsParsers()
+        local parse = vim.treesitter.get_string_parser(content, "ncss", {
+
+        })
+        tree = parse:parse(true)
+    end
+    if tree == nil then
+        log.assert(false, "Could not parse ncss tree")
+        error("Could not parse ncss tree")
+    end
     -- local tree2 = tree[1]:root()
     -- local tree = require('banana.ncss.ffiparser').getTree(content)
     local parser = ParseData:new(vim.split(content, '\n'))
