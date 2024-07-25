@@ -1,5 +1,6 @@
 local M = {}
-local instance = nil
+local counterInst = nil
+local todoInst = nil
 ---@module 'banana.instance'
 local render = require('banana.lazyRequire')('banana.instance')
 
@@ -7,18 +8,18 @@ local tsInit = false
 local tsInstall = false
 
 M.runCounter = function()
-	if instance == nil then
-		instance = render.newInstance("examples/counter", "asdf")
+	if counterInst == nil then
+		counterInst = render.newInstance("examples/counter", "asdf")
 		-- instance.DEBUG = true
 	end
-	instance:open()
+	counterInst:open()
 end
 M.runTodo = function()
-	if instance == nil then
-		instance = render.newInstance("examples/todo", "asdf")
+	if todoInst == nil then
+		todoInst = render.newInstance("examples/todo", "asdf")
 		-- instance.DEBUG = true
 	end
-	instance:open()
+	todoInst:open()
 end
 
 function M.spam()
