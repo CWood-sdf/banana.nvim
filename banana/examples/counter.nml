@@ -1,0 +1,44 @@
+<nml>
+  <head>
+    <style>
+      nml {
+        left: 5ch;
+        top: 5ch;
+        width: 50%;
+        height: 40%;
+      }
+      .key {
+        hl-fg: hl-extract(fg, Operator);
+      }
+      ul {
+        padding-left: 2ch;
+      }
+      body {
+        padding: 1ch 0ch;
+      }
+      .title {
+        hl-bold: true;
+        hl-fg: hl-extract(fg, Title);
+        text-align: center;
+      }
+    </style>
+    <title>Obligatory counter</title>
+  </head>
+  <body>
+    <br />
+    <div class="title">COUNTER COUNTS!!!!</div>
+    <div><span class="key">a</span>: Add one</div>
+    <br />
+    <div>
+      Try:
+      <ul>
+        <li>Prefixing the `a` with a number</li>
+        <li>Hovering over the count when pressing `a`</li>
+        <li>Prefixing the `a` with 1</li>
+      </ul>
+    </div>
+    <br />
+    <div id="counter">1</div>
+    <script src="banana_examples.counter"></script>
+  </body>
+</nml>

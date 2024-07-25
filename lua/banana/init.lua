@@ -6,6 +6,13 @@ local render = require('banana.lazyRequire')('banana.instance')
 local tsInit = false
 local tsInstall = false
 
+M.runCounter = function()
+	if instance == nil then
+		instance = render.newInstance("examples/counter", "asdf")
+		-- instance.DEBUG = true
+	end
+	instance:open()
+end
 M.runTodo = function()
 	if instance == nil then
 		instance = render.newInstance("examples/todo", "asdf")

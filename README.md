@@ -7,28 +7,47 @@ A blazingly fast html renderer for neovim
 > This project is still in early development.  
 > Expect breaking changes and bugs, and please report any issues you encounter.
 
-## The problem
+## Example
 
-I have made two large plugins for neovim: [pineapple](https://github.com/CWood-sdf/pineapple) and [spaceport](https://github.com/CWood-sdf/spaceport.nvim). For both of these plugins I ended up making my own specialized rendering frameworks. This was originally because I did not know about [nui](https://github.com/MunifTanjim/nui.nvim) (a great project btw), but I did not switch my plugins over because there are a two major roadblocks with nui:
+This is the banana hello world:
 
-- I don't like the idea of declaring a ui as an object structure. I find it a little hard to read as to what ends up where
-- It seems a little bit verbose
+```html
+<nml>
+  <!-- in banana/stuff/foo.nml -->
+  <head>
+    <style>
+      nml {
+        width: 50%;
+        height: 50%;
+      }
+      div {
+        hl-bg: red;
+        width: 50%;
+      }
+    </style>
+  </head>
+  <body>
+    <div>Hello World!</div>
+  </body>
+</nml>
+```
 
-## The solution
+then in a lua file:
 
-Html!
+```lua
+local instance = require('banana.instance').newInstance("stuff/foo", "random buffer name")
+instance:open()
+```
 
-I don't think it is too bold an assumption to say that every developer knows at least a little bit of html. So, it would be really nice if this knowledge everyone has could be transferrable to writing neovim plugins. This makes it so that rather than having to solve the problems of rendering, core features, and ui design, plugin authors do not need to solve rendering because it is all html.
+and that's it! You can just keep writing html, and use lua scripting with an api that is nearly exactly like the browser api. All the html you are already familiar with, just ported to lua.
 
-So, the mission of banana is to make neovim uis absurdly easy by using html. For this, it has a custom html language offshoot and a custom css offshoot.
+### Other examples
 
-In the future, I would also like to have a lot of "extra" features that usually come to browsers via third-party libraries (eg jquery.load) so that plugin authors can just add banana as a dependency and start coding.
+Currently there are two examples: a todo app and a counter app.
 
-The banana renderer takes a design architecture that allows it to be blazingly fast: rendering is done in _one_ pass. There will be no reflowing of any elements ever because later elements were rendered. This also means that complicated box trees and render trees (for example, I believe ladybird uses two trees to render) are _not_ allowed in the renderer. This allows the renderer to be very simple (and fast) while also supporting most of the features of modern html and css. This rendering architecture does make some things (particularly floats) more complicated, but it lets everything else be very fast. This simplification is required because banana is written in lua (slower than the c++ that modern browsers use).
+The todo's files are contained in banana/example/todo.nml and lua/banana_example/todo.lua. You can run it with `require('banana').runTodo()`
 
-## Building and running
-
-Currently the build.lua file does not work, so to run banana, you have to call `require('banana').initTsParsers()` in a setup function somewhere (lazy's setup() function for banana). Then run, at least once, `:TSInstall nml` and `:TSInstall ncss`
+The counter's files are contained in banana/example/counter.nml and lua/banana_example/counter.lua. You can run it with `require('banana').runCounter()`
 
 ## Features
 
@@ -137,11 +156,11 @@ document:open()
 
 ## Scripting
 
-There are two scripting methods available: seperate lua files and embedded lua.
+There are two scripting methods available: separate lua files and embedded lua.
 
-Of the two, seperate lua files has much better support (lsp and parameter passing).
+Of the two, separate lua files has much better support (lsp and parameter passing).
 
-Loading a seperate lua file into an nml document is very simple:
+Loading a separate lua file into an nml document is very simple:
 
 ```html
 <script src="lua require path"></script>
@@ -221,6 +240,27 @@ There is a lot of work still to be done. If you want to help out, the primary ar
 ## Final notes
 
 As you can probably tell, this plugin is nowhere close to being done. If you would like to contribute to this plugin, by all means please do. If you don't want to contribute, but still find this project interesting, then give it a star. If you want to follow the progress, then "watch" it on github.
+
+## Essay
+
+### The problem
+
+I have made two large plugins for neovim: [pineapple](https://github.com/CWood-sdf/pineapple) and [spaceport](https://github.com/CWood-sdf/spaceport.nvim). For both of these plugins I ended up making my own specialized rendering frameworks. This was originally because I did not know about [nui](https://github.com/MunifTanjim/nui.nvim) (a great project btw), but I did not switch my plugins over because there are a two major roadblocks with nui:
+
+- I don't like the idea of declaring a ui as an object structure. I find it a little hard to read as to what ends up where
+- It seems a little bit verbose
+
+### The solution
+
+Html!
+
+I don't think it is too bold an assumption to say that every developer knows at least a little bit of html. So, it would be really nice if this knowledge everyone has could be transferrable to writing neovim plugins. This makes it so that rather than having to solve the problems of rendering, core features, and ui design, plugin authors do not need to solve rendering because it is all html.
+
+So, the mission of banana is to make neovim uis absurdly easy by using html. For this, it has a custom html language offshoot and a custom css offshoot.
+
+In the future, I would also like to have a lot of "extra" features that usually come to browsers via third-party libraries (eg jquery.load) so that plugin authors can just add banana as a dependency and start coding.
+
+The banana renderer takes a design architecture that allows it to be blazingly fast: rendering is done in _one_ pass. There will be no reflowing of any elements ever because later elements were rendered. This also means that complicated box trees and render trees (for example, I believe ladybird uses two trees to render) are _not_ allowed in the renderer. This allows the renderer to be very simple (and fast) while also supporting most of the features of modern html and css. This rendering architecture does make some things (particularly floats) more complicated, but it lets everything else be very fast. This simplification is required because banana is written in lua (slower than the c++ that modern browsers use).
 
 ## Self promotion
 
