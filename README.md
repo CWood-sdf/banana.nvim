@@ -245,10 +245,7 @@ As you can probably tell, this plugin is nowhere close to being done. If you wou
 
 ### The problem
 
-I have made two large plugins for neovim: [pineapple](https://github.com/CWood-sdf/pineapple) and [spaceport](https://github.com/CWood-sdf/spaceport.nvim). For both of these plugins I ended up making my own specialized rendering frameworks. This was originally because I did not know about [nui](https://github.com/MunifTanjim/nui.nvim) (a great project btw), but I did not switch my plugins over because there are a two major roadblocks with nui:
-
-- I don't like the idea of declaring a ui as an object structure. I find it a little hard to read as to what ends up where
-- It seems a little bit verbose
+I have made two large plugins for neovim: [pineapple](https://github.com/CWood-sdf/pineapple) and [spaceport](https://github.com/CWood-sdf/spaceport.nvim). For both of these plugins I ended up making my own specialized rendering frameworks. This was originally because I did not know about [nui](https://github.com/MunifTanjim/nui.nvim) (a great project btw), but I did not switch my plugins over because I did not want to learn a whole new rendering framework on top of my other two rendering frameworks. (To those that argue that banana is a whole new rendering framework: yes, that is correct, but it is trying to use knowledge most people already have)
 
 ### The solution
 
