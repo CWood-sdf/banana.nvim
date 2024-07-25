@@ -1,0 +1,44 @@
+<nml>
+  <head>
+    <style>
+      nml {
+        left: 5ch;
+        top: 5ch;
+        width: 20%;
+        height: 40%;
+      }
+      li {
+        list-style-type: "-";
+      }
+      ul {
+        padding-left: 2ch;
+      }
+      .title {
+        hl-bold: true;
+        hl-fg: hl-extract(fg, Title);
+        text-align: center;
+      }
+      li.done {
+        hl-fg: hl-extract(fg, Comment);
+      }
+      body {
+        padding: 1ch 0ch;
+      }
+      .key {
+        hl-fg: hl-extract(fg, Operator);
+      }
+    </style>
+    <title>THE todo app</title>
+  </head>
+  <body>
+    <br />
+    <div class="title">Todo app</div>
+    <br />
+    <div><span class="key">a</span>: Add element</div>
+    <div><span class="key">X</span>: Remove element</div>
+    <br />
+    <div>Todo items:</div>
+    <ul id="todo"></ul>
+    <script src="banana_examples.todo"></script>
+  </body>
+</nml>
