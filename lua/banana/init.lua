@@ -26,7 +26,7 @@ end
 M.yeet = function()
 	if instance == nil then
 		instance = render.newInstance("test", "")
-		instance.DEBUG = true
+		-- instance.DEBUG = true
 		instance.DEBUG_showPerf = true
 		instance.DEBUG_stressTest = true
 	end

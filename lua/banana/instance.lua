@@ -555,17 +555,22 @@ function Instance:_render()
     end
     self:body().relativeBoxes = {}
     self:body().absoluteAsts = {}
+
     styleTime = vim.loop.hrtime() - startTime
     startTime = vim.loop.hrtime()
+
     local width, height = self:_createWinAndBuf()
+
     local winTime = vim.loop.hrtime() - startTime
     startTime = vim.loop.hrtime()
+
     -- self:body():resolveUnits(width, height, {})
     local stuffToRender = self:_virtualRender(self.ast, width, height)
+
     local renderTime = vim.loop.hrtime() - startTime
+    startTime = vim.loop.hrtime()
 
     local lines = {}
-    startTime = vim.loop.hrtime()
     for _, line in ipairs(stuffToRender) do
         local lineStr = ""
         for _, word in ipairs(line) do
@@ -573,7 +578,10 @@ function Instance:_render()
         end
         table.insert(lines, lineStr)
     end
+
     local reductionTime = vim.loop.hrtime() - startTime
+    startTime = vim.loop.hrtime()
+
     vim.api.nvim_set_option_value("modifiable", true, {
         buf = self.bufnr
     })
@@ -584,14 +592,19 @@ function Instance:_render()
     vim.api.nvim_set_option_value("modifiable", false, {
         buf = self.bufnr
     })
+
+    local bufTime = vim.loop.hrtime() - startTime
     startTime = vim.loop.hrtime()
+
     self:_highlight(stuffToRender, 0)
     for _, script in ipairs(self.scripts) do
         self:_runScript(script, {})
     end
     self.scripts = {}
+
     local hlTime = vim.loop.hrtime() - startTime
     totalTime = totalTime + vim.loop.hrtime() - actualStart
+
     if self.DEBUG or self.DEBUG_showPerf then
         n = n + 1
         avg = (avg * (n - 1) + renderTime) / n
@@ -608,12 +621,13 @@ function Instance:_render()
             renderTime / 1e6 .. "ms to render",
             reductionTime / 1e6 .. "ms to reduce",
             hlTime / 1e6 .. "ms to highlight",
+            bufTime / 1e6 .. "ms to set buf",
             totalTime / 1e6 .. "ms total",
             avg / 1e6 .. "ms avg render",
             "Instance id: " .. self.instanceId,
             "",
         }
-        local filter = "hl:"
+        local filter = ""
         local flames = flame.getWorst("pct", filter)
         local flameMillis = flame.getFlames("millis", filter)
         local maxLen = 0
@@ -686,11 +700,11 @@ function Instance:_highlight(lines, offset)
                 flame.new("hl:inspect")
                 -- this is pretty inefficient
                 local optsStr = vim.inspect(word.style)
+                flame.pop()
                 while i + 1 <= #v and v[i + 1].style == word.style do
                     i = i + 1
                     delta = delta + _str.charWidth(v[i].word)
                 end
-                flame.pop()
 
                 if word.style.__name ~= nil then
                     ns = 0

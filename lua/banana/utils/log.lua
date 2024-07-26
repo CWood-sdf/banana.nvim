@@ -1,3 +1,5 @@
+---@module 'banana.utils.debug_flame'
+local flame = require('banana.lazyRequire')('banana.utils.debug_flame')
 -- log.lua
 --
 -- Inspired by rxi/log.lua
@@ -63,7 +65,7 @@ local unpack = unpack or table.unpack
 ---@diagnostic disable-next-line: inject-field
 log.new = function(config, standalone)
     if require('banana.utils.debug').isdev() then
-        default_config.level = "trace"
+        -- default_config.level = "trace"
     end
 
     config = vim.tbl_deep_extend("force", default_config, config)
@@ -113,6 +115,7 @@ log.new = function(config, standalone)
         if level < levels[config.level] then
             return
         end
+        flame.new("log")
         local nameupper = level_config.name:upper()
 
         local msg = message_maker(...)
@@ -154,6 +157,7 @@ log.new = function(config, standalone)
             fp:write(str)
             fp:close()
         end
+        flame.pop()
     end
 
     for i, x in ipairs(config.modes) do

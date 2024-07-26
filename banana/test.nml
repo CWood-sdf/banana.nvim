@@ -17,25 +17,25 @@
         height: 80%;
       }
 
-      #tabline > .selected {
+      .tabline > .selected {
         hl-bg: hl-extract(bg, Visual);
         hl-fg: hl-extract(fg, Visual);
       }
-      #tabline > .selected.home {
+      .tabline > .selected.home {
         hl-bg: hl-extract(bg, IncSearch);
         hl-fg: hl-extract(fg, IncSearch);
       }
-      #tabline > :not(.selected) {
+      .tabline > :not(.selected) {
         hl-bg: hl-extract(bg, CursorLine);
         hl-fg: hl-extract(fg, CursorLine);
       }
-      #tabline > span {
+      .tabline > span {
         margin-right: 1ch;
         padding-left: 1ch;
         /* width: 20ch; */
       }
 
-      #tabline .remap {
+      .tabline .remap {
         hl-fg: hl-extract(fg, Operator);
       }
       body {
@@ -81,7 +81,743 @@
     </style>
   </head>
   <body>
-    <div id="tabline">
+    <div class="tabline" id="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
+      <span class="selected home">
+        lazy.nvim <span class="remap"> (H) </span>
+      </span>
+      <span class=""> Install <span class="remap"> (I) </span> </span>
+      <span class=""> Update <span class="remap"> (U) </span> </span>
+      <span class=""> Sync <span class="remap"> (S) </span> </span>
+    </div>
+    <div class="tabline">
       <span class="selected home">
         lazy.nvim <span class="remap"> (H) </span>
       </span>

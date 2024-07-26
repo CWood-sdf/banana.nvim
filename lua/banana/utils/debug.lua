@@ -13,8 +13,8 @@ end
 
 ---@return boolean
 function M.isdev()
-    local ok, _ = pcall(require, "banana.dev")
-    return ok
+    local ok, val = pcall(require, "banana.dev")
+    return ok and val
 end
 
 return M

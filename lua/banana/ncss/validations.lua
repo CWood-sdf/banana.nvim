@@ -119,7 +119,7 @@ end)
 local singleUnit          = Validation:new(function(a)
     return #a == 1 and a[1].type == "unit"
 end)
-local singlePlain         = Validation:new({ [1] = { { "plain" } } })
+-- local singlePlain         = Validation:new({ [1] = { { "plain" } } })
 local singleInt           = Validation:new({ [1] = { { "integer" } } })
 local singleStringOrPlain = Validation:new({ [1] = { { "string" }, { "plain" } } })
 local singleNumber        = Validation:new({ [1] = { { "integer" }, { "float" } } })
