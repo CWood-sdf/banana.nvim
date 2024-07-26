@@ -165,12 +165,13 @@ function M.Box:clean()
             table.insert(self.lines[i], self:fillString(self._width - w))
         end
     end
-    ---@type { [Banana.Word[]]: boolean }
-    local foundLines = {}
-    for i, v in ipairs(self.lines) do
-        if foundLines[v] ~= nil then
-            self.lines[i] = vim.deepcopy(v)
-            foundLines[v] = true
+    if require('banana.utils.debug').isdev() then
+        ---@type { [Banana.Word[]]: boolean }
+        local foundLines = {}
+        for _, v in ipairs(self.lines) do
+            if foundLines[v] ~= nil then
+                error("Duplicated lines!!")
+            end
         end
     end
     self.dirty = false
@@ -242,11 +243,9 @@ function M.Box:appendStr(str, strat)
     if #self.lines == 0 then
         self.lines = { { word } }
         self._width = _str.charWidth(str)
-        self.dirty = false
     elseif #self.lines == 1 then
         table.insert(self.lines[1], word)
         self._width = self._width + _str.charWidth(str)
-        self.dirty = false
     elseif strat == M.MergeStrategy.Top then
         table.insert(self.lines[1], word)
         self._width = math.max(M.lineWidth(self.lines[1]), self._width)
@@ -309,7 +308,7 @@ function M.Box:appendBoxBelow(box, expand)
         box:clean()
     end
     for _, v in ipairs(box.lines) do
-        table.insert(self.lines, vim.deepcopy(v))
+        table.insert(self.lines, v)
     end
     self.dirty = self._width ~= box._width
     self._width = newWidth
