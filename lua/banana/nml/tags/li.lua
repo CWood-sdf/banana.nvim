@@ -1,3 +1,5 @@
+---@module 'banana.utils.debug_flame'
+local flame = require('banana.lazyRequire')('banana.utils.debug_flame')
 -- local _str = require('banana.utils.string')
 ---@module 'banana.nml.render'
 local t = require('banana.lazyRequire')('banana.nml.render')
@@ -10,6 +12,7 @@ local b = require('banana.lazyRequire')('banana.box')
 
 ---@type Banana.Renderer
 local function renderer(self, ast, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra)
+    flame.new("tag:li")
     local widthAlloted = nil
     local listTick = ast:parent():_getNextListItem(inherit.list_style_type)
     widthAlloted = _str.charWidth(listTick)
@@ -21,6 +24,7 @@ local function renderer(self, ast, parentHl, parentWidth, parentHeight, startX, 
     local render = self:renderInlineEl(ast, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra)
 
     -- because expandHeightTo will fail later down
+    flame.pop()
     if render:height() == 0 then return render end
 
     if extra.debug then

@@ -1,8 +1,11 @@
+---@module 'banana.utils.debug_flame'
+local flame = require('banana.lazyRequire')('banana.utils.debug_flame')
 ---@module 'banana.nml.render'
 local t = require('banana.lazyRequire')('banana.nml.render')
 
 ---@type Banana.Renderer
 local function renderer(self, ast, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra)
+    flame.new("tag:nml")
     local b = require('banana.box')
     ---@type Banana.Box
     local ret = b.Box:new()
@@ -22,6 +25,7 @@ local function renderer(self, ast, parentHl, parentWidth, parentHeight, startX, 
         end
         ::continue::
     end
+    flame.pop()
     return ret
 end
 ---@type Banana.TagInfo

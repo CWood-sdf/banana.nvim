@@ -1,3 +1,5 @@
+---@module 'banana.utils.debug_flame'
+local flame = require('banana.lazyRequire')('banana.utils.debug_flame')
 ---@module 'banana.utils.log'
 local log = require('banana.lazyRequire')('banana.utils.log')
 ---@module 'banana.nml.render'
@@ -11,6 +13,7 @@ end
 
 ---@type Banana.Renderer
 local function renderer(_, ast)
+    flame.new("tag:meta")
     local inst = require('banana.instance').getInstance(ast.instance)
     local name = ast:getAttribute("name")
     if name == nil then
@@ -35,6 +38,7 @@ local function renderer(_, ast)
     local b = require('banana.box')
     ---@type Banana.Box
     local ret = b.Box:new()
+    flame.pop()
     return ret
 end
 ---@type Banana.TagInfo

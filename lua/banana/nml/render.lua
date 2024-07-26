@@ -84,8 +84,8 @@ end
 ---@param extra Banana.Renderer.ExtraInfo
 ---@return Banana.Renderer.PartialRendered
 function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra)
-    log.trace("TagInfo:getRendered " .. ast.tag .. "#" .. (ast:getAttribute('id') or ""))
     flame.new("getRendered start")
+    -- log.trace("TagInfo:getRendered " .. ast.tag .. "#" .. (ast:getAttribute('id') or ""))
     local ret = require('banana.nml.render.main')(
         self, ast, parentHl, parentWidth, parentHeight, startX, startY, inherit,
         extra)
@@ -696,18 +696,13 @@ function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX
             startX = startX + count
             hasElements = true
         else
-            flame.new("renderBlock_primaryRender")
             local tag = v.actualTag
             if (tag.formatType == M.FormatType.Block or tag.formatType == M.FormatType.BlockInline) and hasElements then
                 flame.pop()
                 break
             end
             v:_resolveUnits(width, height)
-            flame.pop()
-            flame.new("renderBlock_primaryRender3")
             local rendered = tag:getRendered(v, parentHl, width, height, startX, startY, inherit, extra_):render()
-            flame.pop()
-            flame.new("renderBlock_primaryRender2")
             startX = startX + rendered:width()
             local overflow = nil
             local orgLines = currentLine:height()
@@ -733,7 +728,6 @@ function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX
                 end
                 currentLine = overflow
             end
-            flame.pop()
 
             if tag.formatType == M.FormatType.Block or tag.formatType == M.FormatType.BlockInline then
                 i = i + 1

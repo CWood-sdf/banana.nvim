@@ -1,3 +1,6 @@
+---@module 'banana.utils.debug_flame'
+---flame.new("tag:pre")
+local flame = require('banana.lazyRequire')('banana.utils.debug_flame')
 -- local t = require('banana.nml.tags')
 --
 -- ---@type Banana.Renderer
@@ -38,6 +41,7 @@
 --             ret:appendBoxBelow(currentLine)
 --         end
 --     end
+--     flame.pop()
 --     return ret
 -- end
 -- ---@type Banana.TagInfo
