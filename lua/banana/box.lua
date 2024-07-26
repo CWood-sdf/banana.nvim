@@ -322,17 +322,17 @@ end
 ---@param expectedBg string?
 function M.Box:stripRightSpace(expectedBg)
     for _, row in ipairs(self.lines) do
-        for i = #row, 1, -1 do
-            if row[i].style.bg ~= expectedBg then
-                goto continue
+        while #row > 0 do
+            local i = #row
+            if row[i].style.bg ~= expectedBg and row[i].style.bg ~= nil then
+                break
             end
-            row[i].word = row[i].word:gsub('[ ]+$', '')
+            row[i].word = row[i].word:gsub('%s+$', '')
             if #row[i].word == 0 then
                 table.remove(row, i)
             else
                 break
             end
-            ::continue::
         end
     end
 end
