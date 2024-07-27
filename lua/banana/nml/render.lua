@@ -7,8 +7,8 @@ local M = {}
 local _str = require('banana.lazyRequire')('banana.utils.string')
 -- ---@module 'banana.utils.case'
 -- local case = require('banana.lazyRequire')('banana.utils.case')
----@module 'banana.utils.dbg'
-local dbg = require('banana.lazyRequire')('banana.utils.dbg')
+---@module 'banana.utils.debug'
+local dbg = require('banana.lazyRequire')('banana.utils.debug')
 ---@module 'banana.nml.ast'
 local _ast = require('banana.lazyRequire')('banana.nml.ast')
 ---@module 'banana.box'
@@ -25,6 +25,7 @@ local b = require('banana.lazyRequire')('banana.box')
 ---@class (exact) Banana.Renderer.InitialProperties: Banana.Renderer.InheritedProperties
 ---@field flex_shrink number
 ---@field flex_wrap "nowrap"|"wrap"
+
 
 ---@enum Banana.Nml.FormatType
 M.FormatType = {
@@ -656,7 +657,8 @@ function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX
         if v == nil then
             break
         end
-        if type(v) == 'string' then
+        if v == "" then
+        elseif type(v) == 'string' then
             if v:sub(1, 1) == "&" then
                 error("Entity support is nonexistent")
             elseif v:sub(1, 1) == "%" then
@@ -671,7 +673,13 @@ function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX
                         end
                         el = el._parent
                     end
-                    v = el:getAttribute(attr) or ""
+                    if el:isNil() then
+                        v = ""
+                        log.warn("Could not find attribute '" .. attr .. "' for template substitution")
+                        vim.notify("Could not find attribute '" .. attr .. "' for template substitution")
+                    else
+                        v = el:getAttribute(attr) or ""
+                    end
                 end
             end
             local count = _str.charWidth(v)

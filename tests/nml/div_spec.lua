@@ -7,7 +7,7 @@ nml {
     width: 5ch;
     height: 5ch;
 }
-div {
+div:not(.no-style) {
     hl-bg: #ff0000;
     height: 4ch;
 }
@@ -24,6 +24,29 @@ asd
 ]]
 
 describe("Div rendering", function()
+    it("empty tag doesnt render", function()
+        local inst = require('banana.instance').emptyInstance()
+        inst:useNml(code)
+        inst.DEBUG = false
+        inst.stripRight = false
+        inst:open()
+
+        local div = inst:getElementsByTag("div")[1]
+        div:addClass("no-style")
+        div:setTextContent("")
+        local other = inst:createElement("span")
+        other:setTextContent("asdf")
+        inst:body():appendNode(other)
+        local expectedMap = {
+            "     ",
+            "asdf ",
+            "     ",
+            "     ",
+            "     ",
+        }
+        inst:forceRerender()
+        h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
+    end)
     it("margins", function()
         local inst = require('banana.instance').emptyInstance()
         inst:useNml(code)

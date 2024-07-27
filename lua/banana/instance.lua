@@ -117,6 +117,7 @@ function Instance:new()
                     nilAst['isNil'] = function() return true end
                 else
                     nilAst[k] = function()
+                        log.warn("Calling '" .. k .. "' on the nil ast")
                         vim.notify("Calling '" .. k .. "' on the nil ast\n")
                     end
                 end
@@ -695,15 +696,18 @@ function Instance:_highlight(lines, offset)
             flame.new("hl:loop_inner2")
             local hlGroup = ""
             local ns = self.highlightNs
-            local delta = _str.charWidth(word.word)
+            -- local delta = _str.charWidth(word.word)
+            -- log.debug(word.word .. ": " .. delta)
+            local byteCount = _str.byteCount(word.word)
             if word.style ~= nil then
                 flame.new("hl:inspect")
-                -- this is pretty inefficient
+                -- PERF: this is pretty inefficient
                 local optsStr = vim.inspect(word.style)
                 flame.pop()
                 while i + 1 <= #v and v[i + 1].style == word.style do
                     i = i + 1
-                    delta = delta + _str.charWidth(v[i].word)
+                    -- delta = delta + _str.charWidth(v[i].word)
+                    byteCount = byteCount + _str.byteCount(v[i].word)
                 end
 
                 if word.style.__name ~= nil then
@@ -743,14 +747,14 @@ function Instance:_highlight(lines, offset)
                     flame.pop()
                 end
                 flame.new("hl:add_hl")
-                vim.api.nvim_buf_add_highlight(self.bufnr, ns, hlGroup, row, col, col + delta)
+                vim.api.nvim_buf_add_highlight(self.bufnr, ns, hlGroup, row, col, col + byteCount)
                 flame.pop()
             else
                 hlGroup = M.defaultWinHighlight
                 -- hlGroup = "NormalFloat"
                 ns = 0
             end
-            col = col + delta
+            col = col + byteCount
             flame.pop()
             i = i + 1
         end

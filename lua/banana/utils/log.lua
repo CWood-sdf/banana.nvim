@@ -65,7 +65,7 @@ local unpack = unpack or table.unpack
 ---@diagnostic disable-next-line: inject-field
 log.new = function(config, standalone)
     if require('banana.utils.debug').isdev() then
-        -- default_config.level = "trace"
+        default_config.level = "trace"
     end
 
     config = vim.tbl_deep_extend("force", default_config, config)

@@ -152,9 +152,13 @@ function PartialRendered:render(clone)
     end
     if self.widthExpansion > 0 then
         local left = b.Box:new(self.mainColor)
-        left:appendStr('', nil)
-        left:expandWidthTo(self.widthExpansion)
-        left:cloneHeightTo(box:height())
+        if box:height() == 0 then
+            left:expandWidthTo(self.widthExpansion)
+        else
+            left:appendStr('', nil)
+            left:expandWidthTo(self.widthExpansion)
+            left:cloneHeightTo(box:height())
+        end
         if self.renderAlign == "right" then
             left:append(box)
             box = left

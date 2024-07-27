@@ -56,4 +56,9 @@ function M.sub(str, start, e)
     return ret
 end
 
+---Returns the number of bytes in a string
+function M.byteCount(str)
+    return #str
+end
+
 return M
