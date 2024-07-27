@@ -1,0 +1,21 @@
+{
+  "tasks": [
+    {
+      "name": "test",
+      "cmd": "./test",
+      "tags": ["test"],
+      "window": {
+        "name": "banana test",
+        "close": false
+      }
+    },
+    {
+      "name": "run",
+      "cmd": "nvim -c \"lua vim.defer_fn(function() require('banana').runLazy() end, 500)\"",
+      "window": {
+        "name": "ook",
+        "close": true
+      }
+    }
+  ]
+}

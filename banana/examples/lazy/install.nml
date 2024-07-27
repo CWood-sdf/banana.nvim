@@ -1,0 +1,30 @@
+<div>
+  <style>
+    #progress-left {
+      hl-fg: hl-extract(fg, "@module.builtin");
+    }
+    #progress-right {
+      hl-fg: hl-extract(fg, "Comment");
+    }
+    #progress > div {
+      display: flex;
+    }
+    ul {
+      list-style-type: "○ ";
+      padding-left: 2ch;
+      hl-fg: hl-extract(fg, Normal);
+    }
+  </style>
+  <div id="progress">
+    <div>
+      <div id="progress-left"></div>
+      <div id="progress-right"></div>
+    </div>
+  </div>
+  <div>
+    <span class="header">Working: </span>
+    <span class="comment" data_count="0" id="working_count"> %data_count </span>
+  </div>
+  <ul id="install_list"></ul>
+  <script src="banana_examples.lazy.install"></script>
+</div>

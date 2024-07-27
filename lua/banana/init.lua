@@ -23,12 +23,12 @@ M.runTodo = function()
 	todoInst:open()
 end
 
-M.yeet = function()
+M.runLazy = function()
 	if instance == nil then
-		instance = render.newInstance("test", "")
+		instance = render.newInstance("examples/lazy", "")
 		-- instance.DEBUG = true
-		instance.DEBUG_showPerf = true
-		instance.DEBUG_stressTest = true
+		-- instance.DEBUG_showPerf = true
+		-- instance.DEBUG_stressTest = true
 	end
 	instance:open()
 	instance:_requestRender()

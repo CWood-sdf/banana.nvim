@@ -1,0 +1,14 @@
+<div id="home">
+  <div id="loaded-plugins">
+    <span class="header">Loaded: </span>
+    <span class="comment"> (44)</span>
+  </div>
+
+  <div style="display: none" id="plugin-template">
+    <ul>
+      <li data_name="asdf">%data_name</li>
+    </ul>
+  </div>
+  <div id="plugin_list"></div>
+  <script src="banana_examples.lazy.home"></script>
+</div>
