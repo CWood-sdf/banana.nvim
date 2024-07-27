@@ -43,11 +43,13 @@ and that's it! You can just keep writing html, and use lua scripting with an api
 
 ### Other examples
 
-Currently there are two examples: a todo app and a counter app.
+Currently there are three examples: a todo app, a partial clone of the lazy.nvim plugin, and a counter app.
 
 The todo's files are contained in banana/example/todo.nml and lua/banana_example/todo.lua. You can run it with `require('banana').runTodo()`
 
 The counter's files are contained in banana/example/counter.nml and lua/banana_example/counter.lua. You can run it with `require('banana').runCounter()`
+
+Lazy's files are contained in banana/example/lazy/ and lua/banana_example/lazy/ and can be run with `require('banana').runLazy()`
 
 ## Features
 
