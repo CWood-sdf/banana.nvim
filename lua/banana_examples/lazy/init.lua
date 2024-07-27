@@ -3,6 +3,7 @@ return function(document)
   local tabline = document:getElementById("tabline")
   local container = document:getElementById("container")
   -- dont clone the home tab because it is static
+  -- CROSS SITE SCRIPTING?!?!
   document:loadNmlTo("examples/lazy/home", container, true)
 
   for v in tabline:childIter() do
