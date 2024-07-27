@@ -463,9 +463,6 @@ function M.Ast:clone()
     applyAstMeta(newAst)
     ---@cast newAst Banana.Ast
     newAst:_clearStyles()
-    if newAst.attributes["id"] ~= nil then
-        newAst.attributes["id"] = nil
-    end
     return newAst
 end
 
