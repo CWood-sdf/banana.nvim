@@ -1,56 +1,61 @@
-local M = {}
+---@module 'banana.instance'
+
+local Instance = require('banana.lazyRequire')('banana.instance')
+
+---@class Banana
+---@field newInstance function
+---@field emptyInstance function
+---@field getInstance function
+---@field getNilAst function
+---@field listInstanceIds function
+---@field examples table
+local M = {
+    newInstance = Instance.newInstance,
+    emptyInstance = Instance.emptyInstance,
+    getInstance = Instance.getInstance,
+    getNilAst = Instance.getNilAst,
+    listInstanceIds = Instance.listInstanceIds,
+}
+
 local counterInst = nil
 local todoInst = nil
 local instance = nil
----@module 'banana.instance'
-local render = require('banana.lazyRequire')('banana.instance')
 
 local tsInit = false
 local tsInstall = false
 
-M.runCounter = function()
-    if counterInst == nil then
-        counterInst = render.newInstance("examples/counter", "asdf")
-        -- instance.DEBUG = true
-    end
-    counterInst:open()
-end
-M.runTodo = function()
-    if todoInst == nil then
-        todoInst = render.newInstance("examples/todo", "asdf")
-        -- instance.DEBUG = true
-    end
-    todoInst:open()
-end
+---@class Banana.Examples
+---@field runCounter function
+---@field runTodo function
+---@field runLazy function
+M.examples = {
+    runCounter = function()
+        if counterInst == nil then
+            counterInst = M.newInstance("examples/counter", "asdf")
+            -- instance.DEBUG = true
+        end
+        counterInst:open()
+    end,
 
-M.runLazy = function()
-    if instance == nil then
-        instance = render.newInstance("examples/lazy", "")
-        -- instance.DEBUG = true
-        -- instance.DEBUG_showPerf = true
-        -- instance.DEBUG_stressTest = true
-    end
-    instance:open()
-    instance:_requestRender()
-end
+    runTodo = function()
+        if todoInst == nil then
+            todoInst = M.newInstance("examples/todo", "asdf")
+            -- instance.DEBUG = true
+        end
+        todoInst:open()
+    end,
 
-function M.spam()
-    local testFile = [[
-			.asdf {
-				hl-bg: #0000ff;
-			}
-		]]
-    local startTime = vim.uv.hrtime()
-    for _ = 1, 1000 do
-        local _ = require('banana.ncss.parser').parseTextSlow(testFile)
-    end
-    vim.notify((vim.uv.hrtime() - startTime) / 1e6 .. "ms\n")
-    startTime = vim.uv.hrtime()
-    for _ = 1, 1000 do
-        local _ = require('banana.ncss.parser').parseText(testFile)
-    end
-    vim.notify((vim.uv.hrtime() - startTime) / 1e6 .. "ms\n")
-end
+    runLazy = function()
+        if instance == nil then
+            instance = M.newInstance("examples/lazy", "")
+            -- instance.DEBUG = true
+            -- instance.DEBUG_showPerf = true
+            -- instance.DEBUG_stressTest = true
+        end
+        instance:open()
+        instance:_requestRender()
+    end,
+}
 
 function M.getInstallDir()
     local ret = ""
