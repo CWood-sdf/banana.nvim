@@ -58,6 +58,7 @@ local Instance = {}
 ---@field word string
 ---@field style? Banana.Highlight
 
+---@internal
 ---@param ast Banana.Ast
 ---@param width number
 ---@param height number
@@ -185,6 +186,7 @@ function Instance:useNml(nml)
     self:_applyId(ast)
 end
 
+---@internal
 function Instance:_attachAutocmds()
     vim.api.nvim_create_autocmd({ "WinEnter" }, {
         callback = function(args)
@@ -273,7 +275,7 @@ function Instance:useWindow(winid)
     self.winid = winid
 end
 
----comment
+---@internal
 ---@param mode string
 ---@param lhs string
 ---@param rhs string|fun()
@@ -319,6 +321,7 @@ function Instance:_setRemap(mode, lhs, rhs, opts, dep)
     end
 end
 
+---@internal
 ---@param ast Banana.Ast
 function Instance:_removeMapsFor(ast)
     for _, vals in ipairs(self.astMapDeps[ast] or {}) do
@@ -354,6 +357,7 @@ function Instance:body()
     return arr[1]
 end
 
+---@internal
 ---@param ast Banana.Ast
 function Instance:_applyId(ast)
     if ast.instance == nil then
@@ -369,6 +373,7 @@ function Instance:_applyId(ast)
     end
 end
 
+---@internal
 ---@param ast Banana.Ast
 function Instance:_applyInlineStyles(ast)
     ast:_applyInlineStyleDeclarations()
@@ -379,6 +384,7 @@ function Instance:_applyInlineStyles(ast)
     end
 end
 
+---@internal
 ---@param ast Banana.Ast?
 ---@param rules Banana.Ncss.RuleSet[]
 function Instance:_applyStyleDeclarations(ast, rules)
@@ -401,6 +407,7 @@ function Instance:_applyStyleDeclarations(ast, rules)
     end
 end
 
+---@internal
 ---@param script string
 ---@param opts table
 function Instance:_runScript(script, opts)
@@ -423,6 +430,7 @@ function Instance:_runScript(script, opts)
     f(opts)
 end
 
+---@internal
 ---@return number, number
 function Instance:_createWinAndBuf()
     local headQuery = require('banana.ncss.query').selectors.oneTag("head")
@@ -503,6 +511,7 @@ function Instance:_createWinAndBuf()
     return width, height
 end
 
+---@internal
 function Instance:_deferRender()
     vim.defer_fn(function()
         if self.rendering then
@@ -517,6 +526,7 @@ function Instance:_deferRender()
     end, 20)
 end
 
+---@internal
 function Instance:_requestRender()
     if self.renderRequested then
         return
@@ -534,6 +544,7 @@ end
 local n = 0
 local avg = 0
 
+---@internal
 function Instance:_render()
     if not self.isVisible then
         return
@@ -665,6 +676,7 @@ function Instance:_render()
     self.rendering = false
 end
 
+---@internal
 ---@param lines Banana.Line[]
 ---@param offset number?
 function Instance:_highlight(lines, offset)
@@ -828,6 +840,7 @@ function Instance:getElementsByClassName(name)
     return asts
 end
 
+---@internal
 ---@param name string
 ---@return Banana.Ast
 function Instance:getElementById(name)
@@ -880,6 +893,7 @@ function Instance:createElement(name)
     return ast
 end
 
+---@internal
 ---@param scripts string[]
 function Instance:_addScripts(scripts)
     for _, v in ipairs(scripts) do
