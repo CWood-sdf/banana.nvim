@@ -13,6 +13,7 @@ local function renderer(self, ast, parentHl, parentWidth, parentHeight, startX, 
     for _, box, _ in self:blockIter(ast, ret.hlgroup, parentWidth, parentHeight, startX, startY, inherit, extra) do
         ret:appendBoxBelow(box)
     end
+    -- flame.expect("tag:div")
     flame.pop()
     return ret
 end

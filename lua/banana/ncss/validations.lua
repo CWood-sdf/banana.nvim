@@ -3,14 +3,14 @@ local log = require('banana.lazyRequire')('banana.utils.log')
 ---@alias Banana.Ncss.PropertyValidation.Type string|Banana.Ncss.StyleValue.Types
 
 ---@class (exact) Banana.Ncss.PropertyValidation
----@field validations? { [integer]: Banana.Ncss.PropertyValidation.Type[][] }
+---@field validations? { [integer|"*"]: Banana.Ncss.PropertyValidation.Type[][] }
 ---@field custom? fun(value: Banana.Ncss.StyleValue[]): boolean
 local Validation = {
 
 }
 
 
----@param val { [integer]: Banana.Ncss.PropertyValidation.Type[][] }|fun(value: Banana.Ncss.StyleValue[]): boolean
+---@param val { [integer|"*"]: Banana.Ncss.PropertyValidation.Type[][] }|fun(value: Banana.Ncss.StyleValue[]): boolean
 ---@return Banana.Ncss.PropertyValidation
 function Validation:new(val)
     -- PERF: Possible optimization: store things in map instead of array
@@ -20,7 +20,7 @@ function Validation:new(val)
     if type(val) == "table" then
         for k, v in pairs(val) do
             for _, y in ipairs(v) do
-                if #y ~= k then
+                if #y ~= k and k ~= "*" then
                     log.assert(false,
                         "Validation does not have the proper size")
                     error("")
@@ -49,12 +49,17 @@ function Validation:passes(value, name)
         return self.custom(value)
     end
     local validations = self.validations[#value]
+    local isStar = false
+    if validations == nil then
+        validations = self.validations["*"]
+        isStar = true
+    end
     if validations == nil then
         log.assert(false,
             "No validation for size " .. #value .. " exists for property '" .. name .. "'")
         error("")
     end
-    for _, v in pairs(validations) do
+    for _, v in ipairs(validations) do
         local passes = true
         for i, tp in ipairs(v) do
             if tp:sub(1, 1) == "|" then
@@ -144,12 +149,14 @@ local validations = {
     -- ['list-base-width'] = singleUnit,
     ['width'] = singleUnit,
     ['height'] = singleUnit,
-    ['display'] = explicit("flex", "inherit", "initial", "none"),
+    ['display'] = explicit("grid", "flex", "inherit", "initial", "none"),
     ['flex-basis'] = singleUnit,
     ['flex-shrink'] = singleNumber,
     ['flex-grow'] = singleNumber,
     ['flex-wrap'] = explicit("wrap", "nowrap"),
     ['text-align'] = explicit("left", "right", "center", "initial", "inherit"),
+
+    ['grid-template-columns'] = Validation:new({ ['*'] = { { "unit" } } }),
 
     ['position'] = explicit("absolute", "static", "relative", "inherit", "initial"),
     ['z-index'] = singleInt,

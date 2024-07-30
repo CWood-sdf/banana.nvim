@@ -118,6 +118,12 @@ function M.Ast:firstStyle(style)
     return self.style[style][1]
 end
 
+---@return Banana.Ncss.StyleValue[]?
+---@param style string
+function M.Ast:allStylesFor(style)
+    return self.style[style]
+end
+
 ---@param style string
 ---@param default Banana.Ncss.StyleValueType
 ---@return Banana.Ncss.StyleValueType

@@ -21,6 +21,7 @@ local function renderer(self, ast, parentHl, parentWidth, parentHeight, startX, 
             ret = node.actualTag:getRendered(node, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra)
                 :render()
         elseif node.tag ~= "script" and node.tag ~= "style" then
+            flame.pop()
             error("Only <head> and <body> tags allowed in <nml>, instead got <" .. node.tag .. ">")
         end
         ::continue::

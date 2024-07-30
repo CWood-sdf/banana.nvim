@@ -14,7 +14,6 @@
 
 ### Upcoming big projects
 
-- Float
 - Grid
 - Animations + Transitions
 - List stuff
@@ -31,7 +30,7 @@
 
 - [ ] Character Entity Support
 - [x] Basic Renderer
-- [x] Very Fast rendering
+- [ ] Very Fast rendering
 - [x] Attributes
 - [x] Good attributes api
 - [x] DOM Manipulation
@@ -43,7 +42,7 @@
 
 - [x] Basic Styling
 - [ ] Complex styling (animations, transitions)
-- [x] Efficient style recalculation (not needed (hopefully) bc current application so fast)
+- [ ] Efficient style recalculation (not needed (hopefully) bc current application so fast (hopefully))
 - [x] Very Fast rendering
 - [x] Few errors
 - [x] Based on css
@@ -70,6 +69,28 @@
 - [x] fr units
 - [x] flex-shrink
 
+### Grid
+
+- [ ] repeat()
+- [ ] grid-template-columns
+- [ ] grid-template-rows
+- [ ] grid-template-areas
+- [ ] grid-template (shorthand prop)
+- [ ] grid-auto-columns
+- [ ] grid-auto-rows
+- [ ] grid-auto-flow
+- [ ] grid
+- [ ] grid-row-start
+- [ ] grid-column-start
+- [ ] grid-row-end
+- [ ] grid-column-end
+- [ ] grid-row
+- [ ] grid-column
+- [ ] grid-area
+- [ ] row-gap
+- [ ] column-gap
+- [ ] gap
+
 ### Abs/float position
 
 - [x] left/right/top/bottom
@@ -92,7 +113,7 @@
 ### Styler
 
 - [x] Should take in a page AST, and the styling AST, then apply all the rules
-- [x] Needs to be really fast
+- [ ] Needs to be really fast
 
 ### Style/Markup interface
 

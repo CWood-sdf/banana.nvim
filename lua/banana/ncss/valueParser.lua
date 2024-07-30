@@ -158,7 +158,7 @@ local Function = {
 ---@param fn fun(params: Banana.Ncss.StyleValue[], parser: Banana.Ncss.ParseData): Banana.Ncss.StyleValue[]|Banana.Ncss.StyleValue
 ---@param argsType (Banana.Ncss.StyleValue.Types|Banana.Ncss.StyleValue.Types[])[]
 function Function:new(fn, args, argsType)
-    if #argsType ~= args then
+    if #argsType ~= args and args ~= -1 then
         log.assert(false,
             "Could not match argument size to type size")
         error("")
@@ -169,12 +169,28 @@ function Function:new(fn, args, argsType)
         fn = fn,
         argsType = argsType,
     }
+    -- if args == -1 and #argsType ~= 1 then
+    --     log.assert(false,
+    --         "Got a parameter pack (arglen = -1) in Function:new for css function, but did not get 1 argument type (got " ..
+    --         #argsType .. " argument types)")
+    -- end
     setmetatable(ret, { __index = Function })
     return ret
 end
 
 ---@type { [string]: Banana.Ncss.Function}
 local cssFunctions = {
+    ["repeat"] = Function:new(function(params, _)
+        local count = params[1].value
+        local ret = {}
+        for i = 1, count do
+            -- plus 1 to convert back to one base index
+            -- plus 1 more because units start at index 2
+            local index = (i - 1) % (#params - 1) + 2
+            table.insert(ret, params[index])
+        end
+        return ret
+    end, -1, { "integer", "unit" }),
     rgb = Function:new(function(params, _)
         local red = params[1].value
         local green = params[2].value
@@ -281,15 +297,24 @@ local cssParsers = {
             i = i + 1
             param = paramsNode:child(i)
         end
-        if #params ~= fn.argsCount then
+        if #params ~= fn.argsCount and fn.argsCount ~= -1 then
             log.assert(false,
                 "Got incorrect number of arguments for function '" ..
                 fName .. "', expected " .. fn.argsCount .. ", but got " .. #params)
             error("")
         end
+        if fn.argsCount == -1 and #params < #fn.argsType then
+            log.assert(false,
+                "Expected at least " .. #fn.argsType .. " parameters for function '" .. fName .. "', but got " .. #
+                params)
+            error("")
+        end
         for j, v in ipairs(params) do
             local pType = v.type
             local expected = fn.argsType[j]
+            if fn.argsCount == -1 then
+                expected = fn.argsType[math.min(j, #fn.argsType)]
+            end
             if type(expected) == "string" then
                 if pType ~= expected then
                     log.assert(false,

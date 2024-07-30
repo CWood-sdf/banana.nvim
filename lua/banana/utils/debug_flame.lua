@@ -1,4 +1,6 @@
 local M = {}
+---@module "banana.utils.log"
+local log = require('banana.lazyRequire')('banana.utils.log')
 local _isdev = nil
 ---@return boolean
 local function isdev()
@@ -25,7 +27,6 @@ local function recordTime()
     if flame == nil then
         return
     end
-
     flameTimes[flame] = flameTimes[flame] or 0
     flameTimes[flame] = flameTimes[flame] - flameStarts[flame] + vim.loop.hrtime()
 end
@@ -39,8 +40,11 @@ local function startTime()
 end
 
 ---@param name string
-function M.new(name)
+function M.new(name, skipLog)
     if not isdev() then return end
+    if not skipLog then
+        log.trace("flame:new " .. name)
+    end
     recordTime()
     table.insert(flameStack, name)
     startTime()
@@ -48,9 +52,22 @@ function M.new(name)
     flameCounts[name] = flameCounts[name] + 1
 end
 
-function M.pop()
+function M.expect(name)
+    if not isdev() then
+        return
+    end
+    if flameStack[#flameStack] ~= name then
+        log.assert(false, "Expected flamestack to be " .. name .. ", but got " .. flameStack[#flameStack])
+    end
+end
+
+function M.pop(skipLog)
     if not isdev() then return end
+    if not skipLog then
+        log.trace("flame:pop " .. (flameStack[#flameStack] or ""))
+    end
     if #flameStack == 0 then
+        log.assert(false, "flamestack empty!")
         print("flamestack empty!")
         return
     end

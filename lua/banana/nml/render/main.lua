@@ -121,6 +121,7 @@ return function(self, ast, parentHl, parentWidth, parentHeight, startX, startY, 
     flame.pop()
     flame.new("element render")
     local centerBox = self:render(ast, parentHl, contentWidth, parentHeight, startX, startY, inherit, extra)
+    -- flame.expect("element render")
     flame.pop()
     flame.new("getRendered_expansion")
     ---@type Banana.Renderer.Surround
@@ -275,6 +276,7 @@ return function(self, ast, parentHl, parentWidth, parentHeight, startX, startY, 
         end)
         flame.new("element render")
         local rendered = ret:render()
+        -- flame.expect("element render")
         flame.pop()
         for _, data in ipairs(ast.relativeBoxes) do
             rendered:renderOver(data.box, data.left, data.top)

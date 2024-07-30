@@ -69,8 +69,9 @@ local TagInfo = {
 ---@param extra Banana.Renderer.ExtraInfo
 ---@return Banana.Box
 function TagInfo:renderRoot(ast, startHl, winWidth, winHeight, inherit, extra)
-    flame.new("element render")
+    flame.new("renderRoot")
     local ret = self:render(ast, startHl, winWidth, winHeight, 1, 1, inherit, extra)
+    -- flame.expect("renderRoot")
     flame.pop()
     return ret
 end
@@ -90,6 +91,7 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, s
     local ret = require('banana.nml.render.main')(
         self, ast, parentHl, parentWidth, parentHeight, startX, startY, inherit,
         extra)
+    -- flame.expect("getRendered start")
     flame.pop()
     return ret
 end
@@ -115,6 +117,11 @@ function TagInfo:blockIter(ast, parentHl, parentWidth, parentHeight, startX, sta
         if ast:firstStyleValue("display") == "flex" then
             -- error("impl flex")
             render = self:renderFlexBlock(
+                ast, parentHl, parentWidth, parentHeight,
+                startX, startY, inherit, extra)
+            i = #ast.nodes + 1
+        elseif ast:firstStyleValue("display") == "grid" then
+            render = self:renderGridBlock(
                 ast, parentHl, parentWidth, parentHeight,
                 startX, startY, inherit, extra)
             i = #ast.nodes + 1
@@ -339,11 +346,24 @@ end
 ---@return Banana.Box, integer
 function TagInfo:renderGridBlock(ast, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra)
     -- TODO: Everything
+    print("grid stuff")
 
     -- so the plan sorta is basically make a grid of boxes that can be dynamically updated
     -- (ie for auto els), then once initial box has been made, just determine where each box is
     -- then fill it in
-    return b.Box:new(), #ast.nodes + 1
+
+    ---@alias Banana.Renderer.Grid.Template { start: number, size: number, maxSize: number }
+
+    ---@type { [string]: Banana.Renderer.Grid.Template }
+    local columnTemplates = {}
+    ---@type { [string]: Banana.Renderer.Grid.Template }
+    local rowTemplates = {}
+    local ret = b.Box:new(ast:_mixHl(parentHl))
+    ret:appendStr(#ast:allStylesFor("grid-template-columns") .. " " .. ast:firstStyleValue("grid-template-columns")
+        .unit)
+
+
+    return ret, #ast.nodes + 1
 end
 
 ---Renders everything in a flex block
@@ -706,7 +726,6 @@ function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX
         else
             local tag = v.actualTag
             if (tag.formatType == M.FormatType.Block or tag.formatType == M.FormatType.BlockInline) and hasElements then
-                flame.pop()
                 break
             end
             v:_resolveUnits(width, height)

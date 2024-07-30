@@ -312,6 +312,7 @@ function M.Box:appendBoxBelow(box, expand)
     end
     self.dirty = self._width ~= box._width
     self._width = newWidth
+    -- flame.expect("appendBoxBelow")
     flame.pop()
 end
 
