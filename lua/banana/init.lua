@@ -1,5 +1,4 @@
 ---@module 'banana.instance'
-
 local Instance = require('banana.lazyRequire')('banana.instance')
 
 ---@class Banana

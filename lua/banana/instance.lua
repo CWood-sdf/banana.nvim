@@ -104,10 +104,13 @@ function Instance:_virtualRender(ast, width, height)
     return ret
 end
 
+---Sets the buffer name of the instance.
+---@param str string
 function Instance:setBufName(str)
     self.bufname = str
 end
 
+---Creates a new banana instance. This instance is also used as the `document` variable for scripting.
 ---@return Banana.Instance
 function Instance:new()
     if nilAst == nil then
@@ -168,6 +171,7 @@ function Instance:new()
     return inst
 end
 
+---Tells the Banana instance which nml file to use.
 ---@param filename string
 function Instance:useFile(filename)
     local ast, styleRules, scripts = require('banana.require').nmlRequire(filename)
@@ -177,6 +181,7 @@ function Instance:useFile(filename)
     self:_applyId(ast)
 end
 
+---Tells the banana instance to parse and use the passed nml string.
 ---@param nml string
 function Instance:useNml(nml)
     local ast, styleRules, scripts = require('banana.require').nmlLoadString(nml)
@@ -221,7 +226,7 @@ function Instance:isOpen()
     return self.isVisible
 end
 
----runs a lua require string as a script
+---Runs a lua require string as a script
 ---@param str string
 ---@param opts table
 function Instance:runScriptAt(str, opts)
@@ -237,10 +242,13 @@ function Instance:runScriptAt(str, opts)
     end
 end
 
+---Changes the bufnr the Banana instance will use to render.
+---@param bufnr buffer
 function Instance:useBuffer(bufnr)
     self.bufnr = bufnr
 end
 
+---@return number?
 function Instance:getBufnr()
     return self.bufnr
 end
@@ -271,6 +279,8 @@ function Instance:on(ev, opts)
     return vim.api.nvim_create_autocmd(ev, opts)
 end
 
+---Sets the winid the instance will use to render.
+---@param winid window
 function Instance:useWindow(winid)
     self.winid = winid
 end
@@ -338,6 +348,7 @@ function Instance:_removeMapsFor(ast)
     end
 end
 
+---Fetches the body tag from the instance document.
 ---@return Banana.Ast
 function Instance:body()
     if self._body ~= nil then
@@ -809,6 +820,7 @@ function Instance:loadNmlTo(file, ast, preserve)
     self:_requestRender()
 end
 
+---Searches for an element with the input ncss selector.
 ---@param sel string
 ---@return Banana.Ast[]
 function Instance:querySelectorAll(sel)
