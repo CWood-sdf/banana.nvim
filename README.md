@@ -180,6 +180,13 @@ return function(document, opts)
     local params = opts.params
     local element = document:getElementById("asdf")
 end
+-- also allowed
+return {
+  -- ... other keys
+  __banana_run = function(document, opts)
+    -- scripting code
+  end,
+}
 ```
 
 Embedded lua is also very simple, banana predefines the document variable for you:
