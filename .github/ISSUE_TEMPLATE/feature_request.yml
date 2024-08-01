@@ -1,0 +1,25 @@
+name: Feature Request
+description: Suggest a new feature.
+title: "[Feature Request]"
+body:
+  - type: textarea
+    id: overview
+    attributes:
+      label: Overview
+      description: Include the basic, high-level concepts for this feature here. If this is an API request, please provide a link to the browser documentation.
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: Smaller details
+      description: These may include specific methods of implementation etc. Take a look at `TODO.md` in order to see if your request is related to any other planned features.
+    validations:
+      required: true
+  - type: textarea
+    id: feature
+    attributes:
+      label: Why would this feature be useful?
+      description: This could include a specific project scenario, or a common inefficiency you have noticed.
+    validations:
+      required: true
