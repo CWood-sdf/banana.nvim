@@ -186,12 +186,25 @@ function M.Box:appendLeft(box, strat)
     self._width = box._width
 end
 
+---Appends box to the right, *CONSUMES BOX* (aka rust move)
 ---@param box Banana.Box
 ---@param strat Banana.Box.MergeStrategy?
 function M.Box:append(box, strat)
     flame.new("Box:append")
     strat = strat or M.MergeStrategy.Top
     self:clean()
+    -- essentially whats happening is this:
+    --            ┌───────┐
+    --            │       │
+    --  ┌───────┐ │  box  │
+    --  │ self  │ │       │
+    --  └───────┘ └───────┘
+    --  becomes this:
+    --  ┌───────┐ ┌───────┐
+    --  │       │ │       │
+    --  │       │ │  box  │
+    --  │ self  │ │       │
+    --  └───────┘ └───────┘
     while #self.lines < #box.lines do
         if self._width == 0 then
             table.insert(self.lines, {})
@@ -206,6 +219,20 @@ function M.Box:append(box, strat)
         end
     end
     local i = 0
+    -- not quite the same thing, but
+    -- ┌──────┐┌─────┐
+    -- │      ││ box │
+    -- │ self │└─────┘
+    -- │      │
+    -- │      │
+    -- └──────┘
+    -- becomes:
+    -- ┌──────┐┌─────┐
+    -- │      ││ box │
+    -- │ self │└─────┘
+    -- │      └──────┐
+    -- │             │
+    -- └─────────────┘
     while #box.lines + i < #self.lines do
         if strat == M.MergeStrategy.Bottom then
             table.insert(self.lines[i + 1], self:fillString(box._width))
@@ -218,6 +245,7 @@ function M.Box:append(box, strat)
     if strat == M.MergeStrategy.Top then
         i = 0
     end
+    -- merge
     while i < #self.lines and boxI <= #box.lines do
         for _, v in ipairs(box.lines[boxI]) do
             table.insert(self.lines[i + 1], v)
@@ -230,6 +258,7 @@ function M.Box:append(box, strat)
     flame.pop()
 end
 
+---Appends string to the right
 ---@param str string
 ---@param strat Banana.Box.MergeStrategy?
 function M.Box:appendStr(str, strat)
@@ -257,6 +286,7 @@ function M.Box:appendStr(str, strat)
     end
 end
 
+---Appends word to the right
 ---@param word Banana.Word
 ---@param strat Banana.Box.MergeStrategy?
 function M.Box:appendWord(word, strat)
@@ -288,6 +318,7 @@ function M.Box:getLine(i)
     return self.lines[i]
 end
 
+---Appends box below (USES MOVE SEMANTICS)
 ---@param box Banana.Box
 ---@param expand boolean?
 function M.Box:appendBoxBelow(box, expand)
@@ -353,23 +384,25 @@ function M.Box:trimWidthLastLine(width, trimStrat)
     end
 end
 
---- This function is pretty expensive because all the string stuff
+---Renders a box over another box (essentially position:absolute)
 ---@param other Banana.Box
 ---@param left number
 ---@param top number
 function M.Box:renderOver(other, left, top)
+    --- This function is pretty expensive because all the string stuff
     flame.new("Box:renderOver")
     -- lol dont look at this function i barely understand it
+    -- if you really need help with this function, post an issue
     self:clean()
     other:clean()
     left = math.max(left, 0)
     top = math.max(top, 0)
+    -- make sure that current box reaches starting point
     while #self.lines < top do
         local box = M.Box:new(self.hlgroup)
         box:appendStr("", nil)
         self:appendBoxBelow(box)
     end
-    -- assert(left + other._width <= self._width, "Cannot right overflow a box with renderOver()")
     local j = 1
     -- need + 1 so that top:0 sets it to be on the actual top
     for i = top + 1, #self.lines do

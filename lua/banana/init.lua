@@ -2,11 +2,21 @@ local M = {}
 local counterInst = nil
 local todoInst = nil
 local instance = nil
+local inst = nil
 ---@module 'banana.instance'
 local render = require('banana.lazyRequire')('banana.instance')
 
 local tsInit = false
 local tsInstall = false
+
+M.test = {
+	grid = function()
+		if inst == nil then
+			inst = render.newInstance('test', '')
+		end
+		inst:open()
+	end
+}
 
 M.runCounter = function()
 	if counterInst == nil then

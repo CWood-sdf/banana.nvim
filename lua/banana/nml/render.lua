@@ -345,22 +345,104 @@ end
 ---@param extra Banana.Renderer.ExtraInfo
 ---@return Banana.Box, integer
 function TagInfo:renderGridBlock(ast, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra)
+    local hl = ast:_mixHl(parentHl)
     -- TODO: Everything
-    print("grid stuff")
 
     -- so the plan sorta is basically make a grid of boxes that can be dynamically updated
     -- (ie for auto els), then once initial box has been made, just determine where each box is
     -- then fill it in
 
-    ---@alias Banana.Renderer.Grid.Template { start: number, size: number, maxSize: number }
+    ---@alias Banana.Renderer.Grid.Template { start: number, size: number, maxSize: number , taken: boolean, name: string}
 
-    ---@type { [string]: Banana.Renderer.Grid.Template }
+    local untakenRow = 1
+    local untakeCol = 1
+
+    ---@type { [string|number]: number }
+    local columnOrder = {}
+
+    ---@type { [string|number]: number }
+    local rowOrder = {}
+
+    ---@type Banana.Renderer.Grid.Template[]
     local columnTemplates = {}
-    ---@type { [string]: Banana.Renderer.Grid.Template }
+    ---@type Banana.Renderer.Grid.Template[]
     local rowTemplates = {}
-    local ret = b.Box:new(ast:_mixHl(parentHl))
-    ret:appendStr(#ast:allStylesFor("grid-template-columns") .. " " .. ast:firstStyleValue("grid-template-columns")
-        .unit)
+    -- local ret = b.Box:new(hl)
+    -- ret:appendStr(#ast:allStylesFor("grid-template-columns") .. " " .. ast:firstStyleValue("grid-template-columns")
+    -- .unit)
+
+    -- currently the render just assumes a basic grid
+    ---@type number[]
+    local frs = {}
+    local totalFrs = 0
+    local takenWidth = 0
+    local values = ast:allStylesFor("grid-template-columns") or {}
+    -- column deduction {
+    for i, v in ipairs(values) do
+        local value = v.value
+        if value.unit ~= "fr" then
+            ---@cast value Banana.Ncss.UnitValue
+            local resolve = _ast.calcUnitNoMod(value, parentWidth, {})
+            table.insert(columnTemplates,
+                {
+                    start = 0,
+                    size = resolve.computed,
+                    maxSize = resolve.computed,
+                    taken = false,
+                    name = i .. "",
+                })
+            -- columnOrder[i] = i
+            takenWidth = takenWidth + resolve.computed
+        else
+            totalFrs = totalFrs + value.value
+            table.insert(frs, i)
+            table.insert(columnTemplates, {})
+        end
+    end
+
+    local widthPer = math.floor((parentWidth - takenWidth) / totalFrs)
+    if widthPer < 0 then
+        widthPer = 0
+    end
+
+    local extraWidthNeeded = parentWidth - takenWidth - totalFrs * widthPer
+
+    for _, i in ipairs(frs) do
+        local value = values[i].value
+        ---@cast value Banana.Ncss.UnitValue
+        local resolve = _ast.calcUnitNoMod(value, parentWidth, { widthPer })
+        local extraAdded = math.min(math.ceil(value.value), extraWidthNeeded)
+        columnTemplates[i] = {
+            start = 0,
+            size = resolve.computed + extraAdded,
+            maxSize = resolve.computed + extraAdded,
+            taken = false,
+            name = i .. "",
+        }
+        extraWidthNeeded = extraWidthNeeded - extraAdded
+        columnOrder[i] = i
+        takenWidth = takenWidth + resolve.computed
+    end
+    -- }
+
+    ---@type Banana.Renderer.PartialRendered[]
+    local boxes = {}
+    local rowI = 1
+    local x = startX
+    for node in ast:childIter() do
+        local templ = columnTemplates[rowI]
+
+        local rendered = node.actualTag:getRendered(node, hl, templ.size, parentHeight, x, startY,
+            inherit, extra)
+        table.insert(boxes, rendered)
+        columnTemplates[rowI].taken = true
+        rowI = rowI + 1
+    end
+    local ret = b.Box:new(hl)
+
+    for _, v in ipairs(boxes) do
+        ret:append(v:render())
+    end
 
 
     return ret, #ast.nodes + 1

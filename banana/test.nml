@@ -3,7 +3,10 @@
     <style>
       #grid {
         display: grid;
-        grid-template-columns: repeat(8, 10%);
+        grid-template-columns: 2fr 10ch repeat(6, 1fr);
+      }
+      #grid > div {
+        hl-bg: red;
       }
     </style>
     <title>ooga booga</title>
@@ -11,7 +14,14 @@
   <body>
     asdfsdf
     <div id="grid">
-      <div></div>
+      <div>asd</div>
+      <div>asd</div>
+      <div>asd</div>
+      <div>asd</div>
+      <div>asd</div>
+      <div>asd</div>
+      <div>asd</div>
+      <div>asd</div>
     </div>
   </body>
 </nml>

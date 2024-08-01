@@ -568,20 +568,6 @@ function M.Ast:_mixHl(parentHl)
     return ret
 end
 
--- function M.calcUnit(unit, parentWidth, extras)
---     if unit.unit == "ch" then
---         return unit
---     elseif unit.unit == "%" then
---         local mult = unit.value / 100
---         return {
---             value = math.floor(mult * parentWidth),
---             unit = "ch",
---         }
---     end
---     return unit
---     -- error("Undefined unit '" .. unit.unit .. "'")
--- end
-
 ---@param unit Banana.Ncss.UnitValue
 ---@param parentWidth number
 ---@param extras number[]
