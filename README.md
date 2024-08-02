@@ -78,7 +78,7 @@ Partial or complete implementations exist for the following css properties (for 
 - hl-fg
 - hl-bg
 - hl-link
-- hl-\_\_name
+- hl-\_\_name (allows named highlight groups)
 - list-style-type (very partial)
 - width
 - height
