@@ -16,6 +16,14 @@
         "name": "ook",
         "close": true
       }
+    },
+    {
+      "name": "debug",
+      "cmd": "nvim",
+      "window": {
+        "name": "ookd",
+        "close": true
+      }
     }
   ]
 }

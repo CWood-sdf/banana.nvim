@@ -8,12 +8,16 @@
       #grid > div {
         hl-bg: red;
       }
+      #grid > :first-child {
+        height: 2ch;
+      }
     </style>
     <title>ooga booga</title>
   </head>
   <body>
     asdfsdf
     <div id="grid">
+      <div>asd</div>
       <div>asd</div>
       <div>asd</div>
       <div>asd</div>

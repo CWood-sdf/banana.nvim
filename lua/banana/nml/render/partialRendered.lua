@@ -1,9 +1,9 @@
 ---@module 'banana.utils.debug_flame'
-local flame = require('banana.lazyRequire')('banana.utils.debug_flame')
+local flame = require("banana.lazyRequire")("banana.utils.debug_flame")
 ---@module 'banana.box'
-local b = require('banana.lazyRequire')('banana.box')
+local b = require("banana.lazyRequire")("banana.box")
 ---@module 'banana.nml.ast'
-local _ast = require('banana.lazyRequire')('banana.nml.ast')
+local _ast = require("banana.lazyRequire")("banana.nml.ast")
 local M = {}
 ---@class (exact) Banana.Renderer.Surround
 ---@field left number
@@ -125,7 +125,7 @@ function PartialRendered:render(clone)
     flame.new("PartialRendered:render")
     clone = clone or false
     if clone then
-        if not require('banana.utils.debug').isdev() then
+        if not require("banana.utils.debug").isdev() then
             print("Calling clone in prod?!")
         end
         local new = vim.fn.deepcopy(self)

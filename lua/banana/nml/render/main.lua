@@ -1,32 +1,33 @@
 ---@module 'banana.nml.render.partialRendered'
-local p = require('banana.lazyRequire')('banana.nml.render.partialRendered')
+local p = require("banana.lazyRequire")("banana.nml.render.partialRendered")
 ---@module 'banana.box'
-local b = require('banana.lazyRequire')('banana.box')
+local b = require("banana.lazyRequire")("banana.box")
 ---@module 'banana.utils.case'
-local case = require('banana.lazyRequire')('banana.utils.case')
+local case = require("banana.lazyRequire")("banana.utils.case")
 ---@module 'banana.utils.debug_flame'
-local flame = require('banana.lazyRequire')('banana.utils.debug_flame')
+local flame = require("banana.lazyRequire")("banana.utils.debug_flame")
 
 ---@module 'banana.utils.debug'
-local dbg = require('banana.lazyRequire')('banana.utils.debug')
+local dbg = require("banana.lazyRequire")("banana.utils.debug")
 
 ---@module 'banana.nml.render'
-local _render = require('banana.lazyRequire')('banana.nml.render')
+local _render = require("banana.lazyRequire")("banana.nml.render")
 
 ---@param ast Banana.Ast
 ---@param extraWidth number
 ---@return boolean
 local function isExpandable(ast, extraWidth)
-    local isFlexChild = ast._parent ~= nil and ast._parent:firstStyleValue('display') == "flex"
+    local isFlexChild = ast._parent ~= nil and
+        ast._parent:firstStyleValue("display") == "flex"
     if isFlexChild then
         return extraWidth > 0 and
             (ast.actualTag.formatType == _render.FormatType.Block or ast.actualTag.formatType == _render.FormatType.BlockInline) and
-            (ast:hasStyle('width') or ast:hasStyle("flex-basis"))
+            (ast:hasStyle("width") or ast:hasStyle("flex-basis"))
     end
 
     return (ast.actualTag.formatType == _render.FormatType.Block or ast.actualTag.formatType == _render.FormatType.BlockInline
         ) and extraWidth > 0
-        or ast:hasStyle('width')
+        or ast:hasStyle("width")
 end
 ---@param self Banana.TagInfo
 ---@param ast Banana.Ast
@@ -38,7 +39,8 @@ end
 ---@param inherit Banana.Renderer.InheritedProperties
 ---@param extra Banana.Renderer.ExtraInfo
 ---@return Banana.Renderer.PartialRendered
-return function(self, ast, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra)
+return function (self, ast, parentHl, parentWidth, parentHeight, startX, startY,
+                 inherit, extra)
     flame.new("getRendered_start")
     ast.relativeBoxId = nil
     local inheritOld = {}
@@ -76,20 +78,22 @@ return function(self, ast, parentHl, parentWidth, parentHeight, startX, startY, 
         flame.pop()
         return p.emptyPartialRendered()
     end
-    if ast:hasStyle('width') then
+    if ast:hasStyle("width") then
         -- add margins bc width only sets content-width + padding
         ---@diagnostic disable-next-line: cast-local-type
         parentWidth = math.min(
-            ast:firstStyleValue('width').computed + ast:marginLeft() + ast:marginRight(),
+            ast:firstStyleValue("width").computed + ast:marginLeft() +
+            ast:marginRight(),
             parentWidth)
         if inherit.min_size then
             inherit.min_size = false
         end
     end
-    if ast:hasStyle('height') then
+    if ast:hasStyle("height") then
         ---@diagnostic disable-next-line: cast-local-type
         parentHeight = math.min(
-            ast:firstStyleValue('height').computed + ast:marginTop() + ast:marginBottom(),
+            ast:firstStyleValue("height").computed + ast:marginTop() +
+            ast:marginBottom(),
             parentHeight)
     end
     if position ~= "static" then
@@ -120,7 +124,10 @@ return function(self, ast, parentHl, parentWidth, parentHeight, startX, startY, 
     ---@cast parentHeight number
     flame.pop()
     flame.new("element render")
-    local centerBox = self:render(ast, parentHl, contentWidth, parentHeight, startX, startY, inherit, extra)
+    local useMaxHeight = extra.useAllHeight
+    extra.useAllHeight = false
+    local centerBox = self:render(ast, parentHl, contentWidth, parentHeight,
+        startX, startY, inherit, extra)
     -- flame.expect("element render")
     flame.pop()
     flame.new("getRendered_expansion")
@@ -167,14 +174,22 @@ return function(self, ast, parentHl, parentWidth, parentHeight, startX, startY, 
             extra.trace:appendBoxBelow(ret:render(true), false)
         end
     end
-    if ast.style['height'] ~= nil and not ast:parent():isNil() then
+    if ast.style["height"] ~= nil and not ast:parent():isNil() then
         ret.center:clean()
-        local height = ast.style['height'][1].value.computed
+        local height = ast.style["height"][1].value.computed
             - ast:paddingTop() - ast:paddingBottom()
+        -- height = math.min(height, parentHeight)
         ret.heightExpansion = height - ret.center:height()
-        ---@cast height number
         if extra.debug then
             extra.trace:appendBoxBelow(dbg.traceBreak("Expansion h"), false)
+            extra.trace:appendBoxBelow(ast:_testDumpBox(), false)
+            extra.trace:appendBoxBelow(ret:render(true), false)
+        end
+    elseif useMaxHeight then
+        local height = parentHeight - ast:paddingTop() - ast:paddingBottom()
+        ret.heightExpansion = height - ret.center:height()
+        if extra.debug then
+            extra.trace:appendBoxBelow(dbg.traceBreak("used max height"), false)
             extra.trace:appendBoxBelow(ast:_testDumpBox(), false)
             extra.trace:appendBoxBelow(ret:render(true), false)
         end
@@ -182,7 +197,7 @@ return function(self, ast, parentHl, parentWidth, parentHeight, startX, startY, 
     flame.pop()
     flame.new("getRendered_pad")
     local changed = false
-    changed = ret:applyPad('padding', ast)
+    changed = ret:applyPad("padding", ast)
     if changed then
         if extra.debug then
             extra.trace:appendBoxBelow(dbg.traceBreak("pad"), false)
@@ -200,14 +215,15 @@ return function(self, ast, parentHl, parentWidth, parentHeight, startX, startY, 
         local render = ret:render()
         while newRet:height() < render:height() do
             local newBox = b.Box:new(newRet.hlgroup)
-            newBox:appendStr(string.rep(' ', render:width()))
+            newBox:appendStr(string.rep(" ", render:width()))
             newRet:appendBoxBelow(newBox)
         end
         if extra.debug then
             extra.trace:appendBoxBelow(dbg.traceBreak("float render"), false)
             extra.trace:appendBoxBelow(ast:_testDumpBox(), false)
             extra.trace:appendBoxBelow(render:clone(), false)
-            extra.trace:appendBoxBelow(dbg.traceBreak("extraRender render"), false)
+            extra.trace:appendBoxBelow(dbg.traceBreak("extraRender render"),
+                false)
             extra.trace:appendBoxBelow(ast:_testDumpBox(), false)
             extra.trace:appendBoxBelow(newRet:clone(), false)
         end
@@ -219,7 +235,7 @@ return function(self, ast, parentHl, parentWidth, parentHeight, startX, startY, 
             box = render,
             left = startX - 1 - ast:paddingLeft(),
             top = startY - 1 - ast:paddingTop(),
-            z = (ast.style['z-index'] or { {} })[1].value or 0
+            z = (ast.style["z-index"] or { {} })[1].value or 0
         })
         ast.relativeBoxId = #root.relativeBoxes
         ret.center = newRet
@@ -248,7 +264,7 @@ return function(self, ast, parentHl, parentWidth, parentHeight, startX, startY, 
     end
     flame.pop()
     flame.new("getRendered_margin")
-    changed = ret:applyPad('margin', ast)
+    changed = ret:applyPad("margin", ast)
     if changed then
         if extra.debug then
             extra.trace:appendBoxBelow(dbg.traceBreak("margin"), false)
@@ -263,7 +279,8 @@ return function(self, ast, parentHl, parentWidth, parentHeight, startX, startY, 
             v:_resolveUnits(parentWidth, parentHeight)
             v.style.position[1].value = "relative"
             v.actualTag:getRendered(
-                v, ret.mainColor, parentWidth, parentHeight, startX, startY, inherit,
+                v, ret.mainColor, parentWidth, parentHeight, startX, startY,
+                inherit,
                 extra)
             v.style.position[1].value = "absolute"
         end
@@ -271,7 +288,7 @@ return function(self, ast, parentHl, parentWidth, parentHeight, startX, startY, 
     if ast.relativeBoxes ~= nil then
         flame.pop()
         flame.new("getRendered_rel")
-        table.sort(ast.relativeBoxes, function(l, r)
+        table.sort(ast.relativeBoxes, function (l, r)
             return l.z < r.z
         end)
         flame.new("element render")

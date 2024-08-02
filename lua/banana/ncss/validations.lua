@@ -1,5 +1,5 @@
 ---@module 'banana.utils.log'
-local log = require('banana.lazyRequire')('banana.utils.log')
+local log = require("banana.lazyRequire")("banana.utils.log")
 ---@alias Banana.Ncss.PropertyValidation.Type string|Banana.Ncss.StyleValue.Types
 
 ---@class (exact) Banana.Ncss.PropertyValidation
@@ -56,7 +56,8 @@ function Validation:passes(value, name)
     end
     if validations == nil then
         log.assert(false,
-            "No validation for size " .. #value .. " exists for property '" .. name .. "'")
+            "No validation for size " ..
+            #value .. " exists for property '" .. name .. "'")
         error("")
     end
     for _, v in ipairs(validations) do
@@ -108,7 +109,7 @@ local function isBool(a)
     return #a == 1 and a[1].type == "boolean"
 end
 local boolValid = Validation:new(isBool)
-local marginValid = Validation:new(function(a)
+local marginValid = Validation:new(function (a)
     if #a ~= 1 and #a ~= 2 and #a ~= 4 then
         return false
     end
@@ -121,7 +122,7 @@ local marginValid = Validation:new(function(a)
 end)
 
 
-local singleUnit          = Validation:new(function(a)
+local singleUnit          = Validation:new(function (a)
     return #a == 1 and a[1].type == "unit"
 end)
 -- local singlePlain         = Validation:new({ [1] = { { "plain" } } })
@@ -138,47 +139,49 @@ local function explicit(...)
 end
 ---@type { [string]: Banana.Ncss.PropertyValidation }
 local validations = {
-    ['hl-underline'] = boolValid,
-    ['hl-italic'] = boolValid,
-    ['hl-bold'] = boolValid,
-    ['hl-fg'] = Validation:new({ [1] = { { "color" }, { "plain" } } }),
-    ['hl-bg'] = Validation:new({ [1] = { { "color" }, { "plain" } } }),
-    ['hl-link'] = singleStringOrPlain,
-    ['hl-__name'] = singleStringOrPlain,
-    ['list-style-type'] = Validation:new({ [1] = { { "string" } } }),
+    ["hl-underline"] = boolValid,
+    ["hl-italic"] = boolValid,
+    ["hl-bold"] = boolValid,
+    ["hl-fg"] = Validation:new({ [1] = { { "color" }, { "plain" } } }),
+    ["hl-bg"] = Validation:new({ [1] = { { "color" }, { "plain" } } }),
+    ["hl-link"] = singleStringOrPlain,
+    ["hl-__name"] = singleStringOrPlain,
+    ["list-style-type"] = Validation:new({ [1] = { { "string" } } }),
     -- ['list-base-width'] = singleUnit,
-    ['width'] = singleUnit,
-    ['height'] = singleUnit,
-    ['display'] = explicit("grid", "flex", "inherit", "initial", "none"),
-    ['flex-basis'] = singleUnit,
-    ['flex-shrink'] = singleNumber,
-    ['flex-grow'] = singleNumber,
-    ['flex-wrap'] = explicit("wrap", "nowrap"),
-    ['text-align'] = explicit("left", "right", "center", "initial", "inherit"),
+    ["width"] = singleUnit,
+    ["height"] = singleUnit,
+    ["display"] = explicit("grid", "flex", "inherit", "initial", "none"),
+    ["flex-basis"] = singleUnit,
+    ["flex-shrink"] = singleNumber,
+    ["flex-grow"] = singleNumber,
+    ["flex-wrap"] = explicit("wrap", "nowrap"),
+    ["text-align"] = explicit("left", "right", "center", "initial", "inherit"),
 
-    ['grid-template-columns'] = Validation:new({ ['*'] = { { "unit" } } }),
+    ["grid-template-columns"] = Validation:new({ ["*"] = { { "unit" } } }),
+    ["grid-template-rows"] = Validation:new({ ["*"] = { { "unit" } } }),
 
-    ['position'] = explicit("absolute", "static", "relative", "inherit", "initial"),
-    ['z-index'] = singleInt,
-    ['left'] = singleUnit,
-    ['right'] = singleUnit,
-    ['top'] = singleUnit,
-    ['bottom'] = singleUnit,
+    ["position"] = explicit("absolute", "static", "relative", "inherit",
+        "initial"),
+    ["z-index"] = singleInt,
+    ["left"] = singleUnit,
+    ["right"] = singleUnit,
+    ["top"] = singleUnit,
+    ["bottom"] = singleUnit,
 
-    ['padding'] = marginValid,
-    ['padding-left'] = singleUnit,
-    ['padding-right'] = singleUnit,
-    ['padding-top'] = singleUnit,
-    ['padding-bottom'] = singleUnit,
+    ["padding"] = marginValid,
+    ["padding-left"] = singleUnit,
+    ["padding-right"] = singleUnit,
+    ["padding-top"] = singleUnit,
+    ["padding-bottom"] = singleUnit,
 
-    ['margin'] = marginValid,
-    ['margin-left'] = singleUnit,
-    ['margin-right'] = singleUnit,
-    ['margin-top'] = singleUnit,
-    ['margin-bottom'] = singleUnit,
+    ["margin"] = marginValid,
+    ["margin-left"] = singleUnit,
+    ["margin-right"] = singleUnit,
+    ["margin-top"] = singleUnit,
+    ["margin-bottom"] = singleUnit,
 }
 return {
-    validate = function(name, value)
+    validate = function (name, value)
         local validation = validations[name]
         if validation == nil then
             log.assert(false,
