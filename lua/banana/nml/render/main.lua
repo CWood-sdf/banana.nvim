@@ -122,15 +122,15 @@ return function (self, ast, parentHl, parentWidth, parentHeight, startX, startY,
     local contentWidth = parentWidth - ast:_extraLr()
     ---@cast parentWidth number
     ---@cast parentHeight number
-    flame.pop()
-    flame.new("element render")
+    -- flame.pop()
+    -- flame.new("element render")
     local useMaxHeight = extra.useAllHeight
     extra.useAllHeight = false
     local centerBox = self:render(ast, parentHl, contentWidth, parentHeight,
         startX, startY, inherit, extra)
-    -- flame.expect("element render")
-    flame.pop()
-    flame.new("getRendered_expansion")
+    -- -- flame.expect("element render")
+    -- flame.pop()
+    -- flame.new("getRendered_expansion")
     ---@type Banana.Renderer.Surround
     local margin = {
         left = 0,
@@ -194,8 +194,8 @@ return function (self, ast, parentHl, parentWidth, parentHeight, startX, startY,
             extra.trace:appendBoxBelow(ret:render(true), false)
         end
     end
-    flame.pop()
-    flame.new("getRendered_pad")
+    -- flame.pop()
+    -- flame.new("getRendered_pad")
     local changed = false
     changed = ret:applyPad("padding", ast)
     if changed then
@@ -209,8 +209,8 @@ return function (self, ast, parentHl, parentWidth, parentHeight, startX, startY,
     boundBox.bottomY = boundBox.topY + ret:getHeight()
     ast.boundBox = boundBox
     if position ~= "static" then
-        flame.pop()
-        flame.new("getRendered_relative")
+        -- flame.pop()
+        -- flame.new("getRendered_relative")
         local newRet = b.Box:new(parentHl)
         local render = ret:render()
         while newRet:height() < render:height() do
@@ -262,8 +262,8 @@ return function (self, ast, parentHl, parentWidth, parentHeight, startX, startY,
             extra.trace:appendBoxBelow(ret:render(true), false)
         end
     end
-    flame.pop()
-    flame.new("getRendered_margin")
+    -- flame.pop()
+    -- flame.new("getRendered_margin")
     changed = ret:applyPad("margin", ast)
     if changed then
         if extra.debug then
@@ -273,8 +273,8 @@ return function (self, ast, parentHl, parentWidth, parentHeight, startX, startY,
         end
     end
     if ast.absoluteAsts ~= nil then
-        flame.pop()
-        flame.new("getRendered_abs")
+        -- flame.pop()
+        -- flame.new("getRendered_abs")
         for _, v in ipairs(ast.absoluteAsts) do
             v:_resolveUnits(parentWidth, parentHeight)
             v.style.position[1].value = "relative"
@@ -286,15 +286,15 @@ return function (self, ast, parentHl, parentWidth, parentHeight, startX, startY,
         end
     end
     if ast.relativeBoxes ~= nil then
-        flame.pop()
-        flame.new("getRendered_rel")
+        -- flame.pop()
+        -- flame.new("getRendered_rel")
         table.sort(ast.relativeBoxes, function (l, r)
             return l.z < r.z
         end)
-        flame.new("element render")
+        -- flame.new("element render")
         local rendered = ret:render()
-        -- flame.expect("element render")
-        flame.pop()
+        -- -- flame.expect("element render")
+        -- flame.pop()
         for _, data in ipairs(ast.relativeBoxes) do
             rendered:renderOver(data.box, data.left, data.top)
         end

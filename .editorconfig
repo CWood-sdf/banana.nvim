@@ -10,7 +10,7 @@ tab_width = 4
 # none/single/double
 quote_style = double
 
-continuation_indent = 4
+# continuation_indent = 4
 ## extend option
 # continuation_indent.before_block = 4
 # continuation_indent.in_expr = 4
@@ -165,4 +165,4 @@ ignore_space_after_colon = false
 
 remove_call_expression_list_finish_comma = false
 # keep / always / same_line / replace_with_newline / never
-end_statement_with_semicolon = keep
+end_statement_with_semicolon = never

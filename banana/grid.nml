@@ -1,0 +1,40 @@
+<nml>
+  <head>
+    <style>
+      .grid {
+        display: grid;
+        grid-template-columns: 2fr 10ch repeat(6, 1fr);
+      }
+      .grid > div {
+        hl-bg: red;
+      }
+      .grid > :first-child {
+        height: 2ch;
+        grid-row: 2;
+      }
+    </style>
+    <title>ooga booga</title>
+  </head>
+  <body>
+    asdfsdf
+    <div class="grid">
+      <div>17</div>
+      <div style="grid-column: 1">1</div>
+      <div style="grid-row: 2">2</div>
+      <div style="grid-row: 2">3</div>
+      <div style="grid-row: 2">4</div>
+      <div style="grid-row: 2">5</div>
+      <div style="grid-row: 2">6</div>
+      <div style="grid-row: 2">7</div>
+      <div style="grid-row: 2">8</div>
+      <div style="grid-row: 2">9</div>
+      <div style="grid-row: 2">10</div>
+      <div style="grid-row: 2">11</div>
+      <div style="grid-row: 2">12</div>
+      <div style="grid-column: 1">13</div>
+      <div style="grid-column: 1; grid-row: 2">14</div>
+      <div>15</div>
+      <div>16</div>
+    </div>
+  </body>
+</nml>

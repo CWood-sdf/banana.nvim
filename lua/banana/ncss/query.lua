@@ -1,5 +1,5 @@
 ---@module 'banana.utils.log'
-local log = require('banana.lazyRequire')('banana.utils.log')
+local log = require("banana.lazyRequire")("banana.utils.log")
 local M = {}
 ---@enum FilterType
 M.FilterType = {
@@ -26,7 +26,7 @@ M.Specificity = {
 ---@field filterType FilterType
 ---@field specificity number
 local Selector = {
-    select = function() return true end,
+    select = function () return true end,
     manualSelect = nil,
     filterType = M.FilterType.Selector,
     specificity = 0,
@@ -51,7 +51,7 @@ function Selector:getMatches(ast)
         return self.manualSelect(ast)
     end
     if self.select == nil then
-        log.assert(false,
+        log.throw(
             "Both selector functions are nil in Ncss Selector")
         error("")
     end
@@ -83,10 +83,10 @@ end
 ---@field id fun(name: string): Banana.Ncss.Selector
 ---@field class fun(name: string): Banana.Ncss.Selector
 M.selectors = {
-    oneTag = function(name)
+    oneTag = function (name)
         ---@type fun(ast: Banana.Ast): Banana.Ast[]
         local sel = nil
-        sel = function(ast)
+        sel = function (ast)
             if ast.tag == name then
                 return { ast }
             end
@@ -102,20 +102,20 @@ M.selectors = {
         end
         return M.newManualSelector(sel, M.Specificity.Element)
     end,
-    tag = function(name)
-        return M.newSelector(function(ast)
+    tag = function (name)
+        return M.newSelector(function (ast)
             return ast.tag == name
         end, M.Specificity.Element)
     end,
-    class = function(name)
-        return M.newSelector(function(ast)
+    class = function (name)
+        return M.newSelector(function (ast)
             return ast:hasClass(name)
         end, M.Specificity.Class)
     end,
-    id = function(name)
+    id = function (name)
         ---@type fun(ast: Banana.Ast): Banana.Ast[]
         local sel = nil
-        sel = function(ast)
+        sel = function (ast)
             if ast:getAttribute("id") == name then
                 return { ast }
             end
@@ -157,7 +157,7 @@ end
 ---@field filterType FilterType
 ---@field specificity number
 local Where = {
-    satisfies   = function() return true end,
+    satisfies   = function () return true end,
     filterType  = M.FilterType.Where,
     specificity = 0,
 }
@@ -198,7 +198,7 @@ local Query = {
 ---@return Banana.Ast[]
 function Query:find(ast)
     if self.rootSelector == nil then
-        log.assert(false,
+        log.throw(
             "rootSelector is nil in Ncss Query")
         error("")
     end
@@ -247,7 +247,7 @@ end
 ---@param force boolean
 function Query:setRootSelector(sel, force)
     if self.rootSelector ~= nil and not force then
-        log.assert(false,
+        log.throw(
             "Overwriting the root selector of an Ncss Query")
         error("")
     end

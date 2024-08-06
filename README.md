@@ -88,7 +88,7 @@ Partial or complete implementations exist for the following css properties (for 
 - flex-grow
 - flex-wrap
 - text-align (missing justify)
-- position (position: sticky is not possible to implement in neovim)
+- position (missing fixed and sticky)
 - z-index
 - left
 - right

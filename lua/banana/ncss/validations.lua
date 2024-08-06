@@ -21,7 +21,7 @@ function Validation:new(val)
         for k, v in pairs(val) do
             for _, y in ipairs(v) do
                 if #y ~= k and k ~= "*" then
-                    log.assert(false,
+                    log.throw(
                         "Validation does not have the proper size")
                     error("")
                 end
@@ -55,7 +55,7 @@ function Validation:passes(value, name)
         isStar = true
     end
     if validations == nil then
-        log.assert(false,
+        log.throw(
             "No validation for size " ..
             #value .. " exists for property '" .. name .. "'")
         error("")
@@ -159,6 +159,8 @@ local validations = {
 
     ["grid-template-columns"] = Validation:new({ ["*"] = { { "unit" } } }),
     ["grid-template-rows"] = Validation:new({ ["*"] = { { "unit" } } }),
+    ["grid-row"] = Validation:new({ [1] = { { "integer" } } }),
+    ["grid-column"] = Validation:new({ [1] = { { "integer" } } }),
 
     ["position"] = explicit("absolute", "static", "relative", "inherit",
         "initial"),
@@ -184,7 +186,7 @@ return {
     validate = function (name, value)
         local validation = validations[name]
         if validation == nil then
-            log.assert(false,
+            log.throw(
                 "Unable to validate property '" .. name .. "'")
             error("")
         end

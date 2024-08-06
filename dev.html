@@ -1,0 +1,51 @@
+<!doctype html>
+<!-- this file is a test file for investigating how browsers render things -->
+<html>
+  <head>
+    <style>
+      #grid {
+        display: grid;
+        /* grid-template-columns: 100%; */
+        /* grid-template-columns: 2fr 10ch repeat(6, 1fr); */
+        /* grid-template-rows: 80px; */
+        /* row-gap: 20px; */
+      }
+      #grid > div {
+        background-color: red;
+      }
+      #grid > :first-child {
+        grid-row: 1 / span 3;
+        height: 100%;
+        margin-bottom: 80%;
+        margin-right: 20px;
+        background-color: rgba(200, 200, 200, 100);
+      }
+    </style>
+    <title>ooga booga</title>
+  </head>
+  <body>
+    <div id="grid">
+      <div>
+        asd1<br />
+        asd1<br />
+        asd1<br />
+        asd1<br />
+        asd1<br />
+        asd1<br />
+        asd1<br />
+      </div>
+      <div>asd2</div>
+      <div style="grid-row: 3">adfaoogssdfd3</div>
+      <div style="grid-row: 3; grid-column: 2">adfasdfd4</div>
+      <!-- <div>adfasdfd5</div> -->
+      <!-- <div>asd6</div> -->
+      <!-- <div>asd7</div> -->
+      <!-- <div>asd8</div> -->
+      <!-- <div>asd9</div> -->
+      <!-- <div>asd10</div> -->
+      <!-- <div>asd11</div> -->
+      <div>asd12</div>
+      <div style="height: 40px">asd13</div>
+    </div>
+  </body>
+</html>

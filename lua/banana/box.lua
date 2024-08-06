@@ -1,9 +1,9 @@
 ---@module 'banana.utils.debug_flame'
-local flame = require('banana.lazyRequire')('banana.utils.debug_flame')
+local flame = require("banana.lazyRequire")("banana.utils.debug_flame")
 ---@module 'banana.utils.log'
-local log = require('banana.lazyRequire')('banana.utils.log')
+local log = require("banana.lazyRequire")("banana.utils.log")
 ---@module 'banana.utils.string'
-local _str = require('banana.lazyRequire')('banana.utils.string')
+local _str = require("banana.lazyRequire")("banana.utils.string")
 
 local M = {}
 ---@param line Banana.Line
@@ -22,6 +22,8 @@ local function cloneLine(line)
     return ret
 end
 
+-- TODO: renderUnder()
+
 ---@class (exact) Banana.Box
 ---@field private lines Banana.Line[]
 ---@field private _width integer
@@ -32,7 +34,7 @@ M.Box = {
     lines = {},
     _width = 0,
     dirty = false,
-    fillChar = ' ',
+    fillChar = " ",
     hlgroup = nil,
 }
 
@@ -72,10 +74,13 @@ end
 ---@param width number
 function M.Box:expandWidthTo(width)
     if width < self._width then
-        log.assert(false,
+        log.throw(
             "width is smaller than possible (given target width " ..
             width .. " when current width is " .. self._width .. ")")
         error("")
+    end
+    if width == self._width then
+        return
     end
     self._width = width
     self.dirty = true
@@ -99,7 +104,7 @@ function M.Box:cloneHeightTo(height)
         return
     end
     if #self.lines == 0 then
-        log.assert(false, "No contents to clone")
+        log.throw("No contents to clone")
         error("")
     end
     local i = #self.lines
@@ -121,7 +126,7 @@ end
 ---@param height number
 function M.Box:expandHeightTo(height)
     if height < #self.lines then
-        log.assert(false, "Height is smaller than possible")
+        log.throw("Height is smaller than possible")
         error("")
     end
     while #self.lines < height do
@@ -142,7 +147,7 @@ function M.Box:new(hlgroup)
         lines = {},
         _width = 0,
         dirty = false,
-        fillChar = ' ',
+        fillChar = " ",
         hlgroup = hlgroup,
 
     }
@@ -154,10 +159,11 @@ function M.Box:clean()
     if not self.dirty then
         return
     end
+    flame.new("Box:clean")
     for i, _ in ipairs(self.lines) do
         local w = M.lineWidth(self.lines[i])
         if w > self._width then
-            log.assert(false,
+            log.throw(
                 "Unreachable (line width is greater than max width)")
             error("")
         end
@@ -165,16 +171,17 @@ function M.Box:clean()
             table.insert(self.lines[i], self:fillString(self._width - w))
         end
     end
-    if require('banana.utils.debug').isdev() then
-        ---@type { [Banana.Word[]]: boolean }
-        local foundLines = {}
-        for _, v in ipairs(self.lines) do
-            if foundLines[v] ~= nil then
-                error("Duplicated lines!!")
-            end
-        end
-    end
+    -- if require("banana.utils.debug").isdev() then
+    --     ---@type { [Banana.Word[]]: boolean }
+    --     local foundLines = {}
+    --     for _, v in ipairs(self.lines) do
+    --         if foundLines[v] ~= nil then
+    --             error("Duplicated lines!!")
+    --         end
+    --     end
+    -- end
     self.dirty = false
+    flame.pop()
 end
 
 ---@param box Banana.Box
@@ -306,7 +313,8 @@ function M.Box:appendWord(word, strat)
             self._width = math.max(M.lineWidth(self.lines[1]), self._width)
         else
             table.insert(self.lines[#self.lines], word)
-            self._width = math.max(M.lineWidth(self.lines[#self.lines]), self._width)
+            self._width = math.max(M.lineWidth(self.lines[#self.lines]),
+                self._width)
         end
         self.dirty = true
     end
@@ -329,14 +337,16 @@ function M.Box:appendBoxBelow(box, expand)
     box:clean()
     local newWidth = math.max(self._width, box._width)
     if newWidth > self._width and expand then
-        self._width = newWidth
-        self.dirty = true
-        self:clean()
+        self:expandWidthTo(newWidth)
+        -- self._width = newWidth
+        -- self.dirty = true
+        -- self:clean()
     end
     if newWidth > box:width() and expand then
-        box._width = newWidth
-        box.dirty = true
-        box:clean()
+        box:expandWidthTo(newWidth)
+        -- box._width = newWidth
+        -- box.dirty = true
+        -- box:clean()
     end
     for _, v in ipairs(box.lines) do
         table.insert(self.lines, v)
@@ -359,7 +369,7 @@ function M.Box:stripRightSpace(expectedBg)
             if row[i].style.bg ~= expectedBg and row[i].style.bg ~= nil then
                 break
             end
-            row[i].word = row[i].word:gsub('%s+$', '')
+            row[i].word = row[i].word:gsub("%s+$", "")
             if #row[i].word == 0 then
                 table.remove(row, i)
             else
@@ -377,7 +387,7 @@ function M.Box:trimWidthLastLine(width, trimStrat)
     for i = 1, #self.lines - 1 do
         maxWidth = math.max(maxWidth, M.lineWidth(self.lines[i]))
         if maxWidth > width then
-            log.assert(false,
+            log.throw(
                 "Can not trim non last line in Box:trimWidthLastLine")
             error("")
         end
@@ -389,6 +399,7 @@ end
 ---@param left number
 ---@param top number
 function M.Box:renderOver(other, left, top)
+    log.trace("renderOver")
     --- This function is pretty expensive because all the string stuff
     flame.new("Box:renderOver")
     -- lol dont look at this function i barely understand it
@@ -455,10 +466,14 @@ function M.Box:renderOver(other, left, top)
             end
             local newStr = ""
             if count == 0 and charsToCut >= wordSize then
+                -- case 3 (cut out entire word)
                 newStr = ""
             elseif count == 0 then
-                newStr = _str.sub(str, math.min(charsToCut + 1, wordSize + 1), wordSize)
+                -- case 4
+                newStr = _str.sub(str, math.min(charsToCut + 1, wordSize + 1),
+                    wordSize)
             else
+                -- case 1
                 newStr = _str.sub(str, 1, count)
             end
             local newLen = _str.charWidth(newStr)
@@ -475,6 +490,7 @@ function M.Box:renderOver(other, left, top)
                 break
             end
             if #line == 0 then
+                -- if we empty, then we need something to insert before
                 table.insert(line, {
                     {
                         word = "",
@@ -491,6 +507,7 @@ function M.Box:renderOver(other, left, top)
                 word = string.rep(self.fillChar, left - M.lineWidth(line)),
                 style = self.hlgroup
             })
+            -- need something to insert before
             table.insert(line, {
                 word = "",
                 style = self.hlgroup
@@ -507,6 +524,7 @@ function M.Box:renderOver(other, left, top)
         j = j + 1
     end
 
+    -- for overflow
     while j <= #other.lines do
         ---@type Banana.Word[]
         local newLine = {

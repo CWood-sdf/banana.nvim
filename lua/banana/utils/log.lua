@@ -1,5 +1,5 @@
 ---@module 'banana.utils.debug_flame'
-local flame = require('banana.lazyRequire')('banana.utils.debug_flame')
+local flame = require("banana.lazyRequire")("banana.utils.debug_flame")
 -- log.lua
 --
 -- Inspired by rxi/log.lua
@@ -11,7 +11,7 @@ local flame = require('banana.lazyRequire')('banana.utils.debug_flame')
 -- User configuration section
 local default_config = {
     -- Name of the plugin. Prepended to log messages
-    plugin = 'banana.nvim',
+    plugin = "banana.nvim",
 
     -- Should print the output to neovim while running
     use_console = false,
@@ -49,6 +49,8 @@ local default_config = {
 ---@field warn fun(...)
 ---@field fmt_warn fun(...)
 ---@field assert fun(cond: boolean, ...)
+---@field throw fun(...)
+---@field fmt_throw fun(...)
 ---@field error fun(...)
 ---@field fmt_error fun(...)
 ---@field fatal fun(...)
@@ -63,14 +65,15 @@ local log = {}
 local unpack = unpack or table.unpack
 
 ---@diagnostic disable-next-line: inject-field
-log.new = function(config, standalone)
-    if require('banana.utils.debug').isdev() then
+log.new = function (config, standalone)
+    if require("banana.utils.debug").isdev() then
         default_config.level = "trace"
     end
 
     config = vim.tbl_deep_extend("force", default_config, config)
 
-    local outfile = string.format('%s/%s.log', vim.api.nvim_call_function('stdpath', { 'data' }), config.plugin)
+    local outfile = string.format("%s/%s.log",
+        vim.api.nvim_call_function("stdpath", { "data" }), config.plugin)
 
     -- print("Log level: ", config.level)
     local obj
@@ -85,15 +88,15 @@ log.new = function(config, standalone)
         levels[v.name] = i
     end
 
-    local round = function(x, increment)
+    local round = function (x, increment)
         increment = increment or 1
         x = x / increment
         return (x > 0 and math.floor(x + .5) or math.ceil(x - .5)) * increment
     end
 
-    local make_string = function(...)
+    local make_string = function (...)
         local t = {}
-        for i = 1, select('#', ...) do
+        for i = 1, select("#", ...) do
             local x = select(i, ...)
 
             if type(x) == "number" and config.float_precision then
@@ -104,18 +107,18 @@ log.new = function(config, standalone)
                 x = tostring(x)
             end
 
-            t[#t + 1] = x
+            t[#t+1] = x
         end
         return table.concat(t, " ")
     end
 
 
-    local log_at_level = function(level, level_config, message_maker, ...)
+    local log_at_level = function (level, level_config, message_maker, ...)
         -- Return early if we're below the config.level
         if level < levels[config.level] then
             return
         end
-        flame.new("log", true)
+        flame.new("ignore", true)
         local nameupper = level_config.name:upper()
 
         local msg = message_maker(...)
@@ -138,7 +141,8 @@ log.new = function(config, standalone)
 
             local split_console = vim.split(console_string, "\n")
             for _, v in ipairs(split_console) do
-                vim.cmd(string.format([[echom "[%s] %s"]], config.plugin, vim.fn.escape(v, '"')))
+                vim.cmd(string.format([[echom "[%s] %s"]], config.plugin,
+                    vim.fn.escape(v, '"')))
             end
 
             if config.highlights and level_config.hl then
@@ -161,12 +165,12 @@ log.new = function(config, standalone)
     end
 
     for i, x in ipairs(config.modes) do
-        obj[x.name] = function(...)
+        obj[x.name] = function (...)
             return log_at_level(i, x, make_string, ...)
         end
 
-        obj[("fmt_%s"):format(x.name)] = function()
-            return log_at_level(i, x, function(...)
+        obj[("fmt_%s"):format(x.name)] = function ()
+            return log_at_level(i, x, function (...)
                 local passed = { ... }
                 local fmt = table.remove(passed, 1)
                 local inspected = {}
@@ -177,11 +181,19 @@ log.new = function(config, standalone)
             end)
         end
     end
-    obj.assert = function(cond, msg, ...)
+    obj.assert = function (cond, msg, ...)
         if not cond then
             obj.fatal(msg, ...)
             error(msg)
         end
+    end
+    obj.throw = function (msg, ...)
+        obj.fatal(msg, ...)
+        error(msg)
+    end
+    obj.fmt_throw = function (msg, ...)
+        obj.fmt_fatal(msg, ...)
+        error(string.format(msg, ...))
     end
 end
 

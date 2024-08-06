@@ -2,4 +2,3 @@ log
 bin/
 .tests/
 dev.lua
-dev.html

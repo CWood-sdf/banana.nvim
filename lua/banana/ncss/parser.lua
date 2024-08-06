@@ -1,15 +1,15 @@
 ---@module 'banana.utils.log'
-local log = require('banana.lazyRequire')('banana.utils.log')
+local log = require("banana.lazyRequire")("banana.utils.log")
 local M = {}
 
 ---@module 'banana.ncss.query'
-local q = require('banana.lazyRequire')('banana.ncss.query')
+local q = require("banana.lazyRequire")("banana.ncss.query")
 ---@module 'banana.ncss.tsTypes'
-local ts_types = require('banana.lazyRequire')('banana.ncss.tsTypes')
+local ts_types = require("banana.lazyRequire")("banana.ncss.tsTypes")
 ---@module 'banana.ncss.valueParser'
-local valueParser = require('banana.lazyRequire')('banana.ncss.valueParser')
+local valueParser = require("banana.lazyRequire")("banana.ncss.valueParser")
 ---@module 'banana.ncss.queryParser'
-local queryParser = require('banana.lazyRequire')('banana.ncss.queryParser')
+local queryParser = require("banana.lazyRequire")("banana.ncss.queryParser")
 
 
 ---@class (exact) Banana.Ncss.ParseData
@@ -87,9 +87,9 @@ end
 ---@param name string
 ---@param value Banana.Ncss.StyleValue[]
 function M.validateCssProperty(name, value)
-    local validations = require('banana.ncss.validations')
+    local validations = require("banana.ncss.validations")
     if not validations.validate(name, value) then
-        log.assert(false,
+        log.throw(
             "Validation for property '" .. name .. "' failed")
         error("")
     end
@@ -104,7 +104,7 @@ function M.parsePropValue(tree, name, parser)
     local i = 1
     local child = tree:child(i)
     if child == nil then
-        log.assert(false,
+        log.throw(
             "expected a value when parsing css property")
         error("")
     end
@@ -159,27 +159,29 @@ function M.parseBlock(tree, parser)
         local styleVal = nil
         local important = nil
         local tp = child:type()
-        if tp == '{' or tp == '}' or tp == ts_types.comment then
+        if tp == "{" or tp == "}" or tp == ts_types.comment then
             goto continue
         end
         if tp ~= ts_types.declaration then
-            log.assert(false,
+            log.throw(
                 "Found a child that does not have type 'declaration' in a parseBlock tree (given type of '" ..
                 tp .. "' from parent of type '" .. tree:type() .. "')")
             error("")
         end
         propName = child:child(0)
         if propName == nil then
-            log.assert(false,
+            log.throw(
                 "propName is nil")
             error("")
         end
         if propName:type() ~= ts_types.property_name then
-            log.assert(false,
-                "Expected propName to be type 'property', got '" .. propName:type() .. "'")
+            log.throw(
+                "Expected propName to be type 'property', got '" ..
+                propName:type() .. "'")
             error("")
         end
-        name = parser:getStringFromRange({ propName:start() }, { propName:end_() })
+        name = parser:getStringFromRange({ propName:start() },
+            { propName:end_() })
         values, important = M.parsePropValue(child, name, parser)
         ---@type Banana.Ncss.StyleDeclaration
         styleVal = {
@@ -200,15 +202,17 @@ end
 ---@return Banana.Ncss.Query
 function M.parseQuery(tree, parser)
     if tree:type() ~= ts_types.selectors then
-        log.assert(false,
-            "tree parsed into parseQuery does not have type selectors, instead got '" .. tree:type() .. "'")
+        log.throw(
+            "tree parsed into parseQuery does not have type selectors, instead got '" ..
+            tree:type() .. "'")
         error("")
     end
     local ret = q.newQuery()
     local child = tree:child(0)
     if child == nil then
-        log.assert(false,
-            "Could not find first child of tree type '" .. tree:type() .. "' in parseQuery()")
+        log.throw(
+            "Could not find first child of tree type '" ..
+            tree:type() .. "' in parseQuery()")
         error("")
     end
     queryParser.parseQueryComponent(child, ret, parser)
@@ -218,28 +222,33 @@ end
 
 ---@param tree TSNode
 ---@param parser Banana.Ncss.ParseData
----@return Banana.Ncss.RuleSet
+---@return Banana.Ncss.RuleSet?
 function M.parseRuleSet(tree, parser)
+    if tree:type() == ts_types.comment then
+        return nil
+    end
     local selectors = tree:child(0)
     if selectors == nil then
-        log.assert(false,
+        log.throw(
             "Selectors in parseRuleSet is nil")
         error("")
     end
     if selectors:type() ~= ts_types.selectors then
-        log.assert(false,
-            "Selectors in parseRuleSet does not have type selectors, instead got '" .. selectors:type() .. "'")
+        log.throw(
+            "Selectors in parseRuleSet does not have type selectors, instead got '" ..
+            selectors:type() .. "'")
         error("")
     end
     local block = tree:child(1)
     if block == nil then
-        log.assert(false,
+        log.throw(
             "Block in parseRuleSet is nil")
         error("")
     end
     if block:type() ~= ts_types.block then
-        log.assert(false,
-            "Block in parseRuleSet does not have type block, instead got '" .. block:type() .. "'")
+        log.throw(
+            "Block in parseRuleSet does not have type block, instead got '" ..
+            block:type() .. "'")
         error("")
     end
 
@@ -254,7 +263,7 @@ end
 ---@return Banana.Ncss.RuleSet[]
 function M.parse(tree, parser)
     if tree:type() ~= ts_types.stylesheet then
-        log.assert(false,
+        log.throw(
             "Parsed treesitter tree must be a stylesheet type for ncss parser")
         error("")
     end
@@ -276,14 +285,17 @@ function M.parse(tree, parser)
         local i = 1
         repeat
             local ruleSet = M.parseRuleSet(firstChild, parser)
-            table.insert(ret, ruleSet)
+            if ruleSet ~= nil then
+                table.insert(ret, ruleSet)
+            end
             firstChild = tree:child(i)
             i = i + 1
         until firstChild == nil
 
         return ret
     end
-    error("Could not parse given stylesheet bc expected block, declaration, or rule_set nodes but got '" ..
+    error(
+        "Could not parse given stylesheet bc expected block, declaration, or rule_set nodes but got '" ..
         firstChild:type() .. "'")
 end
 
@@ -294,7 +306,7 @@ function M.treeIsInline(tree)
     --     error("omg there is an ncss parser error")
     -- end
     if tree:type() ~= ts_types.stylesheet then
-        log.assert(false,
+        log.throw(
             "Parsed treesitter tree must be a stylesheet type for ncss parser")
         error("")
     end
@@ -316,28 +328,28 @@ end
 ---@param content string
 ---@return Banana.Ncss.RuleSet[]
 function M.parseText(content)
-    require('banana').initTsParsers()
+    require("banana").initTsParsers()
     local tree = nil
-    local ok, _ = pcall(function()
+    local ok, _ = pcall(function ()
         local parse = vim.treesitter.get_string_parser(content, "ncss", {
 
         })
         tree = parse:parse(true)
     end)
     if not ok then
-        require('banana').installTsParsers()
+        require("banana").installTsParsers()
         local parse = vim.treesitter.get_string_parser(content, "ncss", {
 
         })
         tree = parse:parse(true)
     end
     if tree == nil then
-        log.assert(false, "Could not parse ncss tree")
+        log.throw("Could not parse ncss tree")
         error("Could not parse ncss tree")
     end
     -- local tree2 = tree[1]:root()
     -- local tree = require('banana.ncss.ffiparser').getTree(content)
-    local parser = ParseData:new(vim.split(content, '\n'))
+    local parser = ParseData:new(vim.split(content, "\n"))
     return M.parse(tree[1]:root(), parser)
 end
 
@@ -346,7 +358,7 @@ end
 function M.parseFile(name)
     local f = io.open(name, "r")
     if f == nil then
-        log.assert(false,
+        log.throw(
             "File '" .. name .. "' does not exist")
         error("")
     end

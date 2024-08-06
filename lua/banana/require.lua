@@ -1,5 +1,5 @@
 ---@module 'banana.utils.log'
-local log = require('banana.lazyRequire')('banana.utils.log')
+local log = require("banana.lazyRequire")("banana.utils.log")
 local M = {}
 
 local baseFolder = "banana"
@@ -18,17 +18,18 @@ local ncssAsts = {
 ---@return Banana.Ast, Banana.Ncss.RuleSet[], string[]
 function M.nmlLoad(filename)
     if nmlAsts[filename] ~= nil then
-        return nmlAsts[filename][2], nmlAsts[filename][1].styleSets, nmlAsts[filename][1].scripts
+        return nmlAsts[filename][2], nmlAsts[filename][1].styleSets,
+            nmlAsts[filename][1].scripts
     end
-    local parser = require('banana.nml.parser').fromFile(filename)
+    local parser = require("banana.nml.parser").fromFile(filename)
     if parser == nil then
-        log.assert(false,
+        log.throw(
             "Could not generate parser for file '" .. filename .. "'")
         error("")
     end
     local ast = parser:parse()
     if ast == nil then
-        log.assert(false,
+        log.throw(
             "Unable to parse file '" .. filename .. "'")
         error("")
     end
@@ -40,15 +41,15 @@ end
 ---@param str string
 ---@return Banana.Ast, Banana.Ncss.RuleSet[], string[]
 function M.nmlLoadString(str)
-    local parser = require('banana.nml.parser').fromString(str)
+    local parser = require("banana.nml.parser").fromString(str)
     if parser == nil then
-        log.assert(false,
+        log.throw(
             "Could not generate parser for string")
         error("")
     end
     local ast = parser:parse()
     if ast == nil then
-        log.assert(false,
+        log.throw(
             "Unable to parse string ")
         error("")
     end
@@ -94,7 +95,7 @@ local function getPathFor(basePath, paths, ft, i)
         end
         return getPathFor(basePath .. "/" .. paths[i], paths, ft, i + 1)
     end
-    local hasDot = #vim.split(paths[i], '\\.') ~= 1
+    local hasDot = #vim.split(paths[i], "\\.") ~= 1
     if hasDot then
         if fileExists(basePath .. "/" .. paths[i]) then
             return basePath .. "/" .. paths[i]
@@ -117,9 +118,9 @@ end
 ---@param ft string
 ---@return Banana.Ast, Banana.Ncss.RuleSet[], string[]
 local function basicRequire(file, ft)
-    local path = vim.iter(vim.split(file, '/'))
-        :filter(function(v) return #v ~= 0 end)
-        :totable()
+    local path = vim.iter(vim.split(file, "/"))
+                    :filter(function (v) return #v ~= 0 end)
+                    :totable()
     for _, v in ipairs(vim.api.nvim_list_runtime_paths()) do
         local fname = getPathFor(v .. "/" .. baseFolder, path, ft)
         if fname ~= nil then
@@ -140,7 +141,7 @@ function M.ncssLoad(filename)
     if ncssAsts[filename] ~= nil then
         return ncssAsts[filename]
     end
-    local rules = require('banana.ncss.parser').parseFile(filename)
+    local rules = require("banana.ncss.parser").parseFile(filename)
     ncssAsts[filename] = rules
     return rules
 end

@@ -1,6 +1,6 @@
 local M = {}
 ---@module "banana.utils.log"
-local log = require('banana.lazyRequire')('banana.utils.log')
+local log = require("banana.lazyRequire")("banana.utils.log")
 local _isdev = nil
 ---@return boolean
 local function isdev()
@@ -8,6 +8,10 @@ local function isdev()
         _isdev = require("banana.utils.debug").isdev()
     end
     return _isdev
+end
+
+function M.overrideIsDev()
+    _isdev = true
 end
 
 ---@type string[]
@@ -27,8 +31,12 @@ local function recordTime()
     if flame == nil then
         return
     end
+    if flame == "ignore" then
+        return
+    end
     flameTimes[flame] = flameTimes[flame] or 0
-    flameTimes[flame] = flameTimes[flame] - flameStarts[flame] + vim.loop.hrtime()
+    flameTimes[flame] = flameTimes[flame] - flameStarts[flame] +
+        vim.loop.hrtime()
 end
 
 local function startTime()
@@ -57,7 +65,8 @@ function M.expect(name)
         return
     end
     if flameStack[#flameStack] ~= name then
-        log.assert(false, "Expected flamestack to be " .. name .. ", but got " .. flameStack[#flameStack])
+        log.throw("Expected flamestack to be " ..
+            name .. ", but got " .. flameStack[#flameStack])
     end
 end
 
@@ -67,7 +76,7 @@ function M.pop(skipLog)
         log.trace("flame:pop " .. (flameStack[#flameStack] or ""))
     end
     if #flameStack == 0 then
-        log.assert(false, "flamestack empty!")
+        log.throw("flamestack empty!")
         print("flamestack empty!")
         return
     end
@@ -133,7 +142,7 @@ function M.getWorst(unit, filter, per)
     for k, v in pairs(M.getFlames(unit, filter, per)) do
         table.insert(ret, { k, v })
     end
-    table.sort(ret, function(l, r)
+    table.sort(ret, function (l, r)
         return l[2] > r[2]
     end)
     return ret

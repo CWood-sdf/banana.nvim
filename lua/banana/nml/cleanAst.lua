@@ -1,24 +1,24 @@
 ---@module 'banana.utils.log'
-local log = require('banana.lazyRequire')('banana.utils.log')
+local log = require("banana.lazyRequire")("banana.utils.log")
 local M = {}
 ---@module 'banana.nml.render'
-local tags = require('banana.lazyRequire')('banana.nml.render')
+local tags = require("banana.lazyRequire")("banana.nml.render")
 
 ---@param str string
 ---@param clearFirst boolean
 ---@param clearLast boolean
 ---@return string, boolean
 local function formatInlineText(str, clearFirst, clearLast)
-    str = str:gsub('%s+', ' ')
-    if clearFirst and str:sub(1, 1) == ' ' then
+    str = str:gsub("%s+", " ")
+    if clearFirst and str:sub(1, 1) == " " then
         str = str:sub(2, #str)
     end
     local lastChar = str:sub(#str, #str)
-    if clearLast and lastChar == ' ' then
+    if clearLast and lastChar == " " then
         str = str:sub(1, #str - 1)
     end
     lastChar = str:sub(#str, #str)
-    clearFirst = lastChar == ' '
+    clearFirst = lastChar == " "
     return str, clearFirst
 end
 
@@ -32,7 +32,7 @@ function M.formatBlockContext(ast)
     local skip = ast.tag == "pre"
     while i <= #ast.nodes do
         local node = ast.nodes[i]
-        if type(node) == 'string' then
+        if type(node) == "string" then
             local nextNode = ast.nodes[i + 1]
             local clearLast = true
             if
@@ -97,8 +97,9 @@ function M.formatInlineContext(ast, clearFirst, clearLast)
     while i <= #ast.nodes do
         local node = ast.nodes[i]
         local last = i == #ast.nodes
-        if type(node) == 'string' then
-            node, clearFirst = formatInlineText(node, clearFirst, clearLast and last)
+        if type(node) == "string" then
+            node, clearFirst = formatInlineText(node, clearFirst,
+                clearLast and last)
             if node == "" then
                 table.remove(ast.nodes, i)
                 inc = false
@@ -108,16 +109,17 @@ function M.formatInlineContext(ast, clearFirst, clearLast)
         else
             ---@cast node Banana.Ast
             if node.actualTag.formatType == tags.FormatType.Block then
-                log.assert(false,
+                log.throw(
                     "A Block or BlockInline format type element is nested in an inline formatting context")
                 error("")
             end
             if node.actualTag.formatType == tags.FormatType.BlockInline then
-                log.assert(false,
+                log.throw(
                     "A Block or BlockInline format type element is nested in an inline formatting context")
                 error("")
             end
-            clearFirst = M.formatInlineContext(node, clearFirst, clearLast and last)
+            clearFirst = M.formatInlineContext(node, clearFirst,
+                clearLast and last)
         end
         if inc then
             i = i + 1

@@ -91,11 +91,19 @@
 - [ ] column-gap
 - [ ] gap
 
-### Abs/float position
+### Abs/relative position
 
 - [x] left/right/top/bottom
 - [x] z-index
-- [x] position: cant do fixed or sticky (unfortunate)
+- [x] position
+
+### Fixed Position
+
+- [ ] position: fixed
+
+### Sticky
+
+- [ ] position: sticky
 
 #### Later stuff
 

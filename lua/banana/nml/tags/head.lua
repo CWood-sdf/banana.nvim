@@ -1,12 +1,17 @@
 ---@module 'banana.utils.debug_flame'
-local flame = require('banana.lazyRequire')('banana.utils.debug_flame')
+local flame = require("banana.lazyRequire")("banana.utils.debug_flame")
 ---@module 'banana.nml.render'
-local t = require('banana.lazyRequire')('banana.nml.render')
+local t = require("banana.lazyRequire")("banana.nml.render")
 
 ---@type Banana.Renderer
-local function renderer(_, ast, hl, parentWidth, parentHeight, _, _, inherit, extra)
+local function renderer(_, ast, hl, parentWidth, parentHeight, _, _, inherit,
+                        extra)
     flame.new("tag:head")
-    local b = require('banana.box')
+    local b = require("banana.box")
+    if extra.isRealRender then
+        flame.pop()
+        return b.Box:new()
+    end
     ---@type Banana.Box
     local ret = b.Box:new()
     -- not actually rendering anything bc its all metadata tags
@@ -18,11 +23,11 @@ local function renderer(_, ast, hl, parentWidth, parentHeight, _, _, inherit, ex
 end
 ---@type Banana.TagInfo
 local M = t.newTag(
-    'head',
+    "head",
     t.FormatType.Block,
     false,
     renderer,
-    require('banana.nml.render').defaultInitials()
+    require("banana.nml.render").defaultInitials()
 )
 
 return M

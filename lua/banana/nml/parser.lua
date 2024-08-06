@@ -1,7 +1,7 @@
 ---@module 'banana.utils.log'
-local log = require('banana.lazyRequire')('banana.utils.log')
+local log = require("banana.lazyRequire")("banana.utils.log")
 ---@module "banana.nml.lexer"
-local lexer = require('banana.lazyRequire')("banana.nml.lexer")
+local lexer = require("banana.lazyRequire")("banana.nml.lexer")
 local M = {}
 
 ---@enum Banana.Nml.TSTypes
@@ -27,7 +27,7 @@ M.ts_types = {
     self_closing_tag = "self_closing_tag"
 }
 
-local ast = require('banana.nml.ast')
+local ast = require("banana.nml.ast")
 
 ---@class (exact) Banana.Highlight: vim.api.keyset.highlight
 ---@field __name string?
@@ -81,12 +81,12 @@ end
 function Parser:parseAttribute(tree)
     local name = tree:child(0)
     if name == nil then
-        log.assert(false,
+        log.throw(
             "Unreachable")
         error("")
     end
     if name:type() ~= M.ts_types.attribute_name then
-        log.assert(false,
+        log.throw(
             "Unreachable")
         error("")
     end
@@ -94,8 +94,9 @@ function Parser:parseAttribute(tree)
     local value = nil
     if tree:child_count() >= 3 and nameStr == "style" then
         local ncssTree = self:getNextInlineNcssParser()
-        local ncssParser = require('banana.ncss.parser').newParseData(self.lexer.program)
-        local rules = require('banana.ncss.parser').parse(ncssTree, ncssParser)
+        local ncssParser = require("banana.ncss.parser").newParseData(self.lexer
+                                                                          .program)
+        local rules = require("banana.ncss.parser").parse(ncssTree, ncssParser)
         ---@type Banana.Ncss.StyleDeclaration[]
         local ret = {}
         for _, rule in ipairs(rules) do
@@ -108,7 +109,7 @@ function Parser:parseAttribute(tree)
         local val = tree:child(2)
         ::top::
         if val == nil then
-            log.assert(false,
+            log.throw(
                 "Unreachable")
             error("")
         end
@@ -127,7 +128,7 @@ end
 ---@return Banana.Attributes, Banana.Ncss.StyleDeclaration[]
 function Parser:parseAttributes(tree)
     if tree:type() ~= M.ts_types.start_tag and tree:type() ~= M.ts_types.self_closing_tag then
-        log.assert(false,
+        log.throw(
             "Must pass in a start_tag or self_closing_tag tree to parseAttributes")
         error("")
     end
@@ -139,12 +140,12 @@ function Parser:parseAttributes(tree)
     while i < tree:child_count() - 1 do
         local attr = tree:child(i)
         if attr == nil then
-            log.assert(false,
+            log.throw(
                 "Unreachable")
             error("")
         end
         if attr:type() ~= M.ts_types.attribute then
-            log.assert(false,
+            log.throw(
                 "An attribute was not given")
             error("")
         end
@@ -168,18 +169,18 @@ end
 function Parser:parseSelfClosingTag(tree, parent)
     local child = tree:child(0)
     if child == nil then
-        log.assert(false,
+        log.throw(
             "Unreachable")
         error("")
     end
     local nameEl = child:child(1)
     if nameEl == nil then
-        log.assert(false,
+        log.throw(
             "Unreachable")
         error("")
     end
     if nameEl:type() ~= M.ts_types.tag_name then
-        log.assert(false,
+        log.throw(
             "Unreachable")
         error("")
     end
@@ -195,7 +196,7 @@ end
 
 ---@return TSNode
 function Parser:getNextBlockNcssParser()
-    while require('banana.ncss.parser').treeIsInline(self.ncssParsers[self.ncssBlockIndex]:root()) do
+    while require("banana.ncss.parser").treeIsInline(self.ncssParsers[self.ncssBlockIndex]:root()) do
         self.ncssBlockIndex = self.ncssBlockIndex + 1
     end
     local node = self.ncssParsers[self.ncssBlockIndex]:root()
@@ -205,7 +206,7 @@ end
 
 ---@return TSNode
 function Parser:getNextInlineNcssParser()
-    while not require('banana.ncss.parser').treeIsInline(self.ncssParsers[self.ncssInlineIndex]:root()) do
+    while not require("banana.ncss.parser").treeIsInline(self.ncssParsers[self.ncssInlineIndex]:root()) do
         self.ncssInlineIndex = self.ncssInlineIndex + 1
     end
     local node = self.ncssParsers[self.ncssInlineIndex]:root()
@@ -222,46 +223,49 @@ function Parser:parseTag(tree, parent, isSpecial)
     local firstChild = tree:child(0)
     local lastChild = tree:child(tree:child_count() - 1)
     if firstChild == nil or lastChild == nil then
-        log.assert(false,
+        log.throw(
             "Unreachable")
         error("")
     end
     if firstChild:type() ~= M.ts_types.start_tag then
-        log.assert(false,
+        log.throw(
             "Unreachable")
         error("")
     end
     if lastChild:type() ~= M.ts_types.end_tag and not isSpecial then
-        log.assert(false,
+        log.throw(
             "Unreachable")
         error("")
     end
     local tagName = firstChild:child(1)
     if tagName == nil then
-        log.assert(false,
+        log.throw(
             "Unreachable")
         error("")
     end
     if tagName:type() ~= M.ts_types.tag_name then
-        log.assert(false,
-            "tagName does not have type tag_name, but instead has type " .. tagName:type())
+        log.throw(
+            "tagName does not have type tag_name, but instead has type " ..
+            tagName:type())
         error("")
     end
-    local tagNameStr = self.lexer:getStrFromRange({ tagName:start() }, { tagName:end_() })
+    local tagNameStr = self.lexer:getStrFromRange({ tagName:start() },
+        { tagName:end_() })
     local lastTagName = lastChild:child(1)
     if lastTagName == nil then
-        log.assert(false,
-            'Unreachable')
-        error("")
-    end
-    if lastTagName:type() ~= M.ts_types.tag_name then
-        log.assert(false,
+        log.throw(
             "Unreachable")
         error("")
     end
-    local endTagNameStr = self.lexer:getStrFromRange({ lastTagName:start() }, { lastTagName:end_() })
+    if lastTagName:type() ~= M.ts_types.tag_name then
+        log.throw(
+            "Unreachable")
+        error("")
+    end
+    local endTagNameStr = self.lexer:getStrFromRange({ lastTagName:start() },
+        { lastTagName:end_() })
     if tagNameStr ~= endTagNameStr then
-        log.assert(false,
+        log.throw(
             "A start tag is not closed by the same tag (started with " ..
             tagNameStr .. " but ended with " .. endTagNameStr .. ")")
         error("")
@@ -277,7 +281,7 @@ function Parser:parseTag(tree, parent, isSpecial)
     local ret = nil
     if not isScript and not isStyle then
         if parent == nil then
-            log.assert(false,
+            log.throw(
                 "Parent is nil")
             error("")
         end
@@ -300,13 +304,13 @@ function Parser:parseTag(tree, parent, isSpecial)
     while i < tree:child_count() - 1 do
         local child = tree:child(i)
         if child == nil then
-            log.assert(false,
+            log.throw(
                 "Unreachable")
             error("")
         end
         if child:type() == M.ts_types.text then
             if ret == nil then
-                log.assert(false,
+                log.throw(
                     "Unreachable")
                 error("")
             end
@@ -316,7 +320,7 @@ function Parser:parseTag(tree, parent, isSpecial)
             local element = self:parseElement(child, ret)
             if element ~= nil then
                 if ret == nil then
-                    log.assert(false,
+                    log.throw(
                         "Unreachable")
                     error("")
                 end
@@ -324,27 +328,30 @@ function Parser:parseTag(tree, parent, isSpecial)
             end
         elseif child:type() == M.ts_types.entity then
             if ret == nil then
-                log.assert(false,
+                log.throw(
                     "Unreachable")
                 error("")
             end
             ret:appendTextNode(self:getStrFromNode(child))
         elseif child:type() == M.ts_types.substitution then
             if ret == nil then
-                log.assert(false,
+                log.throw(
                     "Unreachable")
                 error("")
             end
             ret:appendTextNode(self:getStrFromNode(child))
         elseif child:type() == M.ts_types.raw_text and isScript then
             if scriptStr ~= "" then
-                scriptStr = self.lexer:getStrFromRange({ child:start() }, { child:end_() })
+                scriptStr = self.lexer:getStrFromRange({ child:start() },
+                    { child:end_() })
                 table.insert(self.scripts, scriptStr)
             end
         elseif child:type() == M.ts_types.raw_text and isStyle then
             local ncssTree = self:getNextBlockNcssParser()
-            local ncssParser = require('banana.ncss.parser').newParseData(self.lexer.program)
-            local rules = require('banana.ncss.parser').parse(ncssTree, ncssParser)
+            local ncssParser = require("banana.ncss.parser").newParseData(self
+            .lexer.program)
+            local rules = require("banana.ncss.parser").parse(ncssTree,
+                ncssParser)
             for _, rule in ipairs(rules) do
                 table.insert(self.styleSets, rule)
             end
@@ -354,7 +361,8 @@ function Parser:parseTag(tree, parent, isSpecial)
             self:parseTag(child, ret, true)
         elseif child:type() == M.ts_types.comment then
         else
-            error("Node type " .. child:type() .. " not allowed when parsing tag body")
+            error("Node type " ..
+            child:type() .. " not allowed when parsing tag body")
         end
         i = i + 1
     end
@@ -370,12 +378,12 @@ end
 ---@return Banana.Ast?
 function Parser:parseElement(tree, parent)
     if tree:type() ~= M.ts_types.element then
-        log.assert(false,
+        log.throw(
             "Did not pass an element into parseElement()")
         error("")
     end
     if tree:child_count() == 0 then
-        log.assert(false,
+        log.throw(
             "Somehow an element does not have a child")
         error("")
     end
@@ -410,12 +418,12 @@ function Parser:parse()
         error("A full nml document must have an <nml> tag")
     end
     if not fullDocMode and parsed:child_count() ~= 1 then
-        log.assert(false,
+        log.throw(
             "A partial nml document should have only one element")
         error("")
     end
     if not fullDocMode and parsed:child(0):type() ~= M.ts_types.element then
-        log.assert(false,
+        log.throw(
             "A partial nml document should contain an element as the root node")
         error("")
     end
@@ -423,21 +431,21 @@ function Parser:parse()
     if fullDocMode then
         child = parsed:child(1)
         if child == nil then
-            log.assert(false,
+            log.throw(
                 "Unreachable: parsed child is 0 in fullDocMode")
             error("")
         end
     else
         child = parsed:child(0)
         if child == nil then
-            log.assert(false,
+            log.throw(
                 "Unreachable: parsed child is 0 in not fullDocMode")
             error("")
         end
     end
-    local nilAst = require('banana.instance').getNilAst()
+    local nilAst = require("banana.instance").getNilAst()
     if nilAst == nil then
-        log.assert(false,
+        log.throw(
             "Nil ast is not defined")
         error("")
     end
@@ -465,23 +473,23 @@ end
 ---@param content string
 ---@return Banana.Nml.Parser
 function M.fromString(content)
-    require('banana').initTsParsers()
+    require("banana").initTsParsers()
     local arr = nil
     local langTree = nil
-    local ok, _ = pcall(function()
+    local ok, _ = pcall(function ()
         langTree = vim.treesitter.get_string_parser(content, "nml", {})
         arr = langTree:parse(true)
     end)
     if not ok then
-        require('banana').installTsParsers()
+        require("banana").installTsParsers()
         langTree = vim.treesitter.get_string_parser(content, "nml", {})
         arr = langTree:parse(true)
     end
     if langTree == nil or arr == nil then
-        log.assert(false, "Could not parse nml tree")
+        log.throw("Could not parse nml tree")
         error("")
     end
-    local ncssChild = langTree:children()['ncss']
+    local ncssChild = langTree:children()["ncss"]
     local ncssParsers = {}
     if ncssChild ~= nil then
         ncssParsers = ncssChild:trees()
@@ -493,7 +501,7 @@ function M.fromString(content)
     local parsed = tree:root()
     local children = parsed:child(0)
     if children == nil then
-        log.assert(false,
+        log.throw(
             "found no children")
         error("")
     end
