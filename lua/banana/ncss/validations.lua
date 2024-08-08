@@ -137,7 +137,7 @@ local function explicit(...)
     end
     return Validation:new({ [1] = arr })
 end
----@type { [string]: Banana.Ncss.PropertyValidation }
+---@type { [string]: Banana.Ncss.PropertyValidation|string }
 local validations = {
     ["hl-underline"] = boolValid,
     ["hl-italic"] = boolValid,
@@ -159,8 +159,8 @@ local validations = {
 
     ["grid-template-columns"] = Validation:new({ ["*"] = { { "unit" } } }),
     ["grid-template-rows"] = Validation:new({ ["*"] = { { "unit" } } }),
-    ["grid-row"] = Validation:new({ [1] = { { "integer" } } }),
-    ["grid-column"] = Validation:new({ [1] = { { "integer" } } }),
+    ["grid-row"] = Validation:new({ [1] = { { "integer" } }, [2] = { { "integer", "integer" } } }),
+    ["grid-column"] = "grid-row",
 
     ["position"] = explicit("absolute", "static", "relative", "inherit",
         "initial"),
@@ -185,6 +185,9 @@ local validations = {
 return {
     validate = function (name, value)
         local validation = validations[name]
+        while type(validation) == "string" do
+            validation = validations[validation]
+        end
         if validation == nil then
             log.throw(
                 "Unable to validate property '" .. name .. "'")

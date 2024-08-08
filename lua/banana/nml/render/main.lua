@@ -58,6 +58,8 @@ return function (self, ast, parentHl, parentWidth, parentHeight, startX, startY,
     if position == nil or position == "initial" then
         position = ast:_getInitialStyles().position
     end
+    -- flame.pop()
+    -- flame.new("getRendered_misc")
     if position == "absolute" then
         local root = ast
         while root.absoluteAsts == nil do
