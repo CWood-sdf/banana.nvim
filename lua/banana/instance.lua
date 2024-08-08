@@ -553,8 +553,9 @@ function Instance:_render()
     if self.renderRequested then
         return
     end
+    collectgarbage("stop")
     log.trace("Instance:render with " .. #self.scripts .. " scripts")
-    flame.reset()
+    -- flame.reset()
     self.rendering = true
     local startTime = vim.uv.hrtime()
     local actualStart = startTime
@@ -639,9 +640,9 @@ function Instance:_render()
             "Instance id: " .. self.instanceId,
             "",
         }
-        local filter = ""
-        local flames = flame.getWorst("pct", filter)
-        local flameMillis = flame.getFlames("millis", filter)
+        local filter = "renderGridBlock"
+        local flames = flame.getWorst("pct", filter, true)
+        local flameMillis = flame.getFlames("millis", filter, true)
         local maxLen = 0
         for _, val in ipairs(flames) do
             maxLen = math.max(maxLen, #val[1] + 2)
@@ -675,6 +676,7 @@ function Instance:_render()
         })
     end
     self.rendering = false
+    collectgarbage("restart")
 end
 
 ---@param lines Banana.Line[]
@@ -684,8 +686,8 @@ function Instance:_highlight(lines, offset)
     flame.new("hl:ns")
     vim.api.nvim_win_set_hl_ns(self.winid, self.highlightNs)
     if self.highlightNs ~= nil then
-        vim.api.nvim_buf_clear_namespace(0, self.highlightNs, offset,
-            offset + #lines)
+        -- vim.api.nvim_buf_clear_namespace(0, self.highlightNs, offset,
+        --     offset + #lines)
         -- vim.api.nvim_win_set_hl_ns(self.winid, self.highlightNs)
         -- self.highlightNs = nil
     end
@@ -908,6 +910,11 @@ end
 function M.newInstance(filename, bufferName)
     log.trace("Creating instance with file " ..
         filename .. " and buffername " .. bufferName)
+    for _, v in ipairs(instances) do
+        if v.bufname == bufferName then
+            return v
+        end
+    end
     local instance = Instance:new()
     instance:setBufName(bufferName)
     instance:useFile(filename)
@@ -919,6 +926,7 @@ function M.emptyInstance()
     return Instance:new()
 end
 
+---@overload fun(id: string): Banana.Instance?
 ---@param id number
 ---@return Banana.Instance
 function M.getInstance(id)
@@ -926,6 +934,12 @@ function M.getInstance(id)
         log.throw(
             "Given a nil instance id")
         error("")
+    end
+    if type(id) == "string" then
+        for _, v in ipairs(instances) do
+            if v.bufname == id then return v end
+        end
+        return nil
     end
     if instances[id] == nil then
         log.throw(
