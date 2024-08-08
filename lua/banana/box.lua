@@ -543,6 +543,7 @@ function M.Box:renderOver(other, left, top)
         table.insert(self.lines, newLine)
         j = j + 1
     end
+    self.dirty = self.dirty or (self._width < left + other._width)
     self._width = math.max(self._width, left + other._width)
     flame.pop()
 end
