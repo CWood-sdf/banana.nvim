@@ -1061,6 +1061,10 @@ function M.Ast:attachRemap(mode, lhs, mods, rhs, opts)
         return true
     end
     local inst = require("banana.instance").getInstance(self.instance)
+    if inst == nil then
+        log.throw("ast does not have an associated document")
+        error("")
+    end
     inst:_setRemap(mode, lhs, actualRhs, opts, self)
 end
 
@@ -1069,6 +1073,10 @@ function M.Ast:_requestRender()
         return
     end
     local inst = require("banana.instance").getInstance(self.instance)
+    if inst == nil then
+        log.throw("ast does not have an associated document")
+        error("")
+    end
     inst:_requestRender()
 end
 

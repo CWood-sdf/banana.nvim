@@ -782,7 +782,7 @@ function TagInfo:renderGridBlock(ast, parentHl, parentWidth, parentHeight, start
         table.insert(preRenderTakenMatrix[col][row], node)
         -- columnI = columnI + 1
     end
-    local ret = b.Box:new(hl)
+    local ret = b.Box:new(parentHl)
 
     flame.pop()
     flame.new("renderGridBlock_final")
