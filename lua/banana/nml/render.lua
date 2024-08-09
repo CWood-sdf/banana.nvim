@@ -306,7 +306,6 @@ local function flexGrowSection(parentWidth, takenWidth, renders, start, e)
 end
 
 -- Grid todo:
--- repeat()
 -- grid-template-areas
 -- grid-template (shorthand prop)
 -- grid-auto-columns
@@ -353,9 +352,6 @@ local function getGridStart(templ, fix)
         return ret
     end
 end
-
--- -- this
--- local max = math.max
 
 ---@param values Banana.Ncss.StyleValue[]
 ---@param sizeInDirection number
@@ -521,6 +517,23 @@ function TagInfo:renderGridBlock(ast, parentHl, parentWidth, parentHeight, start
 
     local maxRow = 0
 
+    -- NOTE: New notes after some more research
+    -- 1. grid-column has equal precedence to nothing
+    -- 2. grid-row has more precedence
+    -- 3. explicit has most
+    -- 4. i think these rules on row vs column invert via grid-auto-flow
+    -- 5. frs dont distribute available space, but they are responsive to incorrect sizes (pcts arent)
+    -- 6. when grid has height defined, implicit rows have 1fr height unless otherwise said
+    -- 7. the placement cursor follows the previous element (aka when grid-column
+    -- is defined, then moved to a different place, the cursor doesnt reset)
+    -- (this can leave empty spaces in grid)
+
+    -- TODO: So essentially i need two distribution loops
+    -- one for explicit/grid-row defs
+    -- final for grid-column/none (this is so that defined height can give rows
+    -- proper frs)
+    -- then a render loop for all
+
     flame.new("renderGridBlock_placement")
     for i, node in ast:childIterWithI() do
         local row = node:firstStyleValue("grid-row")
@@ -531,8 +544,8 @@ function TagInfo:renderGridBlock(ast, parentHl, parentWidth, parentHeight, start
             goto continue
         end
         -- should we increase stuff in the column direction?
-        local incColumn = column ~= nil
-        local incRow = row ~= nil
+        local incColumn = column == nil
+        local incRow = row == nil
         row = row or 1
         column = column or 1
         ---@cast row number
@@ -541,11 +554,14 @@ function TagInfo:renderGridBlock(ast, parentHl, parentWidth, parentHeight, start
         local preRender = {
             startRow = row,
             startColumn = column,
-            columnSpecified = incColumn,
-            rowSpecified = incRow,
+            columnSpecified = not incColumn,
+            rowSpecified = not incRow,
             ast = node,
             priority = 0,
         }
+        if node:getTextContent() == "16" then
+            print("a")
+        end
         renderOrder[i] = preRender
         -- table.insert(renderOrder, preRender)
         -- local id = #renderOrder
@@ -555,9 +571,9 @@ function TagInfo:renderGridBlock(ast, parentHl, parentWidth, parentHeight, start
         while preRenderTakenMatrix[column][row] == nil do
             table.insert(preRenderTakenMatrix[column], {})
         end
-        if not incColumn or not incRow then
+        if incColumn or incRow then
             while #preRenderTakenMatrix[column][row] ~= 0 do
-                if not incColumn then
+                if incColumn then
                     column = column + 1
                 else
                     row = row + 1
@@ -611,7 +627,7 @@ function TagInfo:renderGridBlock(ast, parentHl, parentWidth, parentHeight, start
                 local swapIndex = freeIndex
                 repeat
                     swapIndex = swapIndex - 1
-                    local e = preRenderTakenMatrix[column][freeIndex][1]
+                    local e = preRenderTakenMatrix[column][swapIndex][1]
                     if not renderOrder[e].rowSpecified and el.columnSpecified then
                         preRenderTakenMatrix[column][freeIndex] = { e }
                         renderOrder[e].startRow = freeIndex

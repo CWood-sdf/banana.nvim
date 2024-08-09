@@ -19,7 +19,7 @@
     },
     {
       "name": "debug",
-      "cmd": "nvim",
+      "cmd": "nvim -c \"lua vim.defer_fn(function()require('osv').launch({ port = 8086 }) end, 200)\"",
       "window": {
         "name": "ookd",
         "close": true

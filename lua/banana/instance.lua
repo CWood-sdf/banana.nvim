@@ -640,7 +640,7 @@ function Instance:_render()
             "Instance id: " .. self.instanceId,
             "",
         }
-        local filter = "renderGridBlock"
+        local filter = ""
         local flames = flame.getWorst("pct", filter, true)
         local flameMillis = flame.getFlames("millis", filter, true)
         local maxLen = 0
@@ -659,7 +659,7 @@ function Instance:_render()
             if #pct < 4 then
                 pct = pct .. string.rep(" ", 4 - #pct)
             end
-            local time = math.floor(flameMillis[val[1]] * 1000) / 1000 .. ""
+            local time = math.floor(flameMillis[val[1]] * 10000) / 10000 .. ""
             if #time < 7 then
                 time = time .. string.rep(" ", 7 - #time)
             end

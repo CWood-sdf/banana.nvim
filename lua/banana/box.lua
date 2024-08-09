@@ -22,8 +22,6 @@ local function cloneLine(line)
     return ret
 end
 
--- TODO: renderUnder()
-
 ---@class (exact) Banana.Box
 ---@field private lines Banana.Line[]
 ---@field private _width integer
