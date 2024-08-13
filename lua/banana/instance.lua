@@ -210,8 +210,12 @@ function Instance:close()
     vim.api.nvim_win_close(self.winid, false)
 end
 
+local n = 0
+local avg = 0
 function Instance:open()
     self.isVisible = true
+    n = 0
+    avg = 0
     self:_render()
 end
 
@@ -539,9 +543,6 @@ function Instance:forceRerender()
     self:_render()
 end
 
-local n = 0
-local avg = 0
-
 function Instance:_render()
     if self.DEBUG_showPerf or self.DEBUG then
         flame.overrideIsDev()
@@ -555,7 +556,9 @@ function Instance:_render()
     end
     collectgarbage("stop")
     log.trace("Instance:render with " .. #self.scripts .. " scripts")
-    -- flame.reset()
+    if n == 30 then
+        -- flame.reset()
+    end
     self.rendering = true
     local startTime = vim.uv.hrtime()
     local actualStart = startTime

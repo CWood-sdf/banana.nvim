@@ -13,7 +13,7 @@
       }
       .grid > :first-child {
         height: 2ch;
-        /* grid-row: 2; */
+        grid-row: 2;
         hl-bold: false;
         hl-italic: true;
       }
@@ -40,7 +40,7 @@
     <div class="grid">
       <div>17</div>
 
-      <!--16, 17, 15, 18  -->
+      <!--16,   -->
       <!--14, 2, 3, 4, 5   -->
       <!--1,  -->
       <!--  -->

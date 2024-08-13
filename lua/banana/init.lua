@@ -5,12 +5,27 @@ local instance = nil
 local inst = nil
 ---@module 'banana.instance'
 local render = require("banana.lazyRequire")("banana.instance")
+local ffi = require("ffi")
 
 local tsInit = false
 local tsInstall = false
 
 M.test = {
     grid = function ()
+        -- print(jit.status())
+        -- jit.on()
+        -- ffi.cdef([[
+        -- int add(int l, int r);
+        -- void addToString(char* str);
+        -- ]])
+        -- local so = ffi.load(
+        --     "/home/christopher-wood/projects/banana.nvim/zig/zig-out/lib/libbanana.so")
+        -- print(so.add(1, 2))
+        -- local txt = "asdf123"
+        -- local cstr = ffi.new("char[?]", #txt + 1)
+        -- ffi.copy(cstr, txt)
+        -- so.addToString(cstr)
+        -- print(ffi.string(cstr))
         if inst == nil then
             inst = render.newInstance("grid", "")
             inst.DEBUG_showPerf = true
