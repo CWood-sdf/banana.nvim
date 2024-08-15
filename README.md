@@ -51,6 +51,8 @@ The counter's files are contained in banana/example/counter.nml and lua/banana_e
 
 Lazy's files are contained in banana/example/lazy/ and lua/banana_example/lazy/ and can be run with `require('banana').runLazy()`
 
+An example plugin repository can be found [here](https://github.com/CWood-sdf/banana-example)
+
 ## Features
 
 Partial or complete implementations exist for the following elements:
