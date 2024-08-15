@@ -159,7 +159,7 @@ return function (self, ast, parentHl, parentWidth, parentHeight, startX, startY,
     ret.center = centerBox
     ret.marginColor = parentHl
     ret.mainColor = centerBox.hlgroup
-    ret.renderAlign = "left"
+    ret.renderAlign = inherit.text_align
     local extraWidth = parentWidth - ret:getWidth() - ast:_extraLr()
     if isExpandable(ast, extraWidth) and not inherit.min_size then
         ret.center:clean()

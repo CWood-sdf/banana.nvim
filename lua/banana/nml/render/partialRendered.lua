@@ -125,9 +125,9 @@ function PartialRendered:render(clone)
     flame.new("PartialRendered:render")
     clone = clone or false
     if clone then
-        if not require("banana.utils.debug").isdev() then
-            print("Calling clone in prod?!")
-        end
+        -- if not require("banana.utils.debug").isdev() then
+        -- print("Calling clone in prod?!")
+        -- end
         local new = vim.fn.deepcopy(self)
         setmetatable(new, {
             __index = PartialRendered,

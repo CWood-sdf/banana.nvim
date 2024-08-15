@@ -465,51 +465,6 @@ local function getSection(i, templates, limit)
     return templates[i]
 end
 
--- ---@generic T1, T2
--- ---@param l T1[]
--- ---@param r T2[]
--- ---@return (fun(): T1?, T2?)?
--- local function pairIterator(l, r)
---     if #l ~= #r then
---         return nil
---     end
---     local i = 0
---     return function ()
---         if i > #l then
---             return nil
---         end
---         i = i + 1
---         return l[i], r[i]
---     end
--- end
-
-
--- ffi.cdef([[
---     typedef struct GridInputElement {
---         uint32_t index;
---         uint32_t row;
---         uint32_t column;
---         uint32_t rowSize;
---         uint32_t columnSize;
---     } GridInputElement;
---     typedef struct GridOutput {
---         uint32_t maxRows;
---         uint32_t maxColumns;
---         bool isValid;
---         uint32_t time;
---         uint32_t len;
---     } GridOutput;
---     struct GridOutput gridPlace(struct GridInputElement* arr, uint32_t len);
---     ]])
---
--- local gridSo = ffi.load(require("banana").getInstallDir() ..
---     "/zig/zig-out/lib/libbanana.so")
-
--- local gridFfiEls = nil
--- local gridFfiLen = 16
--- local avg = 0
--- local count = 0
-
 --- renders an element with display:grid
 ---@param ast Banana.Ast
 ---@param parentHl Banana.Highlight?
@@ -533,54 +488,6 @@ function TagInfo:renderGridBlock(ast, parentHl, parentWidth, parentHeight, start
     ---@field startRow number
     ---@field startCol number
 
-    -- flame.new("loop")
-    -- local i = 0
-    -- for node in ast:childIter() do
-    --     -- gridFfiEls[i - 1].index = i
-    --     local v1 = node.style["grid-row"] or {}
-    --     local v2 = v1[1] or {}
-    --     local v3 = v2.value or 0
-    --     local v1 = node.style["grid-column"] or {}
-    --     local v2 = v1[1] or {}
-    --     local v3 = v2.value or 0
-    --     local v1 = node.style["grid-row"] or {}
-    --     local v2 = v1[1] or {}
-    --     local v3 = v2.value or 0
-    --     local v1 = node.style["grid-row"] or {}
-    --     local v2 = v1[1] or {}
-    --     local v3 = v2.value or 0
-    --     i = i + 1
-    -- end
-    -- flame.pop()
-
-    -- flame.new("renderGridBlock_placement2")
-    -- local len = #ast.nodes
-    -- if gridFfiEls == nil or len > gridFfiLen then
-    --     while len > gridFfiLen do
-    --         gridFfiLen = gridFfiLen * 2
-    --     end
-    --     gridFfiEls = ffi.new("GridInputElement[?]", gridFfiLen)
-    -- end
-    -- -- flame.pop()
-    -- -- flame.new("renderGridBlock_placement2_copy")
-    -- local i = 0
-    -- for node in ast:childIter() do
-    --     -- gridFfiEls[i - 1].index = i
-    --     gridFfiEls[i].row = node:firstStyleValue("grid-row", 0)
-    --     gridFfiEls[i].column = node:firstStyleValue("grid-column", 0)
-    --     gridFfiEls[i].rowSize = node:firstStyleValue("grid-row", 0)
-    --     gridFfiEls[i].columnSize = node:firstStyleValue("grid-row", 0)
-    --     i = i + 1
-    -- end
-    -- -- flame.pop()
-    -- -- flame.new("renderGridBlock_placement2_final")
-    -- local ret = gridSo.gridPlace(gridFfiEls, len)
-    -- flame.pop()
-    -- avg   = avg + ret.time
-    -- count = count + 1
-    -- print(avg / count)
-    -- print(len)
-    -- print(ret.maxColumns .. ", " .. ret.maxRows)
 
     -- the plan is basically to arrange the grid elements in the places that
     -- they absolutely have to be (eg grid-row or grid-column specified)
@@ -1015,6 +922,8 @@ function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, start
             if v ~= nil then
                 extra.trace:appendBoxBelow(dbg.traceBreak(i .. ""), false)
                 extra.trace:appendBoxBelow(v[1]:render(true), false)
+                extra.trace:appendBoxBelow(dbg.traceBreak(v[1].renderAlign),
+                    false)
             else
                 extra.trace:appendBoxBelow(dbg.traceBreak(i .. ""), false)
                 local box = b.Box:new()
