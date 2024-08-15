@@ -15,6 +15,10 @@ local nilAst = nil
 
 local ids = 0
 
+---@class Banana.RouteParams
+---@field selfNode Banana.Ast
+---@field params { [string]: string }
+
 ---@type Banana.Instance[]
 local instances = {}
 
@@ -201,6 +205,12 @@ function Instance:_attachAutocmds()
             if args.buf == self.bufnr then
                 self.isVisible = false
             end
+        end,
+    })
+    vim.api.nvim_create_autocmd({ "VimResized" }, {
+        group = self.augroup,
+        callback = function (args)
+            self:_requestRender()
         end,
     })
 end
@@ -454,6 +464,8 @@ function Instance:_createWinAndBuf()
     local containerHeight = vim.o.lines
     local width = vim.o.columns - 8 * 2
     local height = vim.o.lines - 3 * 2 - 4
+    local left = 8
+    local top = 3
     if self.ast.tag == "nml" then
         self.ast:_resolveUnits(containerWidth, containerHeight)
         if self.ast.style["width"] ~= nil then
@@ -463,6 +475,18 @@ function Instance:_createWinAndBuf()
         if self.ast.style["height"] ~= nil then
             height = self.ast.style.height[1].value.computed
             ---@cast height number
+        end
+        if self.ast.style.left ~= nil then
+            left = self.ast.style.left[1].value.computed
+        elseif self.ast.style.right ~= nil then
+            left = containerWidth - self.ast.style.right[1].value.computed -
+                width
+        end
+        if self.ast.style.top ~= nil then
+            top = self.ast.style.top[1].value.computed
+        elseif self.ast.style.bottom ~= nil then
+            top = containerHeight - self.ast.style.bottom[1].value.computed -
+                height
         end
     end
 
@@ -477,20 +501,6 @@ function Instance:_createWinAndBuf()
 
 
     if self.winid == nil or not vim.api.nvim_win_is_valid(self.winid) then
-        local left = 8
-        local top = 3
-        if self.ast.style.left ~= nil then
-            left = self.ast.style.left[1].value.computed
-        elseif self.ast.style.right ~= nil then
-            left = containerWidth - self.ast.style.right[1].value.computed -
-                width
-        end
-        if self.ast.style.top ~= nil then
-            top = self.ast.style.top[1].value.computed
-        elseif self.ast.style.bottom ~= nil then
-            top = containerHeight - self.ast.style.bottom[1].value.computed -
-                height
-        end
         self.winid = vim.api.nvim_open_win(self.bufnr, true, {
             relative = "editor",
             width = width,
@@ -508,8 +518,25 @@ function Instance:_createWinAndBuf()
             vim.api.nvim_set_option_value(k, v, { win = self.winid })
         end
     else
-        width = vim.api.nvim_win_get_width(self.winid)
-        height = vim.api.nvim_win_get_height(self.winid)
+        if width ~= vim.api.nvim_win_get_width(self.winid) then
+            vim.api.nvim_win_set_width(self.winid, width)
+        end
+        if height ~= vim.api.nvim_win_get_height(self.winid) then
+            vim.api.nvim_win_set_height(self.winid, height)
+        end
+        local conf = vim.api.nvim_win_get_config(self.winid)
+        local change = false
+        if left ~= conf.col then
+            conf.col = left
+            change = true
+        end
+        if top ~= conf.row then
+            conf.row = top
+            change = true
+        end
+        if change then
+            vim.api.nvim_win_set_config(self.winid, conf)
+        end
     end
 
     return width, height
@@ -787,9 +814,13 @@ end
 ---Loads a partial nml file at {file} to be the content of the ast
 ---@param file string
 ---@param ast Banana.Ast
----@param preserve boolean? Whether to clone the ast, default false.
-function Instance:loadNmlTo(file, ast, preserve)
+---@param remove boolean? Whether to remove all the child elements, default true
+---@param preserve boolean? Whether to not clone the ast, default false.
+function Instance:loadNmlTo(file, ast, remove, preserve)
     preserve = preserve or false
+    if remove == nil then
+        remove = true
+    end
     local sides = vim.split(file, "?", {
         plain = true,
     })
@@ -798,8 +829,11 @@ function Instance:loadNmlTo(file, ast, preserve)
     if not preserve then
         content = content:clone()
     end
-    ast:removeChildren()
+    if remove then
+        ast:removeChildren()
+    end
     ast:appendNode(content)
+    -- save styles for scoped styles
     self.foreignStyles[content] = rules
     ---@type { [string]: string }
     local params = {}
@@ -811,7 +845,8 @@ function Instance:loadNmlTo(file, ast, preserve)
     end
     for _, script in ipairs(scripts) do
         self:_runScript(script, {
-            params = params
+            params = params,
+            selfNode = content,
         })
     end
     self:_requestRender()
