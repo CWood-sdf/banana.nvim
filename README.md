@@ -248,6 +248,18 @@ There is a lot of work still to be done. If you want to help out, the primary ar
 
 If you have a css/html feature that you really want implemented, post it in an issue and I will see what I can do. However, there are currently no plans to support jsx or the like because it will add a massive amount of complexity (in plugin dev's dx (lsp), my sanity (and dx), and probably the end user's experience too (perf issues)).
 
+### Current roadmap
+
+#### v0.1
+
+Finish the grid renderer
+
+#### v0.2
+
+Rework how pages are used
+
+Gradient support
+
 ## Final notes
 
 As you can probably tell, this plugin is nowhere close to being done. If you would like to contribute to this plugin, by all means please do. If you don't want to contribute, but still find this project interesting, then give it a star. If you want to follow the progress, then "watch" it on github.
