@@ -73,12 +73,12 @@ local TagInfo = {
 ---@param extra Banana.Renderer.ExtraInfo
 ---@return Banana.Box
 function TagInfo:renderRoot(ast, startHl, winWidth, winHeight, inherit, extra)
-    flame.new("renderRoot")
+    -- flame.new("renderRoot")
     log.trace("TagInfo:renderRoot")
     local ret = self:render(ast, startHl, winWidth, winHeight, 1, 1, inherit,
         extra)
     -- flame.expect("renderRoot")
-    flame.pop()
+    -- flame.pop()
     return ret
 end
 
@@ -119,7 +119,7 @@ function TagInfo:blockIter(ast, parentHl, parentWidth, parentHeight, startX,
         if i > #ast.nodes then
             return nil
         end
-        flame.new("TagInfo:blockIter")
+        -- flame.new("TagInfo:blockIter")
         local oldI = i
         local render = nil
         if ast:firstStyleValue("display") == "flex" then
@@ -139,7 +139,7 @@ function TagInfo:blockIter(ast, parentHl, parentWidth, parentHeight, startX,
                 startX, startY, inherit, extra)
         end
         startY = startY + render:height()
-        flame.pop()
+        -- flame.pop()
         return oldI, render, i - oldI
     end
 end
@@ -166,12 +166,12 @@ end
 ---@param hl Banana.Highlight?
 ---@return Banana.Box, Banana.Box
 local function splitLineBoxOnce(targetWidth, box, hl)
-    flame.new("splitLineBoxOnce")
+    -- flame.new("splitLineBoxOnce")
     if targetWidth < 1 then
         targetWidth = 1
     end
     if box:width() < targetWidth then
-        flame.pop()
+        -- flame.pop()
         return box, b.Box:new(hl)
     end
     -- if targetWidth == 0 then
@@ -205,7 +205,7 @@ local function splitLineBoxOnce(targetWidth, box, hl)
         right:appendWord(box:getLine(1)[i])
         i = i + 1
     end
-    flame.pop()
+    -- flame.pop()
     return left, right
 end
 
@@ -228,17 +228,17 @@ end
 ---@param hl Banana.Highlight?
 ---@return Banana.Box, Banana.Box?
 local function handleOverflow(ast, i, currentLine, append, maxWidth, hl)
-    flame.new("handleOverflow")
+    -- flame.new("handleOverflow")
     -- if currentLine:height() == 0 then
     --     currentLine:appendStr("", nil)
     -- end
     if currentLine:width() + append:width() <= maxWidth then
         currentLine:append(append, nil)
-        flame.pop()
+        -- flame.pop()
         return currentLine, nil
     end
     if append:height() ~= 1 or not breakable(ast.nodes[i]) then
-        flame.pop()
+        -- flame.pop()
         return currentLine, append
     end
     if currentLine:height() > 1 then
@@ -508,7 +508,7 @@ function TagInfo:renderGridBlock(ast, parentHl, parentWidth, parentHeight, start
     ---@field startColumn number
     ---@field startRow number
 
-    flame.new("renderGridBlock_placement")
+    -- flame.new("renderGridBlock_placement")
 
     ---Essentially we want to render things such that resize is minimized
     ---obv anything inside a definite row/col is fine
@@ -661,7 +661,7 @@ function TagInfo:renderGridBlock(ast, parentHl, parentWidth, parentHeight, start
         insert(preRenderTakenMatrix[column][row], i)
         j = j + 2
     end
-    flame.pop()
+    -- flame.pop()
 
     flame.new("renderGridBlock_makeTemplates")
     ---@type Banana.Renderer.GridTemplate[]

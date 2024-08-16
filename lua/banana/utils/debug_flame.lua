@@ -55,9 +55,9 @@ function M.new(name, skipLog)
     end
     recordTime()
     table.insert(flameStack, name)
-    startTime()
     flameCounts[name] = flameCounts[name] or 0
     flameCounts[name] = flameCounts[name] + 1
+    startTime()
 end
 
 function M.expect(name)

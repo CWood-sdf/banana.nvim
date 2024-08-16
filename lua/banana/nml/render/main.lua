@@ -41,7 +41,7 @@ end
 ---@return Banana.Renderer.PartialRendered
 return function (self, ast, parentHl, parentWidth, parentHeight, startX, startY,
                  inherit, extra)
-    flame.new("getRendered_start")
+    -- flame.new("getRendered_start")
     ast.relativeBoxId = nil
     local inheritOld = {}
     for k, _ in pairs(inherit) do
@@ -69,7 +69,7 @@ return function (self, ast, parentHl, parentWidth, parentHeight, startX, startY,
         for k, _ in pairs(inheritOld) do
             inherit[k] = inheritOld[k]
         end
-        flame.pop()
+        -- flame.pop()
         return p.emptyPartialRendered()
     end
     local disp = ast:firstStyleValue("display")
@@ -77,7 +77,7 @@ return function (self, ast, parentHl, parentWidth, parentHeight, startX, startY,
         for k, _ in pairs(inheritOld) do
             inherit[k] = inheritOld[k]
         end
-        flame.pop()
+        -- flame.pop()
         return p.emptyPartialRendered()
     end
     if ast:hasStyle("width") then
@@ -313,6 +313,6 @@ return function (self, ast, parentHl, parentWidth, parentHeight, startX, startY,
     for k, _ in pairs(inheritOld) do
         inherit[k] = inheritOld[k]
     end
-    flame.pop()
+    -- flame.pop()
     return ret
 end

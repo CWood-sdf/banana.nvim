@@ -17,7 +17,7 @@
         grid-row: 2;
         hl-bold: false;
         hl-italic: true;
-        grid-column: 1;
+        grid-column: 1 / span 2;
       }
       .grid > * > * {
         hl-fg: blue;

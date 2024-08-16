@@ -118,7 +118,7 @@ log.new = function (config, standalone)
         if level < levels[config.level] then
             return
         end
-        flame.new("ignore", true)
+        flame.new("log", true)
         local nameupper = level_config.name:upper()
 
         local msg = message_maker(...)
