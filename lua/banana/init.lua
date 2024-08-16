@@ -1,5 +1,10 @@
+local counterInst = nil
+local todoInst = nil
+local instance = nil
+local inst = nil
 ---@module 'banana.instance'
-local Instance = require('banana.lazyRequire')('banana.instance')
+local render = require("banana.lazyRequire")("banana.instance")
+local ffi = require("ffi")
 
 ---@class Banana
 ---@field newInstance function
@@ -9,20 +14,13 @@ local Instance = require('banana.lazyRequire')('banana.instance')
 ---@field listInstanceIds function
 ---@field examples table
 local M = {
-    newInstance = Instance.newInstance,
-    emptyInstance = Instance.emptyInstance,
-    getInstance = Instance.getInstance,
-    getNilAst = Instance.getNilAst,
-    listInstanceIds = Instance.listInstanceIds,
+    newInstance = render.newInstance,
+    emptyInstance = render.emptyInstance,
+    getInstance = render.getInstance,
+    getNilAst = render.getNilAst,
+    listInstanceIds = render.listInstanceIds,
 }
 
-local counterInst = nil
-local todoInst = nil
-local instance = nil
-local inst = nil
----@module 'banana.instance'
-local render = require("banana.lazyRequire")("banana.instance")
-local ffi = require("ffi")
 
 local tsInit = false
 local tsInstall = false
@@ -32,7 +30,7 @@ local tsInstall = false
 ---@field runTodo function
 ---@field runLazy function
 M.examples = {
-    runCounter = function()
+    runCounter = function ()
         if counterInst == nil then
             counterInst = M.newInstance("examples/counter", "asdf")
             -- instance.DEBUG = true
@@ -40,7 +38,7 @@ M.examples = {
         counterInst:open()
     end,
 
-    runTodo = function()
+    runTodo = function ()
         if todoInst == nil then
             todoInst = M.newInstance("examples/todo", "asdf")
             -- instance.DEBUG = true
@@ -48,7 +46,7 @@ M.examples = {
         todoInst:open()
     end,
 
-    runLazy = function()
+    runLazy = function ()
         if instance == nil then
             instance = M.newInstance("examples/lazy", "")
             -- instance.DEBUG = true
@@ -59,6 +57,7 @@ M.examples = {
         instance:_requestRender()
     end,
 }
+
 M.test = {
     grid = function ()
         -- print(jit.status())
@@ -84,32 +83,6 @@ M.test = {
         inst:open()
     end
 }
-
-M.runCounter = function ()
-    if counterInst == nil then
-        counterInst = render.newInstance("examples/counter", "asdf")
-        -- instance.DEBUG = true
-    end
-    counterInst:open()
-end
-M.runTodo = function ()
-    if todoInst == nil then
-        todoInst = render.newInstance("examples/todo", "asdf")
-        -- instance.DEBUG = true
-    end
-    todoInst:open()
-end
-
-M.runLazy = function ()
-    if instance == nil then
-        instance = render.newInstance("examples/lazy", "")
-        -- instance.DEBUG = true
-        -- instance.DEBUG_showPerf = true
-        -- instance.DEBUG_stressTest = true
-    end
-    instance:open()
-    instance:_requestRender()
-end
 
 function M.spam()
     local testFile = [[
@@ -184,7 +157,6 @@ function M.initTsParsers()
         },
         filetype = "ncss",
     }
-    vim.treesitter.language.register("ncss", "ncss")
 end
 
 return M
