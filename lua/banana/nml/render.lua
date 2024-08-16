@@ -360,8 +360,9 @@ end
 ---@param start number
 ---@param min number
 ---@param isCol boolean
+---@param ast Banana.Ast
 ---@return Banana.Renderer.GridTemplate[]
-local function getTemplates(values, sizeInDirection, start, min, isCol)
+local function getTemplates(values, sizeInDirection, start, min, isCol, ast)
     ---@type Banana.Renderer.GridTemplate[]
     local ret = {}
     local takenSize = 0
@@ -369,6 +370,7 @@ local function getTemplates(values, sizeInDirection, start, min, isCol)
     ---@type number[]
     local frs = {}
     local i = 1
+    local definedHeight = ast:hasStyle("height")
     while i <= math.max(min, #values) do
         local v = values[i]
         if v ~= nil then
@@ -396,7 +398,10 @@ local function getTemplates(values, sizeInDirection, start, min, isCol)
             totalFrs = totalFrs + 1
             table.insert(frs, i)
             table.insert(ret, {})
-        else
+        elseif definedHeight then
+            totalFrs = totalFrs + 1
+            table.insert(frs, i)
+            table.insert(ret, {})
         end
         i = i + 1
     end
@@ -519,17 +524,6 @@ function TagInfo:renderGridBlock(ast, parentHl, parentWidth, parentHeight, start
     local preRenderTakenMatrix = {}
 
     local maxRow = 0
-
-    -- NOTE: New notes after some more research
-    -- 1. grid-column has equal precedence to nothing
-    -- 2. grid-row has more precedence
-    -- 3. explicit has most
-    -- 4. i think these rules on row vs column invert via grid-auto-flow
-    -- 5. frs dont distribute available space, but they are responsive to incorrect sizes (pcts arent)
-    -- 6. when grid has height defined, implicit rows have 1fr height unless otherwise said
-    -- 7. the placement cursor follows the previous element (aka when grid-column
-    -- is defined, then moved to a different place, the cursor doesnt reset)
-    -- (this can leave empty spaces in grid)
 
     -- using one array instead of two i believe reduces reallocs
     ---@type (Banana.Ast|number)[]
@@ -677,9 +671,9 @@ function TagInfo:renderGridBlock(ast, parentHl, parentWidth, parentHeight, start
 
     local cols = ast:allStylesFor("grid-template-columns") or {}
     columnTemplates = getTemplates(cols, parentWidth, startX,
-        #preRenderTakenMatrix, true)
+        #preRenderTakenMatrix, true, ast)
     local rows = ast:allStylesFor("grid-template-rows") or {}
-    rowTemplates = getTemplates(rows, parentHeight, startY, maxRow, false)
+    rowTemplates = getTemplates(rows, parentHeight, startY, maxRow, false, ast)
     local columnLimit = 5000
     local rowLimit = 10000
     if #columnTemplates > columnLimit then
@@ -749,8 +743,6 @@ function TagInfo:renderGridBlock(ast, parentHl, parentWidth, parentHeight, start
     ---@field ast Banana.Ast
     ---@field rowStart number
     ---@field colStart number
-
-    -- TODO: Need a loop to determine implicit column count/implicit row count
 
     -- flame.new("renderGridBlock_renderLoop")
     ---@type Banana.Renderer.GridRenderItem[]

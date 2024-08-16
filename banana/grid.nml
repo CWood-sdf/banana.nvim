@@ -7,6 +7,7 @@
         hl-bg: green;
         hl-fg: black;
         hl-italic: false;
+        height: 50%;
       }
       .grid > div {
         hl-bg: red;
@@ -16,6 +17,7 @@
         grid-row: 2;
         hl-bold: false;
         hl-italic: true;
+        grid-column: 1;
       }
       .grid > * > * {
         hl-fg: blue;
