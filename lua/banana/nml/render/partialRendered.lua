@@ -122,7 +122,7 @@ function PartialRendered:render(clone)
     --     print("has clone, ignoring")
     --     return b.Box:new(nil)
     -- end
-    -- flame.new("PartialRendered:render")
+    flame.new("PartialRendered:render")
     clone = clone or false
     if clone then
         -- if not require("banana.utils.debug").isdev() then
@@ -133,7 +133,7 @@ function PartialRendered:render(clone)
             __index = PartialRendered,
         })
         new.center = self.center:clone()
-        -- flame.pop()
+        flame.pop()
         return new:render()
     end
     local box = self.center
@@ -177,7 +177,7 @@ function PartialRendered:render(clone)
     end
     box = self:padWith(box, self.padding, self.mainColor)
     box = self:padWith(box, self.margin, self.marginColor)
-    -- flame.pop()
+    flame.pop()
     return box
 end
 
@@ -185,7 +185,7 @@ end
 ---@param ast Banana.Ast
 ---@return boolean
 function PartialRendered:applyPad(name, ast)
-    -- flame.new("applyPad")
+    flame.new("applyPad")
     local changed = false
     if ast[name][_ast.left].computed ~= 0 then
         self[name].left = ast[name][_ast.left].computed
@@ -203,7 +203,7 @@ function PartialRendered:applyPad(name, ast)
         self[name].bottom = ast[name][_ast.bottom].computed
         changed = true
     end
-    -- flame.pop()
+    flame.pop()
     return changed
 end
 

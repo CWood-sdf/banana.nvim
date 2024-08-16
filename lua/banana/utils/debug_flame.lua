@@ -26,7 +26,7 @@ local flameStarts = {}
 ---@type { [string]: number }
 local flameCounts = {}
 
-local function recordTime()
+local function recordTime(time)
     local flame = flameStack[#flameStack]
     if flame == nil then
         return
@@ -36,15 +36,15 @@ local function recordTime()
     end
     flameTimes[flame] = flameTimes[flame] or 0
     flameTimes[flame] = flameTimes[flame] - flameStarts[flame] +
-        vim.loop.hrtime()
+        time
 end
 
-local function startTime()
+local function startTime(time)
     local flame = flameStack[#flameStack]
     if flame == nil then
         return
     end
-    flameStarts[flame] = vim.loop.hrtime()
+    flameStarts[flame] = time
 end
 
 ---@param name string
@@ -53,11 +53,12 @@ function M.new(name, skipLog)
     if not skipLog then
         log.trace("flame:new " .. name)
     end
-    recordTime()
+    local switchTime = vim.loop.hrtime() / 1000
+    recordTime(switchTime)
     table.insert(flameStack, name)
+    startTime(switchTime)
     flameCounts[name] = flameCounts[name] or 0
     flameCounts[name] = flameCounts[name] + 1
-    startTime()
 end
 
 function M.expect(name)
@@ -80,9 +81,10 @@ function M.pop(skipLog)
         print("flamestack empty!")
         return
     end
-    recordTime()
+    local switchTime = vim.loop.hrtime() / 1000
+    recordTime(switchTime)
     table.remove(flameStack)
-    startTime()
+    startTime(switchTime)
 end
 
 ---@param unit? "millis"|"micros"|"nanos"|"s"|"pct"
@@ -97,11 +99,11 @@ function M.getFlames(unit, filter, per)
     end
     local div = 1
     if unit == "millis" then
-        div = 1e6
-    elseif unit == "micros" then
         div = 1e3
+    elseif unit == "micros" then
+        div = 1e0
     elseif unit == "s" then
-        div = 1e9
+        div = 1e6
     end
     local ret = {}
     local total = 0

@@ -2,3 +2,4 @@ log
 bin/
 .tests/
 dev.lua
+.zig-cache

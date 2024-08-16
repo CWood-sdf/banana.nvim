@@ -135,17 +135,17 @@ end
 ---@return Banana.Ncss.StyleValueType
 ---@overload fun(self: Banana.Ast, style: string): Banana.Ncss.StyleValueType?
 function M.Ast:firstStyleValue(style, default)
-    -- flame.new("Ast:firstStyleValue")
+    flame.new("Ast:firstStyleValue")
     local val = self:firstStyle(style)
     if val == nil and default ~= nil then
-        -- flame.pop()
+        flame.pop()
         return default
     end
     if val == nil then
-        -- flame.pop()
+        flame.pop()
         return nil
     end
-    -- flame.pop()
+    flame.pop()
     return val.value
 end
 
@@ -565,7 +565,7 @@ end
 ---@param parentHl Banana.Highlight?
 ---@return Banana.Highlight
 function M.Ast:_mixHl(parentHl)
-    -- flame.new("Ast:_mixHl")
+    flame.new("Ast:_mixHl")
     local ret = {}
 
     for k, v in pairs(self.hl or {}) do
@@ -576,7 +576,7 @@ function M.Ast:_mixHl(parentHl)
             ret[k] = v
         end
     end
-    -- flame.pop()
+    flame.pop()
     return ret
 end
 
@@ -646,9 +646,9 @@ end
 ---@param parentHeight number
 ---@param extras? number[]
 function M.Ast:_resolveUnits(parentWidth, parentHeight, extras)
-    -- flame.new("Ast:resolveUnits")
+    flame.new("Ast:resolveUnits")
     extras = extras or {}
-    -- flame.new("Ast:resolveUnits_marg")
+    flame.new("Ast:resolveUnits_marg")
     for i, v in ipairs(self.margin) do
         if i % 2 == 1 then
             M.calcUnitInPlace(v, parentWidth, extras)
@@ -663,7 +663,7 @@ function M.Ast:_resolveUnits(parentWidth, parentHeight, extras)
             M.calcUnitInPlace(v, parentHeight, extras)
         end
     end
-    -- flame.pop()
+    flame.pop()
     self:_computeUnitFor("list-base-width", parentWidth, extras)
     self:_computeUnitFor("width", parentWidth, extras)
     self:_computeUnitFor("height", parentHeight, extras)
@@ -672,7 +672,7 @@ function M.Ast:_resolveUnits(parentWidth, parentHeight, extras)
     self:_computeUnitFor("left", parentWidth, extras)
     self:_computeUnitFor("right", parentWidth, extras)
     self:_computeUnitFor("flex-basis", parentWidth, extras)
-    -- flame.pop()
+    flame.pop()
 end
 
 function M.Ast:_applyInlineStyleDeclarations()
@@ -946,16 +946,16 @@ end
 function M.Ast:childIter()
     local i = 0
     return function ()
-        -- flame.new("Ast:childIter")
+        flame.new("Ast:childIter")
         i = i + 1
         while type(self.nodes[i]) ~= "table" do
             i = i + 1
             if i > #self.nodes then
-                -- flame.pop()
+                flame.pop()
                 return nil
             end
         end
-        -- flame.pop()
+        flame.pop()
         ---@diagnostic disable-next-line: return-type-mismatch
         return self.nodes[i]
     end
