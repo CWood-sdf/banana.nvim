@@ -11,9 +11,17 @@
     },
     {
       "name": "run",
-      "cmd": "nvim -c \"lua vim.defer_fn(function() require('banana').runLazy() end, 500)\"",
+      "cmd": "nvim -c \"lua vim.defer_fn(function() require('banana').test.grid() end, 500)\"",
       "window": {
         "name": "ook",
+        "close": true
+      }
+    },
+    {
+      "name": "debug",
+      "cmd": "nvim -c \"lua vim.defer_fn(function()require('osv').launch({ port = 8086 }) end, 200)\"",
+      "window": {
+        "name": "ookd",
         "close": true
       }
     }

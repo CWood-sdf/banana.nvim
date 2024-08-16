@@ -1,16 +1,16 @@
 ---@module 'banana.utils.log'
-local log = require('banana.lazyRequire')('banana.utils.log')
+local log = require("banana.lazyRequire")("banana.utils.log")
 ---@alias Banana.Ncss.PropertyValidation.Type string|Banana.Ncss.StyleValue.Types
 
 ---@class (exact) Banana.Ncss.PropertyValidation
----@field validations? { [integer]: Banana.Ncss.PropertyValidation.Type[][] }
+---@field validations? { [integer|"*"]: Banana.Ncss.PropertyValidation.Type[][] }
 ---@field custom? fun(value: Banana.Ncss.StyleValue[]): boolean
 local Validation = {
 
 }
 
 
----@param val { [integer]: Banana.Ncss.PropertyValidation.Type[][] }|fun(value: Banana.Ncss.StyleValue[]): boolean
+---@param val { [integer|"*"]: Banana.Ncss.PropertyValidation.Type[][] }|fun(value: Banana.Ncss.StyleValue[]): boolean
 ---@return Banana.Ncss.PropertyValidation
 function Validation:new(val)
     -- PERF: Possible optimization: store things in map instead of array
@@ -20,8 +20,8 @@ function Validation:new(val)
     if type(val) == "table" then
         for k, v in pairs(val) do
             for _, y in ipairs(v) do
-                if #y ~= k then
-                    log.assert(false,
+                if #y ~= k and k ~= "*" then
+                    log.throw(
                         "Validation does not have the proper size")
                     error("")
                 end
@@ -49,12 +49,18 @@ function Validation:passes(value, name)
         return self.custom(value)
     end
     local validations = self.validations[#value]
+    local isStar = false
     if validations == nil then
-        log.assert(false,
-            "No validation for size " .. #value .. " exists for property '" .. name .. "'")
+        validations = self.validations["*"]
+        isStar = true
+    end
+    if validations == nil then
+        log.throw(
+            "No validation for size " ..
+            #value .. " exists for property '" .. name .. "'")
         error("")
     end
-    for _, v in pairs(validations) do
+    for _, v in ipairs(validations) do
         local passes = true
         for i, tp in ipairs(v) do
             if tp:sub(1, 1) == "|" then
@@ -103,7 +109,7 @@ local function isBool(a)
     return #a == 1 and a[1].type == "boolean"
 end
 local boolValid = Validation:new(isBool)
-local marginValid = Validation:new(function(a)
+local marginValid = Validation:new(function (a)
     if #a ~= 1 and #a ~= 2 and #a ~= 4 then
         return false
     end
@@ -116,7 +122,7 @@ local marginValid = Validation:new(function(a)
 end)
 
 
-local singleUnit          = Validation:new(function(a)
+local singleUnit          = Validation:new(function (a)
     return #a == 1 and a[1].type == "unit"
 end)
 -- local singlePlain         = Validation:new({ [1] = { { "plain" } } })
@@ -131,50 +137,59 @@ local function explicit(...)
     end
     return Validation:new({ [1] = arr })
 end
----@type { [string]: Banana.Ncss.PropertyValidation }
+---@type { [string]: Banana.Ncss.PropertyValidation|string }
 local validations = {
-    ['hl-underline'] = boolValid,
-    ['hl-italic'] = boolValid,
-    ['hl-bold'] = boolValid,
-    ['hl-fg'] = Validation:new({ [1] = { { "color" }, { "plain" } } }),
-    ['hl-bg'] = Validation:new({ [1] = { { "color" }, { "plain" } } }),
-    ['hl-link'] = singleStringOrPlain,
-    ['hl-__name'] = singleStringOrPlain,
-    ['list-style-type'] = Validation:new({ [1] = { { "string" } } }),
+    ["hl-underline"] = boolValid,
+    ["hl-italic"] = boolValid,
+    ["hl-bold"] = boolValid,
+    ["hl-fg"] = Validation:new({ [1] = { { "color" }, { "plain" } } }),
+    ["hl-bg"] = Validation:new({ [1] = { { "color" }, { "plain" } } }),
+    ["hl-link"] = singleStringOrPlain,
+    ["hl-__name"] = singleStringOrPlain,
+    ["list-style-type"] = Validation:new({ [1] = { { "string" } } }),
     -- ['list-base-width'] = singleUnit,
-    ['width'] = singleUnit,
-    ['height'] = singleUnit,
-    ['display'] = explicit("flex", "inherit", "initial", "none"),
-    ['flex-basis'] = singleUnit,
-    ['flex-shrink'] = singleNumber,
-    ['flex-grow'] = singleNumber,
-    ['flex-wrap'] = explicit("wrap", "nowrap"),
-    ['text-align'] = explicit("left", "right", "center", "initial", "inherit"),
+    ["width"] = singleUnit,
+    ["height"] = singleUnit,
+    ["display"] = explicit("grid", "flex", "inherit", "initial", "none"),
+    ["flex-basis"] = singleUnit,
+    ["flex-shrink"] = singleNumber,
+    ["flex-grow"] = singleNumber,
+    ["flex-wrap"] = explicit("wrap", "nowrap"),
+    ["text-align"] = explicit("left", "right", "center", "initial", "inherit"),
 
-    ['position'] = explicit("absolute", "static", "relative", "inherit", "initial"),
-    ['z-index'] = singleInt,
-    ['left'] = singleUnit,
-    ['right'] = singleUnit,
-    ['top'] = singleUnit,
-    ['bottom'] = singleUnit,
+    ["grid-template-columns"] = Validation:new({ ["*"] = { { "unit" } } }),
+    ["grid-template-rows"] = Validation:new({ ["*"] = { { "unit" } } }),
+    ["grid-row"] = Validation:new({ [1] = { { "integer" } }, [2] = { { "integer", "integer" } } }),
+    ["grid-column"] = "grid-row",
 
-    ['padding'] = marginValid,
-    ['padding-left'] = singleUnit,
-    ['padding-right'] = singleUnit,
-    ['padding-top'] = singleUnit,
-    ['padding-bottom'] = singleUnit,
+    ["position"] = explicit("absolute", "static", "relative", "inherit",
+        "initial"),
+    ["z-index"] = singleInt,
+    ["left"] = singleUnit,
+    ["right"] = singleUnit,
+    ["top"] = singleUnit,
+    ["bottom"] = singleUnit,
 
-    ['margin'] = marginValid,
-    ['margin-left'] = singleUnit,
-    ['margin-right'] = singleUnit,
-    ['margin-top'] = singleUnit,
-    ['margin-bottom'] = singleUnit,
+    ["padding"] = marginValid,
+    ["padding-left"] = singleUnit,
+    ["padding-right"] = singleUnit,
+    ["padding-top"] = singleUnit,
+    ["padding-bottom"] = singleUnit,
+
+    ["margin"] = marginValid,
+    ["margin-left"] = singleUnit,
+    ["margin-right"] = singleUnit,
+    ["margin-top"] = singleUnit,
+    ["margin-bottom"] = singleUnit,
 }
 return {
-    validate = function(name, value)
+    validate = function (name, value)
         local validation = validations[name]
+        while type(validation) == "string" do
+            validation = validations[validation]
+        end
         if validation == nil then
-            log.assert(false,
+            log.throw(
                 "Unable to validate property '" .. name .. "'")
             error("")
         end

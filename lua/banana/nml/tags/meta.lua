@@ -1,9 +1,9 @@
 ---@module 'banana.utils.debug_flame'
-local flame = require('banana.lazyRequire')('banana.utils.debug_flame')
+local flame = require("banana.lazyRequire")("banana.utils.debug_flame")
 ---@module 'banana.utils.log'
-local log = require('banana.lazyRequire')('banana.utils.log')
+local log = require("banana.lazyRequire")("banana.utils.log")
 ---@module 'banana.nml.render'
-local t = require('banana.lazyRequire')('banana.nml.render')
+local t = require("banana.lazyRequire")("banana.nml.render")
 ---@param str string
 ---@param other string
 ---@return boolean
@@ -14,16 +14,16 @@ end
 ---@type Banana.Renderer
 local function renderer(_, ast)
     flame.new("tag:meta")
-    local inst = require('banana.instance').getInstance(ast.instance)
+    local inst = require("banana.instance").getInstance(ast.instance)
     local name = ast:getAttribute("name")
     if name == nil then
-        log.assert(false,
+        log.throw(
             "Expected a name attribute on a meta tag")
         error("")
     end
     local value = ast:getAttribute("value")
     if value == nil then
-        log.assert(false,
+        log.throw(
             "Expected a value attribute on a meta tag")
         error("")
     end
@@ -35,7 +35,7 @@ local function renderer(_, ast)
     else
         error("Unknown option '" .. name .. "'")
     end
-    local b = require('banana.box')
+    local b = require("banana.box")
     ---@type Banana.Box
     local ret = b.Box:new()
     flame.pop()
@@ -43,11 +43,11 @@ local function renderer(_, ast)
 end
 ---@type Banana.TagInfo
 local M = t.newTag(
-    'meta',
+    "meta",
     t.FormatType.Inline,
     true,
     renderer,
-    require('banana.nml.render').defaultInitials()
+    require("banana.nml.render").defaultInitials()
 )
 
 return M

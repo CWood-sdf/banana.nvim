@@ -1,10 +1,10 @@
 ---@module 'banana.utils.debug_flame'
-local flame = require('banana.lazyRequire')('banana.utils.debug_flame')
+local flame = require("banana.lazyRequire")("banana.utils.debug_flame")
 ---@module 'banana.utils.log'
-local log = require('banana.lazyRequire')('banana.utils.log')
+local log = require("banana.lazyRequire")("banana.utils.log")
 local M = {}
 ---@module 'banana.utils.string'
-local _str = require('banana.lazyRequire')('banana.utils.string')
+local _str = require("banana.lazyRequire")("banana.utils.string")
 
 M.left = 1
 M.top = 2
@@ -37,6 +37,7 @@ M.padNames = { "left", "top", "right", "bottom" }
 ---@field relativeBoxId? number
 ---@field relativeBoxes? { box: Banana.Box, left: number, top: number, z: number}[]
 ---@field listCounter? number
+---@field renderCache Banana.Renderer.PartialRendered?
 M.Ast = {
     nodes = {},
     tag = "",
@@ -109,13 +110,24 @@ function M.Ast:new(tag, parent)
     return ast
 end
 
+-- function M.Ast:_clearRenderCache()
+--
+-- end
+
 ---@return Banana.Ncss.StyleValue?
 ---@param style string
 function M.Ast:firstStyle(style)
-    if self.style[style] == nil then
+    local s = self.style[style]
+    if s == nil then
         return nil
     end
-    return self.style[style][1]
+    return s[1]
+end
+
+---@return Banana.Ncss.StyleValue[]?
+---@param style string
+function M.Ast:allStylesFor(style)
+    return self.style[style]
 end
 
 ---@param style string
@@ -123,13 +135,17 @@ end
 ---@return Banana.Ncss.StyleValueType
 ---@overload fun(self: Banana.Ast, style: string): Banana.Ncss.StyleValueType?
 function M.Ast:firstStyleValue(style, default)
+    flame.new("Ast:firstStyleValue")
     local val = self:firstStyle(style)
     if val == nil and default ~= nil then
+        flame.pop()
         return default
     end
     if val == nil then
+        flame.pop()
         return nil
     end
+    flame.pop()
     return val.value
 end
 
@@ -141,7 +157,7 @@ end
 
 function M.Ast:assertHasStyle(style)
     if self:firstStyle(style) == nil then
-        log.assert(false, "needs style")
+        log.throw("needs style")
         error("")
     end
 end
@@ -312,11 +328,11 @@ local function getListItemOl(styleTp, counter)
         return string.lower(M.numToRoman(counter) .. ".")
     end
     if styleTp == "Alpha" then
-        local code = string.byte('A') + counter
+        local code = string.byte("A") + counter
         return string.char(code) .. "."
     end
     if styleTp == "alpha" then
-        local code = string.byte('a') + counter
+        local code = string.byte("a") + counter
         return string.char(code) .. "."
     end
     if _str.codepointLen(styleTp:sub(1, 1)) == #styleTp then
@@ -371,7 +387,7 @@ function M.Ast:_getNextListItem(styleTp, extra)
     if self.listCounter == nil then
         return getListItemUl(styleTp) .. " "
     end
-    local ret        = getListItemOl(styleTp, self.listCounter) .. ' '
+    local ret        = getListItemOl(styleTp, self.listCounter) .. " "
     self.listCounter = self.listCounter + 1
     return ret
 end
@@ -471,7 +487,7 @@ function M.Ast:clone()
         newAst.classes = vim.fn.deepcopy(self.classes)
     end
     newAst.instance = self.instance
-    newAst._parent = require('banana.instance').getNilAst()
+    newAst._parent = require("banana.instance").getNilAst()
     if self.inlineStyle ~= nil then
         newAst.inlineStyle = vim.fn.deepcopy(self.inlineStyle)
     end
@@ -500,7 +516,7 @@ end
 
 ---@param value string
 function M.Ast:setStyle(value)
-    local parsed = require('banana.ncss.parser').parseText(value)
+    local parsed = require("banana.ncss.parser").parseText(value)
     self.inlineStyle = parsed[1].declarations
     self:_requestRender()
 end
@@ -508,8 +524,8 @@ end
 ---@param name string
 ---@param value string
 function M.Ast:setStyleValue(name, value)
-    local text = name .. ": " .. value .. ';'
-    local parsed = require('banana.ncss.parser').parseText(text)
+    local text = name .. ": " .. value .. ";"
+    local parsed = require("banana.ncss.parser").parseText(text)
     local decl = parsed[1].declarations[1]
     local found = false
     for i, v in ipairs(self.inlineStyle) do
@@ -528,7 +544,7 @@ end
 ---@return boolean
 function M.Ast:hasClass(c)
     if self.classes == nil and self.attributes["class"] ~= nil then
-        local arr = vim.split(self.attributes["class"], ' ')
+        local arr = vim.split(self.attributes["class"], " ")
         self.classes = {}
         for _, v in ipairs(arr) do
             self.classes[v] = true
@@ -568,6 +584,7 @@ end
 ---@param parentHl Banana.Highlight?
 ---@return Banana.Highlight
 function M.Ast:_mixHl(parentHl)
+    flame.new("Ast:_mixHl")
     local ret = {}
 
     for k, v in pairs(self.hl or {}) do
@@ -578,55 +595,49 @@ function M.Ast:_mixHl(parentHl)
             ret[k] = v
         end
     end
+    flame.pop()
     return ret
 end
 
--- function M.calcUnit(unit, parentWidth, extras)
---     if unit.unit == "ch" then
---         return unit
---     elseif unit.unit == "%" then
---         local mult = unit.value / 100
---         return {
---             value = math.floor(mult * parentWidth),
---             unit = "ch",
---         }
---     end
---     return unit
---     -- error("Undefined unit '" .. unit.unit .. "'")
--- end
+---@param unit Banana.Ncss.UnitValue
+---@param parentWidth number
+---@param extras number[]
+---@return number
+function M.getComputedValue(unit, parentWidth, extras)
+    if unit.unit == "ch" then
+        return unit.value
+    elseif unit.unit == "fr" then
+        if extras[1] == nil then
+            log.throw("fr unit requires an extra parameter")
+            error("")
+        end
+        local mult = unit.value
+        return math.floor(mult * extras[1])
+    elseif unit.unit == "%" then
+        local mult = unit.value / 100
+        return math.floor(mult * parentWidth)
+    end
+    error("Undefined unit '" .. unit.unit .. "'")
+    return unit.value
+end
 
 ---@param unit Banana.Ncss.UnitValue
 ---@param parentWidth number
 ---@param extras number[]
 ---@return Banana.Ncss.UnitValue
 function M.calcUnitNoMod(unit, parentWidth, extras)
-    if unit.unit == "ch" then
-        return {
-            value = unit.value,
-            unit = unit.unit,
-            computed = unit.value,
-        }
-    elseif unit.unit == "fr" then
-        if extras[1] == nil then
-            log.assert(false, "fr unit requires an extra parameter")
-            error("")
-        end
-        local mult = unit.value
-        return {
-            value = unit.value,
-            computed = math.floor(mult * extras[1]),
-            unit = unit.unit,
-        }
-    elseif unit.unit == "%" then
-        local mult = unit.value / 100
-        return {
-            value = unit.value,
-            computed = math.floor(mult * parentWidth),
-            unit = unit.unit,
-        }
-    end
-    error("Undefined unit '" .. unit.unit .. "'")
-    return unit
+    return {
+        unit = unit.unit,
+        value = unit.value,
+        computed = M.getComputedValue(unit, parentWidth, extras)
+    }
+end
+
+---@param unit Banana.Ncss.UnitValue
+---@param parentWidth number
+---@param extras number[]
+function M.calcUnitInPlace(unit, parentWidth, extras)
+    unit.computed = M.getComputedValue(unit, parentWidth, extras)
 end
 
 function M.Ast:getWidth()
@@ -646,7 +657,7 @@ function M.Ast:_computeUnitFor(prop, basedOn, extras)
     if style ~= nil then
         for i, _ in ipairs(style) do
             ---@diagnostic disable-next-line: param-type-mismatch
-            style[i].value = M.calcUnitNoMod(style[i].value, basedOn, extras)
+            M.calcUnitInPlace(style[i].value, basedOn, extras)
         end
     end
 end
@@ -658,20 +669,22 @@ end
 function M.Ast:_resolveUnits(parentWidth, parentHeight, extras)
     flame.new("Ast:resolveUnits")
     extras = extras or {}
+    flame.new("Ast:resolveUnits_marg")
     for i, v in ipairs(self.margin) do
         if i % 2 == 1 then
-            self.margin[i] = M.calcUnitNoMod(v, parentWidth, extras)
+            M.calcUnitInPlace(v, parentWidth, extras)
         else
-            self.margin[i] = M.calcUnitNoMod(v, parentHeight, extras)
+            M.calcUnitInPlace(v, parentHeight, extras)
         end
     end
     for i, v in ipairs(self.padding) do
         if i % 2 == 1 then
-            self.padding[i] = M.calcUnitNoMod(v, parentWidth, extras)
+            M.calcUnitInPlace(v, parentWidth, extras)
         else
-            self.padding[i] = M.calcUnitNoMod(v, parentHeight, extras)
+            M.calcUnitInPlace(v, parentHeight, extras)
         end
     end
+    flame.pop()
     self:_computeUnitFor("list-base-width", parentWidth, extras)
     self:_computeUnitFor("width", parentWidth, extras)
     self:_computeUnitFor("height", parentHeight, extras)
@@ -690,7 +703,7 @@ function M.Ast:_applyInlineStyleDeclarations()
     end
     self:_applyStyleDeclarations(
         self.inlineStyle,
-        require('banana.ncss.query').Specificity.Inline
+        require("banana.ncss.query").Specificity.Inline
     )
 end
 
@@ -706,7 +719,7 @@ function M.Ast:_applyStyleDeclarations(declarations, basePrec)
     for _, v in ipairs(declarations) do
         local prec = basePrec
         if v.important then
-            prec = prec + require('banana.ncss.query').Specificity.Important
+            prec = prec + require("banana.ncss.query").Specificity.Important
         end
         if self.precedences[v.name] ~= nil and prec < self.precedences[v.name] then
             goto continue
@@ -727,7 +740,7 @@ function M.Ast:_applyStyleDeclarations(declarations, basePrec)
             local value = v.values[1]
             local index = M[side]
             if index == nil then
-                log.assert(false,
+                log.throw(
                     "Undefined side '" .. side .. "'")
                 error("")
             end
@@ -740,7 +753,7 @@ function M.Ast:_applyStyleDeclarations(declarations, basePrec)
             local value = v.values[1]
             local index = M[side]
             if index == nil then
-                log.assert(false,
+                log.throw(
                     "Undefined side '" .. side .. "'")
                 error("")
             end
@@ -783,8 +796,8 @@ function M.Ast:_applyStyleDeclarations(declarations, basePrec)
 end
 
 function M.Ast:remove()
-    if self._parent == require('banana.instance').getNilAst() then
-        log.assert(false,
+    if self._parent == require("banana.instance").getNilAst() then
+        log.throw(
             "Attempting to remove the root node")
         error("")
     end
@@ -794,7 +807,7 @@ function M.Ast:remove()
             break
         end
     end
-    require('banana.instance').getInstance(self.instance):_removeMapsFor(self)
+    require("banana.instance").getInstance(self.instance):_removeMapsFor(self)
     self._parent = nil
     self:_requestRender()
 end
@@ -816,14 +829,14 @@ function M.Ast:appendNode(node)
     node._parent = self
     table.insert(self.nodes, node)
     if self.instance ~= nil then
-        require('banana.instance').getInstance(self.instance):_applyId(node)
+        require("banana.instance").getInstance(self.instance):_applyId(node)
     end
     self:_requestRender()
 end
 
 ---@return boolean
 function M.Ast:isLineHovering()
-    local line = vim.fn.line('.')
+    local line = vim.fn.line(".")
     local ret =
         line >= self.boundBox.topY
         and line < self.boundBox.bottomY
@@ -832,8 +845,8 @@ end
 
 ---@return boolean
 function M.Ast:isHovering()
-    local line = vim.fn.line('.')
-    local col = vim.fn.col('.')
+    local line = vim.fn.line(".")
+    local col = vim.fn.col(".")
     local ret =
         line >= self.boundBox.topY
         and line < self.boundBox.bottomY
@@ -855,7 +868,7 @@ end
 ---@internal
 ---@return Banana.Box
 function M.Ast:_testDumpBox()
-    local ret = require('banana.box').Box:new()
+    local ret = require("banana.box").Box:new()
     ret:appendStr(self:_testDumpAttr())
     return ret
 end
@@ -940,17 +953,38 @@ function M.Ast:children()
     return ret
 end
 
----@return fun(): Banana.Ast?
-function M.Ast:childIter()
+---@return fun(): number?, Banana.Ast?
+function M.Ast:childIterWithI()
     local i = 0
-    return function()
+    local retI = 0
+    return function ()
         i = i + 1
+        retI = retI + 1
         while type(self.nodes[i]) ~= "table" do
             i = i + 1
             if i > #self.nodes then
                 return nil
             end
         end
+        ---@diagnostic disable-next-line: return-type-mismatch
+        return retI, self.nodes[i]
+    end
+end
+
+---@return fun(): Banana.Ast?
+function M.Ast:childIter()
+    local i = 0
+    return function ()
+        flame.new("Ast:childIter")
+        i = i + 1
+        while type(self.nodes[i]) ~= "table" do
+            i = i + 1
+            if i > #self.nodes then
+                flame.pop()
+                return nil
+            end
+        end
+        flame.pop()
         ---@diagnostic disable-next-line: return-type-mismatch
         return self.nodes[i]
     end
@@ -967,7 +1001,7 @@ function M.Ast:child(i)
             end
         end
     end
-    return require('banana.instance').getNilAst()
+    return require("banana.instance").getNilAst()
 end
 
 ---@return string
@@ -995,15 +1029,15 @@ end
 ---@return fun(): boolean
 function M.Ast:_parseRemapMod(mod)
     if mod == "hover" then
-        return function()
+        return function ()
             return self:isHovering()
         end
     elseif mod == "line-hover" then
-        return function()
+        return function ()
             return self:isLineHovering()
         end
     elseif type(mod) == "number" then
-        return function()
+        return function ()
             local count = vim.v.count
             return count == mod
         end
@@ -1024,19 +1058,22 @@ end
 ---@param opts vim.keymap.set.Opts
 function M.Ast:attachRemap(mode, lhs, mods, rhs, opts)
     if type(mods) ~= "table" then
-        log.assert(false,
+        log.throw(
             "Banana attachRemap requires the 4th parameter (before rhs) to be a table of modifiers")
         error("")
     end
     local modFns = vim.iter(mods)
-        :map(function(mod) return self:_parseRemapMod(mod) end):totable()
+                      :map(function (mod) return self:_parseRemapMod(mod) end)
+                      :totable()
     if type(rhs) == "string" then
         local oldRhs = rhs
-        rhs = function()
-            vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes(oldRhs, true, true, true), mode, true)
+        rhs = function ()
+            vim.api.nvim_feedkeys(
+                vim.api.nvim_replace_termcodes(oldRhs, true, true, true), mode,
+                true)
         end
     end
-    local actualRhs = function()
+    local actualRhs = function ()
         local works = #modFns == 0
         for _, v in ipairs(modFns) do
             if v() then
@@ -1046,13 +1083,18 @@ function M.Ast:attachRemap(mode, lhs, mods, rhs, opts)
         end
         if not works then return false end
         if type(rhs) == "string" then
-            vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes(rhs, true, true, true), mode, true)
+            vim.api.nvim_feedkeys(
+                vim.api.nvim_replace_termcodes(rhs, true, true, true), mode, true)
         else
             rhs()
         end
         return true
     end
-    local inst = require('banana.instance').getInstance(self.instance)
+    local inst = require("banana.instance").getInstance(self.instance)
+    if inst == nil then
+        log.throw("ast does not have an associated document")
+        error("")
+    end
     inst:_setRemap(mode, lhs, actualRhs, opts, self)
 end
 
@@ -1061,7 +1103,11 @@ function M.Ast:_requestRender()
     if self.instance == nil then
         return
     end
-    local inst = require('banana.instance').getInstance(self.instance)
+    local inst = require("banana.instance").getInstance(self.instance)
+    if inst == nil then
+        log.throw("ast does not have an associated document")
+        error("")
+    end
     inst:_requestRender()
 end
 

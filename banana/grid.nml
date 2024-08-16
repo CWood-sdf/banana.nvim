@@ -1,0 +1,74 @@
+<nml>
+  <head>
+    <style>
+      .grid {
+        display: grid;
+        grid-template-columns: 2fr 10ch repeat(5, 1fr);
+        hl-bg: green;
+        hl-fg: black;
+        hl-italic: false;
+      }
+      .grid > div {
+        hl-bg: red;
+      }
+      .grid > :first-child {
+        height: 2ch;
+        grid-row: 2;
+        hl-bold: false;
+        hl-italic: true;
+      }
+      .grid > * > * {
+        hl-fg: blue;
+        hl-bg: black;
+        hl-bold: true;
+      }
+
+      .flex {
+        display: flex;
+      }
+      .flex > div {
+        flex-grow: 1;
+      }
+      .flex > :first-child {
+        flex-grow: 2;
+      }
+    </style>
+    <title>ooga booga</title>
+  </head>
+  <body>
+    asdfsdf
+    <div class="grid">
+      <div>17</div>
+
+      <!--16,   -->
+      <!--14, 2, 3, 4, 5   -->
+      <!--1,  -->
+      <!--  -->
+      <div style="grid-column: 1">1<span> asdf</span></div>
+      <div style="grid-row: 2">2<span> asdf</span></div>
+      <div style="grid-row: 2">3<span> asdf</span></div>
+      <div style="grid-row: 2">4<span> asdf</span></div>
+      <div style="grid-row: 2">5<span> asdf</span></div>
+      <!-- <div style="grid-row: 2">6</div> -->
+      <!-- <div style="grid-row: 2">7</div> -->
+      <!-- <div style="grid-row: 2">8</div> -->
+      <!-- <div style="grid-row: 2">9</div> -->
+      <!-- <div style="grid-row: 2">10</div> -->
+      <!-- <div style="grid-row: 2">11</div> -->
+      <!-- <div style="grid-row: 2">12</div> -->
+      <!-- <div style="grid-column: 1">13</div> -->
+      <div style="grid-column: 1; grid-row: 2">14</div>
+      <div>15</div>
+      <div style="grid-column: 1; grid-row: 1">16</div>
+      <div>18</div>
+    </div>
+    <br />
+    <br />
+    <div class="flex">
+      <div>asdfsdf</div>
+      <div>asdfsdf</div>
+      <div>asdfsdf</div>
+      <div>asdfsdf</div>
+    </div>
+  </body>
+</nml>

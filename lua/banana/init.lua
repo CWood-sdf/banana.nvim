@@ -19,6 +19,10 @@ local M = {
 local counterInst = nil
 local todoInst = nil
 local instance = nil
+local inst = nil
+---@module 'banana.instance'
+local render = require("banana.lazyRequire")("banana.instance")
+local ffi = require("ffi")
 
 local tsInit = false
 local tsInstall = false
@@ -55,6 +59,75 @@ M.examples = {
         instance:_requestRender()
     end,
 }
+M.test = {
+    grid = function ()
+        -- print(jit.status())
+        -- jit.on()
+        -- ffi.cdef([[
+        -- int add(int l, int r);
+        -- void addToString(char* str);
+        -- ]])
+        -- local so = ffi.load(
+        --     "/home/christopher-wood/projects/banana.nvim/zig/zig-out/lib/libbanana.so")
+        -- print(so.add(1, 2))
+        -- local txt = "asdf123"
+        -- local cstr = ffi.new("char[?]", #txt + 1)
+        -- ffi.copy(cstr, txt)
+        -- so.addToString(cstr)
+        -- print(ffi.string(cstr))
+        if inst == nil then
+            inst = render.newInstance("grid", "")
+            inst.DEBUG_showPerf = true
+            inst.DEBUG_stressTest = true
+            -- inst.DEBUG = true
+        end
+        inst:open()
+    end
+}
+
+M.runCounter = function ()
+    if counterInst == nil then
+        counterInst = render.newInstance("examples/counter", "asdf")
+        -- instance.DEBUG = true
+    end
+    counterInst:open()
+end
+M.runTodo = function ()
+    if todoInst == nil then
+        todoInst = render.newInstance("examples/todo", "asdf")
+        -- instance.DEBUG = true
+    end
+    todoInst:open()
+end
+
+M.runLazy = function ()
+    if instance == nil then
+        instance = render.newInstance("examples/lazy", "")
+        -- instance.DEBUG = true
+        -- instance.DEBUG_showPerf = true
+        -- instance.DEBUG_stressTest = true
+    end
+    instance:open()
+    instance:_requestRender()
+end
+
+function M.spam()
+    local testFile = [[
+			.asdf {
+				hl-bg: #0000ff;
+			}
+		]]
+    local startTime = vim.uv.hrtime()
+    for _ = 1, 1000 do
+        local _ = require("banana.ncss.parser").parseTextSlow(testFile)
+    end
+    vim.notify((vim.uv.hrtime() - startTime) / 1e6 .. "ms\n")
+    startTime = vim.uv.hrtime()
+    for _ = 1, 1000 do
+        local _ = require("banana.ncss.parser").parseText(testFile)
+    end
+    vim.notify((vim.uv.hrtime() - startTime) / 1e6 .. "ms\n")
+end
 
 function M.getInstallDir()
     local ret = ""
@@ -111,6 +184,7 @@ function M.initTsParsers()
         },
         filetype = "ncss",
     }
+    vim.treesitter.language.register("ncss", "ncss")
 end
 
 return M

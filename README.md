@@ -51,6 +51,8 @@ The counter's files are contained in banana/example/counter.nml and lua/banana_e
 
 Lazy's files are contained in banana/example/lazy/ and lua/banana_example/lazy/ and can be run with `require('banana').runLazy()`
 
+An example plugin repository can be found [here](https://github.com/CWood-sdf/banana-example)
+
 ## Features
 
 Partial or complete implementations exist for the following elements:
@@ -78,7 +80,7 @@ Partial or complete implementations exist for the following css properties (for 
 - hl-fg
 - hl-bg
 - hl-link
-- hl-\_\_name
+- hl-\_\_name (allows named highlight groups)
 - list-style-type (very partial)
 - width
 - height
@@ -88,7 +90,7 @@ Partial or complete implementations exist for the following css properties (for 
 - flex-grow
 - flex-wrap
 - text-align (missing justify)
-- position (position: sticky is not possible to implement in neovim)
+- position (missing fixed and sticky)
 - z-index
 - left
 - right
@@ -180,6 +182,13 @@ return function(document, opts)
     local params = opts.params
     local element = document:getElementById("asdf")
 end
+-- also allowed
+return {
+  -- ... other keys
+  __banana_run = function(document, opts)
+    -- scripting code
+  end,
+}
 ```
 
 Embedded lua is also very simple, banana predefines the document variable for you:
@@ -238,6 +247,20 @@ There is a lot of work still to be done. If you want to help out, the primary ar
 - tests
 - apis
 - extensibility
+
+If you have a css/html feature that you really want implemented, post it in an issue and I will see what I can do. However, there are currently no plans to support jsx or the like because it will add a massive amount of complexity (in plugin dev's dx (lsp), my sanity (and dx), and probably the end user's experience too (perf issues)).
+
+### Current roadmap
+
+#### v0.1
+
+Finish the grid renderer
+
+#### v0.2
+
+Rework how pages are used
+
+Gradient support
 
 ## Final notes
 

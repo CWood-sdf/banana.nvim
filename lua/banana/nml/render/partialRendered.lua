@@ -1,9 +1,9 @@
 ---@module 'banana.utils.debug_flame'
-local flame = require('banana.lazyRequire')('banana.utils.debug_flame')
+local flame = require("banana.lazyRequire")("banana.utils.debug_flame")
 ---@module 'banana.box'
-local b = require('banana.lazyRequire')('banana.box')
+local b = require("banana.lazyRequire")("banana.box")
 ---@module 'banana.nml.ast'
-local _ast = require('banana.lazyRequire')('banana.nml.ast')
+local _ast = require("banana.lazyRequire")("banana.nml.ast")
 local M = {}
 ---@class (exact) Banana.Renderer.Surround
 ---@field left number
@@ -87,32 +87,29 @@ end
 function PartialRendered:padWith(box, pad, color)
     if pad.top ~= 0 then
         local topBox = b.Box:new(color)
-        topBox:appendStr('', nil)
         topBox:expandWidthTo(box:width())
-        topBox:cloneHeightTo(pad.top)
+        topBox:expandHeightTo(pad.top)
         topBox:appendBoxBelow(box)
         box = topBox
     end
     if pad.bottom ~= 0 then
         local btmBox = b.Box:new(color)
-        btmBox:appendStr('', nil)
         btmBox:expandWidthTo(box:width())
-        btmBox:cloneHeightTo(pad.bottom)
+        btmBox:expandHeightTo(pad.bottom)
         box:appendBoxBelow(btmBox)
     end
     if pad.left ~= 0 then
         local leftBox = b.Box:new(color)
-        leftBox:appendStr('', nil)
         leftBox:expandWidthTo(pad.left)
-        leftBox:cloneHeightTo(box:height())
+        leftBox:expandHeightTo(box:height())
         leftBox:append(box)
         box = leftBox
     end
     if pad.right ~= 0 then
         local rightBox = b.Box:new(color)
-        rightBox:appendStr('', nil)
+        -- rightBox:appendStr('', nil)
         rightBox:expandWidthTo(pad.right)
-        rightBox:cloneHeightTo(box:height())
+        rightBox:expandHeightTo(box:height())
         box:append(rightBox)
     end
     return box
@@ -128,9 +125,9 @@ function PartialRendered:render(clone)
     flame.new("PartialRendered:render")
     clone = clone or false
     if clone then
-        if not require('banana.utils.debug').isdev() then
-            print("Calling clone in prod?!")
-        end
+        -- if not require("banana.utils.debug").isdev() then
+        -- print("Calling clone in prod?!")
+        -- end
         local new = vim.fn.deepcopy(self)
         setmetatable(new, {
             __index = PartialRendered,
@@ -145,9 +142,9 @@ function PartialRendered:render(clone)
     end
     if self.heightExpansion > 0 then
         local btmBox = b.Box:new(self.mainColor)
-        btmBox:appendStr('', nil)
+        -- btmBox:appendStr('', nil)
         btmBox:expandWidthTo(box:width())
-        btmBox:cloneHeightTo(self.heightExpansion)
+        btmBox:expandHeightTo(self.heightExpansion)
         box:appendBoxBelow(btmBox)
     end
     if self.widthExpansion > 0 then
@@ -155,9 +152,9 @@ function PartialRendered:render(clone)
         if box:height() == 0 then
             left:expandWidthTo(self.widthExpansion)
         else
-            left:appendStr('', nil)
+            -- left:appendStr('', nil)
             left:expandWidthTo(self.widthExpansion)
-            left:cloneHeightTo(box:height())
+            left:expandHeightTo(box:height())
         end
         if self.renderAlign == "right" then
             left:append(box)
@@ -166,13 +163,13 @@ function PartialRendered:render(clone)
             box:append(left)
         else
             local l = b.Box:new(self.mainColor)
-            l:appendStr('', nil)
+            -- l:appendStr('', nil)
             l:expandWidthTo(math.ceil(self.widthExpansion / 2))
-            l:cloneHeightTo(box:height())
+            l:expandHeightTo(box:height())
             local r = b.Box:new(self.mainColor)
-            r:appendStr('', nil)
+            -- r:appendStr('', nil)
             r:expandWidthTo(math.floor(self.widthExpansion / 2))
-            r:cloneHeightTo(box:height())
+            r:expandHeightTo(box:height())
             l:append(box)
             l:append(r)
             box = l

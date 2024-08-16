@@ -1,3 +1,6 @@
 #/bin/bash
 
+nvim --headless -c "so build.lua" -c "qa!"
+
 ./tests/run $1 $2
+

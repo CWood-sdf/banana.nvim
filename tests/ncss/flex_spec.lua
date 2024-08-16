@@ -1,4 +1,4 @@
-local h = require('tests.helpers')
+local h = require("tests.helpers")
 local code = nml([[
 <nml>
 <head>
@@ -18,11 +18,14 @@ nml {
 .grow {
     flex-grow: 1;
 }
+.center {
+    text-align: center;
+}
 .grow-half {
     flex-grow: 0.5;
 }
 .fr1 {
-    width: 1fr;
+    flex-grow: 1;
 }
 .pad-left {
     padding-left: 1ch;
@@ -30,9 +33,9 @@ nml {
 .green {
     hl-bg: green;
 }
-.fr-margin-left {
-    margin-left: 1fr;
-}
+/* .fr-margin-left { */
+/*     margin-left: 1fr; */
+/* } */
 .w2 {
     width: 2ch;
 }
@@ -54,31 +57,29 @@ nml {
 </nml>
 ]])
 
-describe("Flex test", function()
-    it("margin frs", function()
-        local inst = require('banana.instance').emptyInstance()
+describe("Flex test", function ()
+    it("text-align works", function ()
+        local inst = require("banana.instance").emptyInstance()
         inst:useNml(code)
+        inst.DEBUG = false
         inst.stripRight = false
         inst:open()
         h.createElements({
-            "div#.fr1.fr-margin-left.green:a",
-            "div#.w2:a",
-            "div#.fr-margin-left.fr1.green:a",
-            "div#.fr-margin-left.fr1.green:a",
+            "div#.fr1.center:a",
+            "div#.w2.center:aa",
+            "div#.fr1.center:a",
         }, inst, inst:getElementById("flex"))
 
         local expectedMap = {
             "         ",
-            "~~aa~~a~a",
+            "~~a~aa~a~",
             "         ",
         }
         inst:forceRerender()
-        print(inst:querySelectorAll("#flex > div")[1]:_marginUnit(1).value)
-        print(inst:querySelectorAll("#flex > div")[1]:_marginUnit(1).value)
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
     end)
-    it("out of order frs", function()
-        local inst = require('banana.instance').emptyInstance()
+    it("out of order frs", function ()
+        local inst = require("banana.instance").emptyInstance()
         inst:useNml(code)
         inst.DEBUG = false
         inst.stripRight = false
@@ -98,8 +99,8 @@ describe("Flex test", function()
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
     end)
-    it("uneven frs work", function()
-        local inst = require('banana.instance').emptyInstance()
+    it("uneven frs work", function ()
+        local inst = require("banana.instance").emptyInstance()
         inst:useNml(code)
         inst.DEBUG = false
         inst.stripRight = false
@@ -119,8 +120,8 @@ describe("Flex test", function()
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
     end)
-    it("fr units work", function()
-        local inst = require('banana.instance').emptyInstance()
+    it("fr units work", function ()
+        local inst = require("banana.instance").emptyInstance()
         inst:useNml(code)
         inst.DEBUG = false
         inst.stripRight = false
@@ -140,8 +141,8 @@ describe("Flex test", function()
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
     end)
-    it("single item with flex properties 2", function()
-        local inst = require('banana.instance').emptyInstance()
+    it("single item with flex properties 2", function ()
+        local inst = require("banana.instance").emptyInstance()
         inst:useNml(code)
         inst.DEBUG = false
         inst.stripRight = false
@@ -158,8 +159,8 @@ describe("Flex test", function()
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
     end)
-    it("single item with flex properties", function()
-        local inst = require('banana.instance').emptyInstance()
+    it("single item with flex properties", function ()
+        local inst = require("banana.instance").emptyInstance()
         inst:useNml(code)
         inst.DEBUG = false
         inst.stripRight = false
@@ -176,8 +177,8 @@ describe("Flex test", function()
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
     end)
-    it("grow on both and pad 2", function()
-        local inst = require('banana.instance').emptyInstance()
+    it("grow on both and pad 2", function ()
+        local inst = require("banana.instance").emptyInstance()
         inst:useNml(code)
         inst.DEBUG = false
         inst.stripRight = false
@@ -195,8 +196,8 @@ describe("Flex test", function()
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
     end)
-    it("grow on both and pad", function()
-        local inst = require('banana.instance').emptyInstance()
+    it("grow on both and pad", function ()
+        local inst = require("banana.instance").emptyInstance()
         inst:useNml(code)
         inst.DEBUG = false
         inst.stripRight = false
@@ -214,8 +215,8 @@ describe("Flex test", function()
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
     end)
-    it("grow on both sorta", function()
-        local inst = require('banana.instance').emptyInstance()
+    it("grow on both sorta", function ()
+        local inst = require("banana.instance").emptyInstance()
         inst:useNml(code)
         inst.DEBUG = false
         inst.stripRight = false
@@ -233,8 +234,8 @@ describe("Flex test", function()
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
     end)
-    it("grow on both", function()
-        local inst = require('banana.instance').emptyInstance()
+    it("grow on both", function ()
+        local inst = require("banana.instance").emptyInstance()
         inst:useNml(code)
         inst.DEBUG = false
         inst.stripRight = false
@@ -252,8 +253,8 @@ describe("Flex test", function()
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
     end)
-    it("grow on 1", function()
-        local inst = require('banana.instance').emptyInstance()
+    it("grow on 1", function ()
+        local inst = require("banana.instance").emptyInstance()
         inst:useNml(code)
         inst.DEBUG = false
         inst.stripRight = false
@@ -272,8 +273,8 @@ describe("Flex test", function()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
     end)
 
-    it("flex-basis property", function()
-        local inst = require('banana.instance').emptyInstance()
+    it("flex-basis property", function ()
+        local inst = require("banana.instance").emptyInstance()
         inst:useNml(code)
         inst.DEBUG = false
         inst.stripRight = false
@@ -293,8 +294,8 @@ describe("Flex test", function()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
     end)
 
-    it("flex-wrap property with wrapping", function()
-        local inst = require('banana.instance').emptyInstance()
+    it("flex-wrap property with wrapping", function ()
+        local inst = require("banana.instance").emptyInstance()
         inst:useNml(code)
         inst.DEBUG = false
         inst.stripRight = false
@@ -318,8 +319,8 @@ describe("Flex test", function()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
     end)
 
-    it("flex-wrap property without wrapping", function()
-        local inst = require('banana.instance').emptyInstance()
+    it("flex-wrap property without wrapping", function ()
+        local inst = require("banana.instance").emptyInstance()
         inst:useNml(code)
         inst.DEBUG = false
         inst.stripRight = false

@@ -1,0 +1,45 @@
+<!doctype html>
+<!-- this file is a test file for investigating how browsers render things -->
+<html>
+  <head>
+    <style>
+      #grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        /* grid-template-columns: 2fr 10ch repeat(6, 1fr); */
+        /* grid-template-rows: 80px; */
+        /* row-gap: 20px; */
+        gap: 5px;
+      }
+      #grid > div {
+        background-color: red;
+      }
+    </style>
+    <title>ooga booga</title>
+  </head>
+  <body>
+    <div id="grid">
+      <div>asdfd</div>
+      <div>adfaoogssdfd3</div>
+      <div style="grid-column: 1 / span 2">adfasdfd4</div>
+      <div style="grid-column: 3">4444df</div>
+      <div style="grid-column: 3">4444df</div>
+      <div style="grid-column: 3">4444df</div>
+      <div style="grid-column: 3">4444df</div>
+      <!-- <div>adfasdfd5</div> -->
+      <div style="grid-row: 2">asdsdf</div>
+      <div style="grid-row: 2">asdsdf</div>
+      <div style="grid-row: 2">asdsdf</div>
+      <!-- <div style="grid-row: 2">asdsdf</div> -->
+      <!-- <div style="grid-row: 2">asdsdf</div> -->
+      <div>adfaoogssdfd3</div>
+      <div>adfaoogssdfd3</div>
+      <!-- <div>asd6</div> -->
+      <!-- <div>asd7</div> -->
+      <!-- <div>asd8</div> -->
+      <!-- <div>asd9</div> -->
+      <!-- <div>asd10</div> -->
+      <!-- <div>asd11</div> -->
+    </div>
+  </body>
+</html>

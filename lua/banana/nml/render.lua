@@ -1,18 +1,20 @@
 ---@module 'banana.utils.debug_flame'
-local flame = require('banana.lazyRequire')('banana.utils.debug_flame')
+local flame = require("banana.lazyRequire")("banana.utils.debug_flame")
 ---@module 'banana.utils.log'
-local log = require('banana.lazyRequire')('banana.utils.log')
+local log = require("banana.lazyRequire")("banana.utils.log")
 local M = {}
 ---@module 'banana.utils.string'
-local _str = require('banana.lazyRequire')('banana.utils.string')
+local _str = require("banana.lazyRequire")("banana.utils.string")
 -- ---@module 'banana.utils.case'
 -- local case = require('banana.lazyRequire')('banana.utils.case')
 ---@module 'banana.utils.debug'
-local dbg = require('banana.lazyRequire')('banana.utils.debug')
+local dbg = require("banana.lazyRequire")("banana.utils.debug")
 ---@module 'banana.nml.ast'
-local _ast = require('banana.lazyRequire')('banana.nml.ast')
+local _ast = require("banana.lazyRequire")("banana.nml.ast")
 ---@module 'banana.box'
-local b = require('banana.lazyRequire')('banana.box')
+local b = require("banana.lazyRequire")("banana.box")
+-- ---@module 'ffi'
+-- local ffi = require("banana.lazyRequire")("ffi")
 -- ---@module 'banana.nml.render.partialRendered'
 -- local p = require('banana.lazyRequire')('banana.nml.render.partialRendered')
 
@@ -42,6 +44,8 @@ M.FormatType = {
 ---@field box Banana.Box?
 ---@field trace Banana.Box
 ---@field debug boolean
+---@field useAllHeight boolean
+---@field isRealRender boolean
 
 ---@alias Banana.Renderer fun(self: Banana.TagInfo, ast: Banana.Ast, parentHl: Banana.Highlight?, parentWidth: number, parentHeight: number, startX: number, startY: number, inherit: Banana.Renderer.InheritedProperties, extra: Banana.Renderer.ExtraInfo): Banana.RenderRet
 
@@ -53,10 +57,10 @@ M.FormatType = {
 ---@field initialProps Banana.Renderer.InitialProperties
 ---@field render Banana.Renderer
 local TagInfo = {
-    name = '',
+    name = "",
     formatType = M.FormatType.Inline,
     selfClosing = false,
-    render = function(_) return {} end,
+    render = function (_) return {} end,
 }
 
 
@@ -69,8 +73,11 @@ local TagInfo = {
 ---@param extra Banana.Renderer.ExtraInfo
 ---@return Banana.Box
 function TagInfo:renderRoot(ast, startHl, winWidth, winHeight, inherit, extra)
-    flame.new("element render")
-    local ret = self:render(ast, startHl, winWidth, winHeight, 1, 1, inherit, extra)
+    flame.new("renderRoot")
+    log.trace("TagInfo:renderRoot")
+    local ret = self:render(ast, startHl, winWidth, winHeight, 1, 1, inherit,
+        extra)
+    -- flame.expect("renderRoot")
     flame.pop()
     return ret
 end
@@ -84,13 +91,14 @@ end
 ---@param inherit Banana.Renderer.InheritedProperties
 ---@param extra Banana.Renderer.ExtraInfo
 ---@return Banana.Renderer.PartialRendered
-function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra)
-    flame.new("getRendered start")
-    -- log.trace("TagInfo:getRendered " .. ast.tag .. "#" .. (ast:getAttribute('id') or ""))
-    local ret = require('banana.nml.render.main')(
+function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX,
+                             startY, inherit, extra)
+    log.trace("TagInfo:getRendered " ..
+        ast.tag .. "#" .. (ast:getAttribute("id") or ""))
+    local ret = require("banana.nml.render.main")(
         self, ast, parentHl, parentWidth, parentHeight, startX, startY, inherit,
         extra)
-    flame.pop()
+    -- flame.expect("getRendered start")
     return ret
 end
 
@@ -104,17 +112,24 @@ end
 ---@param inherit Banana.Renderer.InheritedProperties
 ---@param extra Banana.Renderer.ExtraInfo
 ---@return fun(): integer?, Banana.Box?, integer?
-function TagInfo:blockIter(ast, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra)
+function TagInfo:blockIter(ast, parentHl, parentWidth, parentHeight, startX,
+                           startY, inherit, extra)
     local i = 1
-    return function()
+    return function ()
         if i > #ast.nodes then
             return nil
         end
+        flame.new("TagInfo:blockIter")
         local oldI = i
         local render = nil
         if ast:firstStyleValue("display") == "flex" then
             -- error("impl flex")
             render = self:renderFlexBlock(
+                ast, parentHl, parentWidth, parentHeight,
+                startX, startY, inherit, extra)
+            i = #ast.nodes + 1
+        elseif ast:firstStyleValue("display") == "grid" then
+            render = self:renderGridBlock(
                 ast, parentHl, parentWidth, parentHeight,
                 startX, startY, inherit, extra)
             i = #ast.nodes + 1
@@ -124,6 +139,7 @@ function TagInfo:blockIter(ast, parentHl, parentWidth, parentHeight, startX, sta
                 startX, startY, inherit, extra)
         end
         startY = startY + render:height()
+        flame.pop()
         return oldI, render, i - oldI
     end
 end
@@ -136,9 +152,11 @@ end
 ---@param startY number
 ---@param inherit Banana.Renderer.InheritedProperties
 ---@return Banana.Box
-function TagInfo:renderInlineEl(ast, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra)
+function TagInfo:renderInlineEl(ast, parentHl, parentWidth, parentHeight, startX,
+                                startY, inherit, extra)
     ---@type Banana.Box
-    local ret, _ = self:renderBlock(ast, ast:_mixHl(parentHl), 1, parentWidth, parentHeight, startX, startY, inherit,
+    local ret, _ = self:renderBlock(ast, ast:_mixHl(parentHl), 1, parentWidth,
+        parentHeight, startX, startY, inherit,
         extra)
     return ret
 end
@@ -172,7 +190,8 @@ local function splitLineBoxOnce(targetWidth, box, hl)
     local leftIns = _str.sub(word.word, 1, targetWidth - left:width())
     --Allow unsafe #word.word, bc #word.word is always >= str.charWidth(word.word)
     --so since we are just reading to end of string
-    local rightIns = _str.sub(word.word, targetWidth - left:width() + 1, #word.word)
+    local rightIns = _str.sub(word.word, targetWidth - left:width() + 1,
+        #word.word)
     left:appendWord({
         word = leftIns,
         style = word.style,
@@ -196,7 +215,8 @@ local function breakable(ast)
     if type(ast) == "string" then
         return true
     end
-    return ast:paddingRight() == 0 and ast:paddingLeft() == 0 and not ast:hasStyle("width")
+    return ast:paddingRight() == 0 and ast:paddingLeft() == 0 and
+        not ast:hasStyle("width")
 end
 
 
@@ -222,7 +242,8 @@ local function handleOverflow(ast, i, currentLine, append, maxWidth, hl)
         return currentLine, append
     end
     if currentLine:height() > 1 then
-        local ap, extra = splitLineBoxOnce(maxWidth - currentLine:width(), append, hl)
+        local ap, extra = splitLineBoxOnce(maxWidth - currentLine:width(), append,
+            hl)
         currentLine:append(ap, nil)
         flame.pop()
         return currentLine, extra
@@ -239,28 +260,6 @@ local function handleOverflow(ast, i, currentLine, append, maxWidth, hl)
     return preStuff, extra
 end
 
-
----@param ast Banana.Ast
----@return boolean
-local function hasNoFrUnits(ast)
-    for _, nodes in pairs(ast.style) do
-        for _, v in ipairs(nodes) do
-            if v.type == "unit" and v.value.unit == "fr" then
-                if not ast:hasStyle("width") then
-                    log.assert(false, "an ast with fractional units must have a width/height")
-                    error("")
-                end
-                if ast:firstStyleValue("width").unit ~= "fr" then
-                    log.assert(false,
-                        "an ast with fractional units must have a width/height with unit fr")
-                    error("")
-                end
-                return false
-            end
-        end
-    end
-    return true
-end
 
 ---@param renders ([Banana.Renderer.PartialRendered, Banana.Ast]?)[]
 ---@param parentWidth number
@@ -299,7 +298,8 @@ local function flexGrowSection(parentWidth, takenWidth, renders, start, e)
                     grow = grow + math.ceil(flexGrow)
                     extraGrow = extraGrow - math.ceil(flexGrow)
                 end
-                renders[i][1].widthExpansion = renders[i][1].widthExpansion + grow
+                renders[i][1].widthExpansion = renders[i][1].widthExpansion +
+                    grow
                 renders[i][2]:_increaseWidthBoundBy(grow)
             end
             ::continue::
@@ -308,9 +308,6 @@ local function flexGrowSection(parentWidth, takenWidth, renders, start, e)
 end
 
 -- Grid todo:
--- repeat()
--- grid-template-columns
--- grid-template-rows
 -- grid-template-areas
 -- grid-template (shorthand prop)
 -- grid-auto-columns
@@ -328,6 +325,147 @@ end
 -- column-gap
 -- gap
 
+
+---@class (exact) Banana.Renderer.GridTemplate
+---@field start number
+---@field size number
+---@field maxSize number
+---@field name string
+---@field claimants number[]
+---@field prevLink Banana.Renderer.GridTemplate?
+
+
+---@param templ Banana.Renderer.GridTemplate
+---@param fix boolean
+---@return number
+local function getGridStart(templ, fix)
+    if templ.prevLink == nil then
+        return templ.start
+    else
+        local prevSize = templ.prevLink.size
+        if prevSize == -1 then
+            prevSize = templ.prevLink.maxSize
+        end
+        local ret = getGridStart(templ.prevLink, fix) + prevSize
+        if fix then
+            templ.start = ret
+            templ.prevLink = nil
+        end
+        return ret
+    end
+end
+
+---@param values Banana.Ncss.StyleValue[]
+---@param sizeInDirection number
+---@param start number
+---@param min number
+---@param isCol boolean
+---@return Banana.Renderer.GridTemplate[]
+local function getTemplates(values, sizeInDirection, start, min, isCol)
+    ---@type Banana.Renderer.GridTemplate[]
+    local ret = {}
+    local takenSize = 0
+    local totalFrs = 0
+    ---@type number[]
+    local frs = {}
+    local i = 1
+    while i <= math.max(min, #values) do
+        local v = values[i]
+        if v ~= nil then
+            local value = v.value
+            if value.unit ~= "fr" then
+                ---@cast value Banana.Ncss.UnitValue
+                local resolve = _ast.calcUnitNoMod(value, sizeInDirection, {})
+                ---@type Banana.Renderer.GridTemplate
+                local ins = {
+                    start = 0,
+                    size = resolve.computed,
+                    maxSize = resolve.computed,
+                    name = i .. "",
+                    claimants = {}
+                }
+                table.insert(ret, ins)
+                -- columnOrder[i] = i
+                takenSize = takenSize + resolve.computed
+            else
+                totalFrs = totalFrs + value.value
+                table.insert(frs, i)
+                table.insert(ret, {})
+            end
+        elseif isCol then
+            totalFrs = totalFrs + 1
+            table.insert(frs, i)
+            table.insert(ret, {})
+        else
+        end
+        i = i + 1
+    end
+
+    local widthPer = math.floor((sizeInDirection - takenSize) / totalFrs)
+    if widthPer < 0 then
+        widthPer = 0
+    end
+
+    local extraWidthNeeded = sizeInDirection - takenSize - totalFrs * widthPer
+
+    for _, j in ipairs(frs) do
+        local fr = 0
+        local v = values[j]
+        if v ~= nil then
+            fr = v.value.value
+        else
+            fr = 1
+        end
+        local resolve = math.floor(fr * widthPer)
+        local extraAdded = math.min(math.ceil(fr), extraWidthNeeded)
+        ret[j] = {
+            start = 0,
+            size = resolve + extraAdded,
+            maxSize = resolve + extraAdded,
+            name = j .. "",
+            claimants = {},
+        }
+        extraWidthNeeded = extraWidthNeeded - extraAdded
+        takenSize = takenSize + resolve
+    end
+    for _, v in ipairs(ret) do
+        v.start = v.start + start
+        start = start + v.size
+    end
+    return ret
+end
+
+---@param i number
+---@param templates Banana.Renderer.GridTemplate[]
+---@param limit number
+---@return Banana.Renderer.GridTemplate
+local function getSection(i, templates, limit)
+    -- flame.new("renderGridBlock_getSection")
+    while #templates < i do
+        local prev = templates[#templates]
+        ---@type Banana.Renderer.GridTemplate
+        local templ = {
+            start = math.max(prev.size, prev.maxSize) + prev.start,
+            size = -1,
+            maxSize = 0,
+            name = (#templates + 1) .. "",
+            claimants = {},
+            prevLink = prev
+        }
+        table.insert(templates, templ)
+        if #templates > limit then
+            log.fmt_throw("%d grid rows specified, maximum of %d", limit,
+                limit)
+        end
+        -- for _, col in ipairs(takenMatrix) do
+        --     table.insert(col, {})
+        -- end
+    end
+    -- flame.pop()
+    return templates[i]
+end
+
+--- renders an element with display:grid
 ---@param ast Banana.Ast
 ---@param parentHl Banana.Highlight?
 ---@param parentWidth number
@@ -337,13 +475,382 @@ end
 ---@param inherit Banana.Renderer.InheritedProperties
 ---@param extra Banana.Renderer.ExtraInfo
 ---@return Banana.Box, integer
-function TagInfo:renderGridBlock(ast, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra)
-    -- TODO: Everything
+function TagInfo:renderGridBlock(ast, parentHl, parentWidth, parentHeight, startX,
+                                 startY, inherit, extra)
+    flame.new("TagInfo:renderGridBlock")
+    local insert = table.insert
+    local hl = ast:_mixHl(parentHl)
 
-    -- so the plan sorta is basically make a grid of boxes that can be dynamically updated
-    -- (ie for auto els), then once initial box has been made, just determine where each box is
-    -- then fill it in
-    return b.Box:new(), #ast.nodes + 1
+    ---@class (exact) Banana.Renderer.CellClaimant
+    ---@field render Banana.Renderer.PartialRendered?
+    ---@field ast Banana.Ast
+    ---@field box Banana.Box?
+    ---@field startRow number
+    ---@field startCol number
+
+
+    -- the plan is basically to arrange the grid elements in the places that
+    -- they absolutely have to be (eg grid-row or grid-column specified)
+    -- ("necessary elements") and determine number of needed implicit columns then render all the elements
+    --
+    -- and since we already have already determined implicit column, we can just
+    -- grab any free spots for elements without grid-row or grid-column
+
+    ---Essentially this is so that we can arrange the children such that we can
+    ---do the least amount of resizing
+    ---@class (exact) Banana.Renderer.GridPreRender
+    ---@field ast Banana.Ast
+    ---@field startColumn number
+    ---@field startRow number
+
+    flame.new("renderGridBlock_placement")
+
+    ---Essentially we want to render things such that resize is minimized
+    ---obv anything inside a definite row/col is fine
+    ---the index of the table is the i in childIterWithI
+    ---@type Banana.Renderer.GridPreRender[]
+    local renderOrder = {}
+
+    ---this is the big matrix ("sparse matrix") that we fill with necessary elements
+    ---need multiple bc grid elements can overlapped (only if forced to tho)
+    ---the asts are used as keys for renderOrder
+    ---the numbers are keys to renderOrder
+    ---@type number[][][]
+    local preRenderTakenMatrix = {}
+
+    local maxRow = 0
+
+    -- NOTE: New notes after some more research
+    -- 1. grid-column has equal precedence to nothing
+    -- 2. grid-row has more precedence
+    -- 3. explicit has most
+    -- 4. i think these rules on row vs column invert via grid-auto-flow
+    -- 5. frs dont distribute available space, but they are responsive to incorrect sizes (pcts arent)
+    -- 6. when grid has height defined, implicit rows have 1fr height unless otherwise said
+    -- 7. the placement cursor follows the previous element (aka when grid-column
+    -- is defined, then moved to a different place, the cursor doesnt reset)
+    -- (this can leave empty spaces in grid)
+
+    -- using one array instead of two i believe reduces reallocs
+    ---@type (Banana.Ast|number)[]
+    local rowEls = {}
+
+    ---@type (Banana.Ast|number)[]
+    local colAndNonSpecEls = {}
+
+    for i, node in ast:childIterWithI() do
+        local row = node:firstStyleValue("grid-row")
+        local column = node:firstStyleValue("grid-column")
+        ---@cast row number?
+        ---@cast column number?
+        if row == nil then
+            insert(colAndNonSpecEls, node)
+            insert(colAndNonSpecEls, i)
+            goto continue
+        end
+        if column == nil then
+            insert(rowEls, node)
+            insert(rowEls, i)
+            goto continue
+        end
+        row = row or 1
+        column = column or 1
+        while preRenderTakenMatrix[column] == nil do
+            insert(preRenderTakenMatrix, {})
+        end
+        while preRenderTakenMatrix[column][row] == nil do
+            insert(preRenderTakenMatrix[column], {})
+        end
+        ---@cast row number
+        ---@cast column number
+        ---@type Banana.Renderer.GridPreRender
+        local preRender = {
+            startRow = row,
+            startColumn = column,
+            columnSpecified = true,
+            rowSpecified = true,
+            ast = node,
+            priority = 0,
+        }
+        renderOrder[i] = preRender
+        maxRow = math.max(maxRow, row)
+        insert(preRenderTakenMatrix[column][row], i)
+        ::continue::
+    end
+    local j = 1
+    -- for i, node in pairIterator(rowElsI, rowEls) do
+    while j <= #rowEls do
+        local node = rowEls[j]
+        ---@cast node Banana.Ast
+        local i = rowEls[j + 1]
+        ---@cast i number
+        local row = node:firstStyleValue("grid-row")
+        local column = 1
+        while preRenderTakenMatrix[column] == nil do
+            insert(preRenderTakenMatrix, {})
+        end
+        while preRenderTakenMatrix[column][row] == nil do
+            insert(preRenderTakenMatrix[column], {})
+        end
+        while #preRenderTakenMatrix[column][row] ~= 0 do
+            column = column + 1
+            while preRenderTakenMatrix[column] == nil do
+                insert(preRenderTakenMatrix, {})
+            end
+            while preRenderTakenMatrix[column][row] == nil do
+                insert(preRenderTakenMatrix[column], {})
+            end
+        end
+        ---@cast row number
+        local preRender = {
+            startRow = row,
+            startColumn = column,
+            columnSpecified = false,
+            rowSpecified = true,
+            ast = node,
+            priority = 0,
+        }
+        renderOrder[i] = preRender
+        maxRow = math.max(row, maxRow)
+        insert(preRenderTakenMatrix[column][row], i)
+        j = j + 2
+    end
+    local rowCursor = 1
+    local columnCursor = 1
+    j = 1
+    -- for i, node in pairIterator(colAndNonSpecI, colAndNonSpecEls) do
+    while j <= #colAndNonSpecEls do
+        local node = colAndNonSpecEls[j]
+        ---@cast node Banana.Ast
+        local i = colAndNonSpecEls[j + 1]
+        ---@cast i number
+        local column = node:firstStyleValue("grid-column")
+        local incColumn = column == nil
+        column = column or columnCursor
+        local row = rowCursor
+        while preRenderTakenMatrix[column] == nil do
+            insert(preRenderTakenMatrix, {})
+        end
+        while preRenderTakenMatrix[column][row] == nil do
+            insert(preRenderTakenMatrix[column], {})
+        end
+        while #preRenderTakenMatrix[column][row] ~= 0 do
+            if incColumn then
+                column = column + 1
+                if column > #preRenderTakenMatrix then
+                    row    = row + 1
+                    column = 1
+                end
+            else
+                row = row + 1
+            end
+            while preRenderTakenMatrix[column] == nil do
+                insert(preRenderTakenMatrix, {})
+            end
+            while preRenderTakenMatrix[column][row] == nil do
+                insert(preRenderTakenMatrix[column], {})
+            end
+        end
+        maxRow = math.max(row, maxRow)
+        columnCursor = column
+        rowCursor = row
+        ---@cast row number
+        local preRender = {
+            startRow = row,
+            startColumn = column,
+            columnSpecified = not incColumn,
+            rowSpecified = false,
+            ast = node,
+            priority = 0,
+        }
+        renderOrder[i] = preRender
+        insert(preRenderTakenMatrix[column][row], i)
+        j = j + 2
+    end
+    flame.pop()
+
+    flame.new("renderGridBlock_makeTemplates")
+    ---@type Banana.Renderer.GridTemplate[]
+    local columnTemplates = {}
+    ---@type Banana.Renderer.GridTemplate[]
+    local rowTemplates = {}
+
+    local cols = ast:allStylesFor("grid-template-columns") or {}
+    columnTemplates = getTemplates(cols, parentWidth, startX,
+        #preRenderTakenMatrix, true)
+    local rows = ast:allStylesFor("grid-template-rows") or {}
+    rowTemplates = getTemplates(rows, parentHeight, startY, maxRow, false)
+    local columnLimit = 5000
+    local rowLimit = 10000
+    if #columnTemplates > columnLimit then
+        log.fmt_throw("%d grid columns specified, maximum of %d", columnLimit,
+            rowLimit)
+    end
+    if #rowTemplates > rowLimit then
+        log.fmt_throw("%d grid rows specified, maximum of %d", rowLimit,
+            rowLimit)
+    end
+
+    if #columnTemplates == 0 then
+        ---@type Banana.Renderer.GridTemplate
+        local templ = {
+            start = startX,
+            size = -1,
+            maxSize = 0,
+            name = "1",
+            claimants = {}
+        }
+        insert(columnTemplates, templ)
+    end
+
+    if extra.debug then
+        local sm = b.Box:new()
+        for c, row in ipairs(preRenderTakenMatrix) do
+            local box = b.Box:new()
+            for r, v in ipairs(row) do
+                local below = b.Box:new()
+                if #v ~= 0 then
+                    below:appendStr("#" .. c .. ", " .. r .. ", " .. " ")
+                else
+                    below:appendStr(" ")
+                end
+                box:appendBoxBelow(below)
+            end
+            sm:append(box)
+        end
+        extra.trace:appendBoxBelow(dbg.traceBreak("sparse matrix"), false)
+        extra.trace:appendBoxBelow(dbg.traceBreak("making grid with " ..
+            maxRow .. " rows and " .. #preRenderTakenMatrix .. " cols"), false)
+        extra.trace:appendBoxBelow(sm, false)
+    end
+
+    local rowI = 1
+    local columnI = 1
+    local x = startX
+    if #rowTemplates == 0 then
+        ---@type Banana.Renderer.GridTemplate
+        local templ = {
+            start = startY,
+            size = -1,
+            maxSize = 0,
+            name = "1",
+            claimants = {}
+        }
+        insert(rowTemplates, templ)
+        -- for _, col in ipairs(takenMatrix) do
+        --     insert(col, false)
+        -- end
+    end
+    flame.pop()
+
+    ---@class Banana.Renderer.GridRenderItem
+    ---@field priority number z > rows > columns (aka 1,1 z=0 first, 10,10 z=80 last)
+    ---@field render Banana.Renderer.PartialRendered
+    ---@field ast Banana.Ast
+    ---@field rowStart number
+    ---@field colStart number
+
+    -- TODO: Need a loop to determine implicit column count/implicit row count
+
+    -- flame.new("renderGridBlock_renderLoop")
+    ---@type Banana.Renderer.GridRenderItem[]
+    local renderList = {}
+    for i, node in ast:childIterWithI() do
+        local row = nil
+        local col = nil
+        if renderOrder[i] ~= nil then
+            row = renderOrder[i].startRow
+            col = renderOrder[i].startColumn
+        else
+            repeat
+                columnI = columnI + 1
+                if columnI > #columnTemplates then
+                    columnI = 1
+                    rowI = rowI + 1
+                end
+                if rowI > #rowTemplates then
+                    break
+                end
+                if preRenderTakenMatrix[columnI] == nil then
+                    insert(preRenderTakenMatrix, {})
+                end
+                while preRenderTakenMatrix[columnI][rowI] == nil do
+                    insert(preRenderTakenMatrix[columnI], {})
+                end
+            until #preRenderTakenMatrix[columnI][rowI]
+            row = rowI
+            col = columnI
+        end
+        local colTempl = columnTemplates[col]
+        local rowTempl = getSection(row, rowTemplates, rowLimit)
+        local height = rowTempl.size
+        if height == -1 then
+            height = parentHeight
+        end
+
+        if rowTempl.size ~= -1 then
+            extra.useAllHeight = true
+        end
+        node:_resolveUnits(colTempl.size, rowTempl.size, {})
+        -- TODO: multi cell size
+        local rendered = node.actualTag:getRendered(node, hl, colTempl.size,
+            height, x, startY,
+            inherit, extra)
+
+        ---@type Banana.Renderer.GridRenderItem
+        local renderItem = {
+            priority = (columnI - 1) + (rowI - 1) * columnLimit +
+                node:firstStyleValue("z-index", 0) * columnLimit * rowLimit,
+            rowStart = row,
+            colStart = col,
+            ast = node,
+            render = rendered
+        }
+        -- TODO: on implicit rows, resize all prev elements if bigger (could
+        -- also make secondary startsize matrix but that prolly slower)
+        if rowTempl.size == -1 then
+            -- local old = rowTempl.maxSize
+            rowTempl.maxSize = math.max(rowTempl.maxSize, rendered:getHeight())
+            -- local inc = rowTempl.maxSize - old
+            -- if inc ~= 0 then
+            --     for i = row + 1, #rowTemplates do
+            --         rowTemplates[i].start = rowTemplates[i].start + inc
+            --     end
+            -- end
+        end
+        insert(renderList, renderItem)
+        -- TODO: For multi cell blocks, loop through and claim all
+
+        -- dont have to worry abt double insertion
+        insert(preRenderTakenMatrix[col][row], node)
+        -- columnI = columnI + 1
+    end
+    local ret = b.Box:new(parentHl)
+
+    -- flame.pop()
+    -- flame.new("renderGridBlock_final")
+
+    -- faster without sort
+    -- table.sort(renderList, function (l, r) return l.priority < r.priority end)
+
+    for _, v in ipairs(renderList) do
+        local render = v.render
+        local rowTempl = rowTemplates[v.rowStart]
+        local start = getGridStart(rowTempl, true)
+        v.ast:_increaseTopBound(start - v.ast.boundBox.topY)
+        if rowTempl.size == -1 and render:getHeight() < rowTempl.maxSize and v.ast:firstStyleValue("height", { unit = "", value = 0 }).unit ~= "ch" then
+            v.ast:_increaseHeightBoundBy(rowTempl.maxSize - v.render:getHeight())
+            v.render:expandHeightTo(rowTempl.maxSize)
+        end
+        ret:renderOver(render:render(),
+            columnTemplates[v.colStart].start - startX,
+            start - startY)
+    end
+
+    -- flame.pop()
+    flame.pop()
+
+    return ret, #ast.nodes + 1
 end
 
 ---Renders everything in a flex block
@@ -356,7 +863,8 @@ end
 ---@param inherit Banana.Renderer.InheritedProperties
 ---@param extra Banana.Renderer.ExtraInfo
 ---@return Banana.Box, integer
-function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra)
+function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, startX,
+                                 startY, inherit, extra)
     log.trace("TagInfo:renderFlexBlock " .. ast.tag)
     flame.new("renderFlexBlock")
     -- possible todos:
@@ -369,21 +877,11 @@ function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, start
     local hl = ast:_mixHl(parentHl)
     ---@type ([Banana.Renderer.PartialRendered, Banana.Ast]?)[]
     local renders = {}
-    ---@type integer[]
-    local needed = {}
-    -- local currentHeight = 0
     local rendersLen = 0
 
     -- base render for non fr els
-    for i, v in ipairs(ast.nodes) do
+    for _, v in ipairs(ast.nodes) do
         if type(v) == "string" then
-            goto continue
-        end
-
-        if not hasNoFrUnits(v) then
-            renders[rendersLen + 1] = nil
-            table.insert(needed, i)
-            rendersLen = rendersLen + 1
             goto continue
         end
 
@@ -395,10 +893,11 @@ function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, start
         })
         ---@cast basis Banana.Ncss.UnitValue
         local basisVal = math.min(basis.computed or parentWidth, parentWidth)
-        if v:firstStyleValue("flex-shrink") == 0 or v:hasStyle('flex-basis') then
+        if v:firstStyleValue("flex-shrink") == 0 or v:hasStyle("flex-basis") then
             inherit.min_size = false
         end
-        local rendered = v.actualTag:getRendered(v, hl, basisVal, parentHeight, startX, startY, inherit, extra)
+        local rendered = v.actualTag:getRendered(v, hl, basisVal, parentHeight,
+            startX, startY, inherit, extra)
         -- if rendered:getHeight() < currentHeight then
         --     rendered:expandHeightTo(currentHeight)
         -- end
@@ -423,6 +922,8 @@ function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, start
             if v ~= nil then
                 extra.trace:appendBoxBelow(dbg.traceBreak(i .. ""), false)
                 extra.trace:appendBoxBelow(v[1]:render(true), false)
+                extra.trace:appendBoxBelow(dbg.traceBreak(v[1].renderAlign),
+                    false)
             else
                 extra.trace:appendBoxBelow(dbg.traceBreak(i .. ""), false)
                 local box = b.Box:new()
@@ -432,100 +933,10 @@ function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, start
         end
     end
 
-    -- compute frs
-    local widthLeft = parentWidth - takenWidth
-    -- go through and add margins so that they are accounted for
-    for _, i in ipairs(needed) do
-        local v = ast.nodes[i]
-        ---@cast v Banana.Ast
-        v:_resolveUnits(parentWidth, parentHeight, {
-            0
-        })
-        widthLeft = widthLeft - v:marginLeft() - v:marginRight()
-    end
-    local totalFrs = 0
-    for _, i in ipairs(needed) do
-        local v = ast.nodes[i]
-        ---@cast v Banana.Ast
-        totalFrs = totalFrs + v:firstStyleValue("width").value
-        if v:_marginUnit(_ast.left).unit == "fr" then
-            totalFrs = totalFrs + v:_marginUnit(_ast.left).value
-        end
-        if v:_marginUnit(_ast.right).unit == "fr" then
-            totalFrs = totalFrs + v:_marginUnit(_ast.right).value
-        end
-    end
-    local frWidth = math.floor(widthLeft / totalFrs)
-    local extraCharsNeeded = widthLeft - totalFrs * frWidth
-    inherit.min_size = true
-    for _, i in ipairs(needed) do
-        local v = ast.nodes[i]
-        local width = frWidth
-        if extraCharsNeeded > 0 then
-            width = width + 1
-            extraCharsNeeded = extraCharsNeeded - 1
-        end
-        ---@cast v Banana.Ast
-        v:_resolveUnits(parentWidth, parentHeight, {
-            width
-        })
-        local basis = v:firstStyleValue("flex-basis", {
-            computed = parentWidth,
-            unit = "ch",
-            value = parentWidth,
-        })
-        ---@cast basis Banana.Ncss.UnitValue
-        local basisVal = math.min(basis.computed or parentWidth, parentWidth)
-        if v:firstStyleValue("flex-shrink") == 0 or v:hasStyle('flex-basis') then
-            inherit.min_size = false
-        end
-        local rendered = v.actualTag:getRendered(v, hl, basisVal, parentHeight, startX, startY, inherit, extra)
-        -- if rendered:getHeight() < currentHeight then
-        --     rendered:expandHeightTo(currentHeight)
-        -- end
-
-        renders[i] = { rendered, v }
-        -- rendersLen = rendersLen + 1
-        -- if rendered:getHeight() > currentHeight then
-        --     currentHeight = rendered:getHeight()
-        -- end
-
-        takenWidth = takenWidth + rendered:getWidth()
-    end
-    if extra.debug then
-        extra.trace:appendBoxBelow(dbg.traceBreak("flex w/ fr"), false)
-        extra.trace:appendBoxBelow(ast:_testDumpBox(), false)
-        for i, v in ipairs(renders) do
-            extra.trace:appendBoxBelow(dbg.traceBreak(i .. ""), false)
-            extra.trace:appendBoxBelow(v[1]:render(true), false)
-        end
-    end
 
     -- flex-grow and half of flex-wrap
     if takenWidth < parentWidth then
         flexGrowSection(parentWidth, takenWidth, renders, 1, #renders)
-        -- local totalGrows = 0
-        -- for node in ast:childIter() do
-        --     totalGrows = totalGrows + node:firstStyleValue("flex-grow", 0)
-        -- end
-        -- if totalGrows > 0 then
-        --     local growPer = math.floor((parentWidth - takenWidth) / totalGrows)
-        --     local extraGrow = parentWidth - takenWidth - growPer * totalGrows
-        --     -- compute flex grow
-        --     local i = 1
-        --     for node in ast:childIter() do
-        --         if node:firstStyleValue("flex-grow", 0) ~= 0 then
-        --             local grow = growPer * node:firstStyleValue("flex-grow", 0)
-        --             if extraGrow > 0 then
-        --                 grow = grow + 1
-        --                 extraGrow = extraGrow - 1
-        --             end
-        --             renders[i][1].widthExpansion = renders[i][1].widthExpansion + grow
-        --             renders[i][2]:_increaseWidthBoundBy(grow)
-        --         end
-        --         i = i + 1
-        --     end
-        -- end
     elseif ast:firstStyleValue("flex-wrap", "nowrap") == "wrap" then
         local taken = 0
         local startI = 1
@@ -572,7 +983,8 @@ function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, start
     for i = 1, #renders do
         local v = renders[i]
         if v == nil then
-            error("rendered " .. i .. " was nil!")
+            log.throw("rendered " .. i .. " was nil!")
+            error("")
         end
         if yInc > 0 then
             renders[i][2]:_increaseTopBound(yInc)
@@ -609,7 +1021,8 @@ function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, start
         end
     end
     if extra.debug then
-        extra.trace:appendBoxBelow(dbg.traceBreak("Wrapping into " .. #lines .. " lines"), false)
+        extra.trace:appendBoxBelow(
+            dbg.traceBreak("Wrapping into " .. #lines .. " lines"), false)
     end
 
     local ret = b.Box:new(hl)
@@ -642,7 +1055,8 @@ end
 ---@param inherit Banana.Renderer.InheritedProperties
 ---@param extra_ Banana.Renderer.ExtraInfo
 ---@return Banana.Box, integer
-function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX, startY, inherit, extra_)
+function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX,
+                             startY, inherit, extra_)
     log.trace("TagInfo:renderBlock " .. ast.tag)
     flame.new("renderBlock")
     local currentLine = b.Box:new(parentHl)
@@ -658,7 +1072,7 @@ function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX
             break
         end
         if v == "" then
-        elseif type(v) == 'string' then
+        elseif type(v) == "string" then
             if v:sub(1, 1) == "&" then
                 error("Entity support is nonexistent")
             elseif v:sub(1, 1) == "%" then
@@ -675,8 +1089,10 @@ function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX
                     end
                     if el:isNil() then
                         v = ""
-                        log.warn("Could not find attribute '" .. attr .. "' for template substitution")
-                        vim.notify("Could not find attribute '" .. attr .. "' for template substitution")
+                        log.warn("Could not find attribute '" ..
+                            attr .. "' for template substitution")
+                        vim.notify("Could not find attribute '" ..
+                            attr .. "' for template substitution")
                     else
                         v = el:getAttribute(attr) or ""
                     end
@@ -686,7 +1102,8 @@ function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX
             local box = b.Box:new(parentHl)
             box:appendStr(v, nil)
             local overflow = nil
-            currentLine, overflow = handleOverflow(ast, i, currentLine, box, width, parentHl)
+            currentLine, overflow = handleOverflow(ast, i, currentLine, box,
+                width, parentHl)
             if overflow ~= nil then
                 if extra == nil then
                     extra = currentLine
@@ -706,15 +1123,16 @@ function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX
         else
             local tag = v.actualTag
             if (tag.formatType == M.FormatType.Block or tag.formatType == M.FormatType.BlockInline) and hasElements then
-                flame.pop()
                 break
             end
             v:_resolveUnits(width, height)
-            local rendered = tag:getRendered(v, parentHl, width, height, startX, startY, inherit, extra_):render()
+            local rendered = tag:getRendered(v, parentHl, width, height, startX,
+                startY, inherit, extra_):render()
             startX = startX + rendered:width()
             local overflow = nil
             local orgLines = currentLine:height()
-            currentLine, overflow = handleOverflow(ast, i, currentLine, rendered, width, parentHl)
+            currentLine, overflow = handleOverflow(ast, i, currentLine, rendered,
+                width, parentHl)
             if rendered:height() > orgLines and overflow == nil then
                 local yInc = rendered:height() - orgLines
                 local currentI = startI
@@ -787,27 +1205,27 @@ end
 ---@param name string
 ---@return boolean
 function M.tagExists(name)
-    return pcall(require, 'banana.nml.tags.' .. name)
+    return pcall(require, "banana.nml.tags." .. name)
 end
 
 ---@param ast Banana.Ast|string
 ---@return string
 function M.firstChar(ast)
-    if type(ast) == 'string' then
+    if type(ast) == "string" then
         if string.len(ast) > 0 then
             return string.sub(ast, 1, 1)
         end
-        return ''
+        return ""
     end
     if ast.nodes[1] == nil then
-        return ''
+        return ""
     end
     ---@cast ast Banana.Ast
     local i = 1
-    while M.firstChar(ast.nodes[i]) == '' do
+    while M.firstChar(ast.nodes[i]) == "" do
         i = i + 1
         if i > #ast.nodes then
-            return ''
+            return ""
         end
     end
     return M.firstChar(ast.nodes[i])
@@ -816,9 +1234,9 @@ end
 ---@return Banana.TagInfo
 ---@param name string
 function M.makeTag(name)
-    local ok, mgr = pcall(require, 'banana.nml.tags.' .. name)
+    local ok, mgr = pcall(require, "banana.nml.tags." .. name)
     if not ok then
-        log.assert(false,
+        log.throw(
             "Error while trying to load tag '" .. name .. "'")
         error("")
     end

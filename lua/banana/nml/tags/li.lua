@@ -24,7 +24,6 @@ local function renderer(self, ast, parentHl, parentWidth, parentHeight, startX, 
     local render = self:renderInlineEl(ast, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra)
 
     -- because expandHeightTo will fail later down
-    flame.pop()
     if render:height() == 0 then return render end
 
     if extra.debug then
@@ -42,6 +41,8 @@ local function renderer(self, ast, parentHl, parentWidth, parentHeight, startX, 
     local oldHl = render.hlgroup
     render = box
     render.hlgroup = oldHl
+    -- flame.expect("tag:li")
+    flame.pop()
     return render
 end
 ---@type Banana.TagInfo
