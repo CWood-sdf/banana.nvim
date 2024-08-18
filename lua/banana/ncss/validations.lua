@@ -161,6 +161,7 @@ local validations = {
     ["grid-template-rows"] = Validation:new({ ["*"] = { { "unit" } } }),
     ["grid-row"] = Validation:new({
         [1] = { { "integer" } },
+        [2] = { { "|span", "integer" } },
         [3] = { { "integer", "slash", "integer" } },
         [4] = { { "integer", "slash", "|span", "integer" } }
     }),

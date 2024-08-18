@@ -470,6 +470,7 @@ local function getSection(i, templates, limit)
     return templates[i]
 end
 
+
 --- renders an element with display:grid
 ---@param ast Banana.Ast
 ---@param parentHl Banana.Highlight?
@@ -507,6 +508,8 @@ function TagInfo:renderGridBlock(ast, parentHl, parentWidth, parentHeight, start
     ---@field ast Banana.Ast
     ---@field startColumn number
     ---@field startRow number
+    ---@field colSize number
+    ---@field rowSize number
 
     -- flame.new("renderGridBlock_placement")
 
@@ -525,50 +528,81 @@ function TagInfo:renderGridBlock(ast, parentHl, parentWidth, parentHeight, start
 
     local maxRow = 0
 
-    -- using one array instead of two i believe reduces reallocs
-    ---@type (Banana.Ast|number)[]
+    -- using one array instead of many i believe reduces reallocs
+    ---@type (Banana.Ast|number|Banana.Ncss.StyleValue[])[]
     local rowEls = {}
 
-    ---@type (Banana.Ast|number)[]
+    ---@type (Banana.Ast|number|Banana.Ncss.StyleValue[])[]
     local colAndNonSpecEls = {}
 
     for i, node in ast:childIterWithI() do
-        local row = node:firstStyleValue("grid-row")
-        local column = node:firstStyleValue("grid-column")
-        ---@cast row number?
-        ---@cast column number?
-        if row == nil then
+        local rows = node:allStylesFor("grid-row")
+        local cols = node:allStylesFor("grid-column")
+        -- According to validations.lua (as of now), [2] only supports span,
+        -- which is NOT considered a definite element
+        if rows == nil or #rows == 2 then
+            -- need this loop to contain
+            -- grid-row: span n (#rows == 2)
+            -- grid-column: anything (rows == nil)
+            -- grid-row: null (rows == nil)
+            -- grid-row+grid-column: null
             insert(colAndNonSpecEls, node)
             insert(colAndNonSpecEls, i)
+            insert(colAndNonSpecEls, rows or {})
+            insert(colAndNonSpecEls, cols or {})
             goto continue
         end
-        if column == nil then
+        if cols == nil or #cols == 2 then
             insert(rowEls, node)
             insert(rowEls, i)
+            insert(rowEls, rows or {})
+            insert(rowEls, cols or {})
             goto continue
         end
-        row = row or 1
-        column = column or 1
-        while preRenderTakenMatrix[column] == nil do
+        local row = rows[1].value
+        local col = cols[1].value
+        ---@cast row number
+        ---@cast col number
+
+        local endRow = row + 1
+        local endCol = col + 1
+        -- TODO: Handle negative values and span areas
+        if #rows == 3 then
+            ---@diagnostic disable-next-line: cast-local-type
+            endRow = rows[3].value
+        elseif #rows == 4 then
+            endRow = row + rows[4].value
+        end
+        ---@cast endRow number
+        if #cols == 3 then
+            ---@diagnostic disable-next-line: cast-local-type
+            endCol = cols[3].value
+        elseif #cols == 4 then
+            endCol = col + cols[4].value
+        end
+        while preRenderTakenMatrix[endCol] == nil do
             insert(preRenderTakenMatrix, {})
         end
-        while preRenderTakenMatrix[column][row] == nil do
-            insert(preRenderTakenMatrix[column], {})
+        for c = col, endCol - 1 do
+            while preRenderTakenMatrix[c][endRow] == nil do
+                insert(preRenderTakenMatrix[c], {})
+            end
         end
-        ---@cast row number
-        ---@cast column number
         ---@type Banana.Renderer.GridPreRender
         local preRender = {
             startRow = row,
-            startColumn = column,
-            columnSpecified = true,
-            rowSpecified = true,
+            startColumn = col,
             ast = node,
-            priority = 0,
+            rowSize = endRow - row,
+            colSize = endCol - col,
         }
         renderOrder[i] = preRender
-        maxRow = math.max(maxRow, row)
-        insert(preRenderTakenMatrix[column][row], i)
+        maxRow = math.max(maxRow, endRow)
+        for r = row, endRow - 1 do
+            for c = col, endCol - 1 do
+                insert(preRenderTakenMatrix[c][r], i)
+            end
+        end
         ::continue::
     end
     local j = 1
@@ -577,37 +611,88 @@ function TagInfo:renderGridBlock(ast, parentHl, parentWidth, parentHeight, start
         local node = rowEls[j]
         ---@cast node Banana.Ast
         local i = rowEls[j + 1]
+        local rows = rowEls[j + 2]
+        local cols = rowEls[j + 3]
+        ---@cast rows Banana.Ncss.StyleValue[]
+        ---@cast cols Banana.Ncss.StyleValue[]
+        -- NOTE: we can only be here if rows *IS* definite
+        -- However, cols could also be a span value
+        -- (see https://www.w3.org/TR/css-grid-1/#placement)
+
+        local colSpan = 1
+        if #cols == 2 then
+            ---@diagnostic disable-next-line: cast-local-type
+            colSpan = cols[2].value
+        end
+        ---@cast colSpan number
         ---@cast i number
-        local row = node:firstStyleValue("grid-row")
+        local startRow = rows[1].value
+        local endRow = startRow + 1
+        if #rows == 3 then
+            ---@diagnostic disable-next-line: cast-local-type
+            endRow = rows[3].value
+        elseif #rows == 4 then
+            endRow = startRow + rows[4].value
+        end
         local column = 1
-        while preRenderTakenMatrix[column] == nil do
-            insert(preRenderTakenMatrix, {})
-        end
-        while preRenderTakenMatrix[column][row] == nil do
-            insert(preRenderTakenMatrix[column], {})
-        end
-        while #preRenderTakenMatrix[column][row] ~= 0 do
-            column = column + 1
-            while preRenderTakenMatrix[column] == nil do
-                insert(preRenderTakenMatrix, {})
+
+        ---@cast startRow number
+        ---@cast endRow number
+
+        -- small optimization here, we can start reading from end and move
+        -- cursor a lot if reach taken element
+        local done = false
+        while not done do
+            for c = column + colSpan - 1, column, -1 do
+                -- while preRenderTakenMatrix[c] == nil do
+                --     insert(preRenderTakenMatrix, {})
+                -- end
+                -- moving fwd should be faster bc there should be more elements
+                -- up top
+                for r = startRow, endRow - 1 do
+                    -- lazy load in rows
+                    if preRenderTakenMatrix[c] == nil then
+                        goto continue
+                    end
+                    if preRenderTakenMatrix[c][r] == nil then
+                        goto continue
+                    end
+                    if #preRenderTakenMatrix[c][r] ~= 0 then
+                        column = c + 1
+                        -- proved that this state is invalid, skip to next
+                        -- possible valid state
+                        goto skip
+                    end
+                    ::continue::
+                end
             end
-            while preRenderTakenMatrix[column][row] == nil do
-                insert(preRenderTakenMatrix[column], {})
-            end
+            done = true
+            ::skip::
         end
-        ---@cast row number
+        ---@type Banana.Renderer.GridPreRender
         local preRender = {
-            startRow = row,
+            startRow = startRow,
             startColumn = column,
-            columnSpecified = false,
-            rowSpecified = true,
             ast = node,
-            priority = 0,
+            rowSize = endRow - startRow,
+            colSize = colSpan,
         }
         renderOrder[i] = preRender
-        maxRow = math.max(row, maxRow)
-        insert(preRenderTakenMatrix[column][row], i)
-        j = j + 2
+        maxRow = math.max(endRow, maxRow)
+        while preRenderTakenMatrix[column + colSpan - 1] == nil do
+            insert(preRenderTakenMatrix, {})
+        end
+        for c = column, column + colSpan - 1 do
+            while preRenderTakenMatrix[c][endRow - 1] == nil do
+                insert(preRenderTakenMatrix[c], {})
+            end
+        end
+        for c = column, column + colSpan - 1 do
+            for r = startRow, endRow - 1 do
+                insert(preRenderTakenMatrix[c][r], i)
+            end
+        end
+        j = j + 4
     end
     local rowCursor = 1
     local columnCursor = 1
@@ -618,48 +703,96 @@ function TagInfo:renderGridBlock(ast, parentHl, parentWidth, parentHeight, start
         ---@cast node Banana.Ast
         local i = colAndNonSpecEls[j + 1]
         ---@cast i number
-        local column = node:firstStyleValue("grid-column")
-        local incColumn = column == nil
-        column = column or columnCursor
+        local rows = colAndNonSpecEls[j + 2]
+        local cols = colAndNonSpecEls[j + 3]
+        -- the possible cases here:
+        -- defined col + no row or span row
+        -- span col + no row
+        -- span row + no col
+        -- no row + no col
+        -- AKA (bc no line is same as span=1):
+        -- defined col + span row
+        -- span row + span col
+        local rowSpan = 1
+        local colSpan = 1
+        if #rows == 2 then
+            ---@diagnostic disable-next-line: cast-local-type
+            rowSpan = rows[2].value
+        end
+        local column = columnCursor
+        local colDefined = false
+        if #cols == 2 then
+            ---@diagnostic disable-next-line: cast-local-type
+            colSpan = cols[2].value
+        elseif #cols == 3 then
+            colDefined = true
+            colSpan = cols[3].value - cols[1].value
+            ---@diagnostic disable-next-line: cast-local-type
+            column = cols[1].value
+        elseif #cols == 4 then
+            colDefined = true
+            ---@diagnostic disable-next-line: cast-local-type
+            colSpan = cols[4].value
+            ---@diagnostic disable-next-line: cast-local-type
+            column = cols[1].value
+        end
+        ---@cast column number
+        ---@cast rowSpan number
+        ---@cast colSpan number
+
         local row = rowCursor
-        while preRenderTakenMatrix[column] == nil do
-            insert(preRenderTakenMatrix, {})
-        end
-        while preRenderTakenMatrix[column][row] == nil do
-            insert(preRenderTakenMatrix[column], {})
-        end
-        while #preRenderTakenMatrix[column][row] ~= 0 do
-            if incColumn then
-                column = column + 1
-                if column > #preRenderTakenMatrix then
-                    row    = row + 1
-                    column = 1
+        local done = false
+        while not done do
+            for r = row, row + rowSpan - 1 do
+                for c = column, column + colSpan - 1 do
+                    if
+                        preRenderTakenMatrix[c] ~= nil
+                        and preRenderTakenMatrix[c][r] ~= nil
+                        and #preRenderTakenMatrix[c][r] ~= 0
+                    then
+                        if colDefined then
+                            row = r + 1
+                        else
+                            column = c + 1
+                            if column > #preRenderTakenMatrix then
+                                row = row + 1
+                                column = 1
+                            end
+                        end
+                        goto skip
+                    end
                 end
-            else
-                row = row + 1
             end
-            while preRenderTakenMatrix[column] == nil do
-                insert(preRenderTakenMatrix, {})
-            end
-            while preRenderTakenMatrix[column][row] == nil do
-                insert(preRenderTakenMatrix[column], {})
-            end
+            done = true
+            ::skip::
         end
-        maxRow = math.max(row, maxRow)
+        maxRow = math.max(row + rowSpan - 1, maxRow)
         columnCursor = column
         rowCursor = row
+        while preRenderTakenMatrix[column + colSpan - 1] == nil do
+            insert(preRenderTakenMatrix, {})
+        end
+        for c = column, column + colSpan - 1 do
+            while preRenderTakenMatrix[c][row + rowSpan - 1] == nil do
+                insert(preRenderTakenMatrix[c], {})
+            end
+        end
         ---@cast row number
+        ---@type Banana.Renderer.GridPreRender
         local preRender = {
+            colSize = colSpan,
+            rowSize = rowSpan,
             startRow = row,
             startColumn = column,
-            columnSpecified = not incColumn,
-            rowSpecified = false,
             ast = node,
-            priority = 0,
         }
         renderOrder[i] = preRender
-        insert(preRenderTakenMatrix[column][row], i)
-        j = j + 2
+        for c = column, column + colSpan - 1 do
+            for r = row, row + rowSpan - 1 do
+                insert(preRenderTakenMatrix[c][r], i)
+            end
+        end
+        j = j + 4
     end
     -- flame.pop()
 
@@ -737,12 +870,15 @@ function TagInfo:renderGridBlock(ast, parentHl, parentWidth, parentHeight, start
     end
     flame.pop()
 
-    ---@class Banana.Renderer.GridRenderItem
+    ---@class (exact) Banana.Renderer.GridRenderItem
     ---@field priority number z > rows > columns (aka 1,1 z=0 first, 10,10 z=80 last)
     ---@field render Banana.Renderer.PartialRendered
     ---@field ast Banana.Ast
     ---@field rowStart number
     ---@field colStart number
+    ---@field colEnd number
+    ---@field rowEnd number
+    ---@field ogHeight number
 
     -- flame.new("renderGridBlock_renderLoop")
     ---@type Banana.Renderer.GridRenderItem[]
@@ -750,72 +886,110 @@ function TagInfo:renderGridBlock(ast, parentHl, parentWidth, parentHeight, start
     for i, node in ast:childIterWithI() do
         local row = nil
         local col = nil
+        local rowSpan = 1
+        local colSpan = 1
         if renderOrder[i] ~= nil then
             row = renderOrder[i].startRow
             col = renderOrder[i].startColumn
+            rowSpan = renderOrder[i].rowSize
+            colSpan = renderOrder[i].colSize
         else
-            repeat
-                columnI = columnI + 1
-                if columnI > #columnTemplates then
-                    columnI = 1
-                    rowI = rowI + 1
-                end
-                if rowI > #rowTemplates then
-                    break
-                end
-                if preRenderTakenMatrix[columnI] == nil then
-                    insert(preRenderTakenMatrix, {})
-                end
-                while preRenderTakenMatrix[columnI][rowI] == nil do
-                    insert(preRenderTakenMatrix[columnI], {})
-                end
-            until #preRenderTakenMatrix[columnI][rowI]
-            row = rowI
-            col = columnI
+            log.throw("unreachable")
+            error("")
         end
-        local colTempl = columnTemplates[col]
-        local rowTempl = getSection(row, rowTemplates, rowLimit)
-        local height = rowTempl.size
-        if height == -1 then
-            height = parentHeight
+        local actualHeight = 0
+        local actualWidth = 0
+        for c = col, col + colSpan - 1 do
+            local t     = columnTemplates[c]
+            actualWidth = actualWidth + t.size
         end
-
-        if rowTempl.size ~= -1 then
-            extra.useAllHeight = true
+        extra.useAllHeight = true
+        local ogHeight = 0
+        for r = row, row + rowSpan - 1 do
+            local t = rowTemplates[r]
+            if t.size ~= -1 then
+                actualHeight = actualHeight + t.size
+                ogHeight = ogHeight + t.size
+            else
+                ogHeight = ogHeight + t.maxSize
+                actualHeight = actualHeight + parentHeight
+                extra.useAllHeight = false
+            end
         end
-        node:_resolveUnits(colTempl.size, rowTempl.size, {})
+        node:_resolveUnits(actualWidth, actualHeight, {})
         -- TODO: multi cell size
-        local rendered = node.actualTag:getRendered(node, hl, colTempl.size,
-            height, x, startY,
+        local rendered = node.actualTag:getRendered(node, hl, actualWidth,
+            actualHeight, x, startY,
             inherit, extra)
 
         ---@type Banana.Renderer.GridRenderItem
         local renderItem = {
+            ogHeight = ogHeight,
             priority = (columnI - 1) + (rowI - 1) * columnLimit +
                 node:firstStyleValue("z-index", 0) * columnLimit * rowLimit,
             rowStart = row,
             colStart = col,
+            rowEnd = row + rowSpan - 1,
+            colEnd = col + colSpan - 1,
             ast = node,
             render = rendered
         }
         -- TODO: on implicit rows, resize all prev elements if bigger (could
         -- also make secondary startsize matrix but that prolly slower)
-        if rowTempl.size == -1 then
-            -- local old = rowTempl.maxSize
-            rowTempl.maxSize = math.max(rowTempl.maxSize, rendered:getHeight())
-            -- local inc = rowTempl.maxSize - old
-            -- if inc ~= 0 then
-            --     for i = row + 1, #rowTemplates do
-            --         rowTemplates[i].start = rowTemplates[i].start + inc
-            --     end
-            -- end
+        local heightToDistribute = rendered:getHeight()
+        local implicitRows = 0
+        for r = row, row + rowSpan - 1 do
+            if rowTemplates[r].size == -1 then
+                implicitRows = row + rowSpan - r
+                break
+            end
+            heightToDistribute = heightToDistribute - rowTemplates[r].size
         end
-        insert(renderList, renderItem)
-        -- TODO: For multi cell blocks, loop through and claim all
+        if heightToDistribute > 0 and implicitRows > 0 then
+            local perRow = math.floor(heightToDistribute / implicitRows)
+            local extraHeight = heightToDistribute - perRow * implicitRows
+            for r = row + rowSpan - 1, row, -1 do
+                if rowTemplates[r].size ~= -1 then
+                    break
+                end
+                if rowTemplates[r].maxSize > perRow then
+                    heightToDistribute = heightToDistribute - perRow
+                    if extraHeight > 0 then
+                        heightToDistribute = heightToDistribute - 1
+                        extraHeight = extraHeight - 1
+                    end
+                end
+            end
+            perRow = math.floor(heightToDistribute / implicitRows)
+            extraHeight = heightToDistribute - perRow * implicitRows
+            for r = row + rowSpan - 1, row, -1 do
+                if rowTemplates[r].size ~= -1 then
+                    break
+                end
+                if rowTemplates[r].maxSize > perRow then
+                    goto continue
+                end
+                local newMax = rowTemplates[r].maxSize + perRow
+                if extraHeight > 0 then
+                    newMax      = newMax + 1
+                    extraHeight = extraHeight - 1
+                end
+                rowTemplates[r].maxSize = newMax
 
-        -- dont have to worry abt double insertion
-        insert(preRenderTakenMatrix[col][row], node)
-        -- columnI = columnI + 1
+                ::continue::
+            end
+        end
+        -- if rowTempl.size == -1 then
+        --     -- local old = rowTempl.maxSize
+        --     rowTempl.maxSize = math.max(rowTempl.maxSize, rendered:getHeight())
+        --     -- local inc = rowTempl.maxSize - old
+        --     -- if inc ~= 0 then
+        --     --     for i = row + 1, #rowTemplates do
+        --     --         rowTemplates[i].start = rowTemplates[i].start + inc
+        --     --     end
+        --     -- end
+        -- end
+        insert(renderList, renderItem)
     end
     local ret = b.Box:new(parentHl)
 
@@ -829,10 +1003,19 @@ function TagInfo:renderGridBlock(ast, parentHl, parentWidth, parentHeight, start
         local render = v.render
         local rowTempl = rowTemplates[v.rowStart]
         local start = getGridStart(rowTempl, true)
+        local newHeight = 0
+        for r = v.rowStart, v.rowEnd do
+            local t = rowTemplates[r]
+            if t.size == -1 then
+                newHeight = newHeight + rowTemplates[r].maxSize
+            else
+                newHeight = newHeight + rowTemplates[r].size
+            end
+        end
         v.ast:_increaseTopBound(start - v.ast.boundBox.topY)
-        if rowTempl.size == -1 and render:getHeight() < rowTempl.maxSize and v.ast:firstStyleValue("height", { unit = "", value = 0 }).unit ~= "ch" then
-            v.ast:_increaseHeightBoundBy(rowTempl.maxSize - v.render:getHeight())
-            v.render:expandHeightTo(rowTempl.maxSize)
+        if newHeight > render:getHeight() and v.ast:firstStyleValue("height", { unit = "", value = 0 }).unit ~= "ch" then
+            v.ast:_increaseHeightBoundBy(newHeight - v.render:getHeight())
+            v.render:expandHeightTo(newHeight)
         end
         ret:renderOver(render:render(),
             columnTemplates[v.colStart].start - startX,

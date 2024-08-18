@@ -53,7 +53,7 @@ function M.new(name, skipLog)
     if not skipLog then
         log.trace("flame:new " .. name)
     end
-    local switchTime = vim.loop.hrtime() / 1000
+    local switchTime = vim.uv.hrtime() / 1000
     recordTime(switchTime)
     table.insert(flameStack, name)
     startTime(switchTime)
@@ -81,7 +81,7 @@ function M.pop(skipLog)
         print("flamestack empty!")
         return
     end
-    local switchTime = vim.loop.hrtime() / 1000
+    local switchTime = vim.uv.hrtime() / 1000
     recordTime(switchTime)
     table.remove(flameStack)
     startTime(switchTime)
