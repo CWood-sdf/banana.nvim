@@ -6,11 +6,11 @@ local t = require("banana.lazyRequire")("banana.nml.render")
 ---@type Banana.Renderer
 local function renderer(self, ast, parentHl, parentWidth, parentHeight, startX,
                         startY, inherit, extra)
-    flame.new("tag:span")
+    --flame.new("tag:span")
     local ret = self:renderInlineEl(ast, parentHl, parentWidth, parentHeight,
         startX,
         startY, inherit, extra)
-    flame.pop()
+    --flame.pop()
     return ret
 end
 ---@type Banana.TagInfo

@@ -9,7 +9,7 @@ local M = {}
 ---@param line Banana.Line
 ---@return Banana.Line
 local function cloneLine(line)
-    flame.new("cloneLine")
+    --flame.new("cloneLine")
     ---@type Banana.Line
     local ret = {}
     for _, v in ipairs(line) do
@@ -18,7 +18,7 @@ local function cloneLine(line)
             style = v.style
         })
     end
-    flame.pop()
+    --flame.pop()
     return ret
 end
 
@@ -157,7 +157,7 @@ function M.Box:clean()
     if not self.dirty then
         return
     end
-    flame.new("Box:clean")
+    --flame.new("Box:clean")
     for i, _ in ipairs(self.lines) do
         local w = M.lineWidth(self.lines[i])
         if w > self._width then
@@ -179,7 +179,7 @@ function M.Box:clean()
     --     end
     -- end
     self.dirty = false
-    flame.pop()
+    --flame.pop()
 end
 
 ---@param box Banana.Box
@@ -195,7 +195,7 @@ end
 ---@param box Banana.Box
 ---@param strat Banana.Box.MergeStrategy?
 function M.Box:append(box, strat)
-    flame.new("Box:append")
+    --flame.new("Box:append")
     strat = strat or M.MergeStrategy.Top
     self:clean()
     -- essentially whats happening is this:
@@ -260,7 +260,7 @@ function M.Box:append(box, strat)
     end
     self._width = self._width + box._width
     self.dirty = box.dirty
-    flame.pop()
+    --flame.pop()
 end
 
 ---Appends string to the right
@@ -328,7 +328,7 @@ end
 ---@param box Banana.Box
 ---@param expand boolean?
 function M.Box:appendBoxBelow(box, expand)
-    flame.new("appendBoxBelow")
+    --flame.new("appendBoxBelow")
     if expand == nil then
         expand = true
     end
@@ -352,7 +352,7 @@ function M.Box:appendBoxBelow(box, expand)
     self.dirty = self._width ~= box._width
     self._width = newWidth
     -- flame.expect("appendBoxBelow")
-    flame.pop()
+    --flame.pop()
 end
 
 -- function M.Box:floatAppend()
@@ -399,7 +399,7 @@ end
 function M.Box:renderOver(other, left, top)
     log.trace("renderOver")
     --- This function is pretty expensive because all the string stuff
-    flame.new("Box:renderOver")
+    --flame.new("Box:renderOver")
     -- lol dont look at this function i barely understand it
     -- if you really need help with this function, post an issue
     self:clean()
@@ -543,7 +543,7 @@ function M.Box:renderOver(other, left, top)
     end
     self.dirty = self.dirty or (self._width < left + other._width)
     self._width = math.max(self._width, left + other._width)
-    flame.pop()
+    --flame.pop()
 end
 
 return M

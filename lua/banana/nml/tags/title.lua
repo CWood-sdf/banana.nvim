@@ -6,13 +6,13 @@ local t = require("banana.lazyRequire")("banana.nml.render")
 ---@type Banana.Renderer
 local function renderer(self, ast, _, parentWidth, parentHeight, startX, startY,
                         inherit, extra)
-    flame.new("tag:title")
+    --flame.new("tag:title")
     local inst = require("banana.instance").getInstance(ast.instance)
     inst:setBufName(ast:getTextContent())
     local b = require("banana.box")
     ---@type Banana.Box
     local ret = b.Box:new()
-    flame.pop()
+    --flame.pop()
     return ret
 end
 ---@type Banana.TagInfo

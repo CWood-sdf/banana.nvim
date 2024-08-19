@@ -40,7 +40,7 @@
   <body>
     asdfsdf
     <div class="grid">
-      <div>17</div>
+      <div style="hl-bg: blue; hl-fg: white">17</div>
 
       <!--16,   -->
       <!--14, 2, 3, 4, 5   -->
@@ -59,7 +59,7 @@
       <!-- <div style="grid-row: 2">11</div> -->
       <!-- <div style="grid-row: 2">12</div> -->
       <!-- <div style="grid-column: 1">13</div> -->
-      <div style="grid-column: 1; grid-row: 2">14</div>
+      <div style="grid-column: 1; grid-row: 3">14</div>
       <div>15</div>
       <!-- <div style="grid-column: 1; grid-row: 1">16</div> -->
       <div>18</div>

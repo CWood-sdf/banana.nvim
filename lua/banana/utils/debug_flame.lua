@@ -26,7 +26,13 @@ local flameStarts = {}
 ---@type { [string]: number }
 local flameCounts = {}
 
-local function recordTime(time)
+---@type { [string]: number[] }
+local flameAlls = {}
+
+local function recordTime(time, recordAll)
+    if #flameStack == 0 then
+        return
+    end
     local flame = flameStack[#flameStack]
     if flame == nil then
         return
@@ -34,9 +40,12 @@ local function recordTime(time)
     if flame == "ignore" then
         return
     end
+    if recordAll then
+        flameAlls[flame] = flameAlls[flame] or {}
+        table.insert(flameAlls[flame], time - flameStarts[flame])
+    end
     flameTimes[flame] = flameTimes[flame] or 0
-    flameTimes[flame] = flameTimes[flame] - flameStarts[flame] +
-        time
+    flameTimes[flame] = flameTimes[flame] + time - flameStarts[flame]
 end
 
 local function startTime(time)
@@ -54,7 +63,7 @@ function M.new(name, skipLog)
         log.trace("flame:new " .. name)
     end
     local switchTime = vim.uv.hrtime() / 1000
-    recordTime(switchTime)
+    recordTime(switchTime, false)
     table.insert(flameStack, name)
     startTime(switchTime)
     flameCounts[name] = flameCounts[name] or 0
@@ -71,7 +80,9 @@ function M.expect(name)
     end
 end
 
-function M.pop(skipLog)
+function M.pop(skipLog, recordAll)
+    skipLog = skipLog or false
+    recordAll = recordAll or false
     if not isdev() then return end
     if not skipLog then
         log.trace("flame:pop " .. (flameStack[#flameStack] or ""))
@@ -82,7 +93,7 @@ function M.pop(skipLog)
         return
     end
     local switchTime = vim.uv.hrtime() / 1000
-    recordTime(switchTime)
+    recordTime(switchTime, recordAll)
     table.remove(flameStack)
     startTime(switchTime)
 end
@@ -132,6 +143,36 @@ function M.getFlames(unit, filter, per)
         end
     end
     return ret
+end
+
+---Returns a 90% confidence interval for the flame at flameAlls
+---@param flame string
+---@return [number, number]
+function M.getFlameAlls90Conf(flame)
+    -- get the mean
+    local mean = 0
+    for _, v in ipairs(flameAlls[flame]) do
+        v = v / 1000
+        mean = mean + v
+    end
+    -- print(mean)
+    mean = mean / #flameAlls[flame]
+    -- print(mean)
+    -- print(mean)
+    -- get the variance
+    -- variance = sum((x - mean)^2) / n
+    local variance = 0
+    for _, v in ipairs(flameAlls[flame]) do
+        v = v / 1000
+        variance = variance + (v - mean) * (v - mean)
+    end
+    variance = variance / #flameAlls[flame]
+    -- get the 90% confidence interval
+    local stdDev = math.sqrt(variance)
+    local z = 1.645
+    local conf = z * stdDev / math.sqrt(#flameAlls[flame])
+    -- print(mean .. ", " .. conf)
+    return { mean - conf, mean + conf }
 end
 
 ---@param unit? "millis"|"micros"|"nanos"|"s"|"pct"
