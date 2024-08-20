@@ -197,10 +197,10 @@ local function splitLineBoxOnce(targetWidth, box, hl)
         leftIns,
         word.style,
         nil)
-    right:appendWord(word(
+    right:appendWord(
         rightIns,
         word.style,
-        nil))
+        nil)
     i = i + 1
     while i <= #box:getLine(1) do
         local w = box:getLine(1)[i]
