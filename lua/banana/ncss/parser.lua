@@ -368,7 +368,11 @@ end
 ---@param lines string[]
 ---@return Banana.Ncss.RuleSet[]
 function M.parseLines(lines)
-    return M.parseText(vim.iter(lines):join("\n"))
+    local str = ""
+    for _, v in ipairs(lines) do
+        str = str .. v .. "\n"
+    end
+    return M.parseText(str)
 end
 
 return M

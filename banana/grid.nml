@@ -3,7 +3,7 @@
     <style>
       .grid {
         display: grid;
-        grid-template-columns: 2fr 10ch repeat(5, 1fr);
+        grid-template-columns: 2fr 10ch repeat(4, 1fr);
         hl-bg: green;
         hl-fg: black;
         hl-italic: false;
@@ -13,7 +13,6 @@
         hl-bg: red;
       }
       .grid > :first-child {
-        /* height: 2ch; */
         grid-row: 2;
         hl-bold: false;
         hl-italic: true;
@@ -41,11 +40,10 @@
     asdfsdf
     <div class="grid">
       <div style="hl-bg: blue; hl-fg: white">17</div>
+      <!--1, 15, 18 -->
+      <!--17, 17, 2, 3, 4, 5 -->
+      <!--14,  -->
 
-      <!--16,   -->
-      <!--14, 2, 3, 4, 5   -->
-      <!--1,  -->
-      <!--  -->
       <div style="grid-column: 1">1<span> asdf</span></div>
       <div style="grid-row: 2">2<span> asdf</span></div>
       <div style="grid-row: 2">3<span> asdf</span></div>

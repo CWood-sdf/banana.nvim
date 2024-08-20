@@ -10,6 +10,14 @@
       }
     },
     {
+      "name": "crash",
+      "cmd": "nvim -c \"lua vim.defer_fn(function() require('banana').test.grid() end, 500)\"",
+      "window": {
+        "name": "ookc",
+        "close": false
+      }
+    },
+    {
       "name": "run",
       "cmd": "nvim -c \"lua vim.defer_fn(function() require('banana').test.grid() end, 500)\"",
       "window": {
@@ -22,6 +30,14 @@
       "cmd": "nvim -c \"lua vim.defer_fn(function()require('osv').launch({ port = 8086 }) end, 200)\"",
       "window": {
         "name": "ookd",
+        "close": true
+      }
+    },
+    {
+      "name": "zig debug",
+      "cmd": "nvim --clean -u ./init.lua",
+      "window": {
+        "name": "ookzd",
         "close": true
       }
     }

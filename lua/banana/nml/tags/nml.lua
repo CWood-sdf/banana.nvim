@@ -7,7 +7,7 @@ local t = require("banana.lazyRequire")("banana.nml.render")
 local function renderer(self, ast, parentHl, parentWidth, parentHeight, startX,
                         startY, inherit, extra)
     local b = require("banana.box")
-    --flame.new("tag:nml")
+    flame.new("tag:nml")
     ---@type Banana.Box
     local ret = b.Box:new()
     for node in ast:childIter() do
@@ -21,13 +21,13 @@ local function renderer(self, ast, parentHl, parentWidth, parentHeight, startX,
                     parentHeight, startX, startY, inherit, extra)
                       :render()
         elseif node.tag ~= "script" and node.tag ~= "style" then
-            --flame.pop()
+            flame.pop()
             error("Only <head> and <body> tags allowed in <nml>, instead got <" ..
                 node.tag .. ">")
         end
     end
-    --flame.expect("tag:nml")
-    --flame.pop()
+    flame.expect("tag:nml")
+    flame.pop()
     return ret
 end
 ---@type Banana.TagInfo

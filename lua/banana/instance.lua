@@ -70,6 +70,7 @@ function Instance:_virtualRender(ast, width, height)
     --flame.new("virtualRender")
     ---@type Banana.Line[]
     local ret = {}
+    setmetatable(ret, { __mode = "kv" })
     local tag = ast.actualTag
     ---@type Banana.Renderer.ExtraInfo
     local extra = {
@@ -78,6 +79,7 @@ function Instance:_virtualRender(ast, width, height)
         debug = self.DEBUG,
         isRealRender = true,
     }
+    setmetatable(extra, { __mode = "kv" })
     local rendered = tag:renderRoot(ast, nil, width, height, {
         text_align = "left",
         position = "static",
@@ -552,7 +554,7 @@ function Instance:_deferRender()
             return
         end
         self.renderRequested = false
-        self.renderStart = vim.uv.hrtime()
+        self.renderStart = vim.loop.hrtime()
         self:_render()
         self.renderRequested = false
         self.rendering = false
@@ -564,7 +566,7 @@ function Instance:_requestRender()
         return
     end
     self.renderRequested = true
-    self.renderStart = vim.uv.hrtime()
+    self.renderStart = vim.loop.hrtime()
     self:_deferRender()
 end
 
@@ -584,13 +586,17 @@ function Instance:_render()
     if self.renderRequested then
         return
     end
+    -- local mri = require("banana.memorysnapshot")
+    -- collectgarbage("count")
+    -- mri.m_cMethods.DumpMemorySnapshot("./dumps", n .. "-Before", -1)
     collectgarbage("stop")
     log.trace("Instance:render with " .. #self.scripts .. " scripts")
+    flame.newIter()
     -- if n == 30 then
-    --     -- flame.reset()
+    -- flame.reset()
     -- end
     self.rendering = true
-    local startTime = vim.uv.hrtime()
+    local startTime = vim.loop.hrtime()
     local actualStart = startTime
     local astTime = 0
     local styleTime = 0
@@ -602,19 +608,21 @@ function Instance:_render()
     self:body().relativeBoxes = {}
     self:body().absoluteAsts = {}
 
-    styleTime = vim.uv.hrtime() - startTime
-    startTime = vim.uv.hrtime()
+    styleTime = vim.loop.hrtime() - startTime
+    startTime = vim.loop.hrtime()
 
     local width, height = self:_createWinAndBuf()
 
-    local winTime = vim.uv.hrtime() - startTime
-    startTime = vim.uv.hrtime()
+    local winTime = vim.loop.hrtime() - startTime
+    startTime = vim.loop.hrtime()
 
     -- self:body():resolveUnits(width, height, {})
+    flame.new("renderAll")
     local stuffToRender = self:_virtualRender(self.ast, width, height)
+    flame.pop()
 
-    local renderTime = vim.uv.hrtime() - startTime
-    startTime = vim.uv.hrtime()
+    local renderTime = vim.loop.hrtime() - startTime
+    startTime = vim.loop.hrtime()
 
     local lines = {}
     for _, line in ipairs(stuffToRender) do
@@ -624,9 +632,11 @@ function Instance:_render()
         end
         table.insert(lines, lineStr)
     end
+    -- collectgarbage("count")
+    -- mri.m_cMethods.DumpMemorySnapshot("./dumps", n .. "-After", -1)
 
-    local reductionTime = vim.uv.hrtime() - startTime
-    startTime = vim.uv.hrtime()
+    local reductionTime = vim.loop.hrtime() - startTime
+    startTime = vim.loop.hrtime()
 
     vim.api.nvim_set_option_value("modifiable", true, {
         buf = self.bufnr
@@ -639,8 +649,8 @@ function Instance:_render()
         buf = self.bufnr
     })
 
-    local bufTime = vim.uv.hrtime() - startTime
-    startTime = vim.uv.hrtime()
+    local bufTime = vim.loop.hrtime() - startTime
+    startTime = vim.loop.hrtime()
 
     self:_highlight(stuffToRender, 0)
     for _, script in ipairs(self.scripts) do
@@ -648,14 +658,16 @@ function Instance:_render()
     end
     self.scripts = {}
 
-    local hlTime = vim.uv.hrtime() - startTime
-    totalTime = totalTime + vim.uv.hrtime() - actualStart
+    local hlTime = vim.loop.hrtime() - startTime
+    totalTime = totalTime + vim.loop.hrtime() - actualStart
 
     if self.DEBUG or self.DEBUG_showPerf then
         n = n + 1
         avg = (avg * (n - 1) + renderTime) / n
         if self.DEBUG_stressTest then
-            if n < 700 then
+            -- should be 560MB used on n=600
+            -- renderOver pushes that to 2.5GB
+            if n < 200 then
                 self:_deferRender()
             end
         end
@@ -674,15 +686,15 @@ function Instance:_render()
             "",
         }
         local filter = ""
-        local flames = flame.getWorst("pct", filter, true)
-        local flameMillis = flame.getFlames("millis", filter, true)
+        local flames = flame.getWorst("pct", filter, false)
+        local flameMillis = flame.getFlames("millis", filter, false)
         local maxLen = 0
         for _, val in ipairs(flames) do
             maxLen = math.max(maxLen, #val[1] + 2)
         end
 
-        local conf = flame.getFlameAlls90Conf("TagInfo:renderGridBlock")
-        table.insert(extraLines, "(" .. conf[1] .. ", " .. conf[2] .. ")")
+        -- local conf = flame.getFlameAlls90Conf("TagInfo:renderGridBlock")
+        -- table.insert(extraLines, "(" .. conf[1] .. ", " .. conf[2] .. ")")
         -- print(vim.inspect(flames))
         local total = 0
         for _, val in ipairs(flames) do
@@ -697,7 +709,7 @@ function Instance:_render()
                 pct = pct .. string.rep(" ", 4 - #pct)
             end
             total = total + flameMillis[val[1]]
-            local time = math.floor(flameMillis[val[1]] * 10000) / 10000 ..
+            local time = math.floor(flameMillis[val[1]] * 1000) / 1000 ..
                 "ms"
             if #time < 9 then
                 time = time .. string.rep(" ", 9 - #time)
@@ -717,6 +729,7 @@ function Instance:_render()
     end
     self.rendering = false
     collectgarbage("restart")
+    collectgarbage()
 end
 
 ---@param lines Banana.Line[]
@@ -741,8 +754,8 @@ function Instance:_highlight(lines, offset)
     local row = offset
     local col = 0
     local hlId = 0
-    ---@type table<string, string>
-    local usedHighlights = {}
+    -- ---@type table<string, string>
+    -- local usedHighlights = {}
     for _, v in ipairs(lines) do
         --flame.new("hl:loop_inner")
         local i = 1
@@ -1005,7 +1018,12 @@ end
 
 ---@return number[]
 function M.listInstanceIds()
-    return vim.iter(ipairs(instances)):map(function (i, _) return i end):totable()
+    local ret = {}
+    for i, v in ipairs(instances) do
+        table.insert(ret, i)
+    end
+    return ret
+    -- return vim.iter(ipairs(instances)):map(function (i, _) return i end):totable()
 end
 
 return M

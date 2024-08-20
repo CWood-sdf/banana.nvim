@@ -1,4 +1,4 @@
-local ffi = require('ffi')
+local ffi = require("ffi")
 
 ffi.cdef([[
 
@@ -25,7 +25,8 @@ char* tsNodeString(TSNode node);
 TSPoint tsNodeStartPoint(TSNode);
 ]])
 
-local parser = ffi.load("/home/christopher-wood/projects/banana.nvim/tree-sitter-ncss/src/ncssParser2.so")
+local parser = ffi.load(
+    "/home/christopher-wood/projects/banana.nvim/tree-sitter-ncss/src/ncssParser2.so")
 
 local src = [[
       nml {
@@ -35,10 +36,10 @@ local src = [[
 
 -- local buf = ffi.new("char[?]", #src + 1)
 
-local start = vim.uv.hrtime()
+local start = vim.loop.hrtime()
 local parsed = parser.tree_sitter_ncss_parse_2(src, #src)
 local root = parser.tsTreeRootNode(parsed)
-print((vim.uv.hrtime() - start) / 1e6 .. "ms")
+print((vim.loop.hrtime() - start) / 1e6 .. "ms")
 print(ffi.string(parser.tsNodeString(root)))
 
 parser.tsTreeDelete(parsed)

@@ -1,4 +1,5 @@
 log
+dumps/
 bin/
 .tests/
 dev.lua

@@ -6,7 +6,7 @@ local t = require("banana.lazyRequire")("banana.nml.render")
 ---@type Banana.Renderer
 local function renderer(self, ast, parentHl, parentWidth, parentHeight, startX,
                         startY, inherit, extra)
-    --flame.new("tag:div")
+    flame.new("tag:div")
     local b = require("banana.box")
     ---@type Banana.Box
     local ret = b.Box:new()
@@ -15,7 +15,7 @@ local function renderer(self, ast, parentHl, parentWidth, parentHeight, startX,
         ret:appendBoxBelow(box)
     end
     -- flame.expect("tag:div")
-    --flame.pop()
+    flame.pop()
     return ret
 end
 ---@type Banana.TagInfo

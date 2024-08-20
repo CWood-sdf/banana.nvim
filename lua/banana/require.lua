@@ -118,9 +118,15 @@ end
 ---@param ft string
 ---@return Banana.Ast, Banana.Ncss.RuleSet[], string[]
 local function basicRequire(file, ft)
-    local path = vim.iter(vim.split(file, "/"))
-                    :filter(function (v) return #v ~= 0 end)
-                    :totable()
+    local path = {}
+    for _, v in ipairs(vim.split(file, "/")) do
+        if #v ~= 0 then
+            table.insert(path, v)
+        end
+    end
+    -- local path = vim.iter(vim.split(file, "/"))
+    --                 :filter(function (v) return #v ~= 0 end)
+    --                 :totable()
     for _, v in ipairs(vim.api.nvim_list_runtime_paths()) do
         local fname = getPathFor(v .. "/" .. baseFolder, path, ft)
         if fname ~= nil then

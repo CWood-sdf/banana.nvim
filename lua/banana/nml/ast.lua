@@ -565,8 +565,12 @@ end
 ---@param parentHl Banana.Highlight?
 ---@return Banana.Highlight
 function M.Ast:_mixHl(parentHl)
-    --flame.new("Ast:_mixHl")
+    flame.new("Ast:_mixHl")
     local ret = {}
+    setmetatable(ret, { __mode = "kv" })
+    if self.hl ~= nil then
+        setmetatable(self.hl, { __mode = "kv" })
+    end
 
     for k, v in pairs(self.hl or {}) do
         ret[k] = v
@@ -576,7 +580,7 @@ function M.Ast:_mixHl(parentHl)
             ret[k] = v
         end
     end
-    --flame.pop()
+    flame.pop()
     return ret
 end
 
@@ -1032,9 +1036,13 @@ function M.Ast:attachRemap(mode, lhs, mods, rhs, opts)
             "Banana attachRemap requires the 4th parameter (before rhs) to be a table of modifiers")
         error("")
     end
-    local modFns = vim.iter(mods)
-                      :map(function (mod) return self:_parseRemapMod(mod) end)
-                      :totable()
+    local modFns = {}
+    for _, v in ipairs(mods) do
+        table.insert(modFns, self:_parseRemapMod(v))
+    end
+    -- local modFns = vim.iter(mods)
+    --                   :map(function (mod) return self:_parseRemapMod(mod) end)
+    --                   :totable()
     if type(rhs) == "string" then
         local oldRhs = rhs
         rhs = function ()

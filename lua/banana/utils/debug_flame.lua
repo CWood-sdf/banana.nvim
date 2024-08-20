@@ -14,6 +14,14 @@ function M.overrideIsDev()
     _isdev = true
 end
 
+local iteration = 0
+
+---@type { [string]: number }
+local flameIters = {}
+
+---@type { [string]: number }
+local flameLastIter = {}
+
 ---@type string[]
 local flameStack = {}
 
@@ -40,18 +48,32 @@ local function recordTime(time, recordAll)
     if flame == "ignore" then
         return
     end
+    local delta = time - flameStarts[flame]
     if recordAll then
         flameAlls[flame] = flameAlls[flame] or {}
-        table.insert(flameAlls[flame], time - flameStarts[flame])
+        local section = flameAlls[flame]
+        if #section == flameCounts[flame] then
+            section[#section] = section[#section] + delta
+        else
+            table.insert(flameAlls[flame], delta)
+        end
     end
     flameTimes[flame] = flameTimes[flame] or 0
-    flameTimes[flame] = flameTimes[flame] + time - flameStarts[flame]
+    flameTimes[flame] = flameTimes[flame] + delta
 end
 
 local function startTime(time)
     local flame = flameStack[#flameStack]
     if flame == nil then
         return
+    end
+    if flameLastIter[flame] ~= nil and flameLastIter[flame] ~= iteration then
+        flameIters[flame] = flameIters[flame] or 0
+        flameIters[flame] = flameIters[flame] + 1
+        flameLastIter[flame] = iteration
+    else
+        flameLastIter[flame] = iteration
+        flameIters[flame] = flameIters[flame] or 1
     end
     flameStarts[flame] = time
 end
@@ -125,6 +147,8 @@ function M.getFlames(unit, filter, per)
         local vDiv = v / div
         if per then
             vDiv = vDiv / flameCounts[k]
+        else
+            vDiv = vDiv / flameIters[k]
         end
         ret[k] = vDiv
         total = total + vDiv
@@ -137,12 +161,18 @@ function M.getFlames(unit, filter, per)
             end
             if per then
                 v = v / flameCounts[k]
+            else
+                v = v / flameIters[k]
             end
             ret[k] = v / total
             ::continue::
         end
     end
     return ret
+end
+
+function M.newIter()
+    iteration = iteration + 1
 end
 
 ---Returns a 90% confidence interval for the flame at flameAlls

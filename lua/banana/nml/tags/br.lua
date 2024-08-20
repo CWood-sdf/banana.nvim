@@ -5,13 +5,13 @@ local t = require("banana.lazyRequire")("banana.nml.render")
 
 ---@type Banana.Renderer
 local function renderer(_, ast, parentHl, _, _)
-    --flame.new("tag:br")
+    flame.new("tag:br")
     local b = require("banana.box")
     ---@type Banana.Box
     local ret = b.Box:new()
     ret.hlgroup = ast:_mixHl(parentHl)
     ret:appendStr("")
-    --flame.pop()
+    flame.pop()
     return ret
 end
 ---@type Banana.TagInfo

@@ -88,6 +88,9 @@ function M.getInstallDir()
             ret = v
         end
     end
+    if ret == "" then
+        ret = vim.fn.getcwd()
+    end
     return ret
 end
 
