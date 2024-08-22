@@ -42,7 +42,7 @@ local instances = {}
 ---@field winhl table
 ---@field ast Banana.Ast
 ---@field styleRules Banana.Ncss.RuleSet[]
----@field scripts string[]
+---@field scripts (string|fun())[]
 ---@field foreignStyles { [Banana.Ast]: Banana.Ncss.RuleSet[] }
 ---@field keymaps { [string]: { [string]: Banana.Instance.Keymap[] } }
 ---@field astMapDeps { [Banana.Ast]: [string, string, Banana.Instance.Keymap][] }
@@ -206,7 +206,7 @@ function Instance:_attachAutocmds()
     })
     vim.api.nvim_create_autocmd({ "VimResized" }, {
         group = self.augroup,
-        callback = function (args)
+        callback = function ()
             self:_requestRender()
         end,
     })
@@ -415,12 +415,14 @@ function Instance:_applyStyleDeclarations(ast, rules)
     end
 end
 
----@param script string
+---@param script string|fun(opts: table)
 ---@param opts table
 function Instance:_runScript(script, opts)
     ---@type fun(opts: table)|nil
     local f = nil
-    if #script > 0 and script:sub(1, 1) == "@" then
+    if type(script) == "function" then
+        f = script
+    elseif #script > 0 and script:sub(1, 1) == "@" then
         local str = script:sub(2, #script)
         f = function (o)
             self:runScriptAt(str, o)
@@ -861,10 +863,11 @@ function Instance:loadNmlTo(file, ast, remove, preserve)
         end
     end
     for _, script in ipairs(scripts) do
-        self:_runScript(script, {
-            params = params,
-            selfNode = content,
-        })
+        table.insert(self.scripts, function (opts)
+            opts.params = params
+            opts.selfNode = content
+            self:_runScript(script, opts)
+        end)
     end
     self:_requestRender()
 end
