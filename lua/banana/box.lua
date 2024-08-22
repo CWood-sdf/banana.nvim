@@ -84,6 +84,10 @@ M.TrimStrategy = {
     NewLine = 2
 }
 
+function M.Box:getLines()
+    return self.lines
+end
+
 ---@return number
 ---@param line Banana.Line
 function M.lineWidth(line)

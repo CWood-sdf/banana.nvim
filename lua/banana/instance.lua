@@ -101,12 +101,7 @@ function Instance:_virtualRender(ast, width, height)
     if extra.debug then
         rendered:appendBoxBelow(extra.trace)
     end
-    ---@diagnostic disable-next-line: invisible
-    for _, line in ipairs(rendered.lines) do
-        table.insert(ret, line)
-    end
-    --flame.pop()
-    return ret
+    return rendered:getLines()
 end
 
 function Instance:setBufName(str)
@@ -739,8 +734,7 @@ function Instance:_highlight(lines, offset)
     --flame.new("hl:ns")
     vim.api.nvim_win_set_hl_ns(self.winid, self.highlightNs)
     if self.highlightNs ~= nil then
-        -- vim.api.nvim_buf_clear_namespace(0, self.highlightNs, offset,
-        --     offset + #lines)
+        vim.api.nvim_buf_clear_namespace(0, self.highlightNs, 0, -1)
         -- vim.api.nvim_win_set_hl_ns(self.winid, self.highlightNs)
         -- self.highlightNs = nil
     end

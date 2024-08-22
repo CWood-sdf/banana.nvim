@@ -349,7 +349,7 @@ function Parser:parseTag(tree, parent, isSpecial)
         elseif child:type() == M.ts_types.raw_text and isStyle then
             local ncssTree = self:getNextBlockNcssParser()
             local ncssParser = require("banana.ncss.parser").newParseData(self
-            .lexer.program)
+                .lexer.program)
             local rules = require("banana.ncss.parser").parse(ncssTree,
                 ncssParser)
             for _, rule in ipairs(rules) do
@@ -362,7 +362,7 @@ function Parser:parseTag(tree, parent, isSpecial)
         elseif child:type() == M.ts_types.comment then
         else
             error("Node type " ..
-            child:type() .. " not allowed when parsing tag body")
+                child:type() .. " not allowed when parsing tag body")
         end
         i = i + 1
     end

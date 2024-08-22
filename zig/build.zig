@@ -23,7 +23,7 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
-    // libbanana.linkLibC();
+    libbanana.linkLibC();
 
     // This declares intent for the library to be installed into the standard
     // location when the user invokes the "install" step (the default step when
@@ -36,7 +36,7 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
-    // exe.linkLibC();
+    exe.linkLibC();
     // const tracy = b.option([]const u8, "tracy", "Enable Tracy integration. Supply path to Tracy source");
     // exe.addIncludePath(std.Build.LazyPath{ .path = "src/nvim" });
 

@@ -1,5 +1,8 @@
 const std = @import("std");
 const testing = std.testing;
+const box = @import("box.zig");
+
+const booo: ?box.Box = null;
 
 export fn add(a: i32, b: i32) i32 {
     return a + b;
@@ -32,6 +35,7 @@ extern fn malloc(size: c_int) callconv(.C) *anyopaque;
 extern fn free(ptr: *anyopaque) callconv(.C) void;
 
 export fn turnOnRange(bs: *BitSetSection, rowStart: u32, colStart: u32, rowEnd: u32, colEnd: u32) callconv(.C) bool {
+    _ = box.initRenderCycle();
     // @compileLog(std.fmt.comptimePrint("{}", .{@sizeOf(BitSetSection) * 400}));
     _ = bs;
     for (rowStart..rowEnd) |r| {
