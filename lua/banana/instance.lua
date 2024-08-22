@@ -433,7 +433,6 @@ function Instance:_applyStyleDeclarations(ast, rules)
 end
 
 ---@internal
----@param script string
 ---@param script string|fun(opts: table)
 ---@param opts table
 function Instance:_runScript(script, opts)
