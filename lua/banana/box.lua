@@ -6,17 +6,54 @@ local log = require("banana.lazyRequire")("banana.utils.log")
 local _str = require("banana.lazyRequire")("banana.utils.string")
 
 local M = {}
+
+---@return Banana.Word[]
+local function emptyLine()
+    local ret = {}
+    setmetatable(ret, { __mode = "kv" })
+    return ret
+end
+
+---@return Banana.Word[]
+local function newLine(...)
+    local ret = { ... }
+    setmetatable(ret, { __mode = "kv" })
+    return ret
+end
+
+---@return Banana.Word[][]
+local function newLineArr(...)
+    local ret = { ... }
+    setmetatable(ret, { __mode = "kv" })
+    return ret
+end
+
+---@return Banana.Word[][]
+local function emptyLineArr()
+    return emptyLine()
+end
+
+---comment
+---@param str string
+---@param style Banana.Highlight?
+---@return Banana.Word
+local function word(str, style)
+    local ret = {
+        word = str,
+        style = style,
+    }
+    setmetatable(ret, { __mode = "kv" })
+    return ret
+end
+
 ---@param line Banana.Line
 ---@return Banana.Line
 local function cloneLine(line)
     flame.new("cloneLine")
     ---@type Banana.Line
-    local ret = {}
+    local ret = emptyLine()
     for _, v in ipairs(line) do
-        table.insert(ret, {
-            word = v.word,
-            style = v.style
-        })
+        table.insert(ret, word(v.word, v.style))
     end
     flame.pop()
     return ret
@@ -29,7 +66,7 @@ end
 ---@field fillChar string
 ---@field hlgroup Banana.Highlight?
 M.Box = {
-    lines = {},
+    lines = emptyLineArr(),
     _width = 0,
     dirty = false,
     fillChar = " ",
@@ -47,6 +84,10 @@ M.TrimStrategy = {
     NewLine = 2
 }
 
+function M.Box:getLines()
+    return self.lines
+end
+
 ---@return number
 ---@param line Banana.Line
 function M.lineWidth(line)
@@ -62,11 +103,8 @@ end
 function M.Box:fillString(width)
     local newStr = string.rep(self.fillChar, width)
     ---@type Banana.Word
-    local word = {
-        word = newStr,
-        style = self.hlgroup,
-    }
-    return word
+    local w = word(newStr, self.hlgroup)
+    return w
 end
 
 ---@param width number
@@ -128,12 +166,12 @@ function M.Box:expandHeightTo(height)
         error("")
     end
     while #self.lines < height do
-        table.insert(self.lines, {
-            {
-                word = string.rep(self.fillChar, self._width),
-                style = self.hlgroup,
-            }
-        })
+        table.insert(self.lines, newLine(
+            word(
+                string.rep(self.fillChar, self._width),
+                self.hlgroup
+            )
+        ))
     end
 end
 
@@ -142,15 +180,23 @@ end
 function M.Box:new(hlgroup)
     ---@type Banana.Box
     local box = {
-        lines = {},
+        lines = emptyLineArr(),
         _width = 0,
         dirty = false,
         fillChar = " ",
         hlgroup = hlgroup,
 
     }
-    setmetatable(box, { __index = M.Box })
+    if box.hlgroup ~= nil then
+        setmetatable(box.hlgroup, { __mode = "kv" })
+    end
+    setmetatable(box, { __index = M.Box, __mode = "kv" })
     return box
+end
+
+function M.Box:destroy()
+    self.lines = emptyLineArr()
+    self.hlgroup = nil
 end
 
 function M.Box:clean()
@@ -189,6 +235,7 @@ function M.Box:appendLeft(box, strat)
     self.lines = box.lines
     self.dirty = box.dirty
     self._width = box._width
+    box:destroy()
 end
 
 ---Appends box to the right, *CONSUMES BOX* (aka rust move)
@@ -212,15 +259,15 @@ function M.Box:append(box, strat)
     --  └───────┘ └───────┘
     while #self.lines < #box.lines do
         if self._width == 0 then
-            table.insert(self.lines, {})
+            table.insert(self.lines, emptyLine())
         elseif strat == M.MergeStrategy.Bottom then
-            table.insert(self.lines, 1, {
+            table.insert(self.lines, 1, newLine(
                 self:fillString(self._width)
-            })
+            ))
         else
-            table.insert(self.lines, {
+            table.insert(self.lines, newLine(
                 self:fillString(self._width)
-            })
+            ))
         end
     end
     local i = 0
@@ -260,6 +307,7 @@ function M.Box:append(box, strat)
     end
     self._width = self._width + box._width
     self.dirty = box.dirty
+    box:destroy()
     flame.pop()
 end
 
@@ -270,47 +318,49 @@ function M.Box:appendStr(str, strat)
     strat = strat or M.MergeStrategy.Top
     self:clean()
     ---@type Banana.Word
-    local word = {
-        word = str,
-        style = self.hlgroup,
-    }
+    local w = word(
+        str,
+        self.hlgroup
+    )
     if #self.lines == 0 then
-        self.lines = { { word } }
+        self.lines = newLineArr(newLine(w))
         self._width = _str.charWidth(str)
     elseif #self.lines == 1 then
-        table.insert(self.lines[1], word)
+        table.insert(self.lines[1], w)
         self._width = self._width + _str.charWidth(str)
     elseif strat == M.MergeStrategy.Top then
-        table.insert(self.lines[1], word)
+        table.insert(self.lines[1], w)
         self._width = math.max(M.lineWidth(self.lines[1]), self._width)
         self.dirty = true
     else
-        table.insert(self.lines[#self.lines], word)
+        table.insert(self.lines[#self.lines], w)
         self._width = math.max(M.lineWidth(self.lines[#self.lines]), self._width)
         self.dirty = true
     end
 end
 
 ---Appends word to the right
----@param word Banana.Word
+---@param str string
+---@param style Banana.Highlight?
 ---@param strat Banana.Box.MergeStrategy?
-function M.Box:appendWord(word, strat)
+function M.Box:appendWord(str, style, strat)
+    local w = word(str, style)
     self:clean()
     ---@type Banana.Word
     if #self.lines == 0 then
-        self.lines = { { word } }
-        self._width = _str.charWidth(word.word)
+        self.lines = newLineArr(newLine(w))
+        self._width = _str.charWidth(w.word)
         self.dirty = false
     elseif #self.lines == 1 then
-        table.insert(self.lines[1], word)
-        self._width = self._width + _str.charWidth(word.word)
+        table.insert(self.lines[1], w)
+        self._width = self._width + _str.charWidth(w.word)
         self.dirty = false
     else
         if strat == M.MergeStrategy.Top then
-            table.insert(self.lines[1], word)
+            table.insert(self.lines[1], w)
             self._width = math.max(M.lineWidth(self.lines[1]), self._width)
         else
-            table.insert(self.lines[#self.lines], word)
+            table.insert(self.lines[#self.lines], w)
             self._width = math.max(M.lineWidth(self.lines[#self.lines]),
                 self._width)
         end
@@ -347,10 +397,14 @@ function M.Box:appendBoxBelow(box, expand)
         -- box:clean()
     end
     for _, v in ipairs(box.lines) do
-        table.insert(self.lines, v)
+        table.insert(self.lines, newLine())
+        for _, w in ipairs(v) do
+            table.insert(self.lines[#self.lines], word(w.word, w.style))
+        end
     end
     self.dirty = self._width ~= box._width
     self._width = newWidth
+    box:destroy()
     -- flame.expect("appendBoxBelow")
     flame.pop()
 end
@@ -397,8 +451,7 @@ end
 ---@param left number
 ---@param top number
 function M.Box:renderOver(other, left, top)
-    log.trace("renderOver")
-    --- This function is pretty expensive because all the string stuff
+    log.trace("renderOver") --- This function is pretty expensive because all the string stuff
     flame.new("Box:renderOver")
     -- lol dont look at this function i barely understand it
     -- if you really need help with this function, post an issue
@@ -456,10 +509,7 @@ function M.Box:renderOver(other, left, top)
                 line[wordIndex].word = leftStr
                 local style = line[wordIndex].style
                 wordIndex = wordIndex + 1
-                table.insert(line, wordIndex, {
-                    word = rightStr,
-                    style = style,
-                })
+                table.insert(line, wordIndex, word(rightStr, style))
                 break
             end
             local newStr = ""
@@ -489,27 +539,27 @@ function M.Box:renderOver(other, left, top)
             end
             if #line == 0 then
                 -- if we empty, then we need something to insert before
-                table.insert(line, {
-                    {
-                        word = "",
-                        style = self.hlgroup,
-                    }
-                })
+                table.insert(line, newLine(
+                    word(
+                        "",
+                        self.hlgroup
+                    )
+                ))
                 break
             end
             wordSize = _str.charWidth(line[wordIndex].word)
             count = 0
         end
         if M.lineWidth(line) < left then
-            table.insert(line, {
-                word = string.rep(self.fillChar, left - M.lineWidth(line)),
-                style = self.hlgroup
-            })
+            table.insert(line, word(
+                string.rep(self.fillChar, left - M.lineWidth(line)),
+                self.hlgroup
+            ))
             -- need something to insert before
-            table.insert(line, {
-                word = "",
-                style = self.hlgroup
-            })
+            table.insert(line, word(
+                "",
+                self.hlgroup
+            ))
             wordIndex = wordIndex + 1
             self._width = math.max(M.lineWidth(line), self._width)
             self.dirty = true
@@ -525,24 +575,25 @@ function M.Box:renderOver(other, left, top)
     -- for overflow
     while j <= #other.lines do
         ---@type Banana.Word[]
-        local newLine = {
-            {
-                word = string.rep(self.fillChar, left),
-                style = self.hlgroup,
-            }
-        }
+        local nl = newLine(
+            word(
+                string.rep(self.fillChar, left),
+                self.hlgroup
+            )
+        )
         for _, v in ipairs(other.lines[j]) do
-            table.insert(newLine, v)
+            table.insert(nl, v)
         end
-        table.insert(newLine, {
-            word = string.rep(self.fillChar, self._width - M.lineWidth(newLine)),
-            style = self.hlgroup,
-        })
-        table.insert(self.lines, newLine)
+        table.insert(nl, word(
+            string.rep(self.fillChar, self._width - M.lineWidth(nl)),
+            self.hlgroup
+        ))
+        table.insert(self.lines, nl)
         j = j + 1
     end
     self.dirty = self.dirty or (self._width < left + other._width)
     self._width = math.max(self._width, left + other._width)
+    other:destroy()
     flame.pop()
 end
 

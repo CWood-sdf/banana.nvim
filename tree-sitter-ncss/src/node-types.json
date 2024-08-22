@@ -761,10 +761,6 @@
       "required": true,
       "types": [
         {
-          "type": "binary_expression",
-          "named": true
-        },
-        {
           "type": "boolean_value",
           "named": true
         },
@@ -802,6 +798,10 @@
         },
         {
           "type": "property_name",
+          "named": true
+        },
+        {
+          "type": "slash_separator",
           "named": true
         },
         {
@@ -1880,6 +1880,11 @@
         }
       ]
     }
+  },
+  {
+    "type": "slash_separator",
+    "named": true,
+    "fields": {}
   },
   {
     "type": "string_value",

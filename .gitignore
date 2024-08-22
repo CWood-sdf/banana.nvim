@@ -1,4 +1,7 @@
 log
+dumps/
 bin/
 .tests/
 dev.lua
+.zig-cache
+zig-out

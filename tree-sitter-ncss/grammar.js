@@ -205,8 +205,8 @@ module.exports = grammar({
             seq(
                 alias($.identifier, $.property_name),
                 ":",
-                $._value,
-                repeat(seq(optional(","), $._value)),
+                $._usable_value,
+                repeat(seq(optional(","), $._usable_value)),
                 optional($.important),
                 ";",
             ),
@@ -217,8 +217,8 @@ module.exports = grammar({
                 seq(
                     alias($.identifier, $.property_name),
                     ":",
-                    $._value,
-                    repeat(seq(optional(","), $._value)),
+                    $._usable_value,
+                    repeat(seq(optional(","), $._usable_value)),
                     optional($.important),
                 ),
             ),
@@ -257,6 +257,25 @@ module.exports = grammar({
 
         // Property Values
 
+        _usable_value: ($) =>
+            prec(
+                -1,
+                choice(
+                    $.boolean_value,
+                    alias($.identifier, $.plain_value),
+                    $.plain_value,
+                    $.color_value,
+                    $.integer_value,
+                    $.float_value,
+                    $.string_value,
+                    $.grid_value,
+                    $.slash_separator,
+                    $.parenthesized_value,
+                    $.call_expression,
+                    $.important,
+                ),
+            ),
+        slash_separator: (_) => seq("/"),
         _value: ($) =>
             prec(
                 -1,

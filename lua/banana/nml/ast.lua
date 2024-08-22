@@ -135,18 +135,23 @@ end
 ---@return Banana.Ncss.StyleValueType
 ---@overload fun(self: Banana.Ast, style: string): Banana.Ncss.StyleValueType?
 function M.Ast:firstStyleValue(style, default)
-    flame.new("Ast:firstStyleValue")
     local val = self:firstStyle(style)
-    if val == nil and default ~= nil then
-        flame.pop()
+    if val == nil then
         return default
     end
-    if val == nil then
-        flame.pop()
-        return nil
-    end
-    flame.pop()
     return val.value
+end
+
+---@param style string
+---@param default number
+---@return number
+---@overload fun(self: Banana.Ast, style: string): number?
+function M.Ast:firstStyleComputedValue(style, default)
+    local val = self:firstStyle(style)
+    if val == nil or val.type ~= "unit" then
+        return default
+    end
+    return val.value.computed
 end
 
 ---@param style string
@@ -586,6 +591,10 @@ end
 function M.Ast:_mixHl(parentHl)
     flame.new("Ast:_mixHl")
     local ret = {}
+    setmetatable(ret, { __mode = "kv" })
+    if self.hl ~= nil then
+        setmetatable(self.hl, { __mode = "kv" })
+    end
 
     for k, v in pairs(self.hl or {}) do
         ret[k] = v
@@ -603,16 +612,17 @@ end
 ---@param parentWidth number
 ---@param extras number[]
 ---@return number
+---@diagnostic disable-next-line: unused-local
 function M.getComputedValue(unit, parentWidth, extras)
     if unit.unit == "ch" then
         return unit.value
-    elseif unit.unit == "fr" then
-        if extras[1] == nil then
-            log.throw("fr unit requires an extra parameter")
-            error("")
-        end
-        local mult = unit.value
-        return math.floor(mult * extras[1])
+        -- elseif unit.unit == "fr" then
+        --     if extras[1] == nil then
+        --         log.throw("fr unit requires an extra parameter")
+        --         error("")
+        --     end
+        --     local mult = unit.value
+        --     return math.floor(mult * extras[1])
     elseif unit.unit == "%" then
         local mult = unit.value / 100
         return math.floor(mult * parentWidth)
@@ -636,8 +646,10 @@ end
 ---@param unit Banana.Ncss.UnitValue
 ---@param parentWidth number
 ---@param extras number[]
+---@return number
 function M.calcUnitInPlace(unit, parentWidth, extras)
     unit.computed = M.getComputedValue(unit, parentWidth, extras)
+    return unit.computed
 end
 
 function M.Ast:getWidth()
@@ -652,14 +664,20 @@ end
 ---@param prop string
 ---@param basedOn number
 ---@param extras number[]
+---@return number?
 function M.Ast:_computeUnitFor(prop, basedOn, extras)
     local style = self.style[prop]
+    local ret = nil
     if style ~= nil then
-        for i, _ in ipairs(style) do
+        for _, s in ipairs(style) do
             ---@diagnostic disable-next-line: param-type-mismatch
-            M.calcUnitInPlace(style[i].value, basedOn, extras)
+            local v = M.calcUnitInPlace(s.value, basedOn, extras)
+            if ret == nil then
+                ret = v
+            end
         end
     end
+    return ret
 end
 
 ---@internal
@@ -667,9 +685,9 @@ end
 ---@param parentHeight number
 ---@param extras? number[]
 function M.Ast:_resolveUnits(parentWidth, parentHeight, extras)
-    flame.new("Ast:resolveUnits")
+    --flame.new("Ast:resolveUnits")
     extras = extras or {}
-    flame.new("Ast:resolveUnits_marg")
+    --flame.new("Ast:resolveUnits_marg")
     for i, v in ipairs(self.margin) do
         if i % 2 == 1 then
             M.calcUnitInPlace(v, parentWidth, extras)
@@ -684,7 +702,7 @@ function M.Ast:_resolveUnits(parentWidth, parentHeight, extras)
             M.calcUnitInPlace(v, parentHeight, extras)
         end
     end
-    flame.pop()
+    --flame.pop()
     self:_computeUnitFor("list-base-width", parentWidth, extras)
     self:_computeUnitFor("width", parentWidth, extras)
     self:_computeUnitFor("height", parentHeight, extras)
@@ -693,7 +711,9 @@ function M.Ast:_resolveUnits(parentWidth, parentHeight, extras)
     self:_computeUnitFor("left", parentWidth, extras)
     self:_computeUnitFor("right", parentWidth, extras)
     self:_computeUnitFor("flex-basis", parentWidth, extras)
-    flame.pop()
+    -- self:_computeUnitFor("row-gap", parentWidth, extras)
+    -- self:_computeUnitFor("column-gap", parentWidth, extras)
+    --flame.pop()
 end
 
 ---@internal
@@ -975,16 +995,16 @@ end
 function M.Ast:childIter()
     local i = 0
     return function ()
-        flame.new("Ast:childIter")
+        --flame.new("Ast:childIter")
         i = i + 1
         while type(self.nodes[i]) ~= "table" do
             i = i + 1
             if i > #self.nodes then
-                flame.pop()
+                --flame.pop()
                 return nil
             end
         end
-        flame.pop()
+        --flame.pop()
         ---@diagnostic disable-next-line: return-type-mismatch
         return self.nodes[i]
     end
@@ -1062,9 +1082,13 @@ function M.Ast:attachRemap(mode, lhs, mods, rhs, opts)
             "Banana attachRemap requires the 4th parameter (before rhs) to be a table of modifiers")
         error("")
     end
-    local modFns = vim.iter(mods)
-                      :map(function (mod) return self:_parseRemapMod(mod) end)
-                      :totable()
+    local modFns = {}
+    for _, v in ipairs(mods) do
+        table.insert(modFns, self:_parseRemapMod(v))
+    end
+    -- local modFns = vim.iter(mods)
+    --                   :map(function (mod) return self:_parseRemapMod(mod) end)
+    --                   :totable()
     if type(rhs) == "string" then
         local oldRhs = rhs
         rhs = function ()

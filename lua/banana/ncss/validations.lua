@@ -159,8 +159,16 @@ local validations = {
 
     ["grid-template-columns"] = Validation:new({ ["*"] = { { "unit" } } }),
     ["grid-template-rows"] = Validation:new({ ["*"] = { { "unit" } } }),
-    ["grid-row"] = Validation:new({ [1] = { { "integer" } }, [2] = { { "integer", "integer" } } }),
+    ["grid-row"] = Validation:new({
+        [1] = { { "integer" } },
+        [2] = { { "|span", "integer" } },
+        [3] = { { "integer", "slash", "integer" } },
+        [4] = { { "integer", "slash", "|span", "integer" } }
+    }),
     ["grid-column"] = "grid-row",
+
+    ["row-gap"] = singleUnit,
+    ["column-gap"] = singleUnit,
 
     ["position"] = explicit("absolute", "static", "relative", "inherit",
         "initial"),

@@ -1098,7 +1098,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "_value"
+          "name": "_usable_value"
         },
         {
           "type": "REPEAT",
@@ -1119,7 +1119,7 @@
               },
               {
                 "type": "SYMBOL",
-                "name": "_value"
+                "name": "_usable_value"
               }
             ]
           }
@@ -1163,7 +1163,7 @@
           },
           {
             "type": "SYMBOL",
-            "name": "_value"
+            "name": "_usable_value"
           },
           {
             "type": "REPEAT",
@@ -1184,7 +1184,7 @@
                 },
                 {
                   "type": "SYMBOL",
-                  "name": "_value"
+                  "name": "_usable_value"
                 }
               ]
             }
@@ -1366,6 +1366,77 @@
         {
           "type": "STRING",
           "value": ")"
+        }
+      ]
+    },
+    "_usable_value": {
+      "type": "PREC",
+      "value": -1,
+      "content": {
+        "type": "CHOICE",
+        "members": [
+          {
+            "type": "SYMBOL",
+            "name": "boolean_value"
+          },
+          {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "identifier"
+            },
+            "named": true,
+            "value": "plain_value"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "plain_value"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "color_value"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "integer_value"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "float_value"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "string_value"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "grid_value"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "slash_separator"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "parenthesized_value"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "call_expression"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "important"
+          }
+        ]
+      }
+    },
+    "slash_separator": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "/"
         }
       ]
     },
@@ -2027,4 +2098,3 @@
   ],
   "supertypes": []
 }
-

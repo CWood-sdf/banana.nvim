@@ -1,6 +1,6 @@
 ---@module 'banana.utils.debug_flame'
 ---flame.new("tag:pre")
-local flame = require('banana.lazyRequire')('banana.utils.debug_flame')
+local flame = require("banana.lazyRequire")("banana.utils.debug_flame")
 -- local t = require('banana.nml.tags')
 --
 -- ---@type Banana.Renderer

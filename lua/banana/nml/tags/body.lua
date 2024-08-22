@@ -9,7 +9,6 @@ local function renderer(self, ast, parentHl, parentWidth, parentHeight, startX,
     flame.new("tag:body")
     local b = require("banana.box")
     if not extra.isRealRender then
-        flame.pop()
         return b.Box:new()
     end
     ---@type Banana.Box

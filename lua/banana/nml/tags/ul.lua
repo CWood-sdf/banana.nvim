@@ -1,13 +1,14 @@
 ---@module 'banana.utils.debug_flame'
-local flame = require('banana.lazyRequire')('banana.utils.debug_flame')
+local flame = require("banana.lazyRequire")("banana.utils.debug_flame")
 -- local _str = require('banana.utils.string')
 ---@module 'banana.nml.render'
-local t = require('banana.lazyRequire')('banana.nml.render')
+local t = require("banana.lazyRequire")("banana.nml.render")
 
 ---@type Banana.Renderer
-local function renderer(self, ast, parentHl, parentWidth, parentHeight, startX, startY, inherit, extra)
+local function renderer(self, ast, parentHl, parentWidth, parentHeight, startX,
+                        startY, inherit, extra)
     flame.new("tag:ul")
-    local b = require('banana.box')
+    local b = require("banana.box")
     ---@type Banana.Box
     local ret = b.Box:new()
     ret.hlgroup = ast:_mixHl(parentHl)
@@ -41,11 +42,11 @@ local function renderer(self, ast, parentHl, parentWidth, parentHeight, startX, 
 end
 ---@type Banana.TagInfo
 local M = t.newTag(
-    'ul',
+    "ul",
     t.FormatType.Block,
     false,
     renderer,
-    require('banana.nml.render').defaultInitials()
+    require("banana.nml.render").defaultInitials()
 )
 
 return M

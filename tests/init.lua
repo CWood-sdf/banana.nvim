@@ -2,6 +2,7 @@
 local M = {}
 
 -- literally just so that I can have treesitter highlighting for tests
+---@diagnostic disable-next-line: lowercase-global
 function nml(str)
     return str
 end
@@ -20,7 +21,11 @@ function M.load(plugin)
         vim.fn.mkdir(package_root, "p")
         local isDone = false
         vim.cmd(
-            "!git clone --depth=1 https://github.com/" .. plugin .. ".git " .. package_root .. name --, {
+            "!git clone --depth=1 https://github.com/" ..
+            plugin ..
+            ".git " ..
+            package_root ..
+            name --, {
         --     on_exit = function()
         --         print("DOne")
         --         isDone = true
@@ -45,7 +50,7 @@ function M.setup()
     vim.env.XDG_DATA_HOME = M.root(".tests/data")
     vim.env.XDG_STATE_HOME = M.root(".tests/state")
     vim.env.XDG_CACHE_HOME = M.root(".tests/cache")
-    require('nvim-treesitter').setup()
+    require("nvim-treesitter").setup()
     require("nvim-treesitter.install").compilers = { "zig", "clang" }
 
     require("nvim-treesitter.configs").setup({
@@ -102,6 +107,11 @@ function M.setup()
     vim.treesitter.language.register("ncss", "ncss")
     vim.cmd("TSInstallSync! nml")
     vim.cmd("TSInstallSync! ncss")
+    print("Root is: " .. M.root())
+    local libbananaPath = M.root("zig/zig-out/lib/libbanana.so")
+    print("libbanana path: " .. libbananaPath)
+    vim.cmd("so " .. M.root() .. "/build.lua")
+    print("libbanana exists: " .. vim.fn.filereadable(libbananaPath))
 end
 
 M.setup()

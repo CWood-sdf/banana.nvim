@@ -26,6 +26,7 @@ local function renderer(self, ast, parentHl, parentWidth, parentHeight, startX,
                 node.tag .. ">")
         end
     end
+    flame.expect("tag:nml")
     flame.pop()
     return ret
 end

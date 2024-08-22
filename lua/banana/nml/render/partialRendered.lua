@@ -185,7 +185,7 @@ end
 ---@param ast Banana.Ast
 ---@return boolean
 function PartialRendered:applyPad(name, ast)
-    flame.new("applyPad")
+    --flame.new("applyPad")
     local changed = false
     if ast[name][_ast.left].computed ~= 0 then
         self[name].left = ast[name][_ast.left].computed
@@ -203,7 +203,7 @@ function PartialRendered:applyPad(name, ast)
         self[name].bottom = ast[name][_ast.bottom].computed
         changed = true
     end
-    flame.pop()
+    --flame.pop()
     return changed
 end
 

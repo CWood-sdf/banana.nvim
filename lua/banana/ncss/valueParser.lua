@@ -16,7 +16,7 @@ local Value = {
 }
 
 
----@alias Banana.Ncss.StyleValue.Types "color"|"integer"|"plain"|"float"|"string"|"unit"|"boolean"
+---@alias Banana.Ncss.StyleValue.Types "color"|"integer"|"plain"|"float"|"string"|"unit"|"boolean"|"slash"
 
 ---@alias Banana.Ncss.StyleValueType number|string|Banana.Ncss.UnitValue|boolean
 
@@ -246,6 +246,14 @@ local cssParsers = {
         str = str:sub(1, #str - 1)
         return M.newStringValue(str)
     end,
+    slash_separator = function (_, _, _)
+        return {
+            {
+                value = "",
+                type = "slash",
+            }
+        }
+    end,
     plain_value = function (_, _, str)
         return M.newPlainValue(str)
     end,
@@ -346,7 +354,7 @@ local cssParsers = {
                 end
                 if not match then
                     local arr2 = vim.tbl_map(
-                    function (s) return "'" .. s .. "', " end, expected)
+                        function (s) return "'" .. s .. "', " end, expected)
                     local types = ""
                     for _, s in ipairs(arr2) do
                         types = types .. s

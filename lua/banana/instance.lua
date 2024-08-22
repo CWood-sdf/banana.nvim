@@ -42,7 +42,7 @@ local instances = {}
 ---@field winhl table
 ---@field ast Banana.Ast
 ---@field styleRules Banana.Ncss.RuleSet[]
----@field scripts string[]
+---@field scripts (string|fun())[]
 ---@field foreignStyles { [Banana.Ast]: Banana.Ncss.RuleSet[] }
 ---@field keymaps { [string]: { [string]: Banana.Instance.Keymap[] } }
 ---@field astMapDeps { [Banana.Ast]: [string, string, Banana.Instance.Keymap][] }
@@ -68,9 +68,10 @@ local Instance = {}
 ---@param height number
 ---@return Banana.Line[]
 function Instance:_virtualRender(ast, width, height)
-    flame.new("virtualRender")
+    --flame.new("virtualRender")
     ---@type Banana.Line[]
     local ret = {}
+    setmetatable(ret, { __mode = "kv" })
     local tag = ast.actualTag
     ---@type Banana.Renderer.ExtraInfo
     local extra = {
@@ -79,6 +80,7 @@ function Instance:_virtualRender(ast, width, height)
         debug = self.DEBUG,
         isRealRender = true,
     }
+    setmetatable(extra, { __mode = "kv" })
     local rendered = tag:renderRoot(ast, nil, width, height, {
         text_align = "left",
         position = "static",
@@ -100,12 +102,7 @@ function Instance:_virtualRender(ast, width, height)
     if extra.debug then
         rendered:appendBoxBelow(extra.trace)
     end
-    ---@diagnostic disable-next-line: invisible
-    for _, line in ipairs(rendered.lines) do
-        table.insert(ret, line)
-    end
-    flame.pop()
-    return ret
+    return rendered:getLines()
 end
 
 ---Sets the buffer name of the instance.
@@ -216,7 +213,7 @@ function Instance:_attachAutocmds()
     })
     vim.api.nvim_create_autocmd({ "VimResized" }, {
         group = self.augroup,
-        callback = function (args)
+        callback = function ()
             self:_requestRender()
         end,
     })
@@ -437,11 +434,14 @@ end
 
 ---@internal
 ---@param script string
+---@param script string|fun(opts: table)
 ---@param opts table
 function Instance:_runScript(script, opts)
     ---@type fun(opts: table)|nil
     local f = nil
-    if #script > 0 and script:sub(1, 1) == "@" then
+    if type(script) == "function" then
+        f = script
+    elseif #script > 0 and script:sub(1, 1) == "@" then
         local str = script:sub(2, #script)
         f = function (o)
             self:runScriptAt(str, o)
@@ -462,6 +462,7 @@ end
 ---@internal
 ---@return number, number
 function Instance:_createWinAndBuf()
+    --flame.new("winAndBuf")
     local headQuery = require("banana.ncss.query").selectors.oneTag("head")
     local headTag = headQuery:getMatches(self.ast)
     if #headTag ~= 0 then
@@ -477,6 +478,8 @@ function Instance:_createWinAndBuf()
             isRealRender = false,
         })
     end
+    --flame.expect("winAndBuf")
+    --flame.pop()
 
 
     local containerWidth = vim.o.columns
@@ -569,7 +572,7 @@ function Instance:_deferRender()
             return
         end
         self.renderRequested = false
-        self.renderStart = vim.uv.hrtime()
+        self.renderStart = vim.loop.hrtime()
         self:_render()
         self.renderRequested = false
         self.rendering = false
@@ -582,7 +585,7 @@ function Instance:_requestRender()
         return
     end
     self.renderRequested = true
-    self.renderStart = vim.uv.hrtime()
+    self.renderStart = vim.loop.hrtime()
     self:_deferRender()
 end
 
@@ -606,13 +609,17 @@ function Instance:_render()
     if self.renderRequested then
         return
     end
+    -- local mri = require("banana.memorysnapshot")
+    -- collectgarbage("count")
+    -- mri.m_cMethods.DumpMemorySnapshot("./dumps", n .. "-Before", -1)
     collectgarbage("stop")
     log.trace("Instance:render with " .. #self.scripts .. " scripts")
-    if n == 30 then
-        -- flame.reset()
-    end
+    flame.newIter()
+    -- if n == 30 then
+    -- flame.reset()
+    -- end
     self.rendering = true
-    local startTime = vim.uv.hrtime()
+    local startTime = vim.loop.hrtime()
     local actualStart = startTime
     local astTime = 0
     local styleTime = 0
@@ -624,19 +631,21 @@ function Instance:_render()
     self:body().relativeBoxes = {}
     self:body().absoluteAsts = {}
 
-    styleTime = vim.uv.hrtime() - startTime
-    startTime = vim.uv.hrtime()
+    styleTime = vim.loop.hrtime() - startTime
+    startTime = vim.loop.hrtime()
 
     local width, height = self:_createWinAndBuf()
 
-    local winTime = vim.uv.hrtime() - startTime
-    startTime = vim.uv.hrtime()
+    local winTime = vim.loop.hrtime() - startTime
+    startTime = vim.loop.hrtime()
 
     -- self:body():resolveUnits(width, height, {})
+    flame.new("renderAll")
     local stuffToRender = self:_virtualRender(self.ast, width, height)
+    flame.pop()
 
-    local renderTime = vim.uv.hrtime() - startTime
-    startTime = vim.uv.hrtime()
+    local renderTime = vim.loop.hrtime() - startTime
+    startTime = vim.loop.hrtime()
 
     local lines = {}
     for _, line in ipairs(stuffToRender) do
@@ -646,9 +655,11 @@ function Instance:_render()
         end
         table.insert(lines, lineStr)
     end
+    -- collectgarbage("count")
+    -- mri.m_cMethods.DumpMemorySnapshot("./dumps", n .. "-After", -1)
 
-    local reductionTime = vim.uv.hrtime() - startTime
-    startTime = vim.uv.hrtime()
+    local reductionTime = vim.loop.hrtime() - startTime
+    startTime = vim.loop.hrtime()
 
     vim.api.nvim_set_option_value("modifiable", true, {
         buf = self.bufnr
@@ -661,8 +672,8 @@ function Instance:_render()
         buf = self.bufnr
     })
 
-    local bufTime = vim.uv.hrtime() - startTime
-    startTime = vim.uv.hrtime()
+    local bufTime = vim.loop.hrtime() - startTime
+    startTime = vim.loop.hrtime()
 
     self:_highlight(stuffToRender, 0)
     for _, script in ipairs(self.scripts) do
@@ -670,13 +681,15 @@ function Instance:_render()
     end
     self.scripts = {}
 
-    local hlTime = vim.uv.hrtime() - startTime
-    totalTime = totalTime + vim.uv.hrtime() - actualStart
+    local hlTime = vim.loop.hrtime() - startTime
+    totalTime = totalTime + vim.loop.hrtime() - actualStart
 
     if self.DEBUG or self.DEBUG_showPerf then
         n = n + 1
         avg = (avg * (n - 1) + renderTime) / n
         if self.DEBUG_stressTest then
+            -- should be 560MB used on n=600
+            -- renderOver pushes that to 2.5GB
             if n < 200 then
                 self:_deferRender()
             end
@@ -696,13 +709,17 @@ function Instance:_render()
             "",
         }
         local filter = ""
-        local flames = flame.getWorst("pct", filter, true)
-        local flameMillis = flame.getFlames("millis", filter, true)
+        local flames = flame.getWorst("pct", filter, false)
+        local flameMillis = flame.getFlames("millis", filter, false)
         local maxLen = 0
         for _, val in ipairs(flames) do
             maxLen = math.max(maxLen, #val[1] + 2)
         end
+
+        -- local conf = flame.getFlameAlls90Conf("TagInfo:renderGridBlock")
+        -- table.insert(extraLines, "(" .. conf[1] .. ", " .. conf[2] .. ")")
         -- print(vim.inspect(flames))
+        local total = 0
         for _, val in ipairs(flames) do
             local str = val[1] .. ": "
             if #str < maxLen then
@@ -714,14 +731,17 @@ function Instance:_render()
             if #pct < 4 then
                 pct = pct .. string.rep(" ", 4 - #pct)
             end
-            local time = math.floor(flameMillis[val[1]] * 10000) / 10000 .. ""
-            if #time < 7 then
-                time = time .. string.rep(" ", 7 - #time)
+            total = total + flameMillis[val[1]]
+            local time = math.floor(flameMillis[val[1]] * 1000) / 1000 ..
+                "ms"
+            if #time < 9 then
+                time = time .. string.rep(" ", 9 - #time)
             end
             local chart = " " ..
-                pct .. " (" .. time .. ") " .. string.rep("#", rep)
+                pct .. "% (" .. time .. ") " .. string.rep("#", rep)
             table.insert(extraLines, str .. chart)
         end
+        table.insert(extraLines, "Total: " .. total .. "ms")
         vim.api.nvim_set_option_value("modifiable", true, {
             buf = self.bufnr
         })
@@ -732,6 +752,7 @@ function Instance:_render()
     end
     self.rendering = false
     collectgarbage("restart")
+    collectgarbage()
 end
 
 ---@internal
@@ -739,42 +760,41 @@ end
 ---@param offset number?
 function Instance:_highlight(lines, offset)
     offset = offset or 0
-    flame.new("hl:ns")
+    --flame.new("hl:ns")
     vim.api.nvim_win_set_hl_ns(self.winid, self.highlightNs)
     if self.highlightNs ~= nil then
-        -- vim.api.nvim_buf_clear_namespace(0, self.highlightNs, offset,
-        --     offset + #lines)
+        vim.api.nvim_buf_clear_namespace(0, self.highlightNs, 0, -1)
         -- vim.api.nvim_win_set_hl_ns(self.winid, self.highlightNs)
         -- self.highlightNs = nil
     end
-    flame.pop()
+    --flame.pop()
     if self.bufnr == nil or not vim.api.nvim_buf_is_valid(self.bufnr) then
         log.throw(
             "Unreachable (buf is invalid in higlightBuffer)")
         error("")
     end
-    flame.new("hl:loop_outer")
+    --flame.new("hl:loop_outer")
     local row = offset
     local col = 0
     local hlId = 0
-    ---@type table<string, string>
-    local usedHighlights = {}
+    -- ---@type table<string, string>
+    -- local usedHighlights = {}
     for _, v in ipairs(lines) do
-        flame.new("hl:loop_inner")
+        --flame.new("hl:loop_inner")
         local i = 1
         while i <= #v do
             local word = v[i]
-            flame.new("hl:loop_inner2")
+            --flame.new("hl:loop_inner2")
             local hlGroup = ""
             local ns = self.highlightNs
             -- local delta = _str.charWidth(word.word)
             -- log.debug(word.word .. ": " .. delta)
             local byteCount = _str.byteCount(word.word)
             if word.style ~= nil then
-                flame.new("hl:inspect")
+                --flame.new("hl:inspect")
                 -- PERF: this is pretty inefficient
                 -- local optsStr = vim.inspect(word.style)
-                flame.pop()
+                --flame.pop()
                 while i + 1 <= #v and v[i + 1].style == word.style do
                     i = i + 1
                     -- delta = delta + _str.charWidth(v[i].word)
@@ -783,7 +803,7 @@ function Instance:_highlight(lines, offset)
 
                 if word.style.__name ~= nil then
                     ns = 0
-                    flame.new("hl:named_hl")
+                    --flame.new("hl:named_hl")
                     hlGroup = word.style.__name or "Normal"
                     local hl = vim.api.nvim_get_hl(ns, {
                         name = hlGroup,
@@ -793,7 +813,7 @@ function Instance:_highlight(lines, offset)
                     local hlNotExists = vim.json.encode(hl) == "{}"
                     -- If there are default highlight options, and the highlight does not exist, create it
                     if hlNotExists and keysCount > 1 then
-                        flame.new("hl:create_named")
+                        --flame.new("hl:create_named")
                         local opts = vim.deepcopy(word.style)
                         opts.__name = nil
                         if opts == nil then
@@ -802,39 +822,39 @@ function Instance:_highlight(lines, offset)
                             error("")
                         end
                         vim.api.nvim_set_hl(0, hlGroup, opts)
-                        flame.pop()
+                        --flame.pop()
                     elseif hlNotExists then
                         hlGroup = M.defaultWinHighlight
                     end
-                    flame.pop()
+                    --flame.pop()
                     -- elseif usedHighlights[optsStr] ~= nil then
                     --     hlGroup = usedHighlights[optsStr]
                 else
-                    flame.new("hl:set_hl")
+                    --flame.new("hl:set_hl")
                     hlGroup = "banana_hl_" .. hlId
                     vim.api.nvim_set_hl(self.highlightNs, hlGroup, word.style)
                     hlId = hlId + 1
                     -- usedHighlights[optsStr] = hlGroup
-                    flame.pop()
+                    --flame.pop()
                 end
-                flame.new("hl:add_hl")
+                --flame.new("hl:add_hl")
                 vim.api.nvim_buf_add_highlight(self.bufnr, ns, hlGroup, row, col,
                     col + byteCount)
-                flame.pop()
+                --flame.pop()
             else
                 hlGroup = M.defaultWinHighlight
                 -- hlGroup = "NormalFloat"
                 ns = 0
             end
             col = col + byteCount
-            flame.pop()
+            --flame.pop()
             i = i + 1
         end
         col = 0
         row = row + 1
-        flame.pop()
+        --flame.pop()
     end
-    flame.pop()
+    --flame.pop()
 end
 
 ---Loads a partial nml file at {file} to be the content of the ast
@@ -870,10 +890,11 @@ function Instance:loadNmlTo(file, ast, remove, preserve)
         end
     end
     for _, script in ipairs(scripts) do
-        self:_runScript(script, {
-            params = params,
-            selfNode = content,
-        })
+        table.insert(self.scripts, function (opts)
+            opts.params = params
+            opts.selfNode = content
+            self:_runScript(script, opts)
+        end)
     end
     self:_requestRender()
 end
@@ -1024,7 +1045,12 @@ end
 
 ---@return number[]
 function M.listInstanceIds()
-    return vim.iter(ipairs(instances)):map(function (i, _) return i end):totable()
+    local ret = {}
+    for i, v in ipairs(instances) do
+        table.insert(ret, i)
+    end
+    return ret
+    -- return vim.iter(ipairs(instances)):map(function (i, _) return i end):totable()
 end
 
 return M

@@ -3,19 +3,22 @@
     <style>
       .grid {
         display: grid;
-        grid-template-columns: 2fr 10ch repeat(5, 1fr);
+        grid-template-columns: 2fr 10ch repeat(4, 1fr);
         hl-bg: green;
         hl-fg: black;
         hl-italic: false;
+        height: 50%;
+        column-gap: 5%;
+        row-gap: 10%;
       }
       .grid > div {
         hl-bg: red;
       }
       .grid > :first-child {
-        height: 2ch;
         grid-row: 2;
         hl-bold: false;
         hl-italic: true;
+        grid-column: 1 / 3;
       }
       .grid > * > * {
         hl-fg: blue;
@@ -38,12 +41,11 @@
   <body>
     asdfsdf
     <div class="grid">
-      <div>17</div>
+      <div style="hl-bg: blue; hl-fg: white">17</div>
+      <!--1, 15, 18 -->
+      <!--17, 17, 2, 3, 4, 5 -->
+      <!--14,  -->
 
-      <!--16,   -->
-      <!--14, 2, 3, 4, 5   -->
-      <!--1,  -->
-      <!--  -->
       <div style="grid-column: 1">1<span> asdf</span></div>
       <div style="grid-row: 2">2<span> asdf</span></div>
       <div style="grid-row: 2">3<span> asdf</span></div>
@@ -57,9 +59,9 @@
       <!-- <div style="grid-row: 2">11</div> -->
       <!-- <div style="grid-row: 2">12</div> -->
       <!-- <div style="grid-column: 1">13</div> -->
-      <div style="grid-column: 1; grid-row: 2">14</div>
+      <div style="grid-column: 1; grid-row: 3">14</div>
       <div>15</div>
-      <div style="grid-column: 1; grid-row: 1">16</div>
+      <!-- <div style="grid-column: 1; grid-row: 1">16</div> -->
       <div>18</div>
     </div>
     <br />
@@ -70,5 +72,6 @@
       <div>asdfsdf</div>
       <div>asdfsdf</div>
     </div>
+    <script src="banana.test.grid"></script>
   </body>
 </nml>
