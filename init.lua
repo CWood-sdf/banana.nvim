@@ -104,4 +104,6 @@ vim.treesitter.language.register("ncss", "ncss")
 vim.cmd("TSInstallSync! nml")
 vim.cmd("TSInstallSync! ncss")
 
+vim.cmd("so build.lua")
+
 require("banana.nml.render").getGridSo()
