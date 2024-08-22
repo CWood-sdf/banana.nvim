@@ -406,6 +406,15 @@ local function getTemplates(values, sizeInDirection, start, min, isCol, ast, gap
             totalFrs = totalFrs + 1
             table.insert(frs, i)
             table.insert(ret, {})
+        else
+            table.insert(ret, {
+                start = 0,
+                size = -1,
+                maxSize = 0,
+                name = i .. "",
+                claimants = {},
+                prevLink = ret[#ret]
+            })
         end
         i = i + 1
     end
@@ -434,12 +443,17 @@ local function getTemplates(values, sizeInDirection, start, min, isCol, ast, gap
             name = j .. "",
             claimants = {},
         }
+        if ret[j + 1] ~= nil and ret[j + 1].prevLink ~= nil then
+            ret[j + 1].prevLink = ret[j]
+        end
         extraWidthNeeded = extraWidthNeeded - extraAdded
         takenSize = takenSize + resolve
     end
     for _, v in ipairs(ret) do
-        v.start = v.start + start
-        start = start + v.size + gap
+        if v.size ~= -1 then
+            v.start = v.start + start
+            start = start + v.size + gap
+        end
     end
     return ret
 end
@@ -545,9 +559,35 @@ function TagInfo:renderGridBlock(ast, parentHl, parentWidth, parentHeight, start
     local rowGap = ast:_computeUnitFor("row-gap", parentHeight, {}) or 0
     local columnGap = ast:_computeUnitFor("column-gap", parentWidth, {}) or 0
 
+    local colTemplatesDef = ast:allStylesFor("grid-template-columns")
+    if colTemplatesDef == nil then
+        colTemplatesDef = {}
+    end
+
+    maxCol = #colTemplatesDef
+
     for i, node in ast:childIterWithI() do
         local rows = node:allStylesFor("grid-row")
         local cols = node:allStylesFor("grid-column")
+        if cols ~= nil then
+            -- need to preload max columns bc of this case:
+            -- first two elements non-defined
+            -- next two have grid-column: 1/3 (or span 2 or 1 / span 2...)
+            -- the first two elements must be same row, but cant know that ahead
+            -- of time, so need this
+            if #cols == 2 then
+                ---@diagnostic disable-next-line: param-type-mismatch
+                maxCol = math.max(maxCol, cols[2].value)
+            elseif #cols == 1 then
+                ---@diagnostic disable-next-line: param-type-mismatch
+                maxCol = math.max(maxCol, cols[1].value)
+            elseif #cols == 3 then
+                ---@diagnostic disable-next-line: param-type-mismatch
+                maxCol = math.max(maxCol, cols[3].value - 1)
+            elseif #cols == 4 then
+                maxCol = math.max(maxCol, cols[1].value + cols[4].value - 1)
+            end
+        end
         -- According to validations.lua (as of now), [2] only supports span,
         -- which is NOT considered a definite element
         if rows == nil or #rows == 2 then
@@ -707,6 +747,11 @@ function TagInfo:renderGridBlock(ast, parentHl, parentWidth, parentHeight, start
         if #cols == 2 then
             ---@diagnostic disable-next-line: cast-local-type
             colSpan = cols[2].value
+        elseif #cols == 1 then
+            colDefined = true
+            colSpan = 1
+            ---@diagnostic disable-next-line: cast-local-type
+            column = cols[1].value
         elseif #cols == 3 then
             colDefined = true
             colSpan = cols[3].value - cols[1].value
@@ -775,17 +820,14 @@ function TagInfo:renderGridBlock(ast, parentHl, parentWidth, parentHeight, start
     ---@type Banana.Renderer.GridTemplate[]
     local rowTemplates = {}
 
-    local cols = ast:allStylesFor("grid-template-columns")
-    if cols == nil then
-        cols = {}
-    end
-    columnTemplates = getTemplates(cols, parentWidth, startX, maxCol, true, ast,
+    columnTemplates = getTemplates(colTemplatesDef, parentWidth, startX, maxCol,
+        true, ast,
         columnGap)
     local rows = ast:allStylesFor("grid-template-rows")
     if rows == nil then
         rows = {}
     end
-    rowTemplates = getTemplates(rows, parentHeight, startY, maxRow, false, ast,
+    rowTemplates = getTemplates(rows, parentHeight, 0, maxRow, false, ast,
         rowGap)
     so.freeSection(thing)
     local columnLimit = 300
@@ -892,16 +934,22 @@ function TagInfo:renderGridBlock(ast, parentHl, parentWidth, parentHeight, start
                 implicitRows = row + rowSpan - r
                 break
             end
-            heightToDistribute = heightToDistribute - rowTemplates[r].size
+            local size = rowTemplates[r].size
+            heightToDistribute = heightToDistribute - size
         end
         if heightToDistribute > 0 and implicitRows > 0 then
+            -- while it's not in spec that implicit spanned rows get extra
+            -- height, im not sure what else to do
+            if heightToDistribute < implicitRows then
+                heightToDistribute = implicitRows
+            end
             local perRow = math.floor(heightToDistribute / implicitRows)
             local extraHeight = heightToDistribute - perRow * implicitRows
             for r = row + rowSpan - 1, row, -1 do
                 if rowTemplates[r].size ~= -1 then
                     break
                 end
-                if rowTemplates[r].maxSize > perRow then
+                if rowTemplates[r].maxSize >= perRow then
                     heightToDistribute = heightToDistribute - perRow
                     if extraHeight > 0 then
                         heightToDistribute = heightToDistribute - 1
@@ -916,7 +964,7 @@ function TagInfo:renderGridBlock(ast, parentHl, parentWidth, parentHeight, start
                     break
                 end
                 local newMax = rowTemplates[r].maxSize + perRow
-                if rowTemplates[r].maxSize > perRow then
+                if rowTemplates[r].maxSize >= perRow then
                     goto continue
                 end
                 if extraHeight > 0 then
@@ -924,6 +972,7 @@ function TagInfo:renderGridBlock(ast, parentHl, parentWidth, parentHeight, start
                     extraHeight = extraHeight - 1
                 end
                 rowTemplates[r].maxSize = newMax
+                rowTemplates[r].maxSize = math.max(newMax, 1)
 
                 ::continue::
             end
@@ -933,8 +982,7 @@ function TagInfo:renderGridBlock(ast, parentHl, parentWidth, parentHeight, start
     local ret = b.Box:new(parentHl)
 
 
-    -- faster without sort
-    -- table.sort(renderList, function (l, r) return l.priority < r.priority end)
+    table.sort(renderList, function (l, r) return l.priority < r.priority end)
 
     for _, v in ipairs(renderList) do
         local render = v.render
@@ -949,14 +997,14 @@ function TagInfo:renderGridBlock(ast, parentHl, parentWidth, parentHeight, start
                 newHeight = newHeight + rowTemplates[r].size
             end
         end
-        v.ast:_increaseTopBound(start - v.ast.boundBox.topY)
+        v.ast:_increaseTopBound(start)
         if newHeight > render:getHeight() and v.ast:firstStyleValue("height", { unit = "", value = 0 }).unit ~= "ch" then
             v.ast:_increaseHeightBoundBy(newHeight - v.render:getHeight())
             v.render:expandHeightTo(newHeight)
         end
         ret:renderOver(render:render(),
             columnTemplates[v.colStart].start - startX,
-            start - startY)
+            start)
     end
 
     flame.pop()
