@@ -339,8 +339,9 @@ end
 
 ---@param templ Banana.Renderer.GridTemplate
 ---@param fix boolean
+---@param gap number
 ---@return number
-local function getGridStart(templ, fix)
+local function getGridStart(templ, fix, gap)
     if templ.prevLink == nil then
         return templ.start
     else
@@ -348,7 +349,7 @@ local function getGridStart(templ, fix)
         if prevSize == -1 then
             prevSize = templ.prevLink.maxSize
         end
-        local ret = getGridStart(templ.prevLink, fix) + prevSize
+        local ret = getGridStart(templ.prevLink, fix, gap) + prevSize + gap
         if fix then
             templ.start = ret
             templ.prevLink = nil
@@ -363,11 +364,12 @@ end
 ---@param min number
 ---@param isCol boolean
 ---@param ast Banana.Ast
+---@param gap number
 ---@return Banana.Renderer.GridTemplate[]
-local function getTemplates(values, sizeInDirection, start, min, isCol, ast)
+local function getTemplates(values, sizeInDirection, start, min, isCol, ast, gap)
     ---@type Banana.Renderer.GridTemplate[]
     local ret = {}
-    local takenSize = 0
+    local takenSize = gap * (math.max(min, #values) - 1)
     local totalFrs = 0
     ---@type number[]
     local frs = {}
@@ -437,7 +439,7 @@ local function getTemplates(values, sizeInDirection, start, min, isCol, ast)
     end
     for _, v in ipairs(ret) do
         v.start = v.start + start
-        start = start + v.size
+        start = start + v.size + gap
     end
     return ret
 end
@@ -515,7 +517,6 @@ function TagInfo:renderGridBlock(ast, parentHl, parentWidth, parentHeight, start
     local insert = table.insert
     local hl = ast:_mixHl(parentHl)
     local so = M.getGridSo()
-    --
     local thing = so.getNew()
 
     -- the plan is basically to arrange the grid elements in the places that
@@ -540,6 +541,9 @@ function TagInfo:renderGridBlock(ast, parentHl, parentWidth, parentHeight, start
 
     ---@type (Banana.Ast|number|Banana.Ncss.StyleValue[])[]
     local colAndNonSpecEls = {}
+
+    local rowGap = ast:_computeUnitFor("row-gap", parentHeight, {}) or 0
+    local columnGap = ast:_computeUnitFor("column-gap", parentWidth, {}) or 0
 
     for i, node in ast:childIterWithI() do
         local rows = node:allStylesFor("grid-row")
@@ -775,12 +779,14 @@ function TagInfo:renderGridBlock(ast, parentHl, parentWidth, parentHeight, start
     if cols == nil then
         cols = {}
     end
-    columnTemplates = getTemplates(cols, parentWidth, startX, maxCol, true, ast)
+    columnTemplates = getTemplates(cols, parentWidth, startX, maxCol, true, ast,
+        columnGap)
     local rows = ast:allStylesFor("grid-template-rows")
     if rows == nil then
         rows = {}
     end
-    rowTemplates = getTemplates(rows, parentHeight, startY, maxRow, false, ast)
+    rowTemplates = getTemplates(rows, parentHeight, startY, maxRow, false, ast,
+        rowGap)
     so.freeSection(thing)
     local columnLimit = 300
     local rowLimit = 300
@@ -809,7 +815,6 @@ function TagInfo:renderGridBlock(ast, parentHl, parentWidth, parentHeight, start
 
     local rowI = 1
     local columnI = 1
-    local x = startX
     if #rowTemplates == 0 then
         ---@type Banana.Renderer.GridTemplate
         local templ = {
@@ -844,6 +849,7 @@ function TagInfo:renderGridBlock(ast, parentHl, parentWidth, parentHeight, start
             local t     = columnTemplates[c]
             actualWidth = actualWidth + t.size
         end
+        local x = columnTemplates[col].start
         extra.useAllHeight = true
         local ogHeight = 0
         for r = row, row + rowSpan - 1 do
@@ -857,6 +863,8 @@ function TagInfo:renderGridBlock(ast, parentHl, parentWidth, parentHeight, start
                 extra.useAllHeight = false
             end
         end
+        actualHeight = actualHeight + rowGap * (rowSpan - 1)
+        actualWidth = actualWidth + columnGap * (colSpan - 1)
         node:_resolveUnits(actualWidth, actualHeight, {})
         -- TODO: multi cell size
         flame.new("getRendered")
@@ -877,8 +885,6 @@ function TagInfo:renderGridBlock(ast, parentHl, parentWidth, parentHeight, start
             ast = node,
             render = rendered
         }
-        -- TODO: on implicit rows, resize all prev elements if bigger (could
-        -- also make secondary startsize matrix but that prolly slower)
         local heightToDistribute = rendered:getHeight()
         local implicitRows = 0
         for r = row, row + rowSpan - 1 do
@@ -933,7 +939,7 @@ function TagInfo:renderGridBlock(ast, parentHl, parentWidth, parentHeight, start
     for _, v in ipairs(renderList) do
         local render = v.render
         local rowTempl = rowTemplates[v.rowStart]
-        local start = getGridStart(rowTempl, true)
+        local start = getGridStart(rowTempl, true, rowGap)
         local newHeight = 0
         for r = v.rowStart, v.rowEnd do
             local t = rowTemplates[r]

@@ -8,6 +8,8 @@
         hl-fg: black;
         hl-italic: false;
         height: 50%;
+        column-gap: 5%;
+        row-gap: 10%;
       }
       .grid > div {
         hl-bg: red;
@@ -70,5 +72,6 @@
       <div>asdfsdf</div>
       <div>asdfsdf</div>
     </div>
+    <script src="banana.test.grid"></script>
   </body>
 </nml>

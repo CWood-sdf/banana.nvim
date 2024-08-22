@@ -135,18 +135,23 @@ end
 ---@return Banana.Ncss.StyleValueType
 ---@overload fun(self: Banana.Ast, style: string): Banana.Ncss.StyleValueType?
 function M.Ast:firstStyleValue(style, default)
-    --flame.new("Ast:firstStyleValue")
     local val = self:firstStyle(style)
-    if val == nil and default ~= nil then
-        --flame.pop()
+    if val == nil then
         return default
     end
-    if val == nil then
-        --flame.pop()
-        return nil
-    end
-    --flame.pop()
     return val.value
+end
+
+---@param style string
+---@param default number
+---@return number
+---@overload fun(self: Banana.Ast, style: string): number?
+function M.Ast:firstStyleComputedValue(style, default)
+    local val = self:firstStyle(style)
+    if val == nil or val.type ~= "unit" then
+        return default
+    end
+    return val.value.computed
 end
 
 ---@param style string
@@ -622,8 +627,10 @@ end
 ---@param unit Banana.Ncss.UnitValue
 ---@param parentWidth number
 ---@param extras number[]
+---@return number
 function M.calcUnitInPlace(unit, parentWidth, extras)
     unit.computed = M.getComputedValue(unit, parentWidth, extras)
+    return unit.computed
 end
 
 function M.Ast:getWidth()
@@ -637,14 +644,20 @@ end
 ---@param prop string
 ---@param basedOn number
 ---@param extras number[]
+---@return number?
 function M.Ast:_computeUnitFor(prop, basedOn, extras)
     local style = self.style[prop]
+    local ret = nil
     if style ~= nil then
-        for i, _ in ipairs(style) do
+        for _, s in ipairs(style) do
             ---@diagnostic disable-next-line: param-type-mismatch
-            M.calcUnitInPlace(style[i].value, basedOn, extras)
+            local v = M.calcUnitInPlace(s.value, basedOn, extras)
+            if ret == nil then
+                ret = v
+            end
         end
     end
+    return ret
 end
 
 ---@param parentWidth number
@@ -677,6 +690,8 @@ function M.Ast:_resolveUnits(parentWidth, parentHeight, extras)
     self:_computeUnitFor("left", parentWidth, extras)
     self:_computeUnitFor("right", parentWidth, extras)
     self:_computeUnitFor("flex-basis", parentWidth, extras)
+    -- self:_computeUnitFor("row-gap", parentWidth, extras)
+    -- self:_computeUnitFor("column-gap", parentWidth, extras)
     --flame.pop()
 end
 
