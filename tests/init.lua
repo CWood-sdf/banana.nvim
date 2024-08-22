@@ -107,7 +107,11 @@ function M.setup()
     vim.treesitter.language.register("ncss", "ncss")
     vim.cmd("TSInstallSync! nml")
     vim.cmd("TSInstallSync! ncss")
-    vim.cmd("so build.lua")
+    print("Root is: " .. M.root())
+    local libbananaPath = M.root("zig/zig-out/lib/libbanana.so")
+    print("libbanana path: " .. libbananaPath)
+    vim.cmd("so " .. M.root() .. "/build.lua")
+    print("libbanana exists: " .. vim.fn.filereadable(libbananaPath))
 end
 
 M.setup()

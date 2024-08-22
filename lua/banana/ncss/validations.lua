@@ -167,6 +167,9 @@ local validations = {
     }),
     ["grid-column"] = "grid-row",
 
+    ["row-gap"] = singleUnit,
+    ["column-gap"] = singleUnit,
+
     ["position"] = explicit("absolute", "static", "relative", "inherit",
         "initial"),
     ["z-index"] = singleInt,

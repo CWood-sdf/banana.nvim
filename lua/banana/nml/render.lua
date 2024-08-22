@@ -499,7 +499,6 @@ end
 ---@field startRow number
 ---@field startCol number
 
-local so = M.getGridSo()
 --- renders an element with display:grid
 ---@param ast Banana.Ast
 ---@param parentHl Banana.Highlight?
@@ -512,9 +511,10 @@ local so = M.getGridSo()
 ---@return Banana.Box, integer
 function TagInfo:renderGridBlock(ast, parentHl, parentWidth, parentHeight, startX,
                                  startY, inherit, extra)
-    -- flame.new("TagInfo:renderGridBlock")
+    flame.new("TagInfo:renderGridBlock")
     local insert = table.insert
     local hl = ast:_mixHl(parentHl)
+    local so = M.getGridSo()
     --
     local thing = so.getNew()
 
@@ -953,7 +953,7 @@ function TagInfo:renderGridBlock(ast, parentHl, parentWidth, parentHeight, start
             start - startY)
     end
 
-    -- flame.pop(true, true)
+    flame.pop()
     --
     return ret, #ast.nodes + 1
     -- return b.Box:new(), 40
