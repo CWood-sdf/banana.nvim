@@ -62,6 +62,7 @@ local Instance = {}
 ---@field word string
 ---@field style? Banana.Highlight
 
+---@internal
 ---@param ast Banana.Ast
 ---@param width number
 ---@param height number
@@ -104,10 +105,13 @@ function Instance:_virtualRender(ast, width, height)
     return rendered:getLines()
 end
 
+---Sets the buffer name of the instance.
+---@param str string
 function Instance:setBufName(str)
     self.bufname = str
 end
 
+---Creates a new banana instance. This instance is also used as the `document` variable for scripting.
 ---@return Banana.Instance
 function Instance:new()
     if nilAst == nil then
@@ -168,6 +172,7 @@ function Instance:new()
     return inst
 end
 
+---Tells the Banana instance which nml file to use.
 ---@param filename string
 function Instance:useFile(filename)
     local ast, styleRules, scripts = require("banana.require").nmlRequire(
@@ -178,6 +183,7 @@ function Instance:useFile(filename)
     self:_applyId(ast)
 end
 
+---Tells the banana instance to parse and use the passed nml string.
 ---@param nml string
 function Instance:useNml(nml)
     local ast, styleRules, scripts = require("banana.require").nmlLoadString(nml)
@@ -187,6 +193,7 @@ function Instance:useNml(nml)
     self:_applyId(ast)
 end
 
+---@internal
 function Instance:_attachAutocmds()
     vim.api.nvim_create_autocmd({ "WinEnter" }, {
         callback = function (args)
@@ -231,7 +238,7 @@ function Instance:isOpen()
     return self.isVisible
 end
 
----runs a lua require string as a script
+---Runs a lua require string as a script
 ---@param str string
 ---@param opts table
 function Instance:runScriptAt(str, opts)
@@ -247,10 +254,13 @@ function Instance:runScriptAt(str, opts)
     end
 end
 
+---Changes the bufnr the Banana instance will use to render.
+---@param bufnr buffer
 function Instance:useBuffer(bufnr)
     self.bufnr = bufnr
 end
 
+---@return number?
 function Instance:getBufnr()
     return self.bufnr
 end
@@ -281,11 +291,13 @@ function Instance:on(ev, opts)
     return vim.api.nvim_create_autocmd(ev, opts)
 end
 
+---Sets the winid the instance will use to render.
+---@param winid window
 function Instance:useWindow(winid)
     self.winid = winid
 end
 
----comment
+---@internal
 ---@param mode string
 ---@param lhs string
 ---@param rhs string|fun()
@@ -333,6 +345,7 @@ function Instance:_setRemap(mode, lhs, rhs, opts, dep)
     end
 end
 
+---@internal
 ---@param ast Banana.Ast
 function Instance:_removeMapsFor(ast)
     for _, vals in ipairs(self.astMapDeps[ast] or {}) do
@@ -349,6 +362,7 @@ function Instance:_removeMapsFor(ast)
     end
 end
 
+---Fetches the body tag from the instance document.
 ---@return Banana.Ast
 function Instance:body()
     if self._body ~= nil then
@@ -368,6 +382,7 @@ function Instance:body()
     return arr[1]
 end
 
+---@internal
 ---@param ast Banana.Ast
 function Instance:_applyId(ast)
     if ast.instance == nil then
@@ -383,6 +398,7 @@ function Instance:_applyId(ast)
     end
 end
 
+---@internal
 ---@param ast Banana.Ast
 function Instance:_applyInlineStyles(ast)
     ast:_applyInlineStyleDeclarations()
@@ -393,6 +409,7 @@ function Instance:_applyInlineStyles(ast)
     end
 end
 
+---@internal
 ---@param ast Banana.Ast?
 ---@param rules Banana.Ncss.RuleSet[]
 function Instance:_applyStyleDeclarations(ast, rules)
@@ -415,6 +432,7 @@ function Instance:_applyStyleDeclarations(ast, rules)
     end
 end
 
+---@internal
 ---@param script string|fun(opts: table)
 ---@param opts table
 function Instance:_runScript(script, opts)
@@ -440,6 +458,7 @@ function Instance:_runScript(script, opts)
     f(opts)
 end
 
+---@internal
 ---@return number, number
 function Instance:_createWinAndBuf()
     --flame.new("winAndBuf")
@@ -544,6 +563,7 @@ function Instance:_createWinAndBuf()
     return width, height
 end
 
+---@internal
 function Instance:_deferRender()
     vim.defer_fn(function ()
         if self.rendering then
@@ -558,6 +578,7 @@ function Instance:_deferRender()
     end, 20)
 end
 
+---@internal
 function Instance:_requestRender()
     if self.renderRequested then
         return
@@ -572,6 +593,10 @@ function Instance:forceRerender()
     self:_render()
 end
 
+local n = 0
+local avg = 0
+
+---@internal
 function Instance:_render()
     if self.DEBUG_showPerf or self.DEBUG then
         flame.overrideIsDev()
@@ -729,6 +754,7 @@ function Instance:_render()
     collectgarbage()
 end
 
+---@internal
 ---@param lines Banana.Line[]
 ---@param offset number?
 function Instance:_highlight(lines, offset)
@@ -866,6 +892,7 @@ function Instance:loadNmlTo(file, ast, remove, preserve)
     self:_requestRender()
 end
 
+---Searches for an element with the input ncss selector.
 ---@param sel string
 ---@return Banana.Ast[]
 function Instance:querySelectorAll(sel)
@@ -897,6 +924,7 @@ function Instance:getElementsByClassName(name)
     return asts
 end
 
+---@internal
 ---@param name string
 ---@return Banana.Ast
 function Instance:getElementById(name)
@@ -949,6 +977,7 @@ function Instance:createElement(name)
     return ast
 end
 
+---@internal
 ---@param scripts string[]
 function Instance:_addScripts(scripts)
     for _, v in ipairs(scripts) do

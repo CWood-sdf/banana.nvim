@@ -167,62 +167,75 @@ function M.Ast:assertHasStyle(style)
     end
 end
 
+---@internal
 ---@return number
 function M.Ast:_boundBottom()
     return self.padding[M.bottom].computed
 end
 
+---@internal
 ---@return number
 function M.Ast:_extraBottom()
     return self:_boundBottom() + self.margin[M.bottom].computed
 end
 
+---@internal
 ---@return number
 function M.Ast:_boundTop()
     return self.padding[M.top].computed
 end
 
+---@internal
 ---@return number
 function M.Ast:_extraTop()
     return self:_boundTop() + self.margin[M.top].computed
 end
 
+---@internal
 function M.Ast:_boundTb()
     return self:_boundTop() + self:_boundBottom()
 end
 
+---@internal
 function M.Ast:_extraTb()
     return self:_extraTop() + self:_extraBottom()
 end
 
+---@internal
 function M.Ast:_boundLr()
     return self:_boundLeft() + self:_boundRight()
 end
 
+---@internal
 function M.Ast:_extraLr()
     return self:_extraLeft() + self:_extraRight()
 end
 
+---@internal
 ---@return number
 function M.Ast:_boundRight()
     return self.padding[M.right].computed
 end
 
+---@internal
 ---@return number
 function M.Ast:_extraRight()
     return self:_boundRight() + self.margin[M.right].computed
 end
 
+---@internal
 ---@return number
 function M.Ast:_boundLeft()
     return self.padding[M.left].computed
 end
 
+---@internal
 ---@return number
 function M.Ast:_extraLeft()
     return self:_boundLeft() + self.margin[M.left].computed
 end
 
+---@internal
 function M.Ast:_getInitialStyles()
     local tag = self.actualTag
     return tag.initialProps
@@ -260,6 +273,7 @@ function M.Ast:marginBottom()
     return self.margin[M.bottom].computed
 end
 
+---@internal
 ---@param i number
 ---@return Banana.Ncss.UnitValue
 function M.Ast:_marginUnit(i)
@@ -333,6 +347,7 @@ local function getListItemOl(styleTp, counter)
     return counter .. "."
 end
 
+---@internal
 ---Returns a heuristic *guess* at the biggest list item for ol
 ---Accurate for ul
 ---@return number
@@ -367,6 +382,7 @@ function M.Ast:_getMaxListWidth(styleTp)
     return math.ceil(math.log10(len)) + 2
 end
 
+---@internal
 ---@param styleTp string
 ---@return string
 function M.Ast:_getNextListItem(styleTp, extra)
@@ -381,6 +397,7 @@ function M.Ast:_getNextListItem(styleTp, extra)
     return ret
 end
 
+---@internal
 function M.Ast:_defaultStyles()
     if self.listCounter ~= nil then
         self.listCounter = 1
@@ -434,6 +451,7 @@ function M.Ast:_defaultStyles()
     self.precedences = {}
 end
 
+---@internal
 function M.Ast:_clearStyles()
     self:_defaultStyles()
     for node in self:childIter() do
@@ -567,6 +585,7 @@ function M.Ast:addClass(c)
     end
 end
 
+---@internal
 ---@param parentHl Banana.Highlight?
 ---@return Banana.Highlight
 function M.Ast:_mixHl(parentHl)
@@ -644,6 +663,7 @@ function M.Ast:getHeight()
     return self.boundBox.bottomY - self.boundBox.topY
 end
 
+---@internal
 ---@param prop string
 ---@param basedOn number
 ---@param extras number[]
@@ -663,6 +683,7 @@ function M.Ast:_computeUnitFor(prop, basedOn, extras)
     return ret
 end
 
+---@internal
 ---@param parentWidth number
 ---@param parentHeight number
 ---@param extras? number[]
@@ -698,6 +719,7 @@ function M.Ast:_resolveUnits(parentWidth, parentHeight, extras)
     --flame.pop()
 end
 
+---@internal
 function M.Ast:_applyInlineStyleDeclarations()
     if self.inlineStyle == nil then
         return
@@ -713,6 +735,7 @@ function M.Ast:isNil()
     return false
 end
 
+---@internal
 ---@param declarations Banana.Ncss.StyleDeclaration[]
 ---@param basePrec number
 function M.Ast:_applyStyleDeclarations(declarations, basePrec)
@@ -855,6 +878,7 @@ function M.Ast:isHovering()
     return ret
 end
 
+---@internal
 ---@return string
 function M.Ast:_testDumpAttr()
     local ret = "<" .. self.tag .. "> "
@@ -864,6 +888,7 @@ function M.Ast:_testDumpAttr()
     return ret
 end
 
+---@internal
 ---@return Banana.Box
 function M.Ast:_testDumpBox()
     local ret = require("banana.box").Box:new()
@@ -871,6 +896,7 @@ function M.Ast:_testDumpBox()
     return ret
 end
 
+---@internal
 ---@param number number
 function M.Ast:_increaseLeftBound(number)
     if self.boundBox == nil then
@@ -894,6 +920,7 @@ function M.Ast:_increaseLeftBound(number)
     end
 end
 
+---@internal
 ---@param number number
 function M.Ast:_increaseTopBound(number)
     if self.boundBox == nil then
@@ -917,10 +944,12 @@ function M.Ast:_increaseTopBound(number)
     end
 end
 
+---@internal
 function M.Ast:_increaseHeightBoundBy(delta)
     self.boundBox.bottomY = self.boundBox.bottomY + delta
 end
 
+---@internal
 function M.Ast:_increaseWidthBoundBy(delta)
     self.boundBox.rightX = self.boundBox.rightX + delta
 end
@@ -1018,6 +1047,7 @@ function M.Ast:setTextContent(str)
     self:_requestRender()
 end
 
+---@internal
 ---@param mod Banana.Remap.Constraint
 ---@return fun(): boolean
 function M.Ast:_parseRemapMod(mod)
@@ -1095,6 +1125,7 @@ function M.Ast:attachRemap(mode, lhs, mods, rhs, opts)
     inst:_setRemap(mode, lhs, actualRhs, opts, self)
 end
 
+---@internal
 function M.Ast:_requestRender()
     if self.instance == nil then
         return

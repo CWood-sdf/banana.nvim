@@ -1,4 +1,3 @@
-local M = {}
 local counterInst = nil
 local todoInst = nil
 local instance = nil
@@ -7,8 +6,57 @@ local inst = nil
 local render = require("banana.lazyRequire")("banana.instance")
 local ffi = require("ffi")
 
+---@class Banana
+---@field newInstance function
+---@field emptyInstance function
+---@field getInstance function
+---@field getNilAst function
+---@field listInstanceIds function
+---@field examples table
+local M = {
+    newInstance = render.newInstance,
+    emptyInstance = render.emptyInstance,
+    getInstance = render.getInstance,
+    getNilAst = render.getNilAst,
+    listInstanceIds = render.listInstanceIds,
+}
+
+
 local tsInit = false
 local tsInstall = false
+
+---@class Banana.Examples
+---@field runCounter function
+---@field runTodo function
+---@field runLazy function
+M.examples = {
+    runCounter = function ()
+        if counterInst == nil then
+            counterInst = M.newInstance("examples/counter", "asdf")
+            -- instance.DEBUG = true
+        end
+        counterInst:open()
+    end,
+
+    runTodo = function ()
+        if todoInst == nil then
+            todoInst = M.newInstance("examples/todo", "asdf")
+            -- instance.DEBUG = true
+        end
+        todoInst:open()
+    end,
+
+    runLazy = function ()
+        if instance == nil then
+            instance = M.newInstance("examples/lazy", "")
+            -- instance.DEBUG = true
+            -- instance.DEBUG_showPerf = true
+            -- instance.DEBUG_stressTest = true
+        end
+        instance:open()
+        instance:_requestRender()
+    end,
+}
 
 M.test = {
     grid = function ()
@@ -35,32 +83,6 @@ M.test = {
         inst:open()
     end
 }
-
-M.runCounter = function ()
-    if counterInst == nil then
-        counterInst = render.newInstance("examples/counter", "asdf")
-        -- instance.DEBUG = true
-    end
-    counterInst:open()
-end
-M.runTodo = function ()
-    if todoInst == nil then
-        todoInst = render.newInstance("examples/todo", "asdf")
-        -- instance.DEBUG = true
-    end
-    todoInst:open()
-end
-
-M.runLazy = function ()
-    if instance == nil then
-        instance = render.newInstance("examples/lazy", "")
-        -- instance.DEBUG = true
-        -- instance.DEBUG_showPerf = true
-        -- instance.DEBUG_stressTest = true
-    end
-    instance:open()
-    instance:_requestRender()
-end
 
 function M.spam()
     local testFile = [[
@@ -136,6 +158,8 @@ function M.initTsParsers()
     end
     tsInit = true
     local parser_config = require("nvim-treesitter.parsers").get_parser_configs()
+
+    vim.filetype.add({ extension = { nml = "nml" } })
     vim.treesitter.language.register("nml", "nml")
     ---@diagnostic disable-next-line: inject-field
     parser_config.nml = {
@@ -148,6 +172,9 @@ function M.initTsParsers()
         },
         filetype = "nml",
     }
+
+    vim.filetype.add({ extension = { ncss = "ncss" } })
+    vim.treesitter.language.register("ncss", "ncss")
     ---@diagnostic disable-next-line: inject-field
     parser_config.ncss = {
         install_info = {
@@ -159,7 +186,6 @@ function M.initTsParsers()
         },
         filetype = "ncss",
     }
-    vim.treesitter.language.register("ncss", "ncss")
 end
 
 return M
