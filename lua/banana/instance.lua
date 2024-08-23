@@ -733,14 +733,15 @@ end
 ---@param offset number?
 function Instance:_highlight(lines, offset)
     offset = offset or 0
-    --flame.new("hl:ns")
+    flame.new("hl:ns")
     vim.api.nvim_win_set_hl_ns(self.winid, self.highlightNs)
     if self.highlightNs ~= nil then
         vim.api.nvim_buf_clear_namespace(0, self.highlightNs, 0, -1)
+        vim.api.nvim_buf_clear_namespace(0, 0, 0, -1)
         -- vim.api.nvim_win_set_hl_ns(self.winid, self.highlightNs)
         -- self.highlightNs = nil
     end
-    --flame.pop()
+    flame.pop()
     if self.bufnr == nil or not vim.api.nvim_buf_is_valid(self.bufnr) then
         log.throw(
             "Unreachable (buf is invalid in higlightBuffer)")
@@ -764,10 +765,6 @@ function Instance:_highlight(lines, offset)
             -- log.debug(word.word .. ": " .. delta)
             local byteCount = _str.byteCount(word.word)
             if word.style ~= nil then
-                --flame.new("hl:inspect")
-                -- PERF: this is pretty inefficient
-                -- local optsStr = vim.inspect(word.style)
-                --flame.pop()
                 while i + 1 <= #v and v[i + 1].style == word.style do
                     i = i + 1
                     -- delta = delta + _str.charWidth(v[i].word)
@@ -799,9 +796,6 @@ function Instance:_highlight(lines, offset)
                     elseif hlNotExists then
                         hlGroup = M.defaultWinHighlight
                     end
-                    --flame.pop()
-                    -- elseif usedHighlights[optsStr] ~= nil then
-                    --     hlGroup = usedHighlights[optsStr]
                 else
                     --flame.new("hl:set_hl")
                     hlGroup = "banana_hl_" .. hlId

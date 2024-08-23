@@ -28,9 +28,9 @@ M.test = {
         -- print(ffi.string(cstr))
         if inst == nil then
             inst = render.newInstance("grid", "")
-            inst.DEBUG_showPerf = true
+            -- inst.DEBUG_showPerf = true
             -- inst.DEBUG_stressTest = true
-            inst.DEBUG = true
+            -- inst.DEBUG = true
         end
         inst:open()
     end

@@ -957,7 +957,7 @@ function TagInfo:renderGridBlock(ast, parentHl, parentWidth, parentHeight, start
             heightToDistribute = heightToDistribute - size
         end
         if heightToDistribute > 0 and implicitRows > 0 then
-            -- while it's not in spec that implicit spanned rows get extra
+            -- while it's not in spec that implicit spanned rows have a min
             -- height, im not sure what else to do
             if heightToDistribute < implicitRows then
                 heightToDistribute = implicitRows

@@ -39,7 +39,11 @@ local instance = require('banana.instance').newInstance("stuff/foo", "random buf
 instance:open()
 ```
 
-and that's it! You can just keep writing html, and use lua scripting with an api that is nearly exactly like the browser api. All the html you are already familiar with, just ported to lua.
+all of that code results in this window:
+
+![helloworld](./assets/images/helloworld.png)
+
+this may seem underwhelming as the above result can be done in a few lines of lua, but banana starts becoming extremely helpful when you start doing more complex rendering cases
 
 ### Other examples
 
@@ -52,6 +56,23 @@ The counter's files are contained in banana/example/counter.nml and lua/banana_e
 Lazy's files are contained in banana/example/lazy/ and lua/banana_example/lazy/ and can be run with `require('banana').runLazy()`
 
 An example plugin repository can be found [here](https://github.com/CWood-sdf/banana-example)
+
+## Installation
+
+Banana can be installed like this in lazy:
+
+```lua
+return {
+  "CWood-sdf/banana.nvim",
+  dependencies = {
+      "nvim-treesitter/nvim-treesitter",
+  },
+}
+```
+
+or it can be added as a dependency to you plugin.
+
+There is no need to lazy load banana as all functionality inside the library is already lazy loaded
 
 ## Features
 
@@ -159,7 +180,7 @@ Opening a banana plugin is very simple:
 
 ```lua
 -- the buffer name can be overriden using the <title> tag
-local document = require('banana.instance').newInstance("require path", "initial buffer name")
+local document = require('banana.instance').newInstance("banana require path", "initial buffer name")
 
 -- opens the window
 document:open()
@@ -231,6 +252,7 @@ ast:attachRemap(
         print("Either you prefixed this map with 1, or are hovering over the element")
     end,
     {
+        -- vim.keymap.set opts go here
         -- buffer is already set, a feature is needed to prevent auto setting
     }
 )
@@ -275,7 +297,7 @@ As you can probably tell, this plugin is nowhere close to being done. If you wou
 
 ## Self promotion
 
-Follow me on [X](https://x.com/CWood_sdf)
+Follow me on [x](https://x.com/CWood_sdf)
 
 Try out my other two plugins: [spaceport](https://github.com/CWood-sdf/spaceport.nvim) and [pineapple](https://github.com/CWood-sdf/pineapple)
 

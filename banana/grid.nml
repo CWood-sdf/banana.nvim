@@ -31,6 +31,12 @@
         hl-bg: gray;
         hl-__name: BananaSidebar;
       }
+      ul {
+        hl-fg: hl-extract(fg, Operator);
+      }
+      li {
+        hl-link: Normal;
+      }
     </style>
     <title>box</title>
   </head>
@@ -53,10 +59,22 @@
         <br />
 
         <div>press K on any of the grid elemens or flex elements</div>
+        <br />
+
+        <ul>
+          <li>item 1</li>
+          <li>item 2</li>
+          <li>item 3</li>
+          <li>item 4</li>
+          <li>item 5</li>
+          <li>item 6</li>
+          <li>item 7</li>
+          <li>item 8</li>
+          <li>item 9</li>
+          <li>item 10</li>
+        </ul>
       </div>
     </div>
-    <br />
-    <br />
     <script src="banana.test.grid"></script>
   </body>
 </nml>
