@@ -297,8 +297,9 @@ local function flexGrowSection(parentWidth, takenWidth, renders, start, e)
                 ---@cast flexGrow number
                 local grow = growPer * flexGrow
                 if extraGrow > 0 then
-                    grow = grow + math.ceil(flexGrow)
-                    extraGrow = extraGrow - math.ceil(flexGrow)
+                    local extraAdded = math.min(math.ceil(flexGrow), extraGrow)
+                    grow = grow + extraAdded
+                    extraGrow = extraGrow - extraAdded
                 end
                 renders[i][1].widthExpansion = renders[i][1].widthExpansion +
                     grow
@@ -462,6 +463,12 @@ local gridSo = nil
 
 function M.getGridSo()
     if gridSo == nil then
+        local path = require("banana").getInstallDir() ..
+            "/zig/zig-out/lib/libbanana.so"
+        if not vim.fn.filereadable(path) then
+            vim.notify("libbanana does not exist, installing now...")
+            require("banana").installLibbanana()
+        end
         ffi.cdef([[
 
 typedef struct {
@@ -483,8 +490,21 @@ typedef struct {
 
 
         ]])
-        gridSo = ffi.load(require("banana").getInstallDir() ..
-            "/zig/zig-out/lib/libbanana.so")
+        local loadSo = function ()
+            gridSo = ffi.load(require("banana").getInstallDir() ..
+                "/zig/zig-out/lib/libbanana.so")
+        end
+        local ok, _ = pcall(loadSo)
+        if not ok or gridSo == nil then
+            vim.notify("libbanana does not exist, attempting reinstall...")
+            require("banana").installLibbanana()
+            ok, _ = pcall(loadSo)
+            if not ok or gridSo == nil then
+                log.throw(
+                    "Could not find libbanana, do you have zig installed on your system?")
+                error("")
+            end
+        end
     end
     return gridSo
 end
@@ -908,7 +928,6 @@ function TagInfo:renderGridBlock(ast, parentHl, parentWidth, parentHeight, start
         actualHeight = actualHeight + rowGap * (rowSpan - 1)
         actualWidth = actualWidth + columnGap * (colSpan - 1)
         node:_resolveUnits(actualWidth, actualHeight, {})
-        -- TODO: multi cell size
         flame.new("getRendered")
         local rendered = node.actualTag:getRendered(node, hl, actualWidth,
             actualHeight, x, startY,

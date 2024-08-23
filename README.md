@@ -55,10 +55,11 @@ An example plugin repository can be found [here](https://github.com/CWood-sdf/ba
 
 ## Features
 
-Partial or complete implementations exist for the following elements:
+Partial or complete implementations exist for the following tags:
 
 - div
 - title
+- h1
 - script
 - style
 - meta
@@ -99,6 +100,10 @@ Partial or complete implementations exist for the following css properties (for 
 - padding
 - padding-left
 - padding-right
+- grid-template-columns
+- grid-template-rows
+- grid-row
+- grid-column
 - padding-top
 - padding-bottom
 - margin
@@ -125,7 +130,7 @@ Currently the following css functions are implemented (for uptodate list see css
 The following units are implemented (for uptodate list see M.calcUnitNoMod in lua/banana/nml/ast.lua):
 
 - ch
-- fr
+- fr (only allowed in grid-template-rows and grid-template-columns)
 - %
 
 ## Structuring plugins
@@ -144,7 +149,9 @@ Banana searches for all nml and ncss in the banana/ folder in the neovim require
 
 Requiring these markup files uses the slash seperator that links use (rather than the dot lua uses). The filenames index.nml and index.ncss are the "init.lua"s for banana. So to require the file in banana/plugin/index.nml, the require path would just be "plugin"; to require banana/plugin/other.nml, the require path would be "plugin/other".
 
-When using Instance:loadNmlTo(), adding "?..." allows parameter passing in the same way browsers use it. This feature is currently not spread accross the entire ecosystem, but it will happen eventually.
+When using Instance:loadNmlTo(), adding "?..." allows parameter passing in the same way browsers use it. This feature is currently not implemented in every load function, but it will happen eventually.
+
+An example plugin, [banana-example](https://github.com/CWood-sdf/banana-example), exists that better shows how banana recommends plugins be layed out.
 
 ## Executing banana plugins
 
@@ -265,24 +272,6 @@ Gradient support
 ## Final notes
 
 As you can probably tell, this plugin is nowhere close to being done. If you would like to contribute to this plugin, by all means please do. If you don't want to contribute, but still find this project interesting, then give it a star. If you want to follow the progress, then "watch" it on github.
-
-## Essay
-
-### The problem
-
-I have made two large plugins for neovim: [pineapple](https://github.com/CWood-sdf/pineapple) and [spaceport](https://github.com/CWood-sdf/spaceport.nvim). For both of these plugins I ended up making my own specialized rendering frameworks. This was originally because I did not know about [nui](https://github.com/MunifTanjim/nui.nvim) (a great project btw), but I did not switch my plugins over because I did not want to learn a whole new rendering framework on top of my other two rendering frameworks. (To those that argue that banana is a whole new rendering framework: yes, that is correct, but it is trying to use knowledge most people already have)
-
-### The solution
-
-Html!
-
-I don't think it is too bold an assumption to say that every developer knows at least a little bit of html. So, it would be really nice if this knowledge everyone has could be transferrable to writing neovim plugins. This makes it so that rather than having to solve the problems of rendering, core features, and ui design, plugin authors do not need to solve rendering because it is all html.
-
-So, the mission of banana is to make neovim uis absurdly easy by using html. For this, it has a custom html language offshoot and a custom css offshoot.
-
-In the future, I would also like to have a lot of "extra" features that usually come to browsers via third-party libraries (eg jquery.load) so that plugin authors can just add banana as a dependency and start coding.
-
-The banana renderer takes a design architecture that allows it to be blazingly fast: rendering is done in _one_ pass. There will be no reflowing of any elements ever because later elements were rendered. This also means that complicated box trees and render trees (for example, I believe ladybird uses two trees to render) are _not_ allowed in the renderer. This allows the renderer to be very simple (and fast) while also supporting most of the features of modern html and css. This rendering architecture does make some things (particularly floats) more complicated, but it lets everything else be very fast. This simplification is required because banana is written in lua (slower than the c++ that modern browsers use).
 
 ## Self promotion
 

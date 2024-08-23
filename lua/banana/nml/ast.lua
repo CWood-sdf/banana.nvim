@@ -573,6 +573,9 @@ function M.Ast:_mixHl(parentHl)
     flame.new("Ast:_mixHl")
     local ret = {}
     setmetatable(ret, { __mode = "kv" })
+    if self.tag == "h1" then
+        ret.bold = true
+    end
     if self.hl ~= nil then
         setmetatable(self.hl, { __mode = "kv" })
     end

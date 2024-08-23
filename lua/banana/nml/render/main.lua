@@ -128,8 +128,10 @@ return function (self, ast, parentHl, parentWidth, parentHeight, startX, startY,
     -- flame.new("element render")
     local useMaxHeight = extra.useAllHeight
     extra.useAllHeight = false
+    flame.new("other render")
     local centerBox = self:render(ast, parentHl, contentWidth, parentHeight,
         startX, startY, inherit, extra)
+    flame.pop()
     -- -- flame.expect("element render")
     -- flame.pop()
     -- flame.new("getRendered_expansion")

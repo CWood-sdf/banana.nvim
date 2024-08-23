@@ -14,8 +14,8 @@
 
 ### Upcoming big projects
 
-- Grid
 - Animations + Transitions
+- Gradients
 - List stuff
 
 ### Api
@@ -30,7 +30,7 @@
 
 - [ ] Character Entity Support
 - [x] Basic Renderer
-- [ ] Very Fast rendering
+- [x] Very Fast rendering
 - [x] Attributes
 - [x] Good attributes api
 - [x] DOM Manipulation
@@ -53,7 +53,7 @@
 - [x] handles overflow
 - [x] text-align (missing justify)
 - [ ] aspect-ratio
-- [ ] display: flex, grid, inline, inline-block, none, block
+- [x] display: flex, grid, none
 - [x] height/width
 - [ ] list-style
 - [x] list-style-type (needed for ol)
@@ -71,9 +71,9 @@
 
 ### Grid
 
-- [ ] repeat()
-- [ ] grid-template-columns
-- [ ] grid-template-rows
+- [x] repeat()
+- [x] grid-template-columns
+- [x] grid-template-rows
 - [ ] grid-template-areas
 - [ ] grid-template (shorthand prop)
 - [ ] grid-auto-columns
@@ -84,12 +84,12 @@
 - [ ] grid-column-start
 - [ ] grid-row-end
 - [ ] grid-column-end
-- [ ] grid-row
-- [ ] grid-column
+- [x] grid-row
+- [x] grid-column
 - [ ] grid-area
 - [ ] row-gap
 - [ ] column-gap
-- [ ] gap
+- [x] gap
 
 ### Abs/relative position
 
@@ -104,6 +104,18 @@
 ### Sticky
 
 - [ ] position: sticky
+
+### Transitions and animations
+
+- [ ] transition
+- [ ] animation
+
+### Gradients
+
+- [ ] linear-gradient()
+- [ ] radial-gradient()
+- [ ] conic-gradient()
+- [ ] repeating-linear-gradient()
 
 #### Later stuff
 
@@ -135,7 +147,7 @@
 - [x] Should take in AST and return Word[][]
 - [ ] Render caching?
 - [x] Need to actually compute width/height restrictions and follow them
-- [ ] Flexbox?
+- [x] Flexbox?
 - [x] Respect the styling
 - [ ] Robust (aka styling still works if win really small)
 

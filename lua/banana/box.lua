@@ -418,6 +418,9 @@ function M.Box:stripRightSpace(expectedBg)
     for _, row in ipairs(self.lines) do
         while #row > 0 do
             local i = #row
+            if row[i].style.link ~= nil then
+                break
+            end
             if row[i].style.bg ~= expectedBg and row[i].style.bg ~= nil then
                 break
             end

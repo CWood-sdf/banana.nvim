@@ -29,8 +29,8 @@ M.test = {
         if inst == nil then
             inst = render.newInstance("grid", "")
             inst.DEBUG_showPerf = true
-            inst.DEBUG_stressTest = true
-            -- inst.DEBUG = true
+            -- inst.DEBUG_stressTest = true
+            inst.DEBUG = true
         end
         inst:open()
     end
@@ -102,6 +102,32 @@ function M.installTsParsers()
     tsInstall = true
     vim.cmd("TSInstallSync nml")
     vim.cmd("TSInstallSync ncss")
+end
+
+function M.installLibbanana()
+    local job = vim.fn.jobstart("zig build -Doptimize=ReleaseFast",
+        {
+            cwd = M.getInstallDir() .. "/zig",
+            detach = true,
+            on_exit = function (p1, p2, p3)
+                print("Exit parameters: " .. p1 .. ", " .. p2 .. ", " .. p3)
+            end,
+            on_stderr = function (p1, p2, p3)
+                p1 = p1 or ""
+                p2 = p2 or ""
+                p3 = p3 or ""
+            end,
+            on_stdout = function (p1, p2, p3)
+                p1 = p1 or ""
+                p2 = p2 or ""
+                p3 = p3 or ""
+                print("stdout params: " ..
+                    vim.inspect(p1) ..
+                    ", " .. vim.inspect(p2) .. ", " .. vim.inspect(p3))
+            end
+        })
+
+    vim.fn.jobwait({ job })
 end
 
 function M.initTsParsers()

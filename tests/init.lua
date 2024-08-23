@@ -19,7 +19,7 @@ function M.load(plugin)
     if not vim.loop.fs_stat(package_root .. name) then
         print("Installing " .. plugin)
         vim.fn.mkdir(package_root, "p")
-        local isDone = false
+        -- local isDone = false
         vim.cmd(
             "!git clone --depth=1 https://github.com/" ..
             plugin ..
