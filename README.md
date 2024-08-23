@@ -17,12 +17,10 @@ This is the banana hello world:
   <head>
     <style>
       nml {
-        width: 50%;
-        height: 50%;
-      }
-      div {
-        hl-bg: red;
-        width: 50%;
+        width: 75%;
+        height: 75%;
+        left: 12%;
+        top: 12%;
       }
     </style>
   </head>
@@ -43,7 +41,7 @@ all of that code results in this window:
 
 ![helloworld](./assets/images/helloworld.png)
 
-this may seem underwhelming as the above result can be done in a few lines of lua, but banana starts becoming extremely helpful when you start doing more complex rendering cases
+this may seem underwhelming as the above result can be done in a few lines of lua, but banana starts becoming extremely helpful when you start doing more complex rendering cases like nested tags, css grid display, or css flex display. For a better example, check out [banana-example](https://github.com/CWood-sdf/banana-example) or the other examples below
 
 ### Other examples
 
@@ -54,8 +52,6 @@ The todo's files are contained in banana/example/todo.nml and lua/banana_example
 The counter's files are contained in banana/example/counter.nml and lua/banana_example/counter.lua. You can run it with `require('banana').runCounter()`
 
 Lazy's files are contained in banana/example/lazy/ and lua/banana_example/lazy/ and can be run with `require('banana').runLazy()`
-
-An example plugin repository can be found [here](https://github.com/CWood-sdf/banana-example)
 
 ## Installation
 
