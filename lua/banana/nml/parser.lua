@@ -341,11 +341,11 @@ function Parser:parseTag(tree, parent, isSpecial)
             end
             ret:appendTextNode(self:getStrFromNode(child))
         elseif child:type() == M.ts_types.raw_text and isScript then
-            if scriptStr ~= "" then
+            if scriptStr == "" then
                 scriptStr = self.lexer:getStrFromRange({ child:start() },
                     { child:end_() })
-                table.insert(self.scripts, scriptStr)
             end
+            table.insert(self.scripts, scriptStr)
         elseif child:type() == M.ts_types.raw_text and isStyle then
             local ncssTree = self:getNextBlockNcssParser()
             local ncssParser = require("banana.ncss.parser").newParseData(self
