@@ -55,6 +55,10 @@ Lazy's files are contained in banana/example/lazy/ and lua/banana_example/lazy/ 
 
 ## Installation
 
+> [!NOTE]
+>
+> Banana requires zig to be installed on your system
+
 Banana can be installed like this in lazy:
 
 ```lua
@@ -66,7 +70,7 @@ return {
 }
 ```
 
-or it can be added as a dependency to you plugin.
+or it can be added as a dependency to your plugin.
 
 There is no need to lazy load banana as all functionality inside the library is already lazy loaded
 
@@ -194,7 +198,7 @@ Loading a separate lua file into an nml document is very simple:
 <script src="lua require path"></script>
 ```
 
-this will work if the script returns either a function or a table with a key of \_\_banana_run that has a function.
+this will work if the script returns either a function or a table with a key of \_\_banana_run that is a function.
 
 ```lua
 --- Add types for luals
@@ -225,10 +229,10 @@ Embedded lua is also very simple, banana predefines the document variable for yo
 
 ## Api
 
-The api is modeled very closely after the browser api, some extra functions might come later that make it also possible to use similar to jquery. Currently most of banana's internal api functions are listed as public, but start with an underscore; thus there are two rules for the api:
+The api is modeled very closely after the browser api, some extra functions might come later that make it also possible to use similar to jquery and/or htmx. Currently most of banana's internal api functions are listed as public, but start with an underscore; thus there are two rules for using the lua api:
 
-- _NEVER_ use a function that starts with an underscore
-- _ONLY_ use the api functions, never use a property. To be safe, only use : for field access
+- never use a function that starts with an underscore
+- only use the api functions, never use a property. To be safe, only use : for field access
 
 ### Extra api functions
 
