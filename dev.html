@@ -6,10 +6,11 @@
       #grid {
         display: grid;
         grid-template-columns: 2fr 10ch repeat(6, 1fr);
+        background: linear-gradient(to left, red, blue);
         /* grid-template-rows: 80px; */
         /* row-gap: 20px; */
       }
-      #grid > div {
+      #grid > div:nth-child(3) {
         background-color: red;
       }
     </style>

@@ -35,7 +35,7 @@
         hl-fg: hl-extract(fg, Operator);
       }
       li {
-        hl-link: Normal;
+        hl-link: NormalFloat;
       }
     </style>
     <title>box</title>

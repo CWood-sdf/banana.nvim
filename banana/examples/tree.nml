@@ -1,0 +1,29 @@
+<nml>
+  <head>
+    <style>
+      .tree:not(.main) {
+        padding-left: 2ch;
+      }
+      .tree:not(.selected) > div {
+        display: none;
+      }
+      .tree > li:not(.leaf) {
+        list-style-type: "";
+      }
+      .tree.selected > li:not(.leaf) {
+        list-style-type: "";
+      }
+      li.leaf {
+        list-style-type: "-";
+      }
+    </style>
+  </head>
+
+  <body>
+    Press <span style="hl-fg: hl-extract(fg, Operator)">a</span> while hovering
+    over a tree node
+    <br />
+    <div class="tree main"></div>
+    <script src="banana_examples.tree"></script>
+  </body>
+</nml>

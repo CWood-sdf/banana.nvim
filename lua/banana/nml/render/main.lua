@@ -54,6 +54,7 @@ return function (self, ast, parentHl, parentWidth, parentHeight, startX, startY,
             end
         end
     end
+    local newHl = ast:_mixHl(parentHl)
     local position = ast:firstStyleValue("position")
     if position == nil or position == "initial" then
         position = ast:_getInitialStyles().position
@@ -77,9 +78,11 @@ return function (self, ast, parentHl, parentWidth, parentHeight, startX, startY,
         for k, _ in pairs(inheritOld) do
             inherit[k] = inheritOld[k]
         end
+        ast.hidden = true
         flame.pop()
         return p.emptyPartialRendered()
     end
+    ast.hidden = false
     if ast:hasStyle("width") then
         -- add margins bc width only sets content-width + padding
         ---@diagnostic disable-next-line: cast-local-type
@@ -129,7 +132,7 @@ return function (self, ast, parentHl, parentWidth, parentHeight, startX, startY,
     local useMaxHeight = extra.useAllHeight
     extra.useAllHeight = false
     flame.new("other render")
-    local centerBox = self:render(ast, parentHl, contentWidth, parentHeight,
+    local centerBox = self:render(ast, newHl, contentWidth, parentHeight,
         startX, startY, inherit, extra)
     flame.pop()
     -- -- flame.expect("element render")
@@ -160,7 +163,7 @@ return function (self, ast, parentHl, parentWidth, parentHeight, startX, startY,
     ret.padding = padding
     ret.center = centerBox
     ret.marginColor = parentHl
-    ret.mainColor = centerBox.hlgroup
+    ret.mainColor = newHl
     ret.renderAlign = inherit.text_align
     local extraWidth = parentWidth - ret:getWidth() - ast:_extraLr()
     if isExpandable(ast, extraWidth) and not inherit.min_size then

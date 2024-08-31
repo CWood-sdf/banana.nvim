@@ -1,0 +1,16 @@
+<nml>
+  <!-- in banana/stuff/foo.nml -->
+  <head>
+    <style>
+      nml {
+        width: 90%;
+        height: 90%;
+        left: 5%;
+        top: 5%;
+      }
+    </style>
+  </head>
+  <body>
+    <div>Hello World!</div>
+  </body>
+</nml>

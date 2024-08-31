@@ -31,8 +31,13 @@ local instances = {}
 ---@field opts vim.keymap.set.Opts
 ---@field disabled boolean?
 
+---@class (exact) Banana.Instance.RouteParams
+---@field params { [string]: string }
+---@field selfNode Banana.Ast
+
 ---@class (exact) Banana.Instance
 ---@field DEBUG_stressTest boolean
+---@field DEBUG_dumpTree boolean
 ---@field DEBUG boolean
 ---@field winid? number
 ---@field bufnr? number
@@ -131,6 +136,7 @@ function Instance:new()
     local id = #instances
     ---@type Banana.Instance
     local inst = {
+        DEBUG_dumpTree = false,
         DEBUG_stressTest = false,
         DEBUG_showPerf = false,
         rendering = false,
@@ -212,6 +218,38 @@ function Instance:_attachAutocmds()
     })
 end
 
+---@param pad number?
+---@param node Banana.Ast?
+---@return string[]
+function Instance:_dumpTree(pad, node)
+    pad = pad or 0
+    node = node or self.ast
+    local ret = {
+        string.rep(" ", pad) .. node.tag .. ": "
+    }
+    local id = node:getAttribute("id")
+    if id ~= nil then
+        ret[1] = ret[1] .. "#" .. id .. " "
+    end
+    for v, s in pairs(node.classes or {}) do
+        if s then
+            ret[1] = ret[1] .. "." .. v .. " "
+        end
+    end
+    pad = pad + 2
+    for _, v in ipairs(node.nodes) do
+        if type(v) == "string" then
+            table.insert(ret, string.rep(" ", pad) .. v)
+        else
+            local dump = self:_dumpTree(pad, v)
+            for _, d in ipairs(dump) do
+                table.insert(ret, d)
+            end
+        end
+    end
+    return ret
+end
+
 function Instance:close()
     self.isVisible = false
     vim.api.nvim_win_close(self.winid, false)
@@ -233,7 +271,7 @@ end
 
 ---runs a lua require string as a script
 ---@param str string
----@param opts table
+---@param opts Banana.Instance.RouteParams?
 function Instance:runScriptAt(str, opts)
     local script = require(str)
     if type(script) == "function" then
@@ -370,6 +408,11 @@ end
 
 ---@param ast Banana.Ast
 function Instance:_applyId(ast)
+    if type(ast) ~= "table" then
+        return
+        --     log.throw("smh ast isnt a table in _applyId")
+        -- error("")
+    end
     if ast.instance == nil then
         ast.instance = self.instanceId
     end
@@ -415,10 +458,10 @@ function Instance:_applyStyleDeclarations(ast, rules)
     end
 end
 
----@param script string|fun(opts: table)
----@param opts table
+---@param script string|fun(opts: Banana.Instance.RouteParams?)
+---@param opts Banana.Instance.RouteParams?
 function Instance:_runScript(script, opts)
-    ---@type fun(opts: table)|nil
+    ---@type fun(opts: Banana.Instance.RouteParams?)|nil
     local f = nil
     if type(script) == "function" then
         f = script
@@ -651,12 +694,13 @@ function Instance:_render()
 
     self:_highlight(stuffToRender, 0)
     for _, script in ipairs(self.scripts) do
-        self:_runScript(script, {})
+        self:_runScript(script, nil)
     end
     self.scripts = {}
 
     local hlTime = vim.loop.hrtime() - startTime
     totalTime = totalTime + vim.loop.hrtime() - actualStart
+
 
     if self.DEBUG or self.DEBUG_showPerf then
         n = n + 1
@@ -682,6 +726,13 @@ function Instance:_render()
             "Instance id: " .. self.instanceId,
             "",
         }
+        if self.DEBUG_dumpTree then
+            local dump = self:_dumpTree()
+            for _, v in ipairs(dump) do
+                table.insert(extraLines, v)
+            end
+            table.insert(extraLines, "")
+        end
         local filter = ""
         local flames = flame.getWorst("pct", filter, false)
         local flameMillis = flame.getFlames("millis", filter, false)
@@ -726,7 +777,7 @@ function Instance:_render()
     end
     self.rendering = false
     collectgarbage("restart")
-    collectgarbage()
+    -- collectgarbage()
 end
 
 ---@param lines Banana.Line[]
@@ -858,6 +909,7 @@ function Instance:loadNmlTo(file, ast, remove, preserve)
     end
     for _, script in ipairs(scripts) do
         table.insert(self.scripts, function (opts)
+            opts = opts or {}
             opts.params = params
             opts.selfNode = content
             self:_runScript(script, opts)

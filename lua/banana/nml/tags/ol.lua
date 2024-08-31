@@ -11,7 +11,7 @@ local function renderer(self, ast, parentHl, parentWidth, parentHeight, startX,
     local b = require("banana.box")
     ---@type Banana.Box
     local ret = b.Box:new()
-    ret.hlgroup = ast:_mixHl(parentHl)
+    ret.hlgroup = parentHl
 
     ---@type string
     -- local listType = "* "

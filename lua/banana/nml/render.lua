@@ -155,7 +155,7 @@ end
 function TagInfo:renderInlineEl(ast, parentHl, parentWidth, parentHeight, startX,
                                 startY, inherit, extra)
     ---@type Banana.Box
-    local ret, _ = self:renderBlock(ast, ast:_mixHl(parentHl), 1, parentWidth,
+    local ret, _ = self:renderBlock(ast, parentHl, 1, parentWidth,
         parentHeight, startX, startY, inherit,
         extra)
     return ret
@@ -549,7 +549,7 @@ function TagInfo:renderGridBlock(ast, parentHl, parentWidth, parentHeight, start
                                  startY, inherit, extra)
     flame.new("TagInfo:renderGridBlock")
     local insert = table.insert
-    local hl = ast:_mixHl(parentHl)
+    local hl = parentHl
     local so = M.getGridSo()
     local thing = so.getNew()
 
@@ -957,8 +957,8 @@ function TagInfo:renderGridBlock(ast, parentHl, parentWidth, parentHeight, start
             heightToDistribute = heightToDistribute - size
         end
         if heightToDistribute > 0 and implicitRows > 0 then
-            -- while it's not in spec that implicit spanned rows have a min
-            -- height, im not sure what else to do
+            -- while it's not in spec (afaik) that implicit spanned rows have a min
+            -- height of 1, i dont like the idea of 0 height
             if heightToDistribute < implicitRows then
                 heightToDistribute = implicitRows
             end
@@ -1017,6 +1017,14 @@ function TagInfo:renderGridBlock(ast, parentHl, parentWidth, parentHeight, start
             end
         end
         v.ast:_increaseTopBound(start)
+        -- ikik this doesnt include pcts,
+        -- but there are so many cases to worry about because different combos
+        -- of margin and height and pct and ch
+        -- ALSO browsers are really weird about this because if you set height
+        -- to be pct on an implicit row, it's computed with respect to content
+        -- height, but if you add margin pct, it's computed with respect to page
+        -- height. In a word, that's all too much complexity when people SHOULD
+        -- NOT be setting height/width on grid elements
         if newHeight > render:getHeight() and v.ast:firstStyleValue("height", { unit = "", value = 0 }).unit ~= "ch" then
             v.ast:_increaseHeightBoundBy(newHeight - v.render:getHeight())
             v.render:expandHeightTo(newHeight)
@@ -1027,9 +1035,7 @@ function TagInfo:renderGridBlock(ast, parentHl, parentWidth, parentHeight, start
     end
 
     flame.pop()
-    --
     return ret, #ast.nodes + 1
-    -- return b.Box:new(), 40
 end
 
 ---Renders everything in a flex block
@@ -1053,7 +1059,7 @@ function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, start
     local oldMinSize = inherit.min_size
     inherit.min_size = true
     local takenWidth = 0
-    local hl = ast:_mixHl(parentHl)
+    local hl = parentHl
     ---@type ([Banana.Renderer.PartialRendered, Banana.Ast]?)[]
     local renders = {}
     local rendersLen = 0

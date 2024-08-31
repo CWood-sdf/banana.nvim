@@ -10,7 +10,7 @@ local function renderer(self, ast, parentHl, parentWidth, parentHeight, startX,
     local b = require("banana.box")
     ---@type Banana.Box
     local ret = b.Box:new()
-    ret.hlgroup = ast:_mixHl(parentHl)
+    ret.hlgroup = parentHl
     for _, box, _ in self:blockIter(ast, ret.hlgroup, parentWidth, parentHeight, startX, startY, inherit, extra) do
         ret:appendBoxBelow(box)
     end

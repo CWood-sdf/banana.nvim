@@ -35,6 +35,7 @@ M.padNames = { "left", "top", "right", "bottom" }
 ---@field inlineStyle? Banana.Ncss.StyleDeclaration[]
 ---@field absoluteAsts? Banana.Ast[]
 ---@field relativeBoxId? number
+---@field hidden boolean
 ---@field relativeBoxes? { box: Banana.Box, left: number, top: number, z: number}[]
 ---@field listCounter? number
 ---@field renderCache Banana.Renderer.PartialRendered?
@@ -57,6 +58,7 @@ M.Ast = {
 function M.Ast:new(tag, parent)
     ---@type Banana.Ast
     local ast = {
+        hidden = false,
         boundBox = nil,
         precedences = {},
         nodes = {},
@@ -269,6 +271,7 @@ end
 ---@param styleTp string
 ---@return string
 local function getListItemUl(styleTp)
+    print(_str.charWidth(styleTp))
     if _str.charWidth(styleTp) < 3 then
         return styleTp
     end
@@ -565,6 +568,14 @@ function M.Ast:addClass(c)
         self.classes[c] = true
         self:_requestRender()
     end
+end
+
+---@param c string
+function M.Ast:toggleClass(c)
+    self.classes = self.classes or {}
+    self.classes[c] = self.classes[c] or false
+    self.classes[c] = not self.classes[c]
+    self:_requestRender()
 end
 
 ---@param parentHl Banana.Highlight?
@@ -1013,6 +1024,9 @@ end
 
 ---@param str string
 function M.Ast:setTextContent(str)
+    if type(str) ~= "string" then
+        str = tostring(str)
+    end
     self:removeChildren()
     self.nodes = { str }
     self:_requestRender()
@@ -1044,6 +1058,13 @@ function M.Ast:parent()
     return self._parent
 end
 
+---@return boolean
+function M.Ast:isHidden()
+    if self.hidden then return true end
+    if self._parent:isNil() then return false end
+    return self._parent:isHidden()
+end
+
 ---@param mode string
 ---@param lhs string
 ---@param rhs string|fun()
@@ -1071,6 +1092,7 @@ function M.Ast:attachRemap(mode, lhs, mods, rhs, opts)
         end
     end
     local actualRhs = function ()
+        if self:isHidden() then return false end
         local works = #modFns == 0
         for _, v in ipairs(modFns) do
             if v() then

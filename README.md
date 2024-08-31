@@ -45,13 +45,15 @@ this may seem underwhelming as the above result can be done in a few lines of lu
 
 ### Other examples
 
-Currently there are three examples: a todo app, a partial clone of the lazy.nvim plugin, and a counter app.
+Currently there are four examples: a todo app, a partial clone of the lazy.nvim plugin, an example tree element, and a counter app.
 
 The todo's files are contained in banana/example/todo.nml and lua/banana_example/todo.lua. You can run it with `require('banana').runTodo()`
 
 The counter's files are contained in banana/example/counter.nml and lua/banana_example/counter.lua. You can run it with `require('banana').runCounter()`
 
 Lazy's files are contained in banana/example/lazy/ and lua/banana_example/lazy/ and can be run with `require('banana').runLazy()`
+
+The tree's files are contained in the same location as tree.nml and tree.lua and can be run with `require('banana').runTree()`
 
 ## Installation
 
