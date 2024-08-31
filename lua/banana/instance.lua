@@ -701,6 +701,15 @@ function Instance:_render()
     local hlTime = vim.loop.hrtime() - startTime
     totalTime = totalTime + vim.loop.hrtime() - actualStart
 
+    local extraLines = {}
+
+    if self.DEBUG_dumpTree then
+        local dump = self:_dumpTree()
+        for _, v in ipairs(dump) do
+            table.insert(extraLines, v)
+        end
+        table.insert(extraLines, "")
+    end
 
     if self.DEBUG or self.DEBUG_showPerf then
         n = n + 1
@@ -712,7 +721,7 @@ function Instance:_render()
                 self:_deferRender()
             end
         end
-        local extraLines = {
+        local l = {
             "",
             astTime / 1e6 .. "ms to parse",
             styleTime / 1e6 .. "ms to style",
@@ -726,13 +735,10 @@ function Instance:_render()
             "Instance id: " .. self.instanceId,
             "",
         }
-        if self.DEBUG_dumpTree then
-            local dump = self:_dumpTree()
-            for _, v in ipairs(dump) do
-                table.insert(extraLines, v)
-            end
-            table.insert(extraLines, "")
+        for _, v in ipairs(l) do
+            table.insert(extraLines, v)
         end
+
         local filter = ""
         local flames = flame.getWorst("pct", filter, false)
         local flameMillis = flame.getFlames("millis", filter, false)
@@ -767,6 +773,8 @@ function Instance:_render()
             table.insert(extraLines, str .. chart)
         end
         table.insert(extraLines, "Total: " .. total .. "ms")
+    end
+    if #extraLines ~= 0 then
         vim.api.nvim_set_option_value("modifiable", true, {
             buf = self.bufnr
         })

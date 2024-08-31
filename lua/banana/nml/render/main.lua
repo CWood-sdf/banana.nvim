@@ -54,7 +54,6 @@ return function (self, ast, parentHl, parentWidth, parentHeight, startX, startY,
             end
         end
     end
-    local newHl = ast:_mixHl(parentHl)
     local position = ast:firstStyleValue("position")
     if position == nil or position == "initial" then
         position = ast:_getInitialStyles().position
@@ -132,7 +131,7 @@ return function (self, ast, parentHl, parentWidth, parentHeight, startX, startY,
     local useMaxHeight = extra.useAllHeight
     extra.useAllHeight = false
     flame.new("other render")
-    local centerBox = self:render(ast, newHl, contentWidth, parentHeight,
+    local centerBox = self:render(ast, parentHl, contentWidth, parentHeight,
         startX, startY, inherit, extra)
     flame.pop()
     -- -- flame.expect("element render")
@@ -163,7 +162,7 @@ return function (self, ast, parentHl, parentWidth, parentHeight, startX, startY,
     ret.padding = padding
     ret.center = centerBox
     ret.marginColor = parentHl
-    ret.mainColor = newHl
+    ret.mainColor = centerBox.hlgroup
     ret.renderAlign = inherit.text_align
     local extraWidth = parentWidth - ret:getWidth() - ast:_extraLr()
     if isExpandable(ast, extraWidth) and not inherit.min_size then

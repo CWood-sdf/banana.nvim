@@ -52,7 +52,6 @@ M.runLazy = function ()
         -- instance.DEBUG_stressTest = true
     end
     instance:open()
-    instance:_requestRender()
 end
 
 function M.spam()

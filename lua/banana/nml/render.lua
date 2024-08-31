@@ -155,7 +155,7 @@ end
 function TagInfo:renderInlineEl(ast, parentHl, parentWidth, parentHeight, startX,
                                 startY, inherit, extra)
     ---@type Banana.Box
-    local ret, _ = self:renderBlock(ast, parentHl, 1, parentWidth,
+    local ret, _ = self:renderBlock(ast, ast:_mixHl(parentHl), 1, parentWidth,
         parentHeight, startX, startY, inherit,
         extra)
     return ret
@@ -549,7 +549,7 @@ function TagInfo:renderGridBlock(ast, parentHl, parentWidth, parentHeight, start
                                  startY, inherit, extra)
     flame.new("TagInfo:renderGridBlock")
     local insert = table.insert
-    local hl = parentHl
+    local hl = ast:_mixHl(parentHl)
     local so = M.getGridSo()
     local thing = so.getNew()
 
@@ -1059,7 +1059,7 @@ function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, start
     local oldMinSize = inherit.min_size
     inherit.min_size = true
     local takenWidth = 0
-    local hl = parentHl
+    local hl = ast:_mixHl(parentHl)
     ---@type ([Banana.Renderer.PartialRendered, Banana.Ast]?)[]
     local renders = {}
     local rendersLen = 0
