@@ -76,7 +76,7 @@ function Gradient:_getLinearColor()
     -- 2──────────1
 
     local widthToCorner = -sign(corner - 1.5) * centerX
-    local heightToCorner = sign((corner - 2) % 4 - 1.5) * centerY
+    local heightToCorner = sign((corner - 1) % 4 - 1.5) * centerY
 
     local angleToCorner = math.atan2(widthToCorner, heightToCorner) * 180 /
         math.pi
@@ -93,8 +93,8 @@ function Gradient:_getLinearColor()
 
     local halfGradLine = math.cos(internalAngle * math.pi / 180) * distToCorner
 
-    local gradX = -widthToCorner + self.col
-    local gradY = heightToCorner - self.line
+    local gradX = -math.abs(widthToCorner) + self.col
+    local gradY = math.abs(heightToCorner) - self.line
 
     -- |proj u onto v| = u dot v / |v|
 
@@ -106,15 +106,18 @@ function Gradient:_getLinearColor()
     local mult = (-len + halfGradLine) / (2 * halfGradLine)
 
     if mult > 1 or mult < 0 then
-        print("asdf")
+        print(mult)
     end
 
     local colorLeft = self.colors[1]
     local colorRight = self.colors[2]
 
-    local r = math.floor(colorLeft.r + (colorRight.r - colorLeft.r) * mult)
-    local g = math.floor(colorLeft.g + (colorRight.g - colorLeft.g) * mult)
-    local b = math.floor(colorLeft.b + (colorRight.b - colorLeft.b) * mult)
+    local r = math.max(
+        math.floor(colorLeft.r + (colorRight.r - colorLeft.r) * mult), 0)
+    local g = math.max(
+        math.floor(colorLeft.g + (colorRight.g - colorLeft.g) * mult), 0)
+    local b = math.max(
+        math.floor(colorLeft.b + (colorRight.b - colorLeft.b) * mult), 0)
 
     -- so color spaces?? might just interpolate in RGB for now
 
