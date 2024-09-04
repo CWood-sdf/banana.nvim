@@ -1,0 +1,14 @@
+<nml>
+  <head>
+    <style>
+      .grad {
+        hl-bg: linear-gradient(#ffff00, #0000ff);
+        width: 50%;
+        height: 50%;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="grad"></div>
+  </body>
+</nml>

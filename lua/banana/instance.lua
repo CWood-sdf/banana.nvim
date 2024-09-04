@@ -626,9 +626,8 @@ function Instance:_render()
     if self.renderRequested then
         return
     end
-    -- local mri = require("banana.memorysnapshot")
-    -- collectgarbage("count")
-    -- mri.m_cMethods.DumpMemorySnapshot("./dumps", n .. "-Before", -1)
+
+    -- please dont remove this
     collectgarbage("stop")
     log.trace("Instance:render with " .. #self.scripts .. " scripts")
     flame.newIter()
@@ -815,6 +814,7 @@ function Instance:_highlight(lines, offset)
     for _, v in ipairs(lines) do
         --flame.new("hl:loop_inner")
         local i = 1
+        local gradients = {}
         while i <= #v do
             local word = v[i]
             --flame.new("hl:loop_inner2")
@@ -823,12 +823,16 @@ function Instance:_highlight(lines, offset)
             -- local delta = _str.charWidth(word.word)
             -- log.debug(word.word .. ": " .. delta)
             local byteCount = _str.byteCount(word.word)
+
+            local isGrad = type(word.style.fg) == "table" or
+                type(word.style.bg) == "table"
             if word.style ~= nil then
-                while i + 1 <= #v and v[i + 1].style == word.style do
-                    i = i + 1
-                    -- delta = delta + _str.charWidth(v[i].word)
-                    byteCount = byteCount + _str.byteCount(v[i].word)
-                end
+                -- local orgI = i
+                -- while i + 1 <= #v and v[i + 1].style == word.style do
+                --     i = i + 1
+                --     -- delta = delta + _str.charWidth(v[i].word)
+                --     byteCount = byteCount + _str.byteCount(v[i].word)
+                -- end
 
                 if word.style.__name ~= nil then
                     ns = 0
@@ -841,6 +845,10 @@ function Instance:_highlight(lines, offset)
                     -- Apparently i have to use json to detect vim.empty_dict()
                     local hlNotExists = vim.json.encode(hl) == "{}"
                     -- If there are default highlight options, and the highlight does not exist, create it
+                    if isGrad then
+                        log.throw(
+                            "ERROR: gradients cannot be used as default fields for named highlights")
+                    end
                     if hlNotExists and keysCount > 1 then
                         --flame.new("hl:create_named")
                         local opts = vim.deepcopy(word.style)
@@ -857,15 +865,58 @@ function Instance:_highlight(lines, offset)
                     end
                 else
                     --flame.new("hl:set_hl")
-                    hlGroup = "banana_hl_" .. hlId
-                    vim.api.nvim_set_hl(self.highlightNs, hlGroup, word.style)
-                    hlId = hlId + 1
+                    if isGrad then
+                        local fg = word.style.fg
+                        local bg = word.style.bg
+                        local bgGrad = type(bg) == "table"
+                        local fgGrad = type(fg) == "table"
+                        local charI = 1
+                        -- local wordI = orgI
+                        -- local wordStr = v[orgI].word
+                        while charI < byteCount do
+                            local char = word.word:sub(charI, charI)
+                            -- while charI > #word.word do
+                            --     orgI = orgI + 1
+                            -- end
+                            -- print("'" .. char .. "'")
+                            local charByteSize = _str.codepointLen(char)
+
+                            if bgGrad then
+                                ---@diagnostic disable-next-line: need-check-nil, param-type-mismatch
+                                word.style.bg = bg:nextCharColor()
+                            end
+
+                            if fgGrad then
+                                ---@diagnostic disable-next-line: need-check-nil, param-type-mismatch
+                                word.style.fg = fg:nextCharColor()
+                            end
+                            hlGroup = "banana_hl_" .. hlId
+                            vim.api.nvim_set_hl(self.highlightNs, hlGroup,
+                                word.style)
+                            hlId = hlId + 1
+                            vim.api.nvim_buf_add_highlight(self.bufnr, ns,
+                                hlGroup, row,
+                                charI + col - 1,
+                                col + charI - 1 + charByteSize)
+                            charI = charI + charByteSize
+                        end
+                        word.style.fg = fg
+                        word.style.bg = bg
+                    else
+                        hlGroup = "banana_hl_" .. hlId
+                        vim.api.nvim_set_hl(self.highlightNs, hlGroup, word
+                            .style)
+                        hlId = hlId + 1
+                    end
                     -- usedHighlights[optsStr] = hlGroup
                     --flame.pop()
                 end
                 --flame.new("hl:add_hl")
-                vim.api.nvim_buf_add_highlight(self.bufnr, ns, hlGroup, row, col,
-                    col + byteCount)
+                if not isGrad then
+                    vim.api.nvim_buf_add_highlight(self.bufnr, ns, hlGroup, row,
+                        col,
+                        col + byteCount)
+                end
                 --flame.pop()
             else
                 hlGroup = M.defaultWinHighlight
@@ -1070,7 +1121,7 @@ end
 ---@return number[]
 function M.listInstanceIds()
     local ret = {}
-    for i, v in ipairs(instances) do
+    for i, _ in ipairs(instances) do
         table.insert(ret, i)
     end
     return ret

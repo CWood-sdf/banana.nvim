@@ -181,6 +181,19 @@ function Function:new(fn, args, argsType)
     return ret
 end
 
+---@param str string
+---@return Banana.Color
+local function colorStringToColor(str)
+    local red = tonumber(str:sub(2, 3), 16)
+    local green = tonumber(str:sub(4, 5), 16)
+    local blue = tonumber(str:sub(6, 7), 16)
+    return {
+        r = red,
+        g = green,
+        b = blue
+    }
+end
+
 ---@type { [string]: Banana.Ncss.Function}
 local cssFunctions = {
     ["repeat"] = Function:new(function (params, _)
@@ -194,6 +207,22 @@ local cssFunctions = {
         end
         return ret
     end, -1, { "integer", "unit" }),
+    ["linear-gradient"] = Function:new(function (params, _)
+        ---@diagnostic disable-next-line: cast-type-mismatch
+        ---@type Banana.Gradient
+        local grad = require("banana.gradient").linearGradient(
+        ---@diagnostic disable-next-line: param-type-mismatch
+            colorStringToColor(params[1].value),
+            ---@diagnostic disable-next-line: param-type-mismatch
+            colorStringToColor(params[2].value))
+        ---@type Banana.Ncss.StyleValue
+        local ret = {
+            ---@diagnostic disable-next-line: assign-type-mismatch
+            value = grad,
+            type = "color"
+        }
+        return ret
+    end, 2, { "color", "color" }),
     rgb = Function:new(function (params, _)
         local red = params[1].value
         local green = params[2].value

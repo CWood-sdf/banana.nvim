@@ -29,19 +29,6 @@ M.ts_types = {
 
 local ast = require("banana.nml.ast")
 
----@class (exact) Banana.Gradient
----@field width number?
----@field height number?
----@field type "radial"|"linear"
----@field colors number[]
----@field borders Banana.Ncss.UnitValue[]?
----@field angleOffset number?
----@field distanceOffset number? for polar coord offsets
----@field repeating boolean
-
----@class (exact) Banana.Highlight: vim.api.keyset.highlight
----@field __name string?
-
 ---@class (exact) Banana.Attributes
 ---@field [string] string?
 

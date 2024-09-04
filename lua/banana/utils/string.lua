@@ -7,11 +7,12 @@ local M = {}
 ---@param utf8Char string
 ---@return integer
 function M.codepointLen(utf8Char)
-    if utf8Char:byte() < 128 then
+    local b = utf8Char:byte()
+    if b < 128 then
         return 1
-    elseif utf8Char:byte() < 224 then
+    elseif b < 224 then
         return 2
-    elseif utf8Char:byte() < 240 then
+    elseif b < 240 then
         return 3
     else
         return 4

@@ -98,6 +98,20 @@ function M.lineWidth(line)
     return ret
 end
 
+function M.Box:setGradientSize()
+    if self.hlgroup == nil then
+        return
+    end
+    if type(self.hlgroup.fg) == "table" then
+        ---@diagnostic disable-next-line: param-type-mismatch
+        self.hlgroup.fg:setSize(self._width, self:height())
+    end
+    if type(self.hlgroup.bg) == "table" then
+        ---@diagnostic disable-next-line: param-type-mismatch
+        self.hlgroup.bg:setSize(self._width, self:height())
+    end
+end
+
 ---@param width number
 ---@return Banana.Word
 function M.Box:fillString(width)
