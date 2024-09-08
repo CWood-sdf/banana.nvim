@@ -98,6 +98,18 @@ function M.lineWidth(line)
     return ret
 end
 
+function M.Box:insertGradientMarker()
+    if self.hlgroup == nil then
+        return
+    end
+
+    if type(self.hlgroup.fg) == "table" or type(self.hlgroup.bg) == "table" then
+        for _, v in ipairs(self.lines) do
+            table.insert(v, 1, word("", self.hlgroup))
+        end
+    end
+end
+
 function M.Box:setGradientSize()
     if self.hlgroup == nil then
         return

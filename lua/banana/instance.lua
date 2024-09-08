@@ -790,6 +790,7 @@ end
 ---@param lines Banana.Line[]
 ---@param offset number?
 function Instance:_highlight(lines, offset)
+    flame.new(":_highlight")
     offset = offset or 0
     flame.new("hl:ns")
     vim.api.nvim_win_set_hl_ns(self.winid, self.highlightNs)
@@ -805,19 +806,15 @@ function Instance:_highlight(lines, offset)
             "Unreachable (buf is invalid in higlightBuffer)")
         error("")
     end
-    --flame.new("hl:loop_outer")
     local row = offset
     local col = 0
     local hlId = 0
-    -- ---@type table<string, string>
-    -- local usedHighlights = {}
     for _, v in ipairs(lines) do
-        --flame.new("hl:loop_inner")
         local i = 1
+        ---@type Banana.Gradient[]
         local gradients = {}
         while i <= #v do
             local word = v[i]
-            --flame.new("hl:loop_inner2")
             local hlGroup = ""
             local ns = self.highlightNs
             -- local delta = _str.charWidth(word.word)
@@ -826,14 +823,29 @@ function Instance:_highlight(lines, offset)
 
             local isGrad = type(word.style.fg) == "table" or
                 type(word.style.bg) == "table"
+            local charWidth = _str.charWidth(word.word)
+            local hasFgGrad = false
+            local hasBgGrad = false
+            for gradI = #gradients, 1, -1 do
+                local bg = nil
+                if word.style ~= nil then
+                    bg = word.style.bg
+                end
+                local fg = nil
+                if word.style ~= nil then
+                    fg = word.style.fg
+                end
+                if gradients[gradI] ~= bg and gradients[gradI] ~= fg then
+                    gradients[gradI]:skipNext(charWidth)
+                end
+                if gradients[gradI] == bg then
+                    hasBgGrad = true
+                end
+                if gradients[gradI] == fg then
+                    hasFgGrad = true
+                end
+            end
             if word.style ~= nil then
-                -- local orgI = i
-                -- while i + 1 <= #v and v[i + 1].style == word.style do
-                --     i = i + 1
-                --     -- delta = delta + _str.charWidth(v[i].word)
-                --     byteCount = byteCount + _str.byteCount(v[i].word)
-                -- end
-
                 if word.style.__name ~= nil then
                     ns = 0
                     --flame.new("hl:named_hl")
@@ -866,29 +878,38 @@ function Instance:_highlight(lines, offset)
                 else
                     --flame.new("hl:set_hl")
                     if isGrad then
+                        flame.new("_highlight:setGrad")
                         local fg = word.style.fg
                         local bg = word.style.bg
                         local bgGrad = type(bg) == "table"
                         local fgGrad = type(fg) == "table"
+                        if bgGrad and not hasBgGrad then
+                            table.insert(gradients, bg)
+                        end
+                        if fgGrad and not hasFgGrad then
+                            table.insert(gradients, fg)
+                        end
                         local charI = 1
                         -- local wordI = orgI
                         -- local wordStr = v[orgI].word
-                        while charI < byteCount do
+                        while charI <= byteCount do
                             local char = word.word:sub(charI, charI)
-                            -- while charI > #word.word do
-                            --     orgI = orgI + 1
-                            -- end
-                            -- print("'" .. char .. "'")
+
                             local charByteSize = _str.codepointLen(char)
 
                             if bgGrad then
                                 ---@diagnostic disable-next-line: need-check-nil, param-type-mismatch
                                 word.style.bg = bg:nextCharColor()
+                                -- print(bg.width)
                             end
 
-                            if fgGrad then
+                            if fgGrad and char ~= " " then
                                 ---@diagnostic disable-next-line: need-check-nil, param-type-mismatch
                                 word.style.fg = fg:nextCharColor()
+                            elseif fgGrad then
+                                ---@diagnostic disable-next-line: need-check-nil, param-type-mismatch
+                                fg:nextCharColor()
+                                word.style.fg = "#000000"
                             end
                             hlGroup = "banana_hl_" .. hlId
                             vim.api.nvim_set_hl(self.highlightNs, hlGroup,
@@ -902,6 +923,7 @@ function Instance:_highlight(lines, offset)
                         end
                         word.style.fg = fg
                         word.style.bg = bg
+                        flame.pop()
                     else
                         hlGroup = "banana_hl_" .. hlId
                         vim.api.nvim_set_hl(self.highlightNs, hlGroup, word
@@ -927,11 +949,14 @@ function Instance:_highlight(lines, offset)
             --flame.pop()
             i = i + 1
         end
+        for _, s in ipairs(gradients) do
+            s:nextLine()
+        end
         col = 0
         row = row + 1
         --flame.pop()
     end
-    --flame.pop()
+    flame.pop()
 end
 
 ---Loads a partial nml file at {file} to be the content of the ast

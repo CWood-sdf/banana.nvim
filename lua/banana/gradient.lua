@@ -1,5 +1,7 @@
 local M = {}
 local log = require("banana.utils.log")
+---@module 'banana.utils.debug_flame'
+local flame = require("banana.lazyRequire")("banana.utils.debug_flame")
 
 ---@class (exact) Banana.Color
 ---@field r number
@@ -12,8 +14,10 @@ local log = require("banana.utils.log")
 ---@field type "radial"|"linear"
 ---@field colors Banana.Color[]
 ---@field borders Banana.Ncss.UnitValue[]?
----@field angleOffset number?
----@field distanceOffset number? for polar coord offsets
+---@field angleOffset? number
+---@field sideTarget? "left"|"right"|"top"|"bottom"
+---@field cornerTarget? "left"|"right"|"top"|"bottom"
+---@field distanceOffset number? for polar coord offsets in radial-gradient
 ---@field repeating boolean
 ---@field line? number
 ---@field col? number
@@ -30,16 +34,13 @@ end
 
 ---Skips the next n chars (for words not gradient)
 ---@param count number
----@return boolean returns true when the gradient can be dropped
 function Gradient:skipNext(count)
     self.col = self.col + count
-    -- use >= because 0 based
-    if self.col >= self.width then
-        self.line = self.line + 1
-        self.col  = 0
-        return true
-    end
-    return false
+end
+
+function Gradient:nextLine()
+    self.line = self.line + 1
+    self.col = 0
 end
 
 ---@param n number
@@ -54,9 +55,10 @@ end
 
 ---@return string
 function Gradient:_getLinearColor()
+    flame.new("Gradient:_getLinearColor")
     -- measure from center of char
-    local centerX = (self.width - 1) / 2
-    local centerY = (self.height - 1) / 2
+    local centerX = (self.width) / 2
+    local centerY = (self.height) / 2
 
     -- angle 0 = ▲
     -- angle 90 = ►
@@ -105,9 +107,9 @@ function Gradient:_getLinearColor()
 
     local mult = (-len + halfGradLine) / (2 * halfGradLine)
 
-    if mult > 1 or mult < 0 then
-        print(mult)
-    end
+    -- if mult > 1 or mult < 0 then
+    --     print(mult)
+    -- end
 
     local colorLeft = self.colors[1]
     local colorRight = self.colors[2]
@@ -119,16 +121,24 @@ function Gradient:_getLinearColor()
     local b = math.max(
         math.floor(colorLeft.b + (colorRight.b - colorLeft.b) * mult), 0)
 
+    if math.abs(mult - 0.5) < 0.01 then
+        r = 0
+        g = 0
+        b = 0
+    end
+
     -- so color spaces?? might just interpolate in RGB for now
 
     local ret = string.format("#%06x", r * 256 * 256 + g * 256 + b)
     -- log.fatal(mult .. " #0000" .. b)
+    flame.pop()
     return ret
 end
 
 ---Returns the highlight color, and also whether end of line has been reached
----@return string, boolean
+---@return string
 function Gradient:nextCharColor()
+    -- print(self.height)
     -- measure from the center of each character prolly (feels easier then
     -- trying to determine farthest corner then measure from that)
 
@@ -144,12 +154,12 @@ function Gradient:nextCharColor()
 
     local ret = self:_getLinearColor()
     self.col = self.col + 1
-    local drop = self.col >= self.width
-    if drop then
-        self.col  = 0
-        self.line = self.line + 1
-    end
-    return ret, drop
+    -- local drop = self.col > self.width
+    -- if drop then
+    --     self.col  = 0
+    --     self.line = self.line + 1
+    -- end
+    return ret
 end
 
 ---@param w number
@@ -170,7 +180,7 @@ function M.linearGradient(col1, col2)
         repeating = false,
         type = "linear",
         colors = { col1, col2 },
-        angleOffset = 45,
+        angleOffset = 30,
     }
     setmetatable(gradient, { __index = Gradient })
     return gradient

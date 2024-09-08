@@ -2,10 +2,17 @@
   <head>
     <style>
       .grad {
-        hl-bg: linear-gradient(#ffff00, #0000ff);
+        hl-bg: linear-gradient(0.25turn #fa9100 #0000ff);
         width: 50%;
         height: 50%;
       }
+      /* .small { */
+      /*   width: 50%; */
+      /*   height: 50%; */
+      /*   margin-left: 10ch; */
+      /*   margin-top: 3ch; */
+      /*   hl-bg: red; */
+      /* } */
     </style>
   </head>
   <body>

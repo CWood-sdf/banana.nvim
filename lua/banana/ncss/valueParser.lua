@@ -27,6 +27,23 @@ local StyleValue = {
 
 }
 
+---@param unit Banana.Ncss.UnitValue
+---@return number
+local function angleUnitToDeg(unit)
+    if unit.unit == "deg" then
+        return unit.value
+    elseif unit.unit == "rad" then
+        return unit.value * 180 / math.pi
+    elseif unit.unit == "turn" then
+        return unit.value * 360
+    elseif unit.unit == "grad" then
+        return unit.value / 400 * 360
+    else
+        log.throw("Undefined angle unit '" .. unit.unit .. "'")
+        error()
+    end
+end
+
 --{
 ---@param value number
 ---@param unit string
@@ -150,7 +167,8 @@ local function parseNumValue(tree, parser, new)
     return new(num)
 end
 
----@class Banana.Ncss.Function
+---@class (exact) Banana.Ncss.Function
+---@field keepComma? boolean
 ---@field argsCount number
 ---@field fn fun(params: Banana.Ncss.StyleValue[], parser: Banana.Ncss.ParseData): Banana.Ncss.StyleValue[]|Banana.Ncss.StyleValue
 ---@field argsType (Banana.Ncss.StyleValue.Types|Banana.Ncss.StyleValue.Types[])[]
@@ -160,7 +178,8 @@ local Function = {
 ---@param args number
 ---@param fn fun(params: Banana.Ncss.StyleValue[], parser: Banana.Ncss.ParseData): Banana.Ncss.StyleValue[]|Banana.Ncss.StyleValue
 ---@param argsType (Banana.Ncss.StyleValue.Types|Banana.Ncss.StyleValue.Types[])[]
-function Function:new(fn, args, argsType)
+---@param keepComma? boolean
+function Function:new(fn, args, argsType, keepComma)
     if #argsType ~= args and args ~= -1 then
         log.throw(
             "Could not match argument size to type size")
@@ -171,6 +190,7 @@ function Function:new(fn, args, argsType)
         argsCount = args,
         fn = fn,
         argsType = argsType,
+        keepComma = keepComma
     }
     -- if args == -1 and #argsType ~= 1 then
     --     log.throw(
@@ -184,9 +204,23 @@ end
 ---@param str string
 ---@return Banana.Color
 local function colorStringToColor(str)
+    -- TODO: Good errors
+    if type(str) ~= "string" then
+        log.throw(
+            "Expected a color string, but got something that's not a string")
+    end
+    if str:sub(1, 1) ~= "#" then
+        log.throw("Expected color string to start with '#'")
+    end
+    if #str ~= 7 then
+        log.throw("Expected color string to have 7 characters (# + 6 digits)")
+    end
     local red = tonumber(str:sub(2, 3), 16)
     local green = tonumber(str:sub(4, 5), 16)
     local blue = tonumber(str:sub(6, 7), 16)
+    if red == nil or green == nil or blue == nil then
+        log.throw("Expected color string to be parseable")
+    end
     return {
         r = red,
         g = green,
@@ -208,13 +242,35 @@ local cssFunctions = {
         return ret
     end, -1, { "integer", "unit" }),
     ["linear-gradient"] = Function:new(function (params, _)
+        -- either we get an angle or a "to ..." (can target corner) or nothing
+
+        local i = 1
+        if #params < 2 then
+            log.throw(
+                "a linear-gradient must have at least two color parameters, only got " ..
+                #params .. " parameters")
+            error()
+        end
+        local angleOff = nil
+        local side = nil
+        local corner = nil
+        if params[i].type == "unit" then
+            ---@diagnostic disable-next-line: param-type-mismatch
+            angleOff = angleUnitToDeg(params[i].value)
+            i        = i + 1
+        elseif params[i].type == "plain" and params[i].value == "to" then
+        end
+        if params[i].type == "plain" and params[i].value == "," then
+            i = i + 1
+        end
         ---@diagnostic disable-next-line: cast-type-mismatch
         ---@type Banana.Gradient
         local grad = require("banana.gradient").linearGradient(
         ---@diagnostic disable-next-line: param-type-mismatch
-            colorStringToColor(params[1].value),
+            colorStringToColor(params[i].value),
             ---@diagnostic disable-next-line: param-type-mismatch
-            colorStringToColor(params[2].value))
+            colorStringToColor(params[i + 1].value))
+        grad.angleOffset = angleOff
         ---@type Banana.Ncss.StyleValue
         local ret = {
             ---@diagnostic disable-next-line: assign-type-mismatch
@@ -222,7 +278,7 @@ local cssFunctions = {
             type = "color"
         }
         return ret
-    end, 2, { "color", "color" }),
+    end, -1, {}, true),
     rgb = Function:new(function (params, _)
         local red = params[1].value
         local green = params[2].value
@@ -330,6 +386,15 @@ local cssParsers = {
         while param ~= nil do
             local t = param:type()
             local value = nil
+            if fn.keepComma and t == "," then
+                ---@type Banana.Ncss.StyleValue
+                local v = {
+                    value = ",",
+                    type = "plain"
+                }
+                table.insert(params, v)
+                goto continue
+            end
             if t == "(" or t == ")" or t == "," then
                 goto continue
             end
@@ -347,8 +412,7 @@ local cssParsers = {
                 fName ..
                 "', expected " .. fn.argsCount .. ", but got " .. #params)
             error("")
-        end
-        if fn.argsCount == -1 and #params < #fn.argsType then
+        elseif fn.argsCount == -1 and #params < #fn.argsType and #fn.argsType ~= 0 then
             log.throw(
                 "Expected at least " ..
                 #fn.argsType ..
@@ -357,6 +421,9 @@ local cssParsers = {
             error("")
         end
         for j, v in ipairs(params) do
+            if fn.argsCount == -1 and #fn.argsType == 0 then
+                break
+            end
             local pType = v.type
             local expected = fn.argsType[j]
             if fn.argsCount == -1 then

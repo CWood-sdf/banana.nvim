@@ -177,6 +177,7 @@ function PartialRendered:render(clone)
     end
     box = self:padWith(box, self.padding, self.mainColor)
     box:setGradientSize()
+    box:insertGradientMarker()
     box = self:padWith(box, self.margin, self.marginColor)
     flame.pop()
     return box

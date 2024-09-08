@@ -19,6 +19,22 @@ function M.codepointLen(utf8Char)
     end
 end
 
+---@param str string
+---@param i number
+---@return integer
+function M.codepointLenAt(str, i)
+    local b = str:byte(i, i)
+    if b < 128 then
+        return 1
+    elseif b < 224 then
+        return 2
+    elseif b < 240 then
+        return 3
+    else
+        return 4
+    end
+end
+
 ---Returns the width the characters will take up on screen
 ---@param str string
 ---@return number
