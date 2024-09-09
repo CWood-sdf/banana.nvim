@@ -259,6 +259,24 @@ local cssFunctions = {
             angleOff = angleUnitToDeg(params[i].value)
             i        = i + 1
         elseif params[i].type == "plain" and params[i].value == "to" then
+            i = i + 1
+
+            side = params[i].value
+            if params[i].type ~= "plain" then
+                log.throw("Expected a side target")
+            end
+            if side ~= "left" and side ~= "right" and side ~= "top" and side ~= "bottom" then
+                log.throw("Expected a side")
+            end
+            i = i + 1
+            if params[i].type == "plain" then
+                corner = params[i].value
+                if corner ~= "left" and corner ~= "right" and corner ~= "top" and corner ~= "bottom" then
+                    corner = nil
+                else
+                    i = i + 1
+                end
+            end
         end
         if params[i].type == "plain" and params[i].value == "," then
             i = i + 1
@@ -271,6 +289,10 @@ local cssFunctions = {
             ---@diagnostic disable-next-line: param-type-mismatch
             colorStringToColor(params[i + 1].value))
         grad.angleOffset = angleOff
+        ---@diagnostic disable-next-line: assign-type-mismatch
+        grad.sideTarget = side
+        ---@diagnostic disable-next-line: assign-type-mismatch
+        grad.cornerTarget = corner
         ---@type Banana.Ncss.StyleValue
         local ret = {
             ---@diagnostic disable-next-line: assign-type-mismatch

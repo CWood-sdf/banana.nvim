@@ -169,6 +169,40 @@ function Gradient:setSize(w, h)
     self.line = 0
     self.width = w - 1
     self.height = h
+    local side = nil
+    if self.sideTarget == "top" then
+        side = 0
+    elseif self.sideTarget == "right" then
+        side = 1
+    elseif self.sideTarget == "bottom" then
+        side = 2
+    elseif self.sideTarget == "left" then
+        side = 3
+    end
+    local corner = nil
+    if self.cornerTarget == "top" then
+        corner = 0
+    elseif self.cornerTarget == "right" then
+        corner = 1
+    elseif self.cornerTarget == "bottom" then
+        corner = 2
+    elseif self.cornerTarget == "left" then
+        corner = 3
+    end
+
+    if side ~= nil and corner ~= nil then
+        if side % 2 == corner % 2 then
+            log.throw(
+                "Corner target must target an actual corner (eg top left, and not top bottom)")
+        end
+        local angle = 90 * side
+        local add = math.abs(90 * ((side + 1) % 2) -
+            math.atan(self.width / self.height) * 180 / math.pi)
+        angle = angle + add * (corner - side)
+        self.angleOffset = angle
+    elseif side ~= nil then
+        self.angleOffset = 90 * side
+    end
 end
 
 ---@param col1 Banana.Color

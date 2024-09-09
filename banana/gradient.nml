@@ -2,7 +2,7 @@
   <head>
     <style>
       .grad {
-        hl-bg: linear-gradient(0.25turn #fa9100 #0000ff);
+        hl-bg: linear-gradient(to bottom right #fa9100 #0000ff);
         width: 50%;
         height: 50%;
       }
