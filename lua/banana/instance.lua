@@ -908,17 +908,21 @@ function Instance:_highlight(lines, offset)
                                 word.style.fg = fg:nextCharColor()
                             elseif fgGrad then
                                 ---@diagnostic disable-next-line: need-check-nil, param-type-mismatch
-                                fg:nextCharColor()
+                                fg:skipNext(1)
                                 word.style.fg = "#000000"
                             end
                             hlGroup = "banana_hl_" .. hlId
+                            flame.new("_highlight:set_hl")
                             vim.api.nvim_set_hl(self.highlightNs, hlGroup,
                                 word.style)
+                            flame.pop()
                             hlId = hlId + 1
+                            flame.new("_highlight:nvim_buf_add_highlight")
                             vim.api.nvim_buf_add_highlight(self.bufnr, ns,
                                 hlGroup, row,
                                 charI + col - 1,
                                 col + charI - 1 + charByteSize)
+                            flame.pop()
                             charI = charI + charByteSize
                         end
                         word.style.fg = fg

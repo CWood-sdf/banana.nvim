@@ -55,10 +55,12 @@ end
 
 ---@return string
 function Gradient:_getLinearColor()
+    local col = self.col
+    local line = self.line
     flame.new("Gradient:_getLinearColor")
     -- measure from center of char
-    local centerX = (self.width) / 2
-    local centerY = (self.height) / 2
+    local centerX = (self.width - 1) / 2
+    local centerY = (self.height - 1) / 2
 
     -- angle 0 = ▲
     -- angle 90 = ►
@@ -77,8 +79,10 @@ function Gradient:_getLinearColor()
     -- │          │
     -- 2──────────1
 
-    local widthToCorner = -sign(corner - 1.5) * centerX
+    local widthToCorner = -sign(corner - 1) * centerX
+    -- widthToCorner = widthToCorner - sign(widthToCorner) * 0.5
     local heightToCorner = sign((corner - 1) % 4 - 1.5) * centerY
+    -- heightToCorner = heightToCorner - sign(heightToCorner) * 0.5
 
     local angleToCorner = math.atan2(widthToCorner, heightToCorner) * 180 /
         math.pi
@@ -95,8 +99,8 @@ function Gradient:_getLinearColor()
 
     local halfGradLine = math.cos(internalAngle * math.pi / 180) * distToCorner
 
-    local gradX = -math.abs(widthToCorner) + self.col
-    local gradY = math.abs(heightToCorner) - self.line
+    local gradX = -math.abs(widthToCorner) + col
+    local gradY = math.abs(heightToCorner) - line
 
     -- |proj u onto v| = u dot v / |v|
 
@@ -124,6 +128,16 @@ function Gradient:_getLinearColor()
     if math.abs(mult - 0.5) < 0.01 then
         r = 0
         g = 0
+        b = 0
+    end
+    if math.abs(mult) < 0.01 then
+        r = 0
+        g = 255
+        b = 0
+    end
+    if math.abs(mult - 1) < 0.01 then
+        r = 0
+        g = 255
         b = 0
     end
 
@@ -167,7 +181,7 @@ end
 function Gradient:setSize(w, h)
     self.col = 0
     self.line = 0
-    self.width = w - 1
+    self.width = w
     self.height = h
     local side = nil
     if self.sideTarget == "top" then
@@ -195,11 +209,32 @@ function Gradient:setSize(w, h)
             log.throw(
                 "Corner target must target an actual corner (eg top left, and not top bottom)")
         end
-        local angle = 90 * side
-        local add = math.abs(90 * ((side + 1) % 2) -
-            math.atan(self.width / self.height) * 180 / math.pi)
-        angle = angle + add * (corner - side)
-        self.angleOffset = angle
+
+        local centerX = (self.width - 1) / 2
+        local centerY = (self.height - 1) / 2
+
+        -- angle 0 = ▲
+        -- angle 90 = ►
+
+        --   3─────0────0
+        -- 3-│          │ - 1
+        --   2─────2────1
+        --
+        if math.abs(corner - side) == 1 then
+            corner = math.floor((corner + side) / 2)
+        else
+            -- i think this is the only remaining case
+            corner = 3
+        end
+
+        print(corner)
+
+        local widthToCorner = -sign(corner - 1) * centerX
+        -- widthToCorner = widthToCorner - sign(widthToCorner) * 0.5
+        local heightToCorner = sign((corner - 1) % 4 - 1.5) * centerY
+        self.angleOffset = math.atan2(heightToCorner, widthToCorner) * 180 /
+            math.pi
+        print(self.angleOffset)
     elseif side ~= nil then
         self.angleOffset = 90 * side
     end

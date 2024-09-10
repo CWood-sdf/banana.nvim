@@ -2,9 +2,9 @@
   <head>
     <style>
       .grad {
-        hl-bg: linear-gradient(to bottom right #fa9100 #0000ff);
-        width: 50%;
-        height: 50%;
+        hl-bg: linear-gradient(to top right #fa9100 #0000ff);
+        width: 80ch;
+        height: 20ch;
       }
       /* .small { */
       /*   width: 50%; */
