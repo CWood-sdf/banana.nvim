@@ -2,9 +2,15 @@
   <head>
     <style>
       .grad {
-        hl-bg: linear-gradient(to top right #fa9100 #0000ff);
-        width: 80ch;
-        height: 20ch;
+        hl-bg: radial-gradient(#ff8000 #0000ff);
+        width: 65ch;
+        height: 7ch;
+      }
+
+      .tgrad {
+        hl-fg: radial-gradient(#ff0000 #ffffff);
+        /* hl-bg: linear-gradient(45deg #ffffff #0000ff); */
+        width: fit-content;
       }
       /* .small { */
       /*   width: 50%; */
@@ -16,6 +22,19 @@
     </style>
   </head>
   <body>
-    <div class="grad"></div>
+    <!-- <div class="grad"></div> -->
+
+    <div>
+      <!-- prettier-ignore -->
+      <div class="tgrad" s=" ">
+<pre> ______  ___   _   _   ___   _   _   ___      _     _             </pre>
+<pre> | ___ \/ _ \ | \ | | / _ \ | \ | | / _ \    | |   | |            </pre>
+<pre> | |_/ / /_\ \|  \| |/ /_\ \|  \| |/ /_\ \   | |__ | |___      __ </pre>
+<pre> | ___ \  _  || . ` ||  _  || . ` ||  _  |   | '_ \| __\ \ /\ / / </pre>
+<pre> | |_/ / | | || |\  || | | || |\  || | | |_  | |_) | |_ \ V  V /  </pre>
+<pre> \____/\_| |_/\_| \_/\_| |_/\_| \_/\_| |_( ) |_.__/ \__| \_/\_/   </pre>
+<pre>                                         |/                       </pre>
+      </div>
+    </div>
   </body>
 </nml>

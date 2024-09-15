@@ -46,6 +46,14 @@ function M.formatBlockContext(ast)
             ---@cast node string
             if not skip then
                 node, clearFirst = formatInlineText(node, clearFirst, clearLast)
+            else
+                local reps = vim.fn.split(node, "\n")
+                if #reps ~= 1 then
+                    table.remove(ast.nodes, i)
+                    for j = #reps, 1, -1 do
+                        table.insert(ast.nodes, i, reps[j])
+                    end
+                end
             end
             if node == "" then
                 table.remove(ast.nodes, i)

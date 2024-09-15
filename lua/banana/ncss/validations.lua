@@ -148,7 +148,7 @@ local validations = {
     ["hl-__name"] = singleStringOrPlain,
     ["list-style-type"] = Validation:new({ [1] = { { "string" } } }),
     -- ['list-base-width'] = singleUnit,
-    ["width"] = singleUnit,
+    ["width"] = Validation:new({ [1] = { { "unit" }, { "|fit-content" } } }),
     ["height"] = singleUnit,
     ["display"] = explicit("grid", "flex", "inherit", "initial", "none"),
     ["flex-basis"] = singleUnit,

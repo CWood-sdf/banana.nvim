@@ -82,7 +82,10 @@ return function (self, ast, parentHl, parentWidth, parentHeight, startX, startY,
         return p.emptyPartialRendered()
     end
     ast.hidden = false
-    if ast:hasStyle("width") then
+    if ast:firstStyleValue("width") == "fit-content" then
+        parentWidth = parentWidth - ast:marginLeft() - ast:marginRight()
+        inherit.min_size = true
+    elseif ast:hasStyle("width") then
         -- add margins bc width only sets content-width + padding
         ---@diagnostic disable-next-line: cast-local-type
         parentWidth = math.min(

@@ -18,7 +18,7 @@ local Value = {
 
 ---@alias Banana.Ncss.StyleValue.Types "color"|"integer"|"plain"|"float"|"string"|"unit"|"boolean"|"slash"
 
----@alias Banana.Ncss.StyleValueType number|string|Banana.Ncss.UnitValue|boolean
+---@alias Banana.Ncss.StyleValueType number|string|Banana.Ncss.UnitValue|boolean|Banana.Gradient
 
 ---@class (exact) Banana.Ncss.StyleValue
 ---@field value Banana.Ncss.StyleValueType
@@ -241,6 +241,39 @@ local cssFunctions = {
         end
         return ret
     end, -1, { "integer", "unit" }),
+    ["radial-gradient"] = Function:new(function (params, _)
+        -- either we get an angle or a "to ..." (can target corner) or nothing
+
+        local i = 1
+        if #params < 2 then
+            log.throw(
+                "a radial-gradient must have at least two color parameters, only got " ..
+                #params .. " parameters")
+            error()
+        end
+        if params[i].type == "plain" and params[i].value == "," then
+            i = i + 1
+        end
+        ---@diagnostic disable-next-line: cast-type-mismatch
+        ---@type Banana.Gradient
+        local grad = require("banana.gradient").radialGradient(
+        ---@diagnostic disable-next-line: param-type-mismatch
+            colorStringToColor(params[i].value),
+            ---@diagnostic disable-next-line: param-type-mismatch
+            colorStringToColor(params[i + 1].value))
+        -- grad.angleOffset = angleOff
+        -- ---@diagnostic disable-next-line: assign-type-mismatch
+        -- grad.sideTarget = side
+        -- ---@diagnostic disable-next-line: assign-type-mismatch
+        -- grad.cornerTarget = corner
+        ---@type Banana.Ncss.StyleValue
+        local ret = {
+            ---@diagnostic disable-next-line: assign-type-mismatch
+            value = grad,
+            type = "color"
+        }
+        return ret
+    end, -1, {}, true),
     ["linear-gradient"] = Function:new(function (params, _)
         -- either we get an angle or a "to ..." (can target corner) or nothing
 

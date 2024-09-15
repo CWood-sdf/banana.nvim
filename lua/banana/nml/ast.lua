@@ -664,11 +664,15 @@ function M.Ast:_computeUnitFor(prop, basedOn, extras)
     local ret = nil
     if style ~= nil then
         for _, s in ipairs(style) do
+            if s.type ~= "unit" then
+                goto continue
+            end
             ---@diagnostic disable-next-line: param-type-mismatch
             local v = M.calcUnitInPlace(s.value, basedOn, extras)
             if ret == nil then
                 ret = v
             end
+            ::continue::
         end
     end
     return ret

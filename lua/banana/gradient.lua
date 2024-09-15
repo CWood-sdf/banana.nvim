@@ -21,6 +21,10 @@ local flame = require("banana.lazyRequire")("banana.utils.debug_flame")
 ---@field repeating boolean
 ---@field line? number
 ---@field col? number
+---@field owned boolean
+---@field parent? Banana.Gradient
+---@field children? Banana.Gradient
+---@field childI? number
 local Gradient = {}
 
 ---@class (exact) Banana.Highlight: vim.api.keyset.highlight
@@ -32,7 +36,7 @@ function Gradient:startLineRender()
     self.col = 0
 end
 
----Skips the next n chars (for words not gradient)
+---Skips the next n chars (for words not gradientized)
 ---@param count number
 function Gradient:skipNext(count)
     self.col = self.col + count
@@ -51,6 +55,38 @@ local function sign(n)
     else
         return 1
     end
+end
+
+---@return string
+function Gradient:_getRadialColor()
+    flame.new("Gradient:_getRadialColor")
+    local centerX = (self.width) / 2
+    local centerY = (self.height)
+    local radius = math.sqrt(centerY * centerY + centerX * centerX)
+
+    local col = self.col + 0.5
+    local line = self.line * 2 + 0.5
+
+    local offX = centerX - col
+    local offY = centerY - line
+
+    local dist = math.sqrt(offY * offY + offX * offX)
+
+    local mult = 1 - dist / radius
+
+
+    local colorLeft = self.colors[1]
+    local colorRight = self.colors[2]
+    local r = math.max(
+        math.floor(colorLeft.r + (colorRight.r - colorLeft.r) * mult), 0)
+    local g = math.max(
+        math.floor(colorLeft.g + (colorRight.g - colorLeft.g) * mult), 0)
+    local b = math.max(
+        math.floor(colorLeft.b + (colorRight.b - colorLeft.b) * mult), 0)
+    local ret = string.format("#%06x", r * 256 * 256 + g * 256 + b)
+    flame.pop()
+    -- log.fatal(mult .. " #0000" .. b)
+    return ret
 end
 
 ---@return string
@@ -125,21 +161,21 @@ function Gradient:_getLinearColor()
     local b = math.max(
         math.floor(colorLeft.b + (colorRight.b - colorLeft.b) * mult), 0)
 
-    if math.abs(mult - 0.5) < 0.01 then
-        r = 0
-        g = 0
-        b = 0
-    end
-    if math.abs(mult) < 0.01 then
-        r = 0
-        g = 255
-        b = 0
-    end
-    if math.abs(mult - 1) < 0.01 then
-        r = 0
-        g = 255
-        b = 0
-    end
+    -- if math.abs(mult - 0.5) < 0.01 then
+    --     r = 0
+    --     g = 0
+    --     b = 0
+    -- end
+    -- if math.abs(mult) < 0.01 then
+    --     r = 0
+    --     g = 255
+    --     b = 0
+    -- end
+    -- if math.abs(mult - 1) < 0.01 then
+    --     r = 0
+    --     g = 255
+    --     b = 0
+    -- end
 
     -- so color spaces?? might just interpolate in RGB for now
 
@@ -152,7 +188,6 @@ end
 ---Returns the highlight color, and also whether end of line has been reached
 ---@return string
 function Gradient:nextCharColor()
-    -- print(self.height)
     -- measure from the center of each character prolly (feels easier then
     -- trying to determine farthest corner then measure from that)
 
@@ -166,7 +201,12 @@ function Gradient:nextCharColor()
     --  Determine dist to center point
 
 
-    local ret = self:_getLinearColor()
+    local ret
+    if self.type == "linear" then
+        ret = self:_getLinearColor()
+    elseif self.type == "radial" then
+        ret = self:_getRadialColor()
+    end
     self.col = self.col + 1
     -- local drop = self.col > self.width
     -- if drop then
@@ -246,10 +286,27 @@ end
 function M.linearGradient(col1, col2)
     ---@type Banana.Gradient
     local gradient = {
+        owned = false,
         repeating = false,
         type = "linear",
         colors = { col1, col2 },
         angleOffset = 30,
+    }
+    setmetatable(gradient, { __index = Gradient })
+    return gradient
+end
+
+---@param col1 Banana.Color
+---@param col2 Banana.Color
+---@return Banana.Gradient
+function M.radialGradient(col1, col2)
+    ---@type Banana.Gradient
+    local gradient = {
+        owned = false,
+        repeating = false,
+        type = "radial",
+        colors = { col1, col2 },
+        angleOffset = 0,
     }
     setmetatable(gradient, { __index = Gradient })
     return gradient
