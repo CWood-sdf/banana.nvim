@@ -287,11 +287,14 @@ local cssFunctions = {
         local angleOff = nil
         local side = nil
         local corner = nil
+        local needsComma = false
         if params[i].type == "unit" then
             ---@diagnostic disable-next-line: param-type-mismatch
-            angleOff = angleUnitToDeg(params[i].value)
-            i        = i + 1
+            angleOff   = angleUnitToDeg(params[i].value)
+            needsComma = true
+            i          = i + 1
         elseif params[i].type == "plain" and params[i].value == "to" then
+            needsComma = true
             i = i + 1
 
             side = params[i].value
@@ -311,8 +314,17 @@ local cssFunctions = {
                 end
             end
         end
+        if params[i].type == "plain" and params[i].value == "in" then
+            needsComma = true
+            i = i + 1
+            i = i + 1
+            log.warn(
+                "Gradient color space interpolation is not supported yet")
+        end
         if params[i].type == "plain" and params[i].value == "," then
             i = i + 1
+        elseif needsComma then
+            log.throw("Expected a comma after gradient angle or colorspace")
         end
         ---@diagnostic disable-next-line: cast-type-mismatch
         ---@type Banana.Gradient

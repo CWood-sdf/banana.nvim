@@ -8,8 +8,8 @@
       }
 
       .tgrad {
-        hl-fg: radial-gradient(#ff0000 #ffffff);
-        /* hl-bg: linear-gradient(45deg #ffffff #0000ff); */
+        hl-fg: linear-gradient(to right, #ff0000 #ffffff);
+        hl-bg: linear-gradient(45deg, #ffffff #0000ff);
         width: fit-content;
       }
       /* .small { */
@@ -22,7 +22,7 @@
     </style>
   </head>
   <body>
-    <!-- <div class="grad"></div> -->
+    <div class="grad"></div>
 
     <div>
       <!-- prettier-ignore -->

@@ -115,10 +115,14 @@ function Gradient:_getLinearColor()
     -- │          │
     -- 2──────────1
 
-    local widthToCorner = -sign(corner - 1) * centerX
+    local widthToCorner = -sign(corner - 1.5) * centerX
     -- widthToCorner = widthToCorner - sign(widthToCorner) * 0.5
     local heightToCorner = sign((corner - 1) % 4 - 1.5) * centerY
     -- heightToCorner = heightToCorner - sign(heightToCorner) * 0.5
+
+    if self.col == 2 and self.line == 0 and self.dbgthing == true then
+        print(widthToCorner .. ", " .. heightToCorner)
+    end
 
     local angleToCorner = math.atan2(widthToCorner, heightToCorner) * 180 /
         math.pi
@@ -146,6 +150,9 @@ function Gradient:_getLinearColor()
     local len = (gradX * gradLineX + gradY * gradLineY) / halfGradLine
 
     local mult = (-len + halfGradLine) / (2 * halfGradLine)
+    -- if self.col == 2 and self.dbgthing == true then
+    --     print(mult)
+    -- end
 
     -- if mult > 1 or mult < 0 then
     --     print(mult)
@@ -267,15 +274,13 @@ function Gradient:setSize(w, h)
             corner = 3
         end
 
-        print(corner)
-
         local widthToCorner = -sign(corner - 1) * centerX
         -- widthToCorner = widthToCorner - sign(widthToCorner) * 0.5
         local heightToCorner = sign((corner - 1) % 4 - 1.5) * centerY
         self.angleOffset = math.atan2(heightToCorner, widthToCorner) * 180 /
             math.pi
-        print(self.angleOffset)
     elseif side ~= nil then
+        self.dbgthing = true
         self.angleOffset = 90 * side
     end
 end
