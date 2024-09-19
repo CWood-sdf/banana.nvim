@@ -44,6 +44,128 @@ local function angleUnitToDeg(unit)
     end
 end
 
+---@param params Banana.Ncss.StyleValue[]
+---@param i number
+---@param prev Banana.GradientColorStop?
+---@return Banana.GradientColorStop|Banana.GradientColorStop[]?, number
+function M.parseGradientColorStop(params, i, prev)
+    if params[i].value == "," and params[i].type == "plain" then
+        log.throw("Expected a color stop, but got a second comma")
+    end
+    if i > #params then
+        -- allow extra commas at end of color stop list
+        return nil, i + 1
+    end
+    if params[i].type == "unit" then
+        if prev == nil then
+            log.throw(
+                "Cannot have a gradient color hint at the start of a gradient color list (need a color before)")
+            error()
+        end
+        if prev.midpoint ~= nil then
+            log.throw(
+                "A gradient color list cannot have two midpoints apply to the same color stop")
+            error()
+        end
+        ---@diagnostic disable-next-line: assign-type-mismatch
+        prev.midpoint = params[i].value
+        return nil, i + 1
+    end
+    if params[i].type ~= "color" then
+        log.throw("Expected a color to start a linear-color-stop type")
+    end
+    if type(params[i].value) == "table" then
+        log.throw(
+            "Gradients cannot be used as a color type in a gradient color list")
+    end
+    ---@diagnostic disable-next-line: param-type-mismatch
+    local color = M.colorStringToColor(params[i].value)
+    ---@cast color Banana.GradientColorStop
+    i = i + 1
+    if i > #params then
+        return color, i
+    end
+
+    if params[i].type == "plain" and params[i].value == "," then
+        return color, i
+    end
+
+    if params[i].type == "unit" then
+        ---@diagnostic disable-next-line: assign-type-mismatch
+        color.start = params[i].value
+    elseif params[i].type == "color" then
+        log.throw(
+            "A gradient color start must be a unit type (perhaps you forgot a comma after a color?)")
+        error()
+    else
+        log.throw("A gradient color start must be a unit type")
+        error()
+    end
+    i = i + 1
+    if i > #params then
+        return color, i
+    end
+    if params[i].type == "plain" and params[i].value == "," then
+        return color, i
+    end
+    local ret = {}
+    ret[1] = vim.fn.deepcopy(color)
+    if params[i].type == "unit" then
+        ---@diagnostic disable-next-line: assign-type-mismatch
+        color.start = params[i].value
+    elseif params[i].type == "color" then
+        log.throw(
+            "A gradient color start must be a unit type (perhaps you forgot a comma after a color stop?)")
+        error()
+    else
+        log.throw("A gradient color start must be a unit type")
+        error()
+    end
+    ret[2] = color
+    i = i + 1
+    return ret[i], i
+end
+
+---@param params Banana.Ncss.StyleValue[]
+---@param i number
+---@return Banana.GradientColorStop[]
+function M.parseGradientColorList(params, i)
+    -- we can have:
+    -- <color> ,
+    -- <color> <start:unit> ,
+    -- <midpoint:unit> ,
+    -- <color> <start:unit> <stop:unit> ,
+
+    local ret = {}
+    local prev = nil
+
+    while i <= #params do
+        local stops
+        stops, i = M.parseGradientColorStop(params, i, prev)
+        if stops == nil then
+            goto continue
+        end
+        if stops[1] ~= nil then
+            table.insert(ret, stops[1])
+            table.insert(ret, stops[2])
+            prev = stops[2]
+        else
+            table.insert(ret, stops)
+            prev = stops
+        end
+        if i > #params then
+            break
+        end
+        if params[i].type ~= "plain" or params[i].value ~= "," then
+            log.throw("Expected a comma after a linear color stop")
+        end
+        i = i + 1
+        ::continue::
+    end
+
+    return ret
+end
+
 --{
 ---@param value number
 ---@param unit string
@@ -203,7 +325,7 @@ end
 
 ---@param str string
 ---@return Banana.Color
-local function colorStringToColor(str)
+function M.colorStringToColor(str)
     -- TODO: Good errors
     if type(str) ~= "string" then
         log.throw(
@@ -251,16 +373,15 @@ local cssFunctions = {
                 #params .. " parameters")
             error()
         end
-        if params[i].type == "plain" and params[i].value == "," then
-            i = i + 1
-        end
+        -- if params[i].type == "plain" and params[i].value == "," then
+        --     i = i + 1
+        -- end
         ---@diagnostic disable-next-line: cast-type-mismatch
         ---@type Banana.Gradient
-        local grad = require("banana.gradient").radialGradient(
-        ---@diagnostic disable-next-line: param-type-mismatch
-            colorStringToColor(params[i].value),
-            ---@diagnostic disable-next-line: param-type-mismatch
-            colorStringToColor(params[i + 1].value))
+        local grad = require("banana.gradient").radialGradient()
+
+        local colorStops = M.parseGradientColorList(params, i)
+        grad.colors = colorStops
         -- grad.angleOffset = angleOff
         -- ---@diagnostic disable-next-line: assign-type-mismatch
         -- grad.sideTarget = side
@@ -328,16 +449,13 @@ local cssFunctions = {
         end
         ---@diagnostic disable-next-line: cast-type-mismatch
         ---@type Banana.Gradient
-        local grad = require("banana.gradient").linearGradient(
-        ---@diagnostic disable-next-line: param-type-mismatch
-            colorStringToColor(params[i].value),
-            ---@diagnostic disable-next-line: param-type-mismatch
-            colorStringToColor(params[i + 1].value))
+        local grad = require("banana.gradient").linearGradient()
         grad.angleOffset = angleOff
         ---@diagnostic disable-next-line: assign-type-mismatch
         grad.sideTarget = side
         ---@diagnostic disable-next-line: assign-type-mismatch
         grad.cornerTarget = corner
+        grad.colors = M.parseGradientColorList(params, i)
         ---@type Banana.Ncss.StyleValue
         local ret = {
             ---@diagnostic disable-next-line: assign-type-mismatch
