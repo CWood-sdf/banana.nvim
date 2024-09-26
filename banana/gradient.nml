@@ -10,13 +10,13 @@
       .tgrad {
         hl-bg: linear-gradient(
           to right,
-          #ff0000 20%,
-          #ff8000 20% 40%,
-          #ffff00 40% 60%,
-          #00ff00 60% 80%,
-          #0000ff 80%
+          red 20%,
+          orange 20% 40%,
+          yellow 40% 60%,
+          green 60% 80%,
+          blue 80%
         );
-        hl-fg: #ffffff;
+        hl-fg: #000000;
         /* hl-bg: linear-gradient(45deg, #ffffff, #0000ff); */
         width: fit-content;
       }
@@ -30,7 +30,7 @@
     </style>
   </head>
   <body>
-    <div class="grad"></div>
+    <!-- <div class="grad"></div> -->
 
     <div>
       <!-- prettier-ignore -->
