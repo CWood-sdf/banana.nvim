@@ -66,9 +66,75 @@ local function sign(n)
     end
 end
 
+---@param v Banana.Ncss.UnitValue?
+---@param len number
+function Gradient:_resolveUnitStop(v, len)
+    if v == nil then return end
+    if v.unit == "ch" then
+        v.computed = math.max(0, math.min(1, v.value / len))
+    elseif v.unit == "%" then
+        v.computed = math.max(0, math.min(1, v.value / 100))
+    end
+    -- return v
+end
+
 ---@param len number
 function Gradient:_setLineLen(len)
+    local i = 1
+    while i <= #self.colors do
+        local v = self.colors[i]
 
+        self:_resolveUnitStop(v.start, len)
+        self:_resolveUnitStop(v.midpoint, len)
+
+        local runCount = 0
+        while v.start == nil or v.start.unit == "" do
+            runCount = runCount + 1
+            v        = self.colors[i + runCount]
+            if v == nil then
+                break
+            end
+        end
+
+        if runCount > 0 then
+            local e = self.colors[i + runCount]
+            local endNum = 1
+            local startNum = 0
+            local atStart = 0
+            local atEnd = 0
+            if self.colors[i - 1] ~= nil and self.colors[i - 1].start.unit ~= "" then
+                atStart = 1
+                startNum = self.colors[i - 1].start.computed
+            end
+            if e ~= nil and e.start.unit ~= "" then
+                atEnd = 1
+                self:_resolveUnitStop(e.start, len)
+                self:_resolveUnitStop(e.midpoint, len)
+                endNum = e.start.computed
+            end
+
+            local distPer = (endNum - startNum) /
+                (runCount - 1 + atStart + atEnd)
+
+            local d = startNum
+
+            if atStart == 0 then
+                d = d - distPer
+            end
+
+            for j = i, i + runCount - 1 do
+                d = d + distPer
+                self.colors[j].start = {
+                    unit = "",
+                    computed = d,
+                    value = 0
+                }
+                self:_resolveUnitStop(self.colors[j].midpoint, len)
+            end
+        end
+
+        i = i + 1 + runCount
+    end
 end
 
 ---@return number
@@ -93,17 +159,6 @@ function Gradient:_getRadialColor()
 
     flame.pop()
     return mult
-
-    -- local colorLeft = self.colors[1]
-    -- local colorRight = self.colors[2]
-    -- local r = math.max(
-    --     math.floor(colorLeft.r + (colorRight.r - colorLeft.r) * mult), 0)
-    -- local g = math.max(
-    --     math.floor(colorLeft.g + (colorRight.g - colorLeft.g) * mult), 0)
-    -- local b = math.max(
-    --     math.floor(colorLeft.b + (colorRight.b - colorLeft.b) * mult), 0)
-    -- local ret = string.format("#%06x", r * 256 * 256 + g * 256 + b)
-    -- log.fatal(mult .. " #0000" .. b)
 end
 
 ---@return number
@@ -170,46 +225,25 @@ function Gradient:_getLinearColor()
     end
 
     local mult = (-len + halfGradLine) / (2 * halfGradLine)
-    -- if self.col == 2 and self.dbgthing == true then
-    --     print(mult)
-    -- end
 
-    -- if mult > 1 or mult < 0 then
-    --     print(mult)
-    -- end
-
-    -- local colorLeft = self.colors[1]
-    -- local colorRight = self.colors[2]
-    --
-    -- local r = math.max(
-    --     math.floor(colorLeft.r + (colorRight.r - colorLeft.r) * mult), 0)
-    -- local g = math.max(
-    --     math.floor(colorLeft.g + (colorRight.g - colorLeft.g) * mult), 0)
-    -- local b = math.max(
-    --     math.floor(colorLeft.b + (colorRight.b - colorLeft.b) * mult), 0)
-
-    -- if math.abs(mult - 0.5) < 0.01 then
-    --     r = 0
-    --     g = 0
-    --     b = 0
-    -- end
-    -- if math.abs(mult) < 0.01 then
-    --     r = 0
-    --     g = 255
-    --     b = 0
-    -- end
-    -- if math.abs(mult - 1) < 0.01 then
-    --     r = 0
-    --     g = 255
-    --     b = 0
-    -- end
-
-    -- so color spaces?? might just interpolate in RGB for now
-
-    -- local ret = string.format("#%06x", r * 256 * 256 + g * 256 + b)
-    -- log.fatal(mult .. " #0000" .. b)
     flame.pop()
     return mult
+end
+
+---@param l Banana.Color
+---@param r Banana.Color
+---@param m number
+---@return string
+function Gradient:_lerpColors(l, r, m)
+    local red   = (r.r - l.r) * m + l.r
+    local green = (r.g - l.g) * m + l.g
+    local blue  = (r.b - l.b) * m + l.b
+
+    red         = math.min(math.max(red, 0), 255)
+    green       = math.min(math.max(green, 0), 255)
+    blue        = math.min(math.max(blue, 0), 255)
+
+    return string.format("#%02x%02x%02x", red, green, blue)
 end
 
 ---Returns the highlight color, and also whether end of line has been reached
@@ -234,13 +268,44 @@ function Gradient:nextCharColor()
     elseif self.type == "radial" then
         mult = self:_getRadialColor()
     end
+    mult = 1 - mult
     self.col = self.col + 1
-    -- local drop = self.col > self.width
-    -- if drop then
-    --     self.col  = 0
-    --     self.line = self.line + 1
-    -- end
-    return ret
+
+    local i = 1
+    local stop = self.colors[1]
+    while stop.start.computed < mult do
+        i = i + 1
+        stop = self.colors[i]
+        if stop == nil then break end
+    end
+    i = i - 1
+    stop = self.colors[i]
+
+    if stop == nil then
+        return self:_lerpColors(self.colors[i + 1], self.colors[i + 1], 1)
+    end
+
+    local next = self.colors[i + 1]
+
+    if next == nil then
+        return self:_lerpColors(stop, stop, 1)
+    end
+
+    local mp = (stop.start.computed + next.start.computed) / 2
+    if stop.midpoint ~= nil then
+        ---@diagnostic disable-next-line: param-type-mismatch, cast-local-type
+        mp = math.max(math.min(stop.midpoint.computed, next.start.computed),
+            stop.start.computed)
+    end
+
+    if mult > mp then
+        return self:_lerpColors(stop, next,
+            (mult - mp) / (2 * (next.start.computed - mp)) + 0.5)
+    end
+
+    return self:_lerpColors(stop, next,
+        0.5 - (mp - mult) / (2 * (mp - stop.start.computed)))
+    -- return ret
 end
 
 ---@param w number
@@ -295,7 +360,6 @@ function Gradient:setSize(w, h)
         end
 
         local widthToCorner = -sign(corner - 1) * centerX
-        -- widthToCorner = widthToCorner - sign(widthToCorner) * 0.5
         local heightToCorner = sign((corner - 1) % 4 - 1.5) * centerY
         self.angleOffset = math.atan2(heightToCorner, widthToCorner) * 180 /
             math.pi

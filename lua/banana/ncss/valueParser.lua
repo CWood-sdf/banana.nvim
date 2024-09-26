@@ -69,10 +69,16 @@ function M.parseGradientColorStop(params, i, prev)
         end
         ---@diagnostic disable-next-line: assign-type-mismatch
         prev.midpoint = params[i].value
-        return nil, i + 1
+        i = i + 1
+        if params[i].type == "plain" and params[i].value == "," then
+            i = i + 1
+        end
+        return nil, i
     end
     if params[i].type ~= "color" then
-        log.throw("Expected a color to start a linear-color-stop type")
+        log.throw(
+            "Expected a color to start a linear-color-stop type, instead got type '" ..
+            params[i].type .. "'")
     end
     if type(params[i].value) == "table" then
         log.throw(
@@ -123,7 +129,7 @@ function M.parseGradientColorStop(params, i, prev)
     end
     ret[2] = color
     i = i + 1
-    return ret[i], i
+    return ret, i
 end
 
 ---@param params Banana.Ncss.StyleValue[]
