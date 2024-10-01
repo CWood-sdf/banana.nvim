@@ -12,8 +12,8 @@
       }
 
       .tgrad {
-        hl-bg: linear-gradient(45deg, red, orange, yellow, green, blue);
-        hl-fg: linear-gradient(to right, black, black, black, black, white);
+        hl-bg: radial-gradient(red, orange, yellow, green, blue);
+        hl-fg: radial-gradient(black, black, black, black, white);
         /* hl-fg: #000000; */
         /* hl-bg: linear-gradient(45deg, #ffffff, #0000ff); */
         width: fit-content;

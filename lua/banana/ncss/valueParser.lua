@@ -144,6 +144,15 @@ function M.parseGradientColorList(params, i)
 
     local ret = {}
     local prev = nil
+    for j = i, #params do
+        ---@diagnostic disable-next-line: param-type-mismatch
+        if params[j].type == "plain" and vim.api.nvim_get_color_by_name(params[j].value) ~= -1 then
+            params[j].type = "color"
+            params[j].value = string.format("#%06x",
+                ---@diagnostic disable-next-line: param-type-mismatch
+                vim.api.nvim_get_color_by_name(params[j].value))
+        end
+    end
 
     while i <= #params do
         local stops
@@ -461,15 +470,7 @@ local cssFunctions = {
         grad.sideTarget = side
         ---@diagnostic disable-next-line: assign-type-mismatch
         grad.cornerTarget = corner
-        for j = i, #params do
-            ---@diagnostic disable-next-line: param-type-mismatch
-            if params[j].type == "plain" and vim.api.nvim_get_color_by_name(params[j].value) ~= -1 then
-                params[j].type = "color"
-                params[j].value = string.format("#%06x",
-                    ---@diagnostic disable-next-line: param-type-mismatch
-                    vim.api.nvim_get_color_by_name(params[j].value))
-            end
-        end
+
         grad.colors = M.parseGradientColorList(params, i)
         ---@type Banana.Ncss.StyleValue
         local ret = {

@@ -142,21 +142,29 @@ end
 ---@return number
 function Gradient:_getRadialColor()
     flame.new("Gradient:_getRadialColor")
-    local centerX = (self.width) / 2
-    local centerY = (self.height)
-    local radius = math.sqrt(centerY * centerY + centerX * centerX)
-    if self.lenNeeded then
-        self:_setLineLen(radius * 2)
-    end
-
     local col = self.col + 0.5
     local line = self.line * 2 + 0.5
+    if self.cacheDirty then
+        local centerX = self.width / 2
+        local centerY = self.height
+        local radius = math.sqrt(centerY * centerY + centerX * centerX)
+        if self.lenNeeded then
+            self:_setLineLen(radius * 2)
+        end
 
+
+        self.cacheDirty = false
+        self.cache[1] = centerX
+        self.cache[2] = centerY
+        self.cache[3] = radius
+    end
+    local centerX = self.cache[1]
+    local centerY = self.cache[2]
+    local radius = self.cache[3]
     local offX = centerX - col
     local offY = centerY - line
 
     local dist = math.sqrt(offY * offY + offX * offX)
-
     local mult = 1 - dist / radius
 
     flame.pop()
