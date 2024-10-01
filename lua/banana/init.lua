@@ -15,6 +15,8 @@ M.test = {
     grid = function ()
         if inst == nil then
             inst = render.newInstance("gradient", "")
+            inst.DEBUG = true
+            -- inst.DEBUG_showBuild = true
             inst.DEBUG_showPerf = true
             -- inst.DEBUG_dumpTree = true
             inst.DEBUG_stressTest = true

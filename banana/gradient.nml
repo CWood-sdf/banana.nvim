@@ -1,6 +1,10 @@
 <nml>
   <head>
     <style>
+      nml {
+        width: 50%;
+      }
+
       .grad {
         hl-bg: radial-gradient(#ff8000 30% 60%, #0000ff);
         width: 65ch;
@@ -8,15 +12,9 @@
       }
 
       .tgrad {
-        hl-bg: linear-gradient(
-          to right,
-          red 20%,
-          orange 20% 40%,
-          yellow 40% 60%,
-          green 60% 80%,
-          blue 80%
-        );
-        hl-fg: #000000;
+        hl-bg: linear-gradient(45deg, red, orange, yellow, green, blue);
+        hl-fg: linear-gradient(to right, black, black, black, black, white);
+        /* hl-fg: #000000; */
         /* hl-bg: linear-gradient(45deg, #ffffff, #0000ff); */
         width: fit-content;
       }

@@ -33,6 +33,8 @@ local flame = require("banana.lazyRequire")("banana.utils.debug_flame")
 ---@field children? Banana.Gradient
 ---@field childI? number
 ---@field lenNeeded boolean
+---@field private cache number[]
+---@field private cacheDirty boolean
 local Gradient = {}
 
 ---@class (exact) Banana.Highlight: vim.api.keyset.highlight
@@ -166,63 +168,78 @@ function Gradient:_getLinearColor()
     local col = self.col
     local line = self.line
     flame.new("Gradient:_getLinearColor")
-    -- measure from center of char
-    local centerX = (self.width - 1) / 2
-    local centerY = (self.height - 1) / 2
+    if self.cacheDirty then
+        -- measure from center of char
+        local centerX = (self.width - 1) / 2
+        local centerY = (self.height - 1) / 2
 
-    -- angle 0 = ▲
-    -- angle 90 = ►
+        -- angle 0 = ▲
+        -- angle 90 = ►
 
-    local ang = self.angleOffset or 0
+        local ang = self.angleOffset or 0
 
-    while ang < 0 do
-        ang = ang + 360
+        while ang < 0 do
+            ang = ang + 360
+        end
+        while ang >= 360 do
+            ang = ang - 360
+        end
+
+        local corner = math.floor(ang / 90)
+        -- 3──────────0
+        -- │          │
+        -- 2──────────1
+
+        local widthToCorner = -sign(corner - 1.5) * centerX
+        -- widthToCorner = widthToCorner - sign(widthToCorner) * 0.5
+        local heightToCorner = sign((corner - 1) % 4 - 1.5) * centerY
+        -- heightToCorner = heightToCorner - sign(heightToCorner) * 0.5
+
+        -- if self.col == 2 and self.line == 0 and self.dbgthing == true then
+        --     print(widthToCorner .. ", " .. heightToCorner)
+        -- end
+
+        local angleToCorner = math.atan2(widthToCorner, heightToCorner) * 180 /
+            math.pi
+
+        local internalAngle = angleToCorner - ang
+
+        local distToCorner = math.sqrt(widthToCorner * widthToCorner +
+            heightToCorner * heightToCorner)
+
+        -- we can form a right triangle to corner (the hypotenuse is distToCorner)
+        -- long side is that gradient line len we want
+
+        -- cos = adj / hyp (want adj)
+
+        local halfGradLine = math.cos(internalAngle * math.pi / 180) *
+            distToCorner
+
+
+        -- |proj u onto v| = u dot v / |v|
+
+        local gradLineX = math.sin(ang * math.pi / 180) * halfGradLine
+        local gradLineY = math.cos(ang * math.pi / 180) * halfGradLine
+
+        self.cache[1] = -math.abs(widthToCorner)
+        self.cache[2] = math.abs(heightToCorner)
+        self.cache[3] = gradLineX
+        self.cache[4] = gradLineY
+        self.cache[5] = halfGradLine
+        self.cacheDirty = false
+
+        if self.lenNeeded then
+            self:_setLineLen(halfGradLine * 2)
+        end
     end
-    while ang >= 360 do
-        ang = ang - 360
-    end
-
-    local corner = math.floor(ang / 90)
-    -- 3──────────0
-    -- │          │
-    -- 2──────────1
-
-    local widthToCorner = -sign(corner - 1.5) * centerX
-    -- widthToCorner = widthToCorner - sign(widthToCorner) * 0.5
-    local heightToCorner = sign((corner - 1) % 4 - 1.5) * centerY
-    -- heightToCorner = heightToCorner - sign(heightToCorner) * 0.5
-
-    -- if self.col == 2 and self.line == 0 and self.dbgthing == true then
-    --     print(widthToCorner .. ", " .. heightToCorner)
-    -- end
-
-    local angleToCorner = math.atan2(widthToCorner, heightToCorner) * 180 /
-        math.pi
-
-    local internalAngle = angleToCorner - ang
-
-    local distToCorner = math.sqrt(widthToCorner * widthToCorner +
-        heightToCorner * heightToCorner)
-
-    -- we can form a right triangle to corner (the hypotenuse is distToCorner)
-    -- long side is that gradient line len we want
-
-    -- cos = adj / hyp (want adj)
-
-    local halfGradLine = math.cos(internalAngle * math.pi / 180) * distToCorner
-
-    local gradX = -math.abs(widthToCorner) + col
-    local gradY = math.abs(heightToCorner) - line
-
-    -- |proj u onto v| = u dot v / |v|
-
-    local gradLineX = math.sin(ang * math.pi / 180) * halfGradLine
-    local gradLineY = math.cos(ang * math.pi / 180) * halfGradLine
-
+    local widthToCorner = self.cache[1]
+    local heightToCorner = self.cache[2]
+    local gradLineX = self.cache[3]
+    local gradLineY = self.cache[4]
+    local halfGradLine = self.cache[5]
+    local gradX = widthToCorner + col
+    local gradY = heightToCorner - line
     local len = (gradX * gradLineX + gradY * gradLineY) / halfGradLine
-    if self.lenNeeded then
-        self:_setLineLen(halfGradLine * 2)
-    end
 
     local mult = (-len + halfGradLine) / (2 * halfGradLine)
 
@@ -262,6 +279,7 @@ function Gradient:nextCharColor()
     --  Determine dist to center point
 
 
+    flame.new("Gradient:nextCharColor")
     local mult
     if self.type == "linear" then
         mult = self:_getLinearColor()
@@ -299,18 +317,22 @@ function Gradient:nextCharColor()
     end
 
     if mult > mp then
-        return self:_lerpColors(stop, next,
+        local ret = self:_lerpColors(stop, next,
             (mult - mp) / (2 * (next.start.computed - mp)) + 0.5)
+        flame.pop()
+        return ret
     end
 
-    return self:_lerpColors(stop, next,
+    local ret = self:_lerpColors(stop, next,
         0.5 - (mp - mult) / (2 * (mp - stop.start.computed)))
-    -- return ret
+    flame.pop()
+    return ret
 end
 
 ---@param w number
 ---@param h number
 function Gradient:setSize(w, h)
+    self.cacheDirty = true
     self.col = 0
     self.line = 0
     self.width = w
@@ -372,6 +394,8 @@ end
 function M.linearGradient()
     ---@type Banana.Gradient
     local gradient = {
+        cacheDirty = true,
+        cache = {},
         lenNeeded = true,
         owned = false,
         repeating = false,
@@ -387,6 +411,8 @@ end
 function M.radialGradient()
     ---@type Banana.Gradient
     local gradient = {
+        cacheDirty = true,
+        cache = {},
         lenNeeded = true,
         owned = false,
         repeating = false,

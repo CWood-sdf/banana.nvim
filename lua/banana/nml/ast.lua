@@ -132,6 +132,36 @@ function M.Ast:allStylesFor(style)
     return self.style[style]
 end
 
+---@param pad number?
+---@return string[]
+function M.Ast:_dumpTree(pad)
+    pad = pad or 0
+    local ret = {
+        string.rep(" ", pad) .. self.tag .. ": "
+    }
+    local id = self:getAttribute("id")
+    if id ~= nil then
+        ret[1] = ret[1] .. "#" .. id .. " "
+    end
+    for v, s in pairs(self.classes or {}) do
+        if s then
+            ret[1] = ret[1] .. "." .. v .. " "
+        end
+    end
+    pad = pad + 2
+    for _, v in ipairs(self.nodes) do
+        if type(v) == "string" then
+            table.insert(ret, string.rep(" ", pad) .. v)
+        else
+            local dump = v:_dumpTree(pad)
+            for _, d in ipairs(dump) do
+                table.insert(ret, d)
+            end
+        end
+    end
+    return ret
+end
+
 ---@param style string
 ---@param default Banana.Ncss.StyleValueType
 ---@return Banana.Ncss.StyleValueType

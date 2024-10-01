@@ -61,6 +61,11 @@ local instances = {}
 ---@field stripRight boolean
 ---@field rendering boolean
 ---@field DEBUG_showPerf boolean
+---@field private DEBUG_winId? number
+---@field private DEBUG_hlId? number
+---@field private DEBUG_bufNr? number
+---@field private DEBUG_winWidth? number
+---@field DEBUG_showBuild boolean
 local Instance = {}
 
 ---@class (exact) Banana.Word
@@ -81,7 +86,7 @@ function Instance:_virtualRender(ast, width, height)
     local extra = {
         useAllHeight = false,
         trace = require("banana.box").Box:new(),
-        debug = self.DEBUG,
+        debug = self.DEBUG_showBuild,
         isRealRender = true,
     }
     setmetatable(extra, { __mode = "kv" })
@@ -104,9 +109,75 @@ function Instance:_virtualRender(ast, width, height)
         rendered:stripRightSpace(bg)
     end
     if extra.debug then
-        rendered:appendBoxBelow(extra.trace)
+        self:writeBoxToDebugWin(extra.trace)
+        -- rendered:appendBoxBelow(extra.trace)
     end
     return rendered:getLines()
+end
+
+function Instance:openDebugWin()
+    if self.DEBUG_bufNr == nil or not vim.api.nvim_buf_is_valid(self.DEBUG_bufNr) then
+        self.DEBUG_bufNr = vim.api.nvim_create_buf(false, true)
+        vim.api.nvim_set_option_value("filetype", "", {
+            buf = self.DEBUG_bufNr
+        })
+    end
+    if self.DEBUG_winId == nil or not vim.api.nvim_win_is_valid(self.DEBUG_winId) then
+        local w = math.floor(self.DEBUG_winWidth or vim.o.columns / 2.5)
+        self.DEBUG_winId = vim.api.nvim_open_win(self.DEBUG_bufNr, true, {
+            col = vim.o.columns - w,
+            row = 2,
+            relative = "editor",
+            width = w,
+            height = math.floor(vim.o.lines / 1.2),
+            style = "minimal",
+        })
+        vim.api.nvim_set_option_value("signcolumn", "no",
+            { win = self.DEBUG_winId })
+        vim.api.nvim_set_option_value("number", false,
+            { win = self.DEBUG_winId })
+        vim.api.nvim_set_option_value("wrap", false,
+            { win = self.DEBUG_winId })
+    else
+        vim.api.nvim_set_current_win(self.DEBUG_winId)
+    end
+end
+
+function Instance:clearDebugWinBuf()
+    if self.DEBUG_bufNr == nil or not vim.api.nvim_buf_is_valid(self.DEBUG_bufNr) then
+        return
+    end
+    vim.api.nvim_buf_set_lines(self.DEBUG_bufNr, 0, -1, false, {})
+end
+
+---@param lines string[]
+function Instance:writeLinesToDebugWin(lines)
+    if self.DEBUG_bufNr == nil or not vim.api.nvim_buf_is_valid(self.DEBUG_bufNr) then
+        return
+    end
+    local l = vim.api.nvim_buf_get_lines(self.DEBUG_bufNr, 0, -1, false)
+    for _, v in ipairs(lines) do
+        table.insert(l, v)
+    end
+    vim.api.nvim_buf_set_lines(self.DEBUG_bufNr, 0, -1, false, l)
+end
+
+---@param box Banana.Box
+function Instance:writeBoxToDebugWin(box)
+    if self.DEBUG_bufNr == nil or not vim.api.nvim_buf_is_valid(self.DEBUG_bufNr) then
+        return
+    end
+    local lines = box:getLines()
+    local offset = #vim.api.nvim_buf_get_lines(self.DEBUG_bufNr, 0, -1, false)
+    for _, l in ipairs(lines) do
+        local line = ""
+        for _, w in ipairs(l) do
+            line = line .. w.word
+        end
+        vim.api.nvim_buf_set_lines(self.DEBUG_bufNr, -1, -1, false, { line })
+    end
+    self:_highlight(lines, offset - 1, self.DEBUG_bufNr, self.DEBUG_winId,
+        self.highlightNs)
 end
 
 function Instance:setBufName(str)
@@ -136,6 +207,7 @@ function Instance:new()
     local id = #instances
     ---@type Banana.Instance
     local inst = {
+        DEBUG_showBuild = false,
         DEBUG_dumpTree = false,
         DEBUG_stressTest = false,
         DEBUG_showPerf = false,
@@ -216,38 +288,6 @@ function Instance:_attachAutocmds()
             self:_requestRender()
         end,
     })
-end
-
----@param pad number?
----@param node Banana.Ast?
----@return string[]
-function Instance:_dumpTree(pad, node)
-    pad = pad or 0
-    node = node or self.ast
-    local ret = {
-        string.rep(" ", pad) .. node.tag .. ": "
-    }
-    local id = node:getAttribute("id")
-    if id ~= nil then
-        ret[1] = ret[1] .. "#" .. id .. " "
-    end
-    for v, s in pairs(node.classes or {}) do
-        if s then
-            ret[1] = ret[1] .. "." .. v .. " "
-        end
-    end
-    pad = pad + 2
-    for _, v in ipairs(node.nodes) do
-        if type(v) == "string" then
-            table.insert(ret, string.rep(" ", pad) .. v)
-        else
-            local dump = self:_dumpTree(pad, v)
-            for _, d in ipairs(dump) do
-                table.insert(ret, d)
-            end
-        end
-    end
-    return ret
 end
 
 function Instance:close()
@@ -497,7 +537,7 @@ function Instance:_createWinAndBuf()
         }, {
             useAllHeight = false,
             trace = require("banana.box").Box:new(),
-            debug = self.DEBUG,
+            debug = self.DEBUG_showBuild,
             isRealRender = false,
         })
     end
@@ -651,6 +691,10 @@ function Instance:_render()
     startTime = vim.loop.hrtime()
 
     local width, height = self:_createWinAndBuf()
+    if self.DEBUG then
+        self:openDebugWin()
+        self:clearDebugWinBuf()
+    end
 
     local winTime = vim.loop.hrtime() - startTime
     startTime = vim.loop.hrtime()
@@ -701,25 +745,23 @@ function Instance:_render()
     local extraLines = {}
 
     if self.DEBUG_dumpTree then
-        local dump = self:_dumpTree()
+        local dump = self.ast:_dumpTree()
         for _, v in ipairs(dump) do
             table.insert(extraLines, v)
         end
         table.insert(extraLines, "")
     end
 
-    if self.DEBUG or self.DEBUG_showPerf then
+    if self.DEBUG_stressTest then
+        if n < 200 then
+            self:_deferRender()
+        end
+    end
+    if self.DEBUG_showPerf then
         n = n + 1
         avg = (avg * (n - 1) + renderTime) / n
-        if self.DEBUG_stressTest then
-            -- should be 560MB used on n=600
-            -- renderOver pushes that to 2.5GB
-            if n < 200 then
-                self:_deferRender()
-            end
-        end
         local l = {
-            "",
+            -- "",
             astTime / 1e6 .. "ms to parse",
             styleTime / 1e6 .. "ms to style",
             winTime / 1e6 .. "ms to create win",
@@ -772,13 +814,14 @@ function Instance:_render()
         table.insert(extraLines, "Total: " .. total .. "ms")
     end
     if #extraLines ~= 0 then
-        vim.api.nvim_set_option_value("modifiable", true, {
-            buf = self.bufnr
-        })
-        vim.api.nvim_buf_set_lines(self.bufnr, #lines, -1, false, extraLines)
-        vim.api.nvim_set_option_value("modifiable", false, {
-            buf = self.bufnr
-        })
+        -- vim.api.nvim_set_option_value("modifiable", true, {
+        --     buf = self.bufnr
+        -- })
+        -- vim.api.nvim_buf_set_lines(self.bufnr, #lines, -1, false, extraLines)
+        -- vim.api.nvim_set_option_value("modifiable", false, {
+        --     buf = self.bufnr
+        -- })
+        self:writeLinesToDebugWin(extraLines)
     end
     self.rendering = false
     collectgarbage("restart")
@@ -787,19 +830,25 @@ end
 
 ---@param lines Banana.Line[]
 ---@param offset number?
-function Instance:_highlight(lines, offset)
+---@param bufnr number?
+---@param winid number?
+---@param ns number?
+function Instance:_highlight(lines, offset, bufnr, winid, ns)
     flame.new(":_highlight")
     offset = offset or 0
     flame.new("hl:ns")
-    vim.api.nvim_win_set_hl_ns(self.winid, self.highlightNs)
+    ns = ns or self.highlightNs or 1
+    winid = winid or self.winid or 0
+    bufnr = bufnr or self.bufnr or 0
+    vim.api.nvim_win_set_hl_ns(winid, ns)
     if self.highlightNs ~= nil then
-        vim.api.nvim_buf_clear_namespace(0, self.highlightNs, 0, -1)
-        vim.api.nvim_buf_clear_namespace(0, 0, 0, -1)
+        vim.api.nvim_buf_clear_namespace(bufnr, ns, 0, -1)
+        vim.api.nvim_buf_clear_namespace(bufnr, 0, 0, -1)
         -- vim.api.nvim_win_set_hl_ns(self.winid, self.highlightNs)
         -- self.highlightNs = nil
     end
     flame.pop()
-    if self.bufnr == nil or not vim.api.nvim_buf_is_valid(self.bufnr) then
+    if bufnr == nil or not vim.api.nvim_buf_is_valid(bufnr) then
         log.throw(
             "Unreachable (buf is invalid in higlightBuffer)")
         error("")
@@ -814,13 +863,16 @@ function Instance:_highlight(lines, offset)
         while i <= #v do
             local word = v[i]
             local hlGroup = ""
-            local ns = self.highlightNs
+            -- local ns = self.highlightNs
             -- local delta = _str.charWidth(word.word)
             -- log.debug(word.word .. ": " .. delta)
             local byteCount = _str.byteCount(word.word)
 
-            local isGrad = type(word.style.fg) == "table" or
-                type(word.style.bg) == "table"
+            local isGrad = false
+            if word.style ~= nil then
+                isGrad = type(word.style.fg) == "table" or
+                    type(word.style.bg) == "table"
+            end
             local charWidth = _str.charWidth(word.word)
             local hasFgGrad = false
             local hasBgGrad = false
@@ -911,9 +963,9 @@ function Instance:_highlight(lines, offset)
                             end
                             hlGroup = "banana_hl_" .. hlId
                             flame.new("_highlight:set_hl/")
-                            vim.api.nvim_set_hl(self.highlightNs, hlGroup,
+                            vim.api.nvim_set_hl(ns, hlGroup,
                                 word.style)
-                            vim.api.nvim_buf_add_highlight(self.bufnr, ns,
+                            vim.api.nvim_buf_add_highlight(bufnr, ns,
                                 hlGroup, row,
                                 charI + col - 1,
                                 col + charI - 1 + charByteSize)
@@ -926,7 +978,7 @@ function Instance:_highlight(lines, offset)
                         flame.pop()
                     else
                         hlGroup = "banana_hl_" .. hlId
-                        vim.api.nvim_set_hl(self.highlightNs, hlGroup, word
+                        vim.api.nvim_set_hl(ns, hlGroup, word
                             .style)
                         hlId = hlId + 1
                     end
@@ -935,7 +987,7 @@ function Instance:_highlight(lines, offset)
                 end
                 --flame.new("hl:add_hl")
                 if not isGrad then
-                    vim.api.nvim_buf_add_highlight(self.bufnr, ns, hlGroup, row,
+                    vim.api.nvim_buf_add_highlight(bufnr, ns, hlGroup, row,
                         col,
                         col + byteCount)
                 end
