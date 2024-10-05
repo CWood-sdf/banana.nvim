@@ -408,7 +408,19 @@
     "named": true
   },
   {
+    "type": "script",
+    "named": false
+  },
+  {
+    "type": "slot",
+    "named": false
+  },
+  {
     "type": "span",
+    "named": false
+  },
+  {
+    "type": "style",
     "named": false
   },
   {
