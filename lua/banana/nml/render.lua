@@ -324,8 +324,6 @@ end
 -- grid-row
 -- grid-column
 -- grid-area
--- row-gap
--- column-gap
 -- gap
 
 

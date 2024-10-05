@@ -15,8 +15,7 @@
 ### Upcoming big projects
 
 - Animations + Transitions
-- Gradients
-- List stuff
+- Components
 
 ### Api
 
@@ -37,6 +36,19 @@
 - [ ] Hypermedia attributes
 - [x] Basic templating (maybe just substitution of attribute values)
 - [x] Read File
+
+### Components
+
+- [ ] Per-file components? or define components with special tag (template?)?
+- [ ] Child content (\<slot>)
+- [ ] Attributes
+- [ ] Dom queryable in contained scripts, but not outside (unless shadow=false)
+- [ ] Inline/block detection
+- [ ] Need a special renderer that just renders sub stuff?
+- [ ] Seperate shadow dom (aka all component doms are stored as seperate trees)
+- [ ] `shadow` property? (if !shadow then clone tree (also queryabledom), if shadow then noclone)
+- [ ] Closelyish follows webcomponents
+- [ ] should be similarish to loadNmlTo
 
 ### Styling Language
 
@@ -87,9 +99,9 @@
 - [x] grid-row
 - [x] grid-column
 - [ ] grid-area
-- [ ] row-gap
-- [ ] column-gap
-- [x] gap
+- [x] row-gap
+- [x] column-gap
+- [ ] gap
 
 ### Abs/relative position
 
@@ -112,8 +124,9 @@
 
 ### Gradients
 
-- [ ] linear-gradient()
-- [ ] radial-gradient()
+- [x] linear-gradient()
+- [ ] Color space support
+- [x] radial-gradient()
 - [ ] conic-gradient()
 - [ ] repeating-linear-gradient()
 
@@ -122,7 +135,7 @@
 - [ ] outline?
 - [ ] content? seems hard, do it later
 - [ ] direction? seems easy but not extremely useful for now
-- [ ] hyphenate-character (needs hyphenation)
+- [ ] hyphenate-character (needs hyphenation) (currently using vim style hyphenation)
 
 #### Table stuff
 
