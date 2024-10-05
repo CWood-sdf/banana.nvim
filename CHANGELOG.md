@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.2.0](https://github.com/CWood-sdf/banana.nvim/compare/v0.1.0...v0.2.0) (2024-10-05)
+
+
+### Features
+
+* counter ([948dd0b](https://github.com/CWood-sdf/banana.nvim/commit/948dd0bccd9e431115236ec5b51a986ad85118b5))
+* **Gradient:** add caching for linear colors ([82fb519](https://github.com/CWood-sdf/banana.nvim/commit/82fb519ddf1225c3deac97c6d5616447587b2613))
+* **Gradient:** add caching for radial-gradient ([38df71f](https://github.com/CWood-sdf/banana.nvim/commit/38df71fce096c035386927d89d3fc9894d3c3d54))
+* **gradient:** add color stop parser, and have functions return mult ([a948fb1](https://github.com/CWood-sdf/banana.nvim/commit/a948fb1980657f696f5d7813bb1a71ef2f250d9c))
+* **gradient:** add name to color parser ([b2e97ad](https://github.com/CWood-sdf/banana.nvim/commit/b2e97adb5d8f07269c014da4c9a3b7d4a53e1274))
+* **gradient:** add og radial-gradient ([fa6146b](https://github.com/CWood-sdf/banana.nvim/commit/fa6146b341121b7b6fe723ed2fc056fd0e2ad8af))
+* **gradient:** first working linear-grad prototype ([df221ee](https://github.com/CWood-sdf/banana.nvim/commit/df221ee2e91c1ff7bf95191c1c31f2e525b2709d))
+* **gradient:** fix random things ([ba59292](https://github.com/CWood-sdf/banana.nvim/commit/ba59292a8041b3b7e8c29b5a05a53783a266e623))
+* **gradient:** full color stops ([62a610f](https://github.com/CWood-sdf/banana.nvim/commit/62a610f0e08fb475ff87d49ae230cf61a5bd2e45))
+* **gradient:** linear works for all angles ([9c81a00](https://github.com/CWood-sdf/banana.nvim/commit/9c81a003fa41fa62011d985a087d73af8fb7059c))
+* **Instance:** add debug window for debug output (instead of bottom) ([82fb519](https://github.com/CWood-sdf/banana.nvim/commit/82fb519ddf1225c3deac97c6d5616447587b2613))
+* **linear-gradient:** add support for "to ..." ([3b4f813](https://github.com/CWood-sdf/banana.nvim/commit/3b4f813ae79ac60490bb1090e5fd9b086197eb06))
+* **linear-gradient:** support for angle ([7c47b15](https://github.com/CWood-sdf/banana.nvim/commit/7c47b15924e545d5464fde51109808fda06e4740))
+* **nml:** prep treesitter for components ([80f2b3f](https://github.com/CWood-sdf/banana.nvim/commit/80f2b3f45601c0c6541bccf5198d3ab5399ff963))
+
+
+### Bug Fixes
+
+* **gradient:** properly compute widthToCorner for linear ([2a1f524](https://github.com/CWood-sdf/banana.nvim/commit/2a1f524de29ff6ee0459f000a1e0eeb2cdb0cd10))
+* **render:** list style color contains color of parent element ([cef59e9](https://github.com/CWood-sdf/banana.nvim/commit/cef59e97ce906b936d3b6beb4dcca7e370f13fd0))
+
 ## [0.1.0](https://github.com/CWood-sdf/banana.nvim/compare/v0.0.1...v0.1.0) (2024-08-23)
 
 
