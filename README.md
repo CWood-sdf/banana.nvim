@@ -157,6 +157,8 @@ Currently the following css functions are implemented (for uptodate list see css
 
 - rgb()
 - hl-extract() (to get the values from a neovim highlight group)
+- linear-gradient() (missing color space support)
+- radial-gradient() (missing color space support)
 
 The following units are implemented (for uptodate list see M.calcUnitNoMod in lua/banana/nml/ast.lua):
 
