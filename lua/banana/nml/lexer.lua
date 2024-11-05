@@ -1,5 +1,5 @@
 ---@module 'banana.utils.string'
-local _str = require('banana.lazyRequire')('banana.utils.string')
+local _str = require("banana.lazyRequire")("banana.utils.string")
 local M = {}
 
 ---@class (exact) Banana.Lexer

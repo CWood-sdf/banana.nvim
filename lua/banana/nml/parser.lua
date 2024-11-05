@@ -32,6 +32,12 @@ local ast = require("banana.nml.ast")
 ---@class (exact) Banana.Attributes
 ---@field [string] string?
 
+---@class (exact) Banana.Component
+---@field ast Banana.Ast
+---@field styles Banana.Ncss.RuleSet[]
+---@field scripts string[]
+---@field name string
+
 ---@class (exact) Banana.Nml.Parser
 ---@field lexer Banana.Lexer?
 ---@field tree TSTree?
@@ -40,6 +46,7 @@ local ast = require("banana.nml.ast")
 ---@field ncssParsers TSTree[]
 ---@field ncssInlineIndex number
 ---@field ncssBlockIndex number
+---@field currentComponent Banana.Component?
 local Parser = {
     lexer = nil,
     tree = nil,
@@ -48,6 +55,20 @@ local Parser = {
     ncssInlineIndex = 1,
     ncssBlockIndex = 1,
 }
+
+---@param str string
+---@return boolean, string
+function M.isValidComponentName(str)
+    if #str == 0 then
+        return false, "component name must have at least one character"
+    end
+    local firstChar = str:sub(1, 1)
+    if string.upper(firstChar) ~= firstChar and firstChar ~= "_" then
+        return false, "component name must start with uppercase or underscore"
+    end
+    return str:match("^[%w_-]*$"),
+        "component must only contain words, underscore, and -"
+end
 
 ---@param lex Banana.Lexer
 ---@param tree TSTree
@@ -214,11 +235,15 @@ end
 ---@param tree TSNode
 ---@param parent Banana.Ast?
 ---@param isSpecial? boolean
----@return Banana.Ast?
+---@return Banana.Ast?, Banana.Component[]?
 function Parser:parseTag(tree, parent, isSpecial)
+    -- we need to say when tag == <template>, create a component, set the
+    -- current tracked component to that then continue parsing as normal
     isSpecial = isSpecial or false
     local firstChild = tree:child(0)
     local lastChild = tree:child(tree:child_count() - 1)
+    ---@type Banana.Component[]?
+    local components = nil
     if firstChild == nil or lastChild == nil then
         log.throw(
             "Unreachable")
@@ -248,6 +273,8 @@ function Parser:parseTag(tree, parent, isSpecial)
     end
     local tagNameStr = self.lexer:getStrFromRange({ tagName:start() },
         { tagName:end_() })
+
+
     local lastTagName = lastChild:child(1)
     if lastTagName == nil then
         log.throw(
@@ -275,6 +302,7 @@ function Parser:parseTag(tree, parent, isSpecial)
     if tagNameStr == "style" then
         isStyle = true
     end
+    local isTemplate = tagNameStr == "template"
     local ret = nil
     if not isScript and not isStyle then
         if parent == nil then
@@ -297,6 +325,63 @@ function Parser:parseTag(tree, parent, isSpecial)
         table.insert(self.scripts, scriptStr)
     end
 
+    if attrs["import"] ~= nil and isTemplate then
+        -- im assuming parent is nil in template only files
+        if parent == nil then
+            log.throw(
+                "an import tag statement is not allowed to be the only tag in a file")
+            error()
+        end
+        local root = nil
+        if attrs["onparent"] ~= nil then
+            root = parent
+        else
+            root = parent:root()
+        end
+        root.componentPath = root.componentPath or nil
+        table.insert(root.componentPath, attrs["import"])
+    elseif attrs["use-imports-from"] ~= nil and isTemplate then
+        if parent == nil then
+            log.throw(
+                "an import tag statement is not allowed to be the only tag in a file")
+            error()
+        end
+        local root = nil
+        if attrs["onparent"] ~= nil then
+            root = parent
+        else
+            root = parent:root()
+        end
+
+        root.componentPath = root.componentPath or nil
+        local componentAst = require("banana.require").nmlRequire(attrs
+            ["use-imports-from"])
+        for _, v in ipairs(componentAst or {}) do
+            table.insert(root.componentPath, v)
+        end
+    elseif isTemplate then
+        if attrs["name"] == nil then
+            log.throw("Component must have a filled out name property")
+            error()
+        end
+        if self.currentComponent ~= nil then
+            log.throw("template tags cannot be nested")
+        end
+        ret._parent = require("banana.instance").getNilAst()
+        local g, err = M.isValidComponentName(attrs["name"])
+        if not g then
+            log.throw(err)
+            error()
+        end
+        self.currentComponent = {
+            ---@diagnostic disable-next-line: assign-type-mismatch
+            ast = ret,
+            styles = {},
+            scripts = {},
+            name = attrs["name"]
+        }
+    end
+
     local i = 1
     while i < tree:child_count() - 1 do
         local child = tree:child(i)
@@ -314,7 +399,16 @@ function Parser:parseTag(tree, parent, isSpecial)
             ret:appendTextNode(self:getStrFromNode(child))
         elseif child:type() == M.ts_types.element then
             ---@cast ret Banana.Ast
-            local element = self:parseElement(child, ret)
+            local element, comps = self:parseElement(child, ret)
+            if comps ~= nil then
+                if components ~= nil then
+                    for _, v in ipairs(comps) do
+                        table.insert(components, v)
+                    end
+                else
+                    components = comps
+                end
+            end
             if element ~= nil then
                 if ret == nil then
                     log.throw(
@@ -340,8 +434,13 @@ function Parser:parseTag(tree, parent, isSpecial)
         elseif child:type() == M.ts_types.raw_text and isScript then
             scriptStr = self.lexer:getStrFromRange({ child:start() },
                 { child:end_() })
+            local set = self.scripts
+
+            if self.currentComponent ~= nil then
+                set = self.currentComponent.scripts
+            end
             if scriptStr ~= "" then
-                table.insert(self.scripts, scriptStr)
+                table.insert(set, scriptStr)
             end
         elseif child:type() == M.ts_types.raw_text and isStyle then
             local ncssTree = self:getNextBlockNcssParser()
@@ -349,8 +448,13 @@ function Parser:parseTag(tree, parent, isSpecial)
                 .lexer.program)
             local rules = require("banana.ncss.parser").parse(ncssTree,
                 ncssParser)
+
+            local set = self.styleSets
+            if self.currentComponent ~= nil then
+                set = self.currentComponent.styles
+            end
             for _, rule in ipairs(rules) do
-                table.insert(self.styleSets, rule)
+                table.insert(set, rule)
             end
         elseif child:type() == M.ts_types.style_element then
             self:parseTag(child, ret, true)
@@ -366,13 +470,19 @@ function Parser:parseTag(tree, parent, isSpecial)
     if isScript or isStyle then
         return nil
     end
+    if isTemplate then
+        components = components or {}
+        table.insert(components, 1, self.currentComponent)
+        self.currentComponent = nil
+        return nil
+    end
 
-    return ret
+    return ret, components
 end
 
 ---@param tree TSNode
 ---@param parent Banana.Ast
----@return Banana.Ast?
+---@return Banana.Ast?, Banana.Component[]?
 function Parser:parseElement(tree, parent)
     if tree:type() ~= M.ts_types.element then
         log.throw(
@@ -390,7 +500,7 @@ function Parser:parseElement(tree, parent)
     return self:parseTag(tree, parent)
 end
 
----@return Banana.Ast?
+---@return Banana.Ast?, Banana.Component[]?
 function Parser:parse()
     if self.tree == nil then
         return nil

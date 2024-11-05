@@ -37,8 +37,8 @@ M.padNames = { "left", "top", "right", "bottom" }
 ---@field relativeBoxId? number
 ---@field hidden boolean
 ---@field relativeBoxes? { box: Banana.Box, left: number, top: number, z: number}[]
+---@field componentPath? string[]
 ---@field listCounter? number
----@field renderCache Banana.Renderer.PartialRendered?
 M.Ast = {
     nodes = {},
     tag = "",
@@ -112,9 +112,13 @@ function M.Ast:new(tag, parent)
     return ast
 end
 
--- function M.Ast:_clearRenderCache()
---
--- end
+---@return Banana.Ast
+function M.Ast:root()
+    if self._parent:isNil() then
+        return self
+    end
+    return self:parent():root()
+end
 
 ---@return Banana.Ncss.StyleValue?
 ---@param style string
@@ -124,6 +128,12 @@ function M.Ast:firstStyle(style)
         return nil
     end
     return s[1]
+end
+
+---@return boolean
+function M.Ast:_isComponent()
+    local c = self.tag:sub(1, 1)
+    return c == "_" or c:match("[A-Z]") ~= nil
 end
 
 ---@return Banana.Ncss.StyleValue[]?
@@ -474,6 +484,7 @@ function M.Ast:_clearStyles()
     end
 end
 
+---Applies the ast metatable to an ast tree (after cloning)
 ---@param ast Banana.Ast
 local function applyAstMeta(ast)
     setmetatable(ast, { __index = M.Ast })

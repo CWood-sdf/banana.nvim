@@ -1,0 +1,12 @@
+<nml>
+  <head>
+    <style></style>
+    <title>template</title>
+  </head>
+  <body>
+    <template name="Asdf">
+      <div>asdf</div>
+    </template>
+    <Asdf></Asdf>
+  </body>
+</nml>

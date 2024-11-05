@@ -55,23 +55,5 @@
     "prestart": "tree-sitter build --wasm",
     "start": "tree-sitter playground",
     "test": "node --test bindings/node/*_test.js"
-  },
-  "tree-sitter": [
-    {
-      "scope": "source.html",
-      "file-types": [
-        "html"
-      ],
-      "injection-regex": "html",
-      "highlights": [
-        "queries/highlights.scm"
-      ],
-      "injections": [
-        "queries/injections.scm"
-      ],
-      "external-files": [
-        "src/tag.h"
-      ]
-    }
-  ]
+  }
 }

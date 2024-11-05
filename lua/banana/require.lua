@@ -4,7 +4,7 @@ local M = {}
 
 local baseFolder = "banana"
 
----@type { [string]: [Banana.Nml.Parser, Banana.Ast] }
+---@type { [string]: [Banana.Nml.Parser, Banana.Ast, { [string]: Banana.Component} ] }
 local nmlAsts = {
 
 }
@@ -13,6 +13,16 @@ local nmlAsts = {
 local ncssAsts = {
 
 }
+
+---@param components Banana.Component[]
+---@return { [string]: Banana.Component }
+local function componentListToMap(components)
+    local ret = {}
+    for _, v in ipairs(components) do
+        ret[v.name] = v
+    end
+    return ret
+end
 
 ---@param filename string
 ---@return Banana.Ast, Banana.Ncss.RuleSet[], string[]
@@ -27,14 +37,14 @@ function M.nmlLoad(filename)
             "Could not generate parser for file '" .. filename .. "'")
         error("")
     end
-    local ast = parser:parse()
+    local ast, components = parser:parse()
     if ast == nil then
         log.throw(
             "Unable to parse file '" .. filename .. "'")
         error("")
     end
     require("banana.nml.cleanAst").cleanAst(ast)
-    nmlAsts[filename] = { parser, ast }
+    nmlAsts[filename] = { parser, ast, componentListToMap(components or {}) }
     return ast, parser.styleSets, parser.scripts
 end
 
@@ -47,7 +57,10 @@ function M.nmlLoadString(str)
             "Could not generate parser for string")
         error("")
     end
-    local ast = parser:parse()
+    local ast, components = parser:parse()
+    if components ~= nil and #components ~= 0 then
+        log.throw("Cannot have <template> tags in non-file code")
+    end
     if ast == nil then
         log.throw(
             "Unable to parse string ")

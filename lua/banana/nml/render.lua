@@ -1420,7 +1420,7 @@ function M.makeTag(name)
     local ok, mgr = pcall(require, "banana.nml.tags." .. name)
     if not ok then
         log.throw(
-            "Error while trying to load tag '" .. name .. "'" .. mgr)
+            "Error while trying to load tag '" .. name .. "': " .. mgr)
         error("")
     end
     return mgr

@@ -14,7 +14,7 @@ local tsInstall = false
 M.test = {
     grid = function ()
         if inst == nil then
-            inst = render.newInstance("gradient", "")
+            inst = render.newInstance("template", "")
             inst.DEBUG = true
             -- inst.DEBUG_showBuild = true
             inst.DEBUG_showPerf = true
