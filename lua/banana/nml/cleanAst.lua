@@ -1,8 +1,8 @@
 ---@module 'banana.utils.log'
 local log = require("banana.lazyRequire")("banana.utils.log")
 local M = {}
----@module 'banana.nml.render'
-local tags = require("banana.lazyRequire")("banana.nml.render")
+---@module 'banana.nml.tag'
+local tags = require("banana.lazyRequire")("banana.nml.tag")
 
 ---@param str string
 ---@param clearFirst boolean

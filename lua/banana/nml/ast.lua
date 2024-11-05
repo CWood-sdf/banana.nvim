@@ -37,8 +37,10 @@ M.padNames = { "left", "top", "right", "bottom" }
 ---@field relativeBoxId? number
 ---@field hidden boolean
 ---@field relativeBoxes? { box: Banana.Box, left: number, top: number, z: number}[]
----@field componentPath? string[]
+---@field componentPath string[]
 ---@field listCounter? number
+---@field fromFile string
+---@field componentCache? { [string]: Banana.Component }
 M.Ast = {
     nodes = {},
     tag = "",
@@ -54,17 +56,22 @@ M.Ast = {
 
 ---@param tag string
 ---@param parent Banana.Ast
+---@param actualTag Banana.TagInfo?
+---@param source string
 ---@return Banana.Ast
-function M.Ast:new(tag, parent)
+function M.Ast:new(tag, parent, source, actualTag)
+    actualTag = actualTag or require("banana.nml.tag").makeTag(tag)
     ---@type Banana.Ast
     local ast = {
+        componentPath = { source },
+        fromFile = source,
         hidden = false,
         boundBox = nil,
         precedences = {},
         nodes = {},
         tag = tag,
         _parent = parent,
-        actualTag = require("banana.nml.render").makeTag(tag),
+        actualTag = actualTag,
         attributes = {},
         instance = nil,
         padding = {
@@ -112,6 +119,29 @@ function M.Ast:new(tag, parent)
     return ast
 end
 
+---@param name string
+---@return Banana.Component?
+function M.Ast:findComponent(name)
+    if self:isNil() then
+        return nil
+    end
+    if self.componentCache ~= nil then
+        local v = self.componentCache[name]
+        if v ~= nil then
+            return v
+        end
+    end
+    for _, v in ipairs(self.componentPath) do
+        local req = require("banana.require").getComponentFrom(v, name)
+        if req ~= nil then
+            self.componentCache = self.componentCache or {}
+            self.componentCache[name] = req
+            return req
+        end
+    end
+    return nil
+end
+
 ---@return Banana.Ast
 function M.Ast:root()
     if self._parent:isNil() then
@@ -132,8 +162,8 @@ end
 
 ---@return boolean
 function M.Ast:_isComponent()
-    local c = self.tag:sub(1, 1)
-    return c == "_" or c:match("[A-Z]") ~= nil
+    local ret, _ = require("banana.nml.parser").isValidComponentName(self.tag)
+    return ret
 end
 
 ---@return Banana.Ncss.StyleValue[]?

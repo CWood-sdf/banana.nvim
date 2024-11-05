@@ -2,6 +2,8 @@
 local log = require("banana.lazyRequire")("banana.utils.log")
 ---@module "banana.nml.lexer"
 local lexer = require("banana.lazyRequire")("banana.nml.lexer")
+---@module 'banana.nml.tag'
+local _tag = require("banana.lazyRequire")("banana.nml.tag")
 local M = {}
 
 ---@enum Banana.Nml.TSTypes
@@ -47,6 +49,7 @@ local ast = require("banana.nml.ast")
 ---@field ncssInlineIndex number
 ---@field ncssBlockIndex number
 ---@field currentComponent Banana.Component?
+---@field source string
 local Parser = {
     lexer = nil,
     tree = nil,
@@ -73,7 +76,8 @@ end
 ---@param lex Banana.Lexer
 ---@param tree TSTree
 ---@param ncssParsers TSTree[]
-function Parser:new(lex, tree, ncssParsers)
+---@param source string
+function Parser:new(lex, tree, ncssParsers, source)
     ---@type Banana.Nml.Parser
     local parser = {
         lexer = lex,
@@ -83,6 +87,7 @@ function Parser:new(lex, tree, ncssParsers)
         ncssParsers = ncssParsers,
         ncssInlineIndex = 1,
         ncssBlockIndex = 1,
+        source = source
     }
     setmetatable(parser, { __index = Parser })
     return parser
@@ -203,7 +208,7 @@ function Parser:parseSelfClosingTag(tree, parent)
         error("")
     end
     local name = self.lexer:getStrFromRange({ nameEl:start() }, { nameEl:end_() })
-    local ret = ast.Ast:new(name, parent)
+    local ret = ast.Ast:new(name, parent, self.source)
 
     local attrs, decls = self:parseAttributes(child)
     ret.inlineStyle = decls
@@ -310,7 +315,11 @@ function Parser:parseTag(tree, parent, isSpecial)
                 "Parent is nil")
             error("")
         end
-        ret = ast.Ast:new(tagNameStr, parent)
+        local actualTag = nil
+        if M.isValidComponentName(tagNameStr) then
+            actualTag = _tag.newComponentTag(tagNameStr)
+        end
+        ret = ast.Ast:new(tagNameStr, parent, self.source, actualTag)
     end
 
     local attrs, decls = self:parseAttributes(firstChild)
@@ -472,6 +481,21 @@ function Parser:parseTag(tree, parent, isSpecial)
     end
     if isTemplate then
         components = components or {}
+        local allInline = true
+        local selfClosing = true
+        for v in self.currentComponent.ast:childIter() do
+            if v.actualTag.formatType ~= _tag.FormatType.Inline then
+                allInline = false
+            end
+            if v.tag == "slot" then
+                selfClosing = false
+            end
+        end
+        self.currentComponent.ast.actualTag.selfClosing = selfClosing
+        if allInline then
+            self.currentComponent.ast.actualTag.formatType = require(
+                "banan.nml.render").FormatType.Inline
+        end
         table.insert(components, 1, self.currentComponent)
         self.currentComponent = nil
         return nil
@@ -578,8 +602,10 @@ function M.getTree()
 end
 
 ---@param content string
+---@param source? string
 ---@return Banana.Nml.Parser
-function M.fromString(content)
+function M.fromString(content, source)
+    source = source or "@@string"
     require("banana").initTsParsers()
     local arr = nil
     local langTree = nil
@@ -617,7 +643,7 @@ function M.fromString(content)
 
     local lex = lexer.fromString(content)
 
-    local parser = Parser:new(lex, tree, ncssParsers)
+    local parser = Parser:new(lex, tree, ncssParsers, source)
     return parser
 end
 
@@ -630,7 +656,7 @@ function M.fromFile(path)
     end
     local content = file:read("*a")
     file:close()
-    return M.fromString(content)
+    return M.fromString(content, path)
 end
 
 return M

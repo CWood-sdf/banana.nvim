@@ -2,8 +2,8 @@
 local flame = require("banana.lazyRequire")("banana.utils.debug_flame")
 ---@module 'banana.utils.log'
 local log = require("banana.lazyRequire")("banana.utils.log")
----@module 'banana.nml.render'
-local t = require("banana.lazyRequire")("banana.nml.render")
+---@module 'banana.nml.tag'
+local t = require("banana.lazyRequire")("banana.nml.tag")
 ---@param str string
 ---@param other string
 ---@return boolean
@@ -50,7 +50,7 @@ local M = t.newTag(
     t.FormatType.Inline,
     true,
     renderer,
-    require("banana.nml.render").defaultInitials()
+    require("banana.nml.tag").defaultInitials()
 )
 
 return M

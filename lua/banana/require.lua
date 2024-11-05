@@ -24,6 +24,18 @@ local function componentListToMap(components)
     return ret
 end
 
+---comment
+---@param path string
+---@param name string
+---@return Banana.Component?
+function M.getComponentFrom(path, name)
+    if nmlAsts[path] == nil then
+        M.nmlLoad(path)
+    end
+    local map = nmlAsts[path][3]
+    return map[name]
+end
+
 ---@param filename string
 ---@return Banana.Ast, Banana.Ncss.RuleSet[], string[]
 function M.nmlLoad(filename)

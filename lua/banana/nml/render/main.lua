@@ -10,8 +10,8 @@ local flame = require("banana.lazyRequire")("banana.utils.debug_flame")
 ---@module 'banana.utils.debug'
 local dbg = require("banana.lazyRequire")("banana.utils.debug")
 
----@module 'banana.nml.render'
-local _render = require("banana.lazyRequire")("banana.nml.render")
+---@module 'banana.nml.tag'
+local _tag = require("banana.lazyRequire")("banana.nml.tag")
 
 ---@param ast Banana.Ast
 ---@param extraWidth number
@@ -21,11 +21,11 @@ local function isExpandable(ast, extraWidth)
         ast._parent:firstStyleValue("display") == "flex"
     if isFlexChild then
         return extraWidth > 0 and
-            (ast.actualTag.formatType == _render.FormatType.Block or ast.actualTag.formatType == _render.FormatType.BlockInline) and
+            (ast.actualTag.formatType == _tag.FormatType.Block or ast.actualTag.formatType == _tag.FormatType.BlockInline) and
             (ast:hasStyle("width") or ast:hasStyle("flex-basis"))
     end
 
-    return (ast.actualTag.formatType == _render.FormatType.Block or ast.actualTag.formatType == _render.FormatType.BlockInline
+    return (ast.actualTag.formatType == _tag.FormatType.Block or ast.actualTag.formatType == _tag.FormatType.BlockInline
         ) and extraWidth > 0
         or ast:hasStyle("width")
 end

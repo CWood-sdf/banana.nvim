@@ -15,6 +15,8 @@ local _ast = require("banana.lazyRequire")("banana.nml.ast")
 local b = require("banana.lazyRequire")("banana.box")
 ---@module 'ffi'
 local ffi = require("banana.lazyRequire")("ffi")
+---@module 'banana.nml.tag'
+local _tag = require("banana.lazyRequire")("banana.nml.tag")
 -- ---@module 'banana.nml.render.partialRendered'
 -- local p = require('banana.lazyRequire')('banana.nml.render.partialRendered')
 
@@ -27,16 +29,6 @@ local ffi = require("banana.lazyRequire")("ffi")
 ---@class (exact) Banana.Renderer.InitialProperties: Banana.Renderer.InheritedProperties
 ---@field flex_shrink number
 ---@field flex_wrap "nowrap"|"wrap"
-
-
----@enum Banana.Nml.FormatType
-M.FormatType = {
-    Inline = 1,
-    Block = 2,
-    -- InlineBlock = 3,
-    BlockInline = 4,
-    Script = 5,
-}
 
 ---@alias Banana.RenderRet Banana.Box
 
@@ -58,7 +50,7 @@ M.FormatType = {
 ---@field render Banana.Renderer
 local TagInfo = {
     name = "",
-    formatType = M.FormatType.Inline,
+    formatType = _tag.FormatType.Inline,
     selfClosing = false,
     render = function (_) return {} end,
 }
@@ -1305,7 +1297,7 @@ function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX
             hasElements = true
         else
             local tag = v.actualTag
-            if (tag.formatType == M.FormatType.Block or tag.formatType == M.FormatType.BlockInline) and hasElements then
+            if (tag.formatType == _tag.FormatType.Block or tag.formatType == _tag.FormatType.BlockInline) and hasElements then
                 break
             end
             v:_resolveUnits(width, height)
@@ -1338,7 +1330,7 @@ function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX
                 currentLine = overflow
             end
 
-            if tag.formatType == M.FormatType.Block or tag.formatType == M.FormatType.BlockInline then
+            if tag.formatType == _tag.FormatType.Block or tag.formatType == _tag.FormatType.BlockInline then
                 i = i + 1
                 break
             end
@@ -1355,75 +1347,6 @@ function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX
     return currentLine, i
 end
 
----@param name string
----@param inline Banana.Nml.FormatType
----@param selfClosing boolean
----@param renderer Banana.Renderer
----@param initialProps Banana.Renderer.InitialProperties
-function M.newTag(name, inline, selfClosing, renderer, initialProps)
-    ---@type Banana.TagInfo
-    local tag = {
-        name = name,
-        formatType = inline,
-        selfClosing = selfClosing,
-        render = renderer,
-        initialProps = initialProps,
-    }
-    setmetatable(tag, { __index = TagInfo })
-    return tag
-end
-
----@return Banana.Renderer.InitialProperties
-function M.defaultInitials()
-    ---@type Banana.Renderer.InitialProperties
-    local initialProps = {
-        flex_shrink = 1,
-        flex_wrap = "nowrap",
-        text_align = "left",
-        position = "static",
-    }
-    return initialProps
-end
-
----@param name string
----@return boolean
-function M.tagExists(name)
-    return pcall(require, "banana.nml.tags." .. name)
-end
-
----@param ast Banana.Ast|string
----@return string
-function M.firstChar(ast)
-    if type(ast) == "string" then
-        if string.len(ast) > 0 then
-            return string.sub(ast, 1, 1)
-        end
-        return ""
-    end
-    if ast.nodes[1] == nil then
-        return ""
-    end
-    ---@cast ast Banana.Ast
-    local i = 1
-    while M.firstChar(ast.nodes[i]) == "" do
-        i = i + 1
-        if i > #ast.nodes then
-            return ""
-        end
-    end
-    return M.firstChar(ast.nodes[i])
-end
-
----@return Banana.TagInfo
----@param name string
-function M.makeTag(name)
-    local ok, mgr = pcall(require, "banana.nml.tags." .. name)
-    if not ok then
-        log.throw(
-            "Error while trying to load tag '" .. name .. "': " .. mgr)
-        error("")
-    end
-    return mgr
-end
+M.TagInfo = TagInfo
 
 return M
