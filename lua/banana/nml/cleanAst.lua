@@ -23,13 +23,13 @@ local function formatInlineText(str, clearFirst, clearLast)
 end
 
 ---Reference for this function:
---https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_display/Block_formatting_context
+---https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_display/Block_formatting_context
 ---@param ast Banana.Ast
 function M.formatBlockContext(ast)
     local i = 1
     local inc = true
     local clearFirst = true
-    local skip = ast.tag == "pre"
+    local skip = ast.tag == "pre" or ast.tag == "slot"
     while i <= #ast.nodes do
         local node = ast.nodes[i]
         if type(node) == "string" then
@@ -47,6 +47,7 @@ function M.formatBlockContext(ast)
             if not skip then
                 node, clearFirst = formatInlineText(node, clearFirst, clearLast)
             else
+                -- split the node by newlines
                 local reps = vim.fn.split(node, "\n")
                 if #reps ~= 1 then
                     table.remove(ast.nodes, i)

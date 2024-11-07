@@ -38,6 +38,7 @@ local _tag = require("banana.lazyRequire")("banana.nml.tag")
 ---@field debug boolean
 ---@field useAllHeight boolean
 ---@field isRealRender boolean
+---@field componentStack Banana.Ast[]
 
 ---@alias Banana.Renderer fun(self: Banana.TagInfo, ast: Banana.Ast, parentHl: Banana.Highlight?, parentWidth: number, parentHeight: number, startX: number, startY: number, inherit: Banana.Renderer.InheritedProperties, extra: Banana.Renderer.ExtraInfo): Banana.RenderRet
 
@@ -1345,6 +1346,28 @@ function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX
     end
     flame.pop()
     return currentLine, i
+end
+
+---@param ast Banana.Ast
+---@param parentHl Banana.Highlight?
+---@param parentWidth number
+---@param parentHeight number
+---@param startX number
+---@param startY number
+---@param inherit Banana.Renderer.InheritedProperties
+---@param extra Banana.Renderer.ExtraInfo
+---@return Banana.Box
+function TagInfo:renderComponent(ast, parentHl, parentWidth, parentHeight,
+                                 startX, startY, inherit, extra)
+    ast:_tryMountComponent()
+    table.insert(extra.componentStack, ast)
+
+    local ret = ast.componentTree.actualTag:getRendered(ast.componentTree,
+        parentHl,
+        parentWidth,
+        parentHeight, startX, startY, inherit, extra)
+    table.remove(extra.componentStack, #extra.componentStack)
+    return ret:render()
 end
 
 M.TagInfo = TagInfo

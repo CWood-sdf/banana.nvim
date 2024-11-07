@@ -41,6 +41,7 @@ M.padNames = { "left", "top", "right", "bottom" }
 ---@field listCounter? number
 ---@field fromFile string
 ---@field componentCache? { [string]: Banana.Component }
+---@field componentTree? Banana.Ast
 M.Ast = {
     nodes = {},
     tag = "",
@@ -121,7 +122,7 @@ end
 
 ---@param name string
 ---@return Banana.Component?
-function M.Ast:findComponent(name)
+function M.Ast:_findComponent(name)
     if self:isNil() then
         return nil
     end
@@ -140,6 +141,49 @@ function M.Ast:findComponent(name)
         end
     end
     return nil
+end
+
+function M.Ast:_tryMountComponent()
+    if self.componentTree ~= nil then return end
+    self:_mountComponent()
+end
+
+function M.Ast:_mountComponent()
+    if not self:_isComponent() then
+        log.throw("Cannot mount tag '" ..
+            self.tag .. "' as a component because it is not a component")
+    end
+    if self.componentTree ~= nil then
+        log.throw("Component is already mounted")
+    end
+    local component = self:_findComponent(self.tag)
+    if component == nil then
+        log.throw("Could not find component '" .. self.tag .. "'")
+        error()
+    end
+    local inst = require("banana.instance").getInstance(self.instance)
+    if inst == nil then
+        log.throw("Could not find instance")
+        error()
+    end
+    inst:_loadStyleFor(component.styles, component.ast)
+    for _, v in ipairs(component.scripts) do
+        inst:_loadScriptFor(v, component.ast, {})
+    end
+    self.componentTree = component.ast
+end
+
+---@param name string?
+---@return Banana.Ast?
+function M.Ast:getSlot(name)
+    if name == nil then
+        return self:child(1)
+    end
+    for _, v in self:childIter() do
+        if v.attributes["slot"] == name then
+            return v
+        end
+    end
 end
 
 ---@return Banana.Ast
@@ -508,6 +552,12 @@ function M.Ast:_defaultStyles()
 end
 
 function M.Ast:_clearStyles()
+    if self:_isComponent() and self.componentTree == nil then
+        self:_tryMountComponent()
+    end
+    if self.componentTree ~= nil then
+        self.componentTree:_defaultStyles()
+    end
     self:_defaultStyles()
     for node in self:childIter() do
         node:_clearStyles()

@@ -37,7 +37,7 @@ end
 function M.newComponentTag(name)
     return M.newTag(name,
         M.FormatType.Block, false,
-        function () return b.Box:new() end,
+        r.TagInfo.renderComponent,
         M.defaultInitials())
 end
 

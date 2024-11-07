@@ -84,6 +84,7 @@ function Instance:_virtualRender(ast, width, height)
     local tag = ast.actualTag
     ---@type Banana.Renderer.ExtraInfo
     local extra = {
+        componentStack = {},
         useAllHeight = false,
         trace = require("banana.box").Box:new(),
         debug = self.DEBUG_showBuild,
@@ -194,8 +195,8 @@ function Instance:new()
                     nilAst["isNil"] = function () return true end
                 else
                     nilAst[k] = function ()
-                        log.warn("Calling '" .. k .. "' on the nil ast")
-                        vim.notify("Calling '" .. k .. "' on the nil ast\n")
+                        log.throw("Calling '" .. k .. "' on the nil ast")
+                        -- vim.notify("Calling '" .. k .. "' on the nil ast\n")
                     end
                 end
             else
@@ -535,6 +536,7 @@ function Instance:_createWinAndBuf()
             text_align = "left",
             min_size = false,
         }, {
+            componentStack = {},
             useAllHeight = false,
             trace = require("banana.box").Box:new(),
             debug = self.DEBUG_showBuild,
@@ -1034,7 +1036,7 @@ function Instance:loadNmlTo(file, ast, remove, preserve)
     end
     ast:appendNode(content)
     -- save styles for scoped styles
-    self.foreignStyles[content] = rules
+    self:_loadStyleFor(rules, content)
     ---@type { [string]: string }
     local params = {}
     if sides[2] ~= nil then
@@ -1044,14 +1046,27 @@ function Instance:loadNmlTo(file, ast, remove, preserve)
         end
     end
     for _, script in ipairs(scripts) do
-        table.insert(self.scripts, function (opts)
-            opts = opts or {}
-            opts.params = params
-            opts.selfNode = content
-            self:_runScript(script, opts)
-        end)
+        self:_loadScriptFor(script, content, params)
     end
     self:_requestRender()
+end
+
+---@param rules Banana.Ncss.RuleSet[]
+---@param ast Banana.Ast
+function Instance:_loadStyleFor(rules, ast)
+    self.foreignStyles[ast] = rules
+end
+
+---@param script string the source code
+---@param ast Banana.Ast the target
+---@param params table
+function Instance:_loadScriptFor(script, ast, params)
+    table.insert(self.scripts, function (opts)
+        opts = opts or {}
+        opts.params = params
+        opts.selfNode = ast
+        self:_runScript(script, opts)
+    end)
 end
 
 ---@param sel string
@@ -1132,7 +1147,7 @@ end
 ---@param name string
 ---@return Banana.Ast
 function Instance:createElement(name)
-    local ast = require("banana.nml.ast").Ast:new(name, M.getNilAst())
+    local ast = require("banana.nml.ast").Ast:new(name, M.getNilAst(), "@@nilAst")
     self:_applyId(ast)
     return ast
 end

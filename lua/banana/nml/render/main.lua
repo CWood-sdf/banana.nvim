@@ -17,7 +17,7 @@ local _tag = require("banana.lazyRequire")("banana.nml.tag")
 ---@param extraWidth number
 ---@return boolean
 local function isExpandable(ast, extraWidth)
-    local isFlexChild = ast._parent ~= nil and
+    local isFlexChild = not ast._parent:isNil() and
         ast._parent:firstStyleValue("display") == "flex"
     if isFlexChild then
         return extraWidth > 0 and

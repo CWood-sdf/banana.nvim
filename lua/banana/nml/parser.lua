@@ -498,7 +498,7 @@ function Parser:parseTag(tree, parent, isSpecial)
         end
         table.insert(components, 1, self.currentComponent)
         self.currentComponent = nil
-        return nil
+        return nil, components
     end
 
     return ret, components
