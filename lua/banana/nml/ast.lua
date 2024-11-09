@@ -1,3 +1,5 @@
+---@module 'banana.nml.tag'
+local _tag = require("banana.lazyRequire")("banana.nml.tag")
 ---@module 'banana.utils.debug_flame'
 local flame = require("banana.lazyRequire")("banana.utils.debug_flame")
 ---@module 'banana.utils.log'
@@ -57,14 +59,23 @@ M.Ast = {
 
 ---@param tag string
 ---@param parent Banana.Ast
----@param actualTag Banana.TagInfo?
 ---@param source string
 ---@return Banana.Ast
-function M.Ast:new(tag, parent, source, actualTag)
+function M.Ast:new(tag, parent, source)
+    local actualTag = nil
+    if require("banana.nml.parser").isValidComponentName(tag) then
+        actualTag = _tag.newComponentTag(tag)
+    end
     actualTag = actualTag or require("banana.nml.tag").makeTag(tag)
+    local path = nil
+    if source:sub(1, 1) ~= "@" then
+        path = { source }
+    else
+        path = {}
+    end
     ---@type Banana.Ast
     local ast = {
-        componentPath = { source },
+        componentPath = path,
         fromFile = source,
         hidden = false,
         boundBox = nil,

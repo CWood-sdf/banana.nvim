@@ -1159,7 +1159,8 @@ end
 ---@param name string
 ---@return Banana.Ast
 function Instance:createElement(name)
-    local ast = require("banana.nml.ast").Ast:new(name, M.getNilAst(), "@@nilAst")
+    local ast = require("banana.nml.ast").Ast:new(name, M.getNilAst(),
+        "@@anonElement")
     self:_applyId(ast)
     return ast
 end

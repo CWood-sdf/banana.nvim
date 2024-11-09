@@ -318,11 +318,7 @@ function Parser:parseTag(tree, parent, isSpecial)
                 "Parent is nil")
             error("")
         end
-        local actualTag = nil
-        if M.isValidComponentName(tagNameStr) then
-            actualTag = _tag.newComponentTag(tagNameStr)
-        end
-        ret = ast.Ast:new(tagNameStr, parent, self.source, actualTag)
+        ret = ast.Ast:new(tagNameStr, parent, self.source)
     end
 
     local attrs, decls = self:parseAttributes(firstChild)

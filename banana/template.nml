@@ -25,5 +25,6 @@
     <Ooga></Ooga>
     <Asdf><div>asdfsdf</div></Asdf>
     <div>outside</div>
+    <script src="banana_test.template"></script>
   </body>
 </nml>
