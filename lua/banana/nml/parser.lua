@@ -6,6 +6,8 @@ local lexer = require("banana.lazyRequire")("banana.nml.lexer")
 local _tag = require("banana.lazyRequire")("banana.nml.tag")
 local M = {}
 
+local parsingStack = {}
+
 ---@enum Banana.Nml.TSTypes
 M.ts_types = {
     style_end_tag = "style_end_tag",
@@ -89,6 +91,7 @@ function Parser:new(lex, tree, ncssParsers, source)
         ncssBlockIndex = 1,
         source = source
     }
+
     setmetatable(parser, { __index = Parser })
     return parser
 end
@@ -583,9 +586,20 @@ function Parser:parse()
             "Nil ast is not defined")
         error("")
     end
+    if vim.tbl_contains(parsingStack, self.source) then
+        log.throw(
+            "Cyclic parsing (probably from recursive use-imports-from) in file '" ..
+            self.source .. "'")
+    end
+    table.insert(parsingStack, self.source)
     ---@diagnostic disable-next-line: cast-type-mismatch
     ---@cast nilAst Banana.Ast
-    return self:parseElement(child, nilAst)
+    local ok, v, v2 = pcall(self.parseElement, self, child, nilAst)
+    table.remove(parsingStack, #parsingStack)
+    if not ok then
+        error(v)
+    end
+    return v, v2
 end
 
 function Parser:reset()
