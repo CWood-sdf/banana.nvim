@@ -151,7 +151,7 @@ end
 function TagInfo:renderGridBlock(ast, parentHl, parentWidth, parentHeight, startX,
                                  startY, inherit, extra)
     local gr = require("banana.nml.render.grid")
-    return gr(ast, parentHl, parentWidth, parentHeight, startX,
+    return gr.render(ast, parentHl, parentWidth, parentHeight, startX,
         startY, inherit, extra)
 end
 
