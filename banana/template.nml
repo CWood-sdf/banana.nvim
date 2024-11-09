@@ -12,7 +12,14 @@
       </style>
       <div>asdf</div>
       <slot>nothing found :(( </slot>
-      <script></script>
+      <script>
+        local tmp = document:getScriptParams().selfNode
+        local el = document:createElement("span")
+        el:setStyle("hl-bg: blue;")
+        el:appendTextNode("ur mom")
+        tmp:appendTextNode("asdf    ")
+        tmp:appendNode(el)
+      </script>
     </template>
     <Asdf><div>asdfsdf</div></Asdf>
     <div>outside</div>

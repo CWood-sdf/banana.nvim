@@ -66,6 +66,7 @@ local instances = {}
 ---@field private DEBUG_bufNr? number
 ---@field private DEBUG_winWidth? number
 ---@field DEBUG_showBuild boolean
+---@field private currentParams Banana.Instance.RouteParams?
 local Instance = {}
 
 ---@class (exact) Banana.Word
@@ -499,6 +500,11 @@ function Instance:_applyStyleDeclarations(ast, rules)
     end
 end
 
+---@return Banana.Instance.RouteParams?
+function Instance:getScriptParams()
+    return self.currentParams
+end
+
 ---@param script string|fun(opts: Banana.Instance.RouteParams?)
 ---@param opts Banana.Instance.RouteParams?
 function Instance:_runScript(script, opts)
@@ -521,7 +527,13 @@ function Instance:_runScript(script, opts)
             "Could not convert script tag to runnable lua function")
         error("")
     end
-    f(opts)
+    local oldParams = self.currentParams
+    self.currentParams = opts
+    local ok, e = pcall(f, opts)
+    self.currentParams = oldParams
+    if not ok then
+        error(e)
+    end
 end
 
 ---@return number, number

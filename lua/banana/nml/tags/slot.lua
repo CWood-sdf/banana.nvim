@@ -10,7 +10,7 @@ local function renderer(self, ast, parentHl, parentWidth, parentHeight, startX,
                         startY, inherit, extra)
     flame.new("tag:slot")
     local lastEl = extra.componentStack[#extra.componentStack]
-    local renderable = lastEl:getSlot(ast.attributes["name"])
+    local renderable = lastEl:_getSlot(ast.attributes["name"])
     local b = require("banana.box")
     if renderable:isNil() then
         local ret = b.Box:new()

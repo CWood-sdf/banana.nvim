@@ -176,7 +176,7 @@ end
 
 ---@param name string?
 ---@return Banana.Ast
-function M.Ast:getSlot(name)
+function M.Ast:_getSlot(name)
     if name == nil then
         return self:child(1)
     end
@@ -188,6 +188,7 @@ function M.Ast:getSlot(name)
     return require("banana.instance").getNilAst()
 end
 
+---Returns the root node of this section of the dom tree
 ---@return Banana.Ast
 function M.Ast:root()
     if self._parent:isNil() then
@@ -196,8 +197,9 @@ function M.Ast:root()
     return self:parent():root()
 end
 
----@return Banana.Ncss.StyleValue?
+---Returns the first style value for the given {style}
 ---@param style string
+---@return Banana.Ncss.StyleValue?
 function M.Ast:firstStyle(style)
     local s = self.style[style]
     if s == nil then
@@ -272,6 +274,7 @@ function M.Ast:firstStyleComputedValue(style, default)
     return val.value.computed
 end
 
+---Returns true if the style {style} is in the node's style list
 ---@param style string
 ---@return boolean
 function M.Ast:hasStyle(style)
@@ -578,6 +581,7 @@ local function applyAstMeta(ast)
     end
 end
 
+---Duplicates this node and all its children
 ---@return Banana.Ast
 function M.Ast:clone()
     local newAst = {}
@@ -613,13 +617,11 @@ function M.Ast:clone()
     return newAst
 end
 
+---Sets the attribute {name} to {value}
 ---@param name string
 ---@param value string
 function M.Ast:setAttribute(name, value)
     if name == "style" then
-        vim.notify(
-            "Setting the style property using setAttribute does nothing, please use setStyleSlow. Banana will call setStyleSlow for you right now, but it should be explicit",
-            vim.log.levels.WARN)
         self:setStyle(value)
         return
     end
@@ -627,6 +629,8 @@ function M.Ast:setAttribute(name, value)
     self:_requestRender()
 end
 
+---Sets the elements custom style rules to {value} 
+---(overrides any styles set with style="")
 ---@param value string
 function M.Ast:setStyle(value)
     local parsed = require("banana.ncss.parser").parseText(value)
@@ -634,6 +638,7 @@ function M.Ast:setStyle(value)
     self:_requestRender()
 end
 
+---Sets the style declaration for {name} (eg hl-bg) to be {value}
 ---@param name string
 ---@param value string
 function M.Ast:setStyleValue(name, value)
@@ -653,6 +658,7 @@ function M.Ast:setStyleValue(name, value)
     self:_requestRender()
 end
 
+---Returns true if the node has class {c}
 ---@param c string
 ---@return boolean
 function M.Ast:hasClass(c)
@@ -671,6 +677,7 @@ function M.Ast:hasClass(c)
     return self.classes[c]
 end
 
+---Removes the class {c} from the node's class list
 ---@param c string
 function M.Ast:removeClass(c)
     if self.classes == nil then
@@ -682,6 +689,7 @@ function M.Ast:removeClass(c)
     end
 end
 
+---Adds the class {c} to the node's class list
 ---@param c string
 function M.Ast:addClass(c)
     if self.classes == nil then
@@ -693,6 +701,7 @@ function M.Ast:addClass(c)
     end
 end
 
+---Toggles the class {c} to the node's class list
 ---@param c string
 function M.Ast:toggleClass(c)
     self.classes = self.classes or {}
@@ -770,10 +779,13 @@ function M.calcUnitInPlace(unit, parentWidth, extras)
     return unit.computed
 end
 
+---Returns the width of the nodes bounding box (content+padding)
+---@return number
 function M.Ast:getWidth()
     return self.boundBox.rightX - self.boundBox.leftX
 end
 
+---Returns the height of the nodes bounding box (content+padding)
 function M.Ast:getHeight()
     return self.boundBox.bottomY - self.boundBox.topY
 end
@@ -846,8 +858,10 @@ function M.Ast:_applyInlineStyleDeclarations()
     )
 end
 
+---Returns true if the node is a nil node
 ---@return boolean
 function M.Ast:isNil()
+    -- the return true is in instance.lua when the nil ast is created
     return false
 end
 
@@ -933,6 +947,7 @@ function M.Ast:_applyStyleDeclarations(declarations, basePrec)
     end
 end
 
+---removes the ast node from the dom
 function M.Ast:remove()
     if self._parent == require("banana.instance").getNilAst() then
         log.throw(
@@ -950,18 +965,21 @@ function M.Ast:remove()
     self:_requestRender()
 end
 
+---Returns the attribute value for {name}
 ---@param name string
 ---@return string?
 function M.Ast:getAttribute(name)
     return self.attributes[name]
 end
 
+---Adds {text} to the child list of the node 
 ---@param text string
 function M.Ast:appendTextNode(text)
     table.insert(self.nodes, text)
     self:_requestRender()
 end
 
+---Adds {node} as a child to this node
 ---@param node Banana.Ast
 function M.Ast:appendNode(node)
     node._parent = self
@@ -972,6 +990,7 @@ function M.Ast:appendNode(node)
     self:_requestRender()
 end
 
+---Returns true if the cursor is on the same line as this node
 ---@return boolean
 function M.Ast:isLineHovering()
     local line = vim.fn.line(".")
@@ -981,6 +1000,7 @@ function M.Ast:isLineHovering()
     return ret
 end
 
+---Returns true if the cursor is over this ast
 ---@return boolean
 function M.Ast:isHovering()
     local line = vim.fn.line(".")
@@ -1063,6 +1083,7 @@ function M.Ast:_increaseWidthBoundBy(delta)
     self.boundBox.rightX = self.boundBox.rightX + delta
 end
 
+---Removes all children from this node (including text)
 function M.Ast:removeChildren()
     for _, v in ipairs(self.nodes) do
         if type(v) ~= "string" then
@@ -1073,6 +1094,7 @@ function M.Ast:removeChildren()
     self:_requestRender()
 end
 
+---Returns all dom node children of this element (not text nodes)
 ---@return Banana.Ast[]
 function M.Ast:children()
     ---@type Banana.Ast[]
@@ -1085,6 +1107,7 @@ function M.Ast:children()
     return ret
 end
 
+---Returns an iter that allows iteration over all children with indexing
 ---@return fun(): number?, Banana.Ast?
 function M.Ast:childIterWithI()
     local i = 0
@@ -1103,6 +1126,7 @@ function M.Ast:childIterWithI()
     end
 end
 
+---Returns an iterator over all the children of this node
 ---@return fun(): Banana.Ast?
 function M.Ast:childIter()
     local i = 0
@@ -1122,6 +1146,7 @@ function M.Ast:childIter()
     end
 end
 
+---Returns the nth child of this node
 ---@return Banana.Ast
 function M.Ast:child(i)
     for _, v in ipairs(self.nodes) do
@@ -1136,6 +1161,7 @@ function M.Ast:child(i)
     return require("banana.instance").getNilAst()
 end
 
+---Returns the printed text value of this element (does not include newlines)
 ---@return string
 function M.Ast:getTextContent()
     local ret = ""
@@ -1149,6 +1175,7 @@ function M.Ast:getTextContent()
     return ret
 end
 
+---Sets the text content of this element
 ---@param str string
 function M.Ast:setTextContent(str)
     if type(str) ~= "string" then
@@ -1180,11 +1207,13 @@ function M.Ast:_parseRemapMod(mod)
         .. mod .. "' even though it has not been defined")
 end
 
+---Returns the parent node of this node
 ---@return Banana.Ast
 function M.Ast:parent()
     return self._parent
 end
 
+---Returns true when this node is not rendered
 ---@return boolean
 function M.Ast:isHidden()
     if self.hidden then return true end
@@ -1192,6 +1221,7 @@ function M.Ast:isHidden()
     return self._parent:isHidden()
 end
 
+---Attaches the given remap to the ast
 ---@param mode string
 ---@param lhs string
 ---@param rhs string|fun()
