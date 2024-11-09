@@ -5,11 +5,16 @@
   </head>
   <body>
     <template name="Asdf">
+      <style>
+        template {
+          hl-bg: red;
+        }
+      </style>
       <div>asdf</div>
-      <slot />
+      <slot>nothing found :(( </slot>
+      <script></script>
     </template>
-    <Asdf>
-      <span>asdfasdlkfasdf </span>
-    </Asdf>
+    <Asdf><div>asdfsdf</div></Asdf>
+    <div>outside</div>
   </body>
 </nml>

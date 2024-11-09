@@ -31,6 +31,7 @@ module.exports = grammar({
                 "ul",
                 "template",
                 "li",
+                "slot",
                 /h[1-6]/,
                 /(\w+-)+\w+/,
                 /[A-Z_][\w+\-_\/]+/,
@@ -42,7 +43,7 @@ module.exports = grammar({
         erroneous_end_tag_name: (_) => /[^>]+/,
         comment: (_) =>
             seq("<!--", repeat(choice(/[^-]/, /\-[^-]/, /--[^>]/)), "-->"),
-        self_closing_tags: (_) => choice("meta", "br", "hr", "bound", "slot"),
+        self_closing_tags: (_) => choice("meta", "br", "hr", "bound"),
 
         document: ($) => repeat($._node),
 

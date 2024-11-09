@@ -161,20 +161,21 @@ function M.Ast:_mountComponent()
         log.throw("Could not find component '" .. self.tag .. "'")
         error()
     end
+    local ast = component.ast:clone()
     local inst = require("banana.instance").getInstance(self.instance)
     if inst == nil then
         log.throw("Could not find instance")
         error()
     end
-    inst:_loadStyleFor(component.styles, component.ast)
+    inst:_loadStyleFor(component.styles, ast)
     for _, v in ipairs(component.scripts) do
-        inst:_loadScriptFor(v, component.ast, {})
+        inst:_loadScriptFor(v, ast, {})
     end
-    self.componentTree = component.ast
+    self.componentTree = ast
 end
 
 ---@param name string?
----@return Banana.Ast?
+---@return Banana.Ast
 function M.Ast:getSlot(name)
     if name == nil then
         return self:child(1)
@@ -184,6 +185,7 @@ function M.Ast:getSlot(name)
             return v
         end
     end
+    return require("banana.instance").getNilAst()
 end
 
 ---@return Banana.Ast

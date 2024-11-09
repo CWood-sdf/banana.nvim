@@ -106,4 +106,4 @@ vim.cmd("TSInstallSync! ncss")
 
 vim.cmd("so build.lua")
 
-require("banana.nml.render").getGridSo()
+require("banana.nml.render.grid").getGridSo()

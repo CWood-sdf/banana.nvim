@@ -61,6 +61,10 @@
           "value": "li"
         },
         {
+          "type": "STRING",
+          "value": "slot"
+        },
+        {
           "type": "PATTERN",
           "value": "h[1-6]"
         },
@@ -145,10 +149,6 @@
         {
           "type": "STRING",
           "value": "bound"
-        },
-        {
-          "type": "STRING",
-          "value": "slot"
         }
       ]
     },
