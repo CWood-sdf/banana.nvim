@@ -45,17 +45,18 @@ function M.nmlLoad(filename)
     end
     local parser = require("banana.nml.parser").fromFile(filename)
     if parser == nil then
-        log.throw(
-            "Could not generate parser for file '" .. filename .. "'")
+        log.throw("Could not generate parser for file '" .. filename .. "'")
         error("")
     end
     local ast, components = parser:parse()
     if ast == nil then
-        log.throw(
-            "Unable to parse file '" .. filename .. "'")
+        log.throw("Unable to parse file '" .. filename .. "'")
         error("")
     end
     require("banana.nml.cleanAst").cleanAst(ast)
+    for _, v in ipairs(components or {}) do
+        require("banana.nml.cleanAst").cleanAst(v.ast)
+    end
     nmlAsts[filename] = { parser, ast, componentListToMap(components or {}) }
     return ast, parser.styleSets, parser.scripts
 end
@@ -65,8 +66,7 @@ end
 function M.nmlLoadString(str)
     local parser = require("banana.nml.parser").fromString(str)
     if parser == nil then
-        log.throw(
-            "Could not generate parser for string")
+        log.throw("Could not generate parser for string")
         error("")
     end
     local ast, components = parser:parse()
@@ -74,11 +74,13 @@ function M.nmlLoadString(str)
         log.throw("Cannot have <template> tags in non-file code")
     end
     if ast == nil then
-        log.throw(
-            "Unable to parse string ")
+        log.throw("Unable to parse string ")
         error("")
     end
     require("banana.nml.cleanAst").cleanAst(ast)
+    for _, v in ipairs(components or {}) do
+        require("banana.nml.cleanAst").cleanAst(v.ast)
+    end
     return ast, parser.styleSets, parser.scripts
 end
 
@@ -140,9 +142,9 @@ local function getPathFor(basePath, paths, ft, i)
 end
 
 ---@param file string
----@param ft string
----@return Banana.Ast, Banana.Ncss.RuleSet[], string[]
-local function basicRequire(file, ft)
+---@param ft "nml"|"ncss"
+---@return string?
+function M.getPathForRequire(file, ft)
     local path = {}
     for _, v in ipairs(vim.split(file, "/")) do
         if #v ~= 0 then
@@ -155,10 +157,21 @@ local function basicRequire(file, ft)
     for _, v in ipairs(vim.api.nvim_list_runtime_paths()) do
         local fname = getPathFor(v .. "/" .. baseFolder, path, ft)
         if fname ~= nil then
-            return M.nmlLoad(fname)
+            return fname
         end
     end
-    error("Could not find nml file '" .. file .. "'")
+end
+
+---@param file string
+---@param ft string
+---@return Banana.Ast, Banana.Ncss.RuleSet[], string[]
+local function basicRequire(file, ft)
+    local path = M.getPathForRequire(file, ft)
+    if path == nil then
+        log.throw("Could not find nml file '" .. file .. "'")
+        error()
+    end
+    return M.nmlLoad(path)
 end
 ---@param file string
 ---@return Banana.Ast, Banana.Ncss.RuleSet[], string[]

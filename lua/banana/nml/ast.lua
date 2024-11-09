@@ -123,9 +123,6 @@ end
 ---@param name string
 ---@return Banana.Component?
 function M.Ast:_findComponent(name)
-    if self:isNil() then
-        return nil
-    end
     if self.componentCache ~= nil then
         local v = self.componentCache[name]
         if v ~= nil then
@@ -140,7 +137,8 @@ function M.Ast:_findComponent(name)
             return req
         end
     end
-    return nil
+    if self._parent:isNil() then return nil end
+    return self._parent:_findComponent(name)
 end
 
 function M.Ast:_tryMountComponent()
@@ -629,7 +627,7 @@ function M.Ast:setAttribute(name, value)
     self:_requestRender()
 end
 
----Sets the elements custom style rules to {value} 
+---Sets the elements custom style rules to {value}
 ---(overrides any styles set with style="")
 ---@param value string
 function M.Ast:setStyle(value)
@@ -972,7 +970,7 @@ function M.Ast:getAttribute(name)
     return self.attributes[name]
 end
 
----Adds {text} to the child list of the node 
+---Adds {text} to the child list of the node
 ---@param text string
 function M.Ast:appendTextNode(text)
     table.insert(self.nodes, text)

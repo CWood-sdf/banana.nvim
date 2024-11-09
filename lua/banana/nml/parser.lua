@@ -348,7 +348,9 @@ function Parser:parseTag(tree, parent, isSpecial)
             root = parent:root()
         end
         root.componentPath = root.componentPath or nil
-        table.insert(root.componentPath, attrs["import"])
+        table.insert(root.componentPath,
+            require("banana.require").getPathForRequire(attrs["import"], "nml"))
+        return nil, components
     elseif attrs["use-imports-from"] ~= nil and isTemplate then
         if parent == nil then
             log.throw(
@@ -365,9 +367,10 @@ function Parser:parseTag(tree, parent, isSpecial)
         root.componentPath = root.componentPath or nil
         local componentAst = require("banana.require").nmlRequire(attrs
             ["use-imports-from"])
-        for _, v in ipairs(componentAst or {}) do
+        for _, v in ipairs(componentAst.componentPath or {}) do
             table.insert(root.componentPath, v)
         end
+        return nil, components
     elseif isTemplate then
         if attrs["name"] == nil then
             log.throw("Component must have a filled out name property")

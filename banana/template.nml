@@ -4,6 +4,7 @@
     <title>template</title>
   </head>
   <body>
+    <template use-imports-from="barrel"></template>
     <template name="Asdf">
       <style>
         template {
@@ -21,6 +22,7 @@
         tmp:appendNode(el)
       </script>
     </template>
+    <Ooga></Ooga>
     <Asdf><div>asdfsdf</div></Asdf>
     <div>outside</div>
   </body>
