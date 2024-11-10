@@ -7,6 +7,29 @@ local function monthName(month)
     return vim.fn.strftime("%B", timestampFor(2020, month))
 end
 
+---@param month number
+---@param day number
+---@param year number
+---@return number, number
+local function getGridPlacement(month, day, year)
+    local timestamp = vim.fn.strptime("%Y %m %d",
+        year .. " " .. month .. " " .. day)
+    local dow = vim.fn.strftime("%a", timestamp)
+    local days = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" }
+    for i, v in ipairs(days) do
+        if dow == v then
+            local row = day + 6 - i
+            row = (row - row % 7) / 7 + 1
+            return row, i
+        end
+    end
+    return 0, 0
+end
+
+---@param document Banana.Instance
+---@param cont Banana.Ast
+---@param month number
+---@param year number
 local function fillWithDates(document, cont, month, year)
     local timestamp = vim.fn.strptime("%Y %m %d",
         year .. " " .. month .. " 1") + 12 * 3600
@@ -16,6 +39,8 @@ local function fillWithDates(document, cont, month, year)
         newDay:setAttribute("day", day .. "")
         newDay:setAttribute("month", month .. "")
         newDay:setAttribute("year", year .. "")
+        local row, col = getGridPlacement(month, day, year)
+        newDay:setStyle("grid-row: " .. row .. "; grid-column: " .. col .. ";")
         cont:appendNode(newDay)
 
         day = day + 1

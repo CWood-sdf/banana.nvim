@@ -1211,18 +1211,6 @@ function M.Ast:child(i)
     return require("banana.instance").getNilAst()
 end
 
----Returns the root node of a component (ie the one that the user put in)
----@return Banana.Ast
-function M.Ast:getComponentRoot()
-    if self.componentParent ~= nil then
-        return self.componentParent
-    end
-    if self._parent:isNil() then
-        return require("banana.instance").getNilAst()
-    end
-    return self._parent:getComponentRoot()
-end
-
 ---returns what the attribute substitution (eg %attr in nml) would be for %{name}
 ---@param name string
 ---@return string?
