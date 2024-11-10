@@ -67,7 +67,7 @@ local unpack = unpack or table.unpack
 ---@diagnostic disable-next-line: inject-field
 log.new = function (config, standalone)
     if require("banana.utils.debug").isdev() then
-        default_config.level = "trace"
+        -- default_config.level = "trace"
     end
 
     config = vim.tbl_deep_extend("force", default_config, config)
@@ -115,7 +115,7 @@ log.new = function (config, standalone)
 
     local log_at_level = function (level, level_config, message_maker, ...)
         -- Return early if we're below the config.level
-        if level < levels[config.level] then
+        if level < levels[config.level] or true then
             return
         end
         flame.new("log", true)

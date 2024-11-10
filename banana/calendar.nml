@@ -1,0 +1,53 @@
+<nml>
+  <head>
+    <template name="Date">
+      <style></style>
+      <div style="hl-bg: blue; width: 100%; aspect-ratio: 1" id="daycontainer">
+        <div style="text-align: right; padding: 2ch 1ch">%day</div>
+      </div>
+      <script src="banana_test.calendartest"></script>
+    </template>
+    <style>
+      nml {
+        width: 50%;
+      }
+      .calendar {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        row-gap: 1ch;
+        column-gap: 1ch;
+      }
+      .calendarHeader {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        grid-template-rows: 1ch;
+        column-gap: 1ch;
+        margin: 0ch 1ch;
+      }
+      .calendarHeader > div {
+        text-align: center;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="calendarContainer" style="width: 90%">
+      <div>
+        <span id="month"></span>
+        <span sp=" ">%sp</span>
+        <span id="year"></span>
+      </div>
+      <div class="calendarHeader">
+        <div>Sun</div>
+        <div>Mon</div>
+        <div>Tue</div>
+        <div>Wed</div>
+        <div>Thu</div>
+        <div>Fri</div>
+        <div>Sat</div>
+      </div>
+      <div class="calendar"></div>
+    </div>
+    <script src="banana_test.calendar"></script>
+  </body>
+</nml>

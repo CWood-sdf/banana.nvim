@@ -342,6 +342,8 @@ function M.render(ast, parentHl, parentWidth, parentHeight, startX,
         local col = cols[1].value
         ---@cast row number
         ---@cast col number
+        row = math.max(row, 1)
+        col = math.max(col, 1)
 
         local endRow = row + 1
         local endCol = col + 1
@@ -626,11 +628,11 @@ function M.render(ast, parentHl, parentWidth, parentHeight, startX,
         actualHeight = actualHeight + rowGap * (rowSpan - 1)
         actualWidth = actualWidth + columnGap * (colSpan - 1)
         node:_resolveUnits(actualWidth, actualHeight, {})
-        flame.new("getRendered")
+        -- flame.new("getRendered")
         local rendered = node.actualTag:getRendered(node, hl, actualWidth,
             actualHeight, x, startY,
             inherit, extra)
-        flame.pop()
+        -- flame.pop()
 
         ---@type Banana.Renderer.GridRenderItem
         local renderItem = {

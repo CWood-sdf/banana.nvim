@@ -330,7 +330,11 @@ function Parser:parseTag(tree, parent, isSpecial)
     if attrs["src"] ~= nil and isScript then
         local req = attrs["src"]
         scriptStr = "@" .. req
-        table.insert(self.scripts, scriptStr)
+        local tbl = self.scripts
+        if self.currentComponent ~= nil then
+            tbl = self.currentComponent.scripts
+        end
+        table.insert(tbl, scriptStr)
     end
 
     if attrs["import"] ~= nil and isTemplate then

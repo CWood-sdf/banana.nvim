@@ -34,7 +34,7 @@ M.padNames = { "left", "top", "right", "bottom" }
 ---@field precedences { [string]: number }
 ---@field instance number?
 ---@field _parent Banana.Ast
----@field inlineStyle? Banana.Ncss.StyleDeclaration[]
+---@field inlineStyle Banana.Ncss.StyleDeclaration[]
 ---@field absoluteAsts? Banana.Ast[]
 ---@field relativeBoxId? number
 ---@field hidden boolean
@@ -44,11 +44,12 @@ M.padNames = { "left", "top", "right", "bottom" }
 ---@field fromFile string
 ---@field componentCache? { [string]: Banana.Component }
 ---@field componentTree? Banana.Ast
+---@field componentParent? Banana.Ast
 M.Ast = {
     nodes = {},
     tag = "",
     attributes = {},
-    inlineStyle = nil,
+    inlineStyle = {},
     padding = {
     },
     margin = {
@@ -75,6 +76,7 @@ function M.Ast:new(tag, parent, source)
     end
     ---@type Banana.Ast
     local ast = {
+        inlineStyle = {},
         componentPath = path,
         fromFile = source,
         hidden = false,
@@ -171,6 +173,7 @@ function M.Ast:_mountComponent()
         error()
     end
     local ast = component.ast:clone()
+    ast.componentParent = self
     local inst = require("banana.instance").getInstance(self.instance)
     if inst == nil then
         log.throw("Could not find instance")
@@ -500,7 +503,7 @@ end
 
 ---@param styleTp string
 ---@return string
-function M.Ast:_getNextListItem(styleTp, extra)
+function M.Ast:_getNextListItem(styleTp)
     if self.tag == "ol" and self.listCounter == nil then
         self.listCounter = 1
     end
@@ -847,6 +850,34 @@ function M.Ast:_resolveUnits(parentWidth, parentHeight, extras)
     self:_computeUnitFor("list-base-width", parentWidth, extras)
     self:_computeUnitFor("width", parentWidth, extras)
     self:_computeUnitFor("height", parentHeight, extras)
+    if self.style.width == nil and self.style.height ~= nil and self.style["aspect-ratio"] ~= nil then
+        ---@type Banana.Ncss.StyleValue
+        local width = {
+            type = "unit",
+            value = {
+                unit = "ch",
+                computed = self.style["height"][1].value.computed *
+                    self.style["aspect-ratio"][1].value / 2,
+                value = self.style.height[1].value.computed *
+                    self.style["aspect-ratio"][1].value,
+            }
+        }
+        self.style.width = { width }
+    end
+    if self.style.height == nil and self.style.width ~= nil and self.style["aspect-ratio"] ~= nil then
+        ---@type Banana.Ncss.StyleValue
+        local height = {
+            type = "unit",
+            value = {
+                unit = "ch",
+                computed = self.style["width"][1].value.computed /
+                    self.style["aspect-ratio"][1].value / 2,
+                value = self.style.width[1].value.computed /
+                    self.style["aspect-ratio"][1].value / 2,
+            }
+        }
+        self.style.height = { height }
+    end
     self:_computeUnitFor("top", parentHeight, extras)
     self:_computeUnitFor("bottom", parentHeight, extras)
     self:_computeUnitFor("left", parentWidth, extras)
@@ -1168,6 +1199,49 @@ function M.Ast:child(i)
         end
     end
     return require("banana.instance").getNilAst()
+end
+
+---Returns the root node of a component (ie the one that the user put in)
+---@return Banana.Ast
+function M.Ast:getComponentRoot()
+    if self.componentParent ~= nil then
+        return self.componentParent
+    end
+    if self._parent:isNil() then
+        return require("banana.instance").getNilAst()
+    end
+    return self._parent:getComponentRoot()
+end
+
+---returns what the attribute substitution (eg %attr in nml) would be for %{name}
+---@param name string
+---@return string?
+function M.Ast:getAttributeSubstitution(name)
+    local el = self
+    local v = nil
+    while el.attributes[name] == nil do
+        if el:isNil() then
+            break
+        end
+        if el.componentParent ~= nil then
+            el = el.componentParent
+            -- dont want to keep looping bc that would give our
+            -- component access to the outside source tree which
+            -- doesnt make sense
+            break
+        end
+        el = el._parent
+    end
+    if el:isNil() then
+        v = ""
+        log.warn("Could not find attribute '" ..
+            name .. "' for template substitution")
+        vim.notify("Could not find attribute '" ..
+            name .. "' for template substitution")
+    else
+        v = el:getAttribute(name) or ""
+    end
+    return v
 end
 
 ---Returns the printed text value of this element (does not include newlines)

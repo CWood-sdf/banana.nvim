@@ -204,6 +204,7 @@ function TagInfo:renderComponent(ast, parentHl, parentWidth, parentHeight,
     ast:_tryMountComponent()
     table.insert(extra.componentStack, ast)
 
+    ast.componentTree:_resolveUnits(parentWidth, parentHeight, {})
     local ret = ast.componentTree.actualTag:getRendered(ast.componentTree,
         parentHl,
         parentWidth,

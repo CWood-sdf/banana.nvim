@@ -139,6 +139,7 @@ local function explicit(...)
 end
 ---@type { [string]: Banana.Ncss.PropertyValidation|string }
 local validations = {
+    ["aspect-ratio"] = singleNumber,
     ["hl-underline"] = boolValid,
     ["hl-italic"] = boolValid,
     ["hl-bold"] = boolValid,

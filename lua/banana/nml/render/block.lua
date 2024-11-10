@@ -143,23 +143,7 @@ return function (ast, parentHl, i, parentWidth, parentHeight, startX, startY,
                 if v:sub(2, 2) == "%" then
                     v = "%"
                 else
-                    local attr = v:sub(2, #v)
-                    local el = ast
-                    while el.attributes[attr] == nil do
-                        if el:isNil() then
-                            break
-                        end
-                        el = el._parent
-                    end
-                    if el:isNil() then
-                        v = ""
-                        log.warn("Could not find attribute '" ..
-                            attr .. "' for template substitution")
-                        vim.notify("Could not find attribute '" ..
-                            attr .. "' for template substitution")
-                    else
-                        v = el:getAttribute(attr) or ""
-                    end
+                    v = ast:getAttributeSubstitution(v:sub(2, #v)) or ""
                 end
             end
             local count = _str.charWidth(v)

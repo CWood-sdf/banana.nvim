@@ -33,7 +33,7 @@ local instances = {}
 
 ---@class (exact) Banana.Instance.RouteParams
 ---@field params { [string]: string }
----@field selfNode Banana.Ast
+---@field selfNode? Banana.Ast
 
 ---@class (exact) Banana.Instance
 ---@field DEBUG_stressTest boolean
@@ -141,7 +141,7 @@ function Instance:openDebugWin()
         vim.api.nvim_set_option_value("wrap", false,
             { win = self.DEBUG_winId })
     else
-        vim.api.nvim_set_current_win(self.DEBUG_winId)
+        -- vim.api.nvim_set_current_win(self.DEBUG_winId)
     end
 end
 
@@ -529,7 +529,12 @@ function Instance:_runScript(script, opts)
     end
     local oldParams = self.currentParams
     self.currentParams = opts
+    local oldAst = self.ast
+    if opts ~= nil and opts.selfNode ~= nil then
+        self.ast = opts.selfNode
+    end
     local ok, e = pcall(f, opts)
+    self.ast = oldAst
     self.currentParams = oldParams
     if not ok then
         error(e)
@@ -686,7 +691,7 @@ function Instance:_render()
     log.trace("Instance:render with " .. #self.scripts .. " scripts")
     flame.newIter()
     -- if n == 30 then
-    -- flame.reset()
+    flame.reset()
     -- end
     self.rendering = true
     local startTime = vim.loop.hrtime()
@@ -1073,6 +1078,7 @@ end
 ---@param ast Banana.Ast the target
 ---@param params table
 function Instance:_loadScriptFor(script, ast, params)
+    ---@param opts Banana.Instance.RouteParams?
     table.insert(self.scripts, function (opts)
         opts = opts or {}
         opts.params = params
