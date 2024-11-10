@@ -2,7 +2,10 @@
   <head>
     <template name="Date">
       <style></style>
-      <div style="hl-bg: blue; width: 100%; aspect-ratio: 1" id="daycontainer">
+      <div
+        style="hl-bg: #00aaaa; width: 100%; aspect-ratio: 1"
+        id="daycontainer"
+      >
         <div style="text-align: right; padding: 2ch 1ch">%day</div>
       </div>
       <script src="banana_test.calendartest"></script>

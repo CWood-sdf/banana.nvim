@@ -9,7 +9,7 @@ end
 
 local function fillWithDates(document, cont, month, year)
     local timestamp = vim.fn.strptime("%Y %m %d",
-        year .. " " .. month .. " 1")
+        year .. " " .. month .. " 1") + 12 * 3600
     local day = 1
     while true do
         local newDay = document:createElement("Date")

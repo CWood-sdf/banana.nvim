@@ -123,6 +123,10 @@ function Instance:openDebugWin()
         vim.api.nvim_set_option_value("filetype", "", {
             buf = self.DEBUG_bufNr
         })
+    else
+        -- vim.api.nvim_buf_clear_namespace(self.DEBUG_bufNr, self.highlightNs, 0,
+        --     -1)
+        -- vim.api.nvim_buf_clear_namespace(self.DEBUG_bufNr, 0, 0, -1)
     end
     if self.DEBUG_winId == nil or not vim.api.nvim_win_is_valid(self.DEBUG_winId) then
         local w = math.floor(self.DEBUG_winWidth or vim.o.columns / 2.5)
@@ -178,8 +182,8 @@ function Instance:writeBoxToDebugWin(box)
         end
         vim.api.nvim_buf_set_lines(self.DEBUG_bufNr, -1, -1, false, { line })
     end
-    self:_highlight(lines, offset - 1, self.DEBUG_bufNr, self.DEBUG_winId,
-        self.highlightNs)
+    self:_highlight(lines, offset, self.DEBUG_bufNr, self.DEBUG_winId,
+        self.highlightNs, false)
 end
 
 function Instance:setBufName(str)
@@ -241,6 +245,7 @@ function Instance:new()
             signcolumn = "no",
         },
     }
+    setmetatable(inst.foreignStyles, { __mode = "kv" })
     setmetatable(inst, { __index = Instance })
     instances[id] = inst
     vim.api.nvim_set_hl(inst.highlightNs, M.defaultWinHighlight, inst.winhl)
@@ -424,9 +429,14 @@ function Instance:_removeMapsFor(ast)
             self:_removeMapsFor(node)
         end
     end
-    if self.foreignStyles[ast] ~= nil then
-        self.foreignStyles[ast] = nil
+    local newTable = {}
+
+    for k, v in pairs(self.foreignStyles) do
+        if k ~= ast then
+            newTable[k] = v
+        end
     end
+    self.foreignStyles = newTable
 end
 
 ---@return Banana.Ast
@@ -457,6 +467,8 @@ function Instance:_applyId(ast)
     end
     if ast.instance == nil then
         ast.instance = self.instanceId
+    else
+        return
     end
     for i, v in ipairs(ast.nodes) do
         if type(v) == "string" then
@@ -657,15 +669,15 @@ function Instance:_deferRender()
         self:_render()
         self.renderRequested = false
         self.rendering = false
-    end, 20)
+    end, 10)
 end
 
 function Instance:_requestRender()
     if self.renderRequested then
         return
     end
-    self.renderRequested = true
     self.renderStart = vim.loop.hrtime()
+    self.renderRequested = true
     self:_deferRender()
 end
 
@@ -689,9 +701,9 @@ function Instance:_render()
     -- please dont remove this
     collectgarbage("stop")
     log.trace("Instance:render with " .. #self.scripts .. " scripts")
-    flame.newIter()
+    -- flame.newIter()
     -- if n == 30 then
-    flame.reset()
+    -- flame.reset()
     -- end
     self.rendering = true
     local startTime = vim.loop.hrtime()
@@ -722,9 +734,21 @@ function Instance:_render()
     flame.new("renderAll")
     local stuffToRender = self:_virtualRender(self.ast, width, height)
     flame.pop()
+    local skip = false
+    for _, script in ipairs(self.scripts) do
+        skip = true
+        self:_runScript(script, nil)
+    end
+    self.scripts = {}
 
     local renderTime = vim.loop.hrtime() - startTime
     startTime = vim.loop.hrtime()
+    if skip then
+        self.rendering = false
+        self.renderRequested = true
+        self:_deferRender()
+        return
+    end
 
     local lines = {}
     for _, line in ipairs(stuffToRender) do
@@ -734,6 +758,7 @@ function Instance:_render()
         end
         table.insert(lines, lineStr)
     end
+
 
     local reductionTime = vim.loop.hrtime() - startTime
     startTime = vim.loop.hrtime()
@@ -751,12 +776,7 @@ function Instance:_render()
 
     local bufTime = vim.loop.hrtime() - startTime
     startTime = vim.loop.hrtime()
-
     self:_highlight(stuffToRender, 0)
-    for _, script in ipairs(self.scripts) do
-        self:_runScript(script, nil)
-    end
-    self.scripts = {}
 
     local hlTime = vim.loop.hrtime() - startTime
     totalTime = totalTime + vim.loop.hrtime() - actualStart
@@ -778,7 +798,8 @@ function Instance:_render()
     end
     if self.DEBUG_showPerf then
         n = n + 1
-        avg = (avg * (n - 1) + renderTime) / n
+        avg = avg + renderTime
+        -- avg = (avg * (n - 1) + renderTime) / n
         local l = {
             -- "",
             astTime / 1e6 .. "ms to parse",
@@ -840,9 +861,10 @@ function Instance:_render()
         -- vim.api.nvim_set_option_value("modifiable", false, {
         --     buf = self.bufnr
         -- })
-        self:writeLinesToDebugWin(extraLines)
+        -- self:writeLinesToDebugWin(extraLines)
     end
     self.rendering = false
+    self.renderRequested = false
     collectgarbage("restart")
     -- collectgarbage()
 end
@@ -852,7 +874,9 @@ end
 ---@param bufnr number?
 ---@param winid number?
 ---@param ns number?
-function Instance:_highlight(lines, offset, bufnr, winid, ns)
+---@param noclear boolean?
+function Instance:_highlight(lines, offset, bufnr, winid, ns, noclear)
+    noclear = noclear or false
     flame.new(":_highlight")
     offset = offset or 0
     flame.new("hl:ns")
@@ -860,7 +884,7 @@ function Instance:_highlight(lines, offset, bufnr, winid, ns)
     winid = winid or self.winid or 0
     bufnr = bufnr or self.bufnr or 0
     vim.api.nvim_win_set_hl_ns(winid, ns)
-    if self.highlightNs ~= nil then
+    if self.highlightNs ~= nil and not noclear then
         vim.api.nvim_buf_clear_namespace(bufnr, ns, 0, -1)
         vim.api.nvim_buf_clear_namespace(bufnr, 0, 0, -1)
         -- vim.api.nvim_win_set_hl_ns(self.winid, self.highlightNs)

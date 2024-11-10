@@ -179,6 +179,7 @@ function M.Ast:_mountComponent()
         log.throw("Could not find instance")
         error()
     end
+    inst:_applyId(ast)
     inst:_loadStyleFor(component.styles, ast)
     for _, v in ipairs(component.scripts) do
         inst:_loadScriptFor(v, ast, {})
@@ -1000,6 +1001,11 @@ function M.Ast:remove()
             break
         end
     end
+    if self.componentTree ~= nil then
+        -- just add it to prevent the root node removal error
+        self.componentTree._parent = self
+        self.componentTree:remove()
+    end
     require("banana.instance").getInstance(self.instance):_removeMapsFor(self)
     self._parent = nil
     self:_requestRender()
@@ -1125,9 +1131,13 @@ end
 
 ---Removes all children from this node (including text)
 function M.Ast:removeChildren()
-    for _, v in ipairs(self.nodes) do
-        if type(v) ~= "string" then
-            v:remove()
+    local i = 1
+    while i < #self.nodes do
+        if type(self.nodes[i]) == "string" then
+            i = i + 1
+        else
+            ---@diagnostic disable-next-line: param-type-mismatch
+            self.nodes[i]:remove()
         end
     end
     self.nodes = {}

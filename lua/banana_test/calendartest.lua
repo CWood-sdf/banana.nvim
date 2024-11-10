@@ -12,7 +12,7 @@ return function (document, params)
     local found = false
     for i, v in ipairs(days) do
         if dow == v then
-            local row = day + 7 - i
+            local row = day + 6 - i
             row = (row - row % 7) / 7 + 1
             found = true
             root:setStyleValue("grid-column", i .. "")
