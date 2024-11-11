@@ -22,7 +22,7 @@ local function flexGrowSection(parentWidth, takenWidth, renders, start, e)
             goto continue
         end
         local node = val[2]
-        totalGrows = totalGrows + node:firstStyleValue("flex-grow", 0)
+        totalGrows = totalGrows + node:_firstStyleValue("flex-grow", 0)
         ::continue::
     end
     if totalGrows > 0 then
@@ -35,8 +35,8 @@ local function flexGrowSection(parentWidth, takenWidth, renders, start, e)
                 goto continue
             end
             local node = val[2]
-            if node:firstStyleValue("flex-grow", 0) ~= 0 then
-                local flexGrow = node:firstStyleValue("flex-grow", 0)
+            if node:_firstStyleValue("flex-grow", 0) ~= 0 then
+                local flexGrow = node:_firstStyleValue("flex-grow", 0)
                 ---@cast flexGrow number
                 local grow = growPer * flexGrow
                 if extraGrow > 0 then
@@ -85,14 +85,14 @@ return function (ast, parentHl, parentWidth, parentHeight, startX,
         end
 
         v:_resolveUnits(parentWidth, parentHeight)
-        local basis = v:firstStyleValue("flex-basis", {
+        local basis = v:_firstStyleValue("flex-basis", {
             computed = parentWidth,
             unit = "ch",
             value = parentWidth,
         })
         ---@cast basis Banana.Ncss.UnitValue
         local basisVal = math.min(basis.computed or parentWidth, parentWidth)
-        if v:firstStyleValue("flex-shrink") == 0 or v:hasStyle("flex-basis") then
+        if v:_firstStyleValue("flex-shrink") == 0 or v:hasStyle("flex-basis") then
             inherit.min_size = false
         end
         local rendered = v.actualTag:getRendered(v, hl, basisVal, parentHeight,
@@ -136,7 +136,7 @@ return function (ast, parentHl, parentWidth, parentHeight, startX,
     -- flex-grow and half of flex-wrap
     if takenWidth < parentWidth then
         flexGrowSection(parentWidth, takenWidth, renders, 1, #renders)
-    elseif ast:firstStyleValue("flex-wrap", "nowrap") == "wrap" then
+    elseif ast:_firstStyleValue("flex-wrap", "nowrap") == "wrap" then
         local taken = 0
         local startI = 1
         -- local yInc = 0
@@ -174,7 +174,7 @@ return function (ast, parentHl, parentWidth, parentHeight, startX,
     --- post processing cleanup to readjust bound boxes
     local inc = 0
     local yInc = 0
-    local isWrap = ast:firstStyleValue("flex-wrap", "nowrap") == "wrap"
+    local isWrap = ast:_firstStyleValue("flex-wrap", "nowrap") == "wrap"
     ---@type [Banana.Renderer.PartialRendered, Banana.Ast][][]
     local lines = {}
     ---@type [Banana.Renderer.PartialRendered, Banana.Ast][]

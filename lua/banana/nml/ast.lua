@@ -210,10 +210,10 @@ function M.Ast:root()
     return self:parent():root()
 end
 
----Returns the first style value for the given {style}
----@param style string
+---Returns the first style value for the given {style} or nil if not found
+---@param style string the style to lookup
 ---@return Banana.Ncss.StyleValue?
-function M.Ast:firstStyle(style)
+function M.Ast:_firstStyle(style)
     local s = self.style[style]
     if s == nil then
         return nil
@@ -227,9 +227,10 @@ function M.Ast:_isComponent()
     return ret
 end
 
+---Returns all style values for the style string
+---@param style string the style to lookup
 ---@return Banana.Ncss.StyleValue[]?
----@param style string
-function M.Ast:allStylesFor(style)
+function M.Ast:_allStylesFor(style)
     return self.style[style]
 end
 
@@ -263,12 +264,13 @@ function M.Ast:_dumpTree(pad)
     return ret
 end
 
----@param style string
+---Returns the first style value or a given default
+---@param style string the style to lookup
 ---@param default Banana.Ncss.StyleValueType
 ---@return Banana.Ncss.StyleValueType
 ---@overload fun(self: Banana.Ast, style: string): Banana.Ncss.StyleValueType?
-function M.Ast:firstStyleValue(style, default)
-    local val = self:firstStyle(style)
+function M.Ast:_firstStyleValue(style, default)
+    local val = self:_firstStyle(style)
     if val == nil then
         return default
     end
@@ -279,8 +281,8 @@ end
 ---@param default number
 ---@return number
 ---@overload fun(self: Banana.Ast, style: string): number?
-function M.Ast:firstStyleComputedValue(style, default)
-    local val = self:firstStyle(style)
+function M.Ast:_firstStyleComputedValue(style, default)
+    local val = self:_firstStyle(style)
     if val == nil or val.type ~= "unit" then
         return default
     end
@@ -288,14 +290,16 @@ function M.Ast:firstStyleComputedValue(style, default)
 end
 
 ---Returns true if the style {style} is in the node's style list
----@param style string
+---@param style string the style to lookup
 ---@return boolean
 function M.Ast:hasStyle(style)
     return self.style[style] ~= nil
 end
 
+---Throws an error if the style {style} has not been set in the node's style list
+---@param style string the style to lookup
 function M.Ast:assertHasStyle(style)
-    if self:firstStyle(style) == nil then
+    if self:_firstStyle(style) == nil then
         log.throw("needs style")
         error("")
     end
@@ -321,18 +325,22 @@ function M.Ast:_extraTop()
     return self:_boundTop() + self.margin[M.top].computed
 end
 
+---@return number
 function M.Ast:_boundTb()
     return self:_boundTop() + self:_boundBottom()
 end
 
+---@return number
 function M.Ast:_extraTb()
     return self:_extraTop() + self:_extraBottom()
 end
 
+---@return number
 function M.Ast:_boundLr()
     return self:_boundLeft() + self:_boundRight()
 end
 
+---@return number
 function M.Ast:_extraLr()
     return self:_extraLeft() + self:_extraRight()
 end
@@ -362,36 +370,52 @@ function M.Ast:_getInitialStyles()
     return tag.initialProps
 end
 
-function M.Ast:paddingLeft()
-    return self.padding[M.left].computed
-end
-
-function M.Ast:paddingRight()
-    return self.padding[M.right].computed
-end
-
-function M.Ast:paddingTop()
-    return self.padding[M.top].computed
-end
-
-function M.Ast:paddingBottom()
-    return self.padding[M.bottom].computed
-end
-
+---Returns the actual left side margin of the element (in characters)
+---@return number
 function M.Ast:marginLeft()
     return self.margin[M.left].computed
 end
 
+---Returns the actual right side margin of the element (in characters)
+---@return number
 function M.Ast:marginRight()
     return self.margin[M.right].computed
 end
 
+---Returns the actual top side margin of the element (in characters)
+---@return number
 function M.Ast:marginTop()
     return self.margin[M.top].computed
 end
 
+---Returns the actual bottom side margin of the element (in characters)
+---@return number
 function M.Ast:marginBottom()
     return self.margin[M.bottom].computed
+end
+
+---Returns the actual left side padding of the element (in characters)
+---@return number
+function M.Ast:paddingLeft()
+    return self.padding[M.left].computed
+end
+
+---Returns the actual right side padding of the element (in characters)
+---@return number
+function M.Ast:paddingRight()
+    return self.padding[M.right].computed
+end
+
+---Returns the actual top side padding of the element (in characters)
+---@return number
+function M.Ast:paddingTop()
+    return self.padding[M.top].computed
+end
+
+---Returns the actual bottom side padding of the element (in characters)
+---@return number
+function M.Ast:paddingBottom()
+    return self.padding[M.bottom].computed
 end
 
 ---@param i number
@@ -594,7 +618,7 @@ local function applyAstMeta(ast)
     end
 end
 
----Duplicates this node and all its children
+---Duplicates this node and all its children (note: does NOT copy attached events)
 ---@return Banana.Ast
 function M.Ast:clone()
     local newAst = {}
@@ -631,8 +655,8 @@ function M.Ast:clone()
 end
 
 ---Sets the attribute {name} to {value}
----@param name string
----@param value string
+---@param name string the name of the attribute
+---@param value string the new value of the attribute
 function M.Ast:setAttribute(name, value)
     if name == "style" then
         self:setStyle(value)
@@ -643,8 +667,8 @@ function M.Ast:setAttribute(name, value)
 end
 
 ---Sets the elements custom style rules to {value}
----(overrides any styles set with style="")
----@param value string
+---(note: overrides any styles set with style="")
+---@param value string the ncss style string to set this element's style rules to
 function M.Ast:setStyle(value)
     local parsed = require("banana.ncss.parser").parseText(value)
     self.inlineStyle = parsed[1].declarations
@@ -652,8 +676,8 @@ function M.Ast:setStyle(value)
 end
 
 ---Sets the style declaration for {name} (eg hl-bg) to be {value}
----@param name string
----@param value string
+---@param name string the name of the style to set
+---@param value string the string of the value
 function M.Ast:setStyleValue(name, value)
     local text = name .. ": " .. value .. ";"
     local parsed = require("banana.ncss.parser").parseText(text)
@@ -672,7 +696,7 @@ function M.Ast:setStyleValue(name, value)
 end
 
 ---Returns true if the node has class {c}
----@param c string
+---@param c string the class to find
 ---@return boolean
 function M.Ast:hasClass(c)
     if self.classes == nil and self.attributes["class"] ~= nil then
@@ -691,7 +715,7 @@ function M.Ast:hasClass(c)
 end
 
 ---Removes the class {c} from the node's class list
----@param c string
+---@param c string the class to unset
 function M.Ast:removeClass(c)
     if self.classes == nil then
         self.classes = {}
@@ -703,7 +727,7 @@ function M.Ast:removeClass(c)
 end
 
 ---Adds the class {c} to the node's class list
----@param c string
+---@param c string the class to set
 function M.Ast:addClass(c)
     if self.classes == nil then
         self.classes = {}
@@ -715,7 +739,7 @@ function M.Ast:addClass(c)
 end
 
 ---Toggles the class {c} to the node's class list
----@param c string
+---@param c string the class to toggle
 function M.Ast:toggleClass(c)
     self.classes = self.classes or {}
     self.classes[c] = self.classes[c] or false
@@ -792,13 +816,13 @@ function M.calcUnitInPlace(unit, parentWidth, extras)
     return unit.computed
 end
 
----Returns the width of the nodes bounding box (content+padding)
+---Returns the width of the node's bounding box (content+padding)
 ---@return number
 function M.Ast:getWidth()
     return self.boundBox.rightX - self.boundBox.leftX
 end
 
----Returns the height of the nodes bounding box (content+padding)
+---Returns the height of the node's bounding box (content+padding)
 function M.Ast:getHeight()
     return self.boundBox.bottomY - self.boundBox.topY
 end
@@ -1011,22 +1035,22 @@ function M.Ast:remove()
     self:_requestRender()
 end
 
----Returns the attribute value for {name}
----@param name string
+---Returns the attribute value for {name} or nil if not found
+---@param name string the name of the attribute to get
 ---@return string?
 function M.Ast:getAttribute(name)
     return self.attributes[name]
 end
 
 ---Adds {text} to the child list of the node
----@param text string
+---@param text string the text to add to the node
 function M.Ast:appendTextNode(text)
     table.insert(self.nodes, text)
     self:_requestRender()
 end
 
 ---Adds {node} as a child to this node
----@param node Banana.Ast
+---@param node Banana.Ast the node to append as a child
 function M.Ast:appendNode(node)
     node._parent = self
     table.insert(self.nodes, node)
@@ -1046,7 +1070,7 @@ function M.Ast:isLineHovering()
     return ret
 end
 
----Returns true if the cursor is over this ast
+---Returns true if the cursor is hovering over this ast
 ---@return boolean
 function M.Ast:isHovering()
     local line = vim.fn.line(".")
@@ -1144,7 +1168,7 @@ function M.Ast:removeChildren()
     self:_requestRender()
 end
 
----Returns all dom node children of this element (not text nodes)
+---Returns all ast node children of this element (not text nodes)
 ---@return Banana.Ast[]
 function M.Ast:children()
     ---@type Banana.Ast[]
@@ -1157,7 +1181,7 @@ function M.Ast:children()
     return ret
 end
 
----Returns an iter that allows iteration over all children with indexing
+---Returns an iterator that allows iteration over all children with indexing
 ---@return fun(): number?, Banana.Ast?
 function M.Ast:childIterWithI()
     local i = 0
@@ -1196,7 +1220,7 @@ function M.Ast:childIter()
     end
 end
 
----Returns the nth child of this node
+---Returns the nth non-string child of this node
 ---@return Banana.Ast
 function M.Ast:child(i)
     for _, v in ipairs(self.nodes) do
@@ -1211,8 +1235,8 @@ function M.Ast:child(i)
     return require("banana.instance").getNilAst()
 end
 
----returns what the attribute substitution (eg %attr in nml) would be for %{name}
----@param name string
+---returns what the attribute substitution (eg %attr in nml) would be for {name}
+---@param name string the attribute to lookup
 ---@return string?
 function M.Ast:getAttributeSubstitution(name)
     local el = self
@@ -1257,7 +1281,7 @@ function M.Ast:getTextContent()
 end
 
 ---Sets the text content of this element
----@param str string
+---@param str string the text to set this element's content to
 function M.Ast:setTextContent(str)
     if type(str) ~= "string" then
         str = tostring(str)
@@ -1303,12 +1327,13 @@ function M.Ast:isHidden()
 end
 
 ---Attaches the given remap to the ast
----@param mode string
----@param lhs string
----@param rhs string|fun()
----@param mods Banana.Remap.Constraint[]
----@param opts vim.keymap.set.Opts
+---@param mode string the mode of the keymap
+---@param lhs string the lhs of the keymap
+---@param rhs string|fun() rhs
+---@param mods Banana.Remap.Constraint[] a list of remap constraints
+---@param opts vim.keymap.set.Opts? keymap options
 function M.Ast:attachRemap(mode, lhs, mods, rhs, opts)
+    opts = opts or {}
     if type(mods) ~= "table" then
         log.throw(
             "Banana attachRemap requires the 4th parameter (before rhs) to be a table of modifiers")

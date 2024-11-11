@@ -101,13 +101,13 @@ function TagInfo:blockIter(ast, parentHl, parentWidth, parentHeight, startX,
         -- flame.new("TagInfo:blockIter")
         local oldI = i
         local render = nil
-        if ast:firstStyleValue("display") == "flex" then
+        if ast:_firstStyleValue("display") == "flex" then
             -- error("impl flex")
             render = self:renderFlexBlock(
                 ast, parentHl, parentWidth, parentHeight,
                 startX, startY, inherit, extra)
             i = #ast.nodes + 1
-        elseif ast:firstStyleValue("display") == "grid" then
+        elseif ast:_firstStyleValue("display") == "grid" then
             render = self:renderGridBlock(
                 ast, parentHl, parentWidth, parentHeight,
                 startX, startY, inherit, extra)

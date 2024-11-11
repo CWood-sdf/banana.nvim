@@ -18,7 +18,7 @@ local _tag = require("banana.lazyRequire")("banana.nml.tag")
 ---@return boolean
 local function isExpandable(ast, extraWidth)
     local isFlexChild = not ast._parent:isNil() and
-        ast._parent:firstStyleValue("display") == "flex"
+        ast._parent:_firstStyleValue("display") == "flex"
     if isFlexChild then
         return extraWidth > 0 and
             (ast.actualTag.formatType == _tag.FormatType.Block or ast.actualTag.formatType == _tag.FormatType.BlockInline) and
@@ -48,13 +48,13 @@ return function (self, ast, parentHl, parentWidth, parentHeight, startX, startY,
         local style = case.snakeToKebab(k)
         if ast:hasStyle(style) then
             inheritOld[k] = inherit[k]
-            inherit[k] = ast:firstStyleValue(style)
+            inherit[k] = ast:_firstStyleValue(style)
             if inherit[k] == "initial" then
                 inherit[k] = ast:_getInitialStyles()[k]
             end
         end
     end
-    local position = ast:firstStyleValue("position")
+    local position = ast:_firstStyleValue("position")
     if position == nil or position == "initial" then
         position = ast:_getInitialStyles().position
     end
@@ -72,7 +72,7 @@ return function (self, ast, parentHl, parentWidth, parentHeight, startX, startY,
         flame.pop()
         return p.emptyPartialRendered()
     end
-    local disp = ast:firstStyleValue("display")
+    local disp = ast:_firstStyleValue("display")
     if disp == "none" then
         for k, _ in pairs(inheritOld) do
             inherit[k] = inheritOld[k]
@@ -82,14 +82,14 @@ return function (self, ast, parentHl, parentWidth, parentHeight, startX, startY,
         return p.emptyPartialRendered()
     end
     ast.hidden = false
-    if ast:firstStyleValue("width") == "fit-content" then
+    if ast:_firstStyleValue("width") == "fit-content" then
         parentWidth = parentWidth - ast:marginLeft() - ast:marginRight()
         inherit.min_size = true
     elseif ast:hasStyle("width") then
         -- add margins bc width only sets content-width + padding
         ---@diagnostic disable-next-line: cast-local-type
         parentWidth = math.min(
-            ast:firstStyleValue("width").computed + ast:marginLeft() +
+            ast:_firstStyleValue("width").computed + ast:marginLeft() +
             ast:marginRight(),
             parentWidth)
         if inherit.min_size then
@@ -99,20 +99,20 @@ return function (self, ast, parentHl, parentWidth, parentHeight, startX, startY,
     if ast:hasStyle("height") then
         ---@diagnostic disable-next-line: cast-local-type
         parentHeight = math.min(
-            ast:firstStyleValue("height").computed + ast:marginTop() +
+            ast:_firstStyleValue("height").computed + ast:marginTop() +
             ast:marginBottom(),
             parentHeight)
     end
     if position ~= "static" then
         if ast:hasStyle("left") then
-            startX = startX + ast:firstStyleValue("left").computed
+            startX = startX + ast:_firstStyleValue("left").computed
         elseif ast:hasStyle("right") then
-            startX = startX - ast:firstStyleValue("right").computed
+            startX = startX - ast:_firstStyleValue("right").computed
         end
         if ast:hasStyle("top") then
-            startY = startY + ast:firstStyleValue("top").computed
+            startY = startY + ast:_firstStyleValue("top").computed
         elseif ast:hasStyle("bottom") then
-            startY = startY + ast:firstStyleValue("bottom").computed
+            startY = startY + ast:_firstStyleValue("bottom").computed
         end
     end
     startX = startX + ast:marginLeft()

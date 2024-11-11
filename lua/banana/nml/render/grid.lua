@@ -277,7 +277,7 @@ function M.render(ast, parentHl, parentWidth, parentHeight, startX,
     local rowGap = ast:_computeUnitFor("row-gap", parentHeight, {}) or 0
     local columnGap = ast:_computeUnitFor("column-gap", parentWidth, {}) or 0
 
-    local colTemplatesDef = ast:allStylesFor("grid-template-columns")
+    local colTemplatesDef = ast:_allStylesFor("grid-template-columns")
     if colTemplatesDef == nil then
         colTemplatesDef = {}
     end
@@ -285,8 +285,8 @@ function M.render(ast, parentHl, parentWidth, parentHeight, startX,
     maxCol = #colTemplatesDef
 
     for i, node in ast:childIterWithI() do
-        local rows = node:allStylesFor("grid-row")
-        local cols = node:allStylesFor("grid-column")
+        local rows = node:_allStylesFor("grid-row")
+        local cols = node:_allStylesFor("grid-column")
         if cols ~= nil then
             -- need to preload max columns bc of this case:
             -- first two elements non-defined
@@ -543,7 +543,7 @@ function M.render(ast, parentHl, parentWidth, parentHeight, startX,
     columnTemplates = getTemplates(colTemplatesDef, parentWidth, startX, maxCol,
         true, ast,
         columnGap)
-    local rows = ast:allStylesFor("grid-template-rows")
+    local rows = ast:_allStylesFor("grid-template-rows")
     if rows == nil then
         rows = {}
     end
@@ -638,7 +638,7 @@ function M.render(ast, parentHl, parentWidth, parentHeight, startX,
         local renderItem = {
             ogHeight = ogHeight,
             priority = (columnI - 1) + (rowI - 1) * columnLimit +
-                node:firstStyleValue("z-index", 0) * columnLimit * rowLimit,
+                node:_firstStyleValue("z-index", 0) * columnLimit * rowLimit,
             rowStart = row,
             colStart = col,
             rowEnd = row + rowSpan - 1,
@@ -725,7 +725,7 @@ function M.render(ast, parentHl, parentWidth, parentHeight, startX,
         -- height, but if you add margin pct, it's computed with respect to page
         -- height. In a word, that's all too much complexity when people SHOULD
         -- NOT be setting height/width on grid elements
-        if newHeight > render:getHeight() and v.ast:firstStyleValue("height", { unit = "", value = 0 }).unit ~= "ch" then
+        if newHeight > render:getHeight() and v.ast:_firstStyleValue("height", { unit = "", value = 0 }).unit ~= "ch" then
             v.ast:_increaseHeightBoundBy(newHeight - v.render:getHeight())
             v.render:expandHeightTo(newHeight)
         end
