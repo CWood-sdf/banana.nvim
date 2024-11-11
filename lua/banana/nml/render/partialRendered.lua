@@ -122,7 +122,7 @@ function PartialRendered:render(clone)
     --     print("has clone, ignoring")
     --     return b.Box:new(nil)
     -- end
-    flame.new("PartialRendered:render")
+    -- flame.new("PartialRendered:render")
     clone = clone or false
     if clone then
         -- if not require("banana.utils.debug").isdev() then
@@ -133,7 +133,7 @@ function PartialRendered:render(clone)
             __index = PartialRendered,
         })
         new.center = self.center:clone()
-        flame.pop()
+        -- flame.pop()
         return new:render()
     end
     local box = self.center
@@ -179,7 +179,7 @@ function PartialRendered:render(clone)
     box:setGradientSize()
     box:insertGradientMarker()
     box = self:padWith(box, self.margin, self.marginColor)
-    flame.pop()
+    -- flame.pop()
     return box
 end
 

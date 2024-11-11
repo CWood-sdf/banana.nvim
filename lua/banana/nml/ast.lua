@@ -750,7 +750,7 @@ end
 ---@param parentHl Banana.Highlight?
 ---@return Banana.Highlight
 function M.Ast:_mixHl(parentHl)
-    flame.new("Ast:_mixHl")
+    -- flame.new("Ast:_mixHl")
     local ret = {}
     setmetatable(ret, { __mode = "kv" })
     if self.tag == "h1" then
@@ -768,7 +768,7 @@ function M.Ast:_mixHl(parentHl)
             ret[k] = v
         end
     end
-    flame.pop()
+    -- flame.pop()
     return ret
 end
 

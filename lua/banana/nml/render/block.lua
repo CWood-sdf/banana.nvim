@@ -122,7 +122,7 @@ end
 return function (ast, parentHl, i, parentWidth, parentHeight, startX, startY,
                  inherit, extra_)
     log.trace("TagInfo:renderBlock " .. ast.tag)
-    flame.new("renderBlock")
+    -- flame.new("renderBlock")
     local currentLine = b.Box:new(parentHl)
     local hasElements = false
     local width = parentWidth
@@ -216,6 +216,6 @@ return function (ast, parentHl, i, parentWidth, parentHeight, startX, startY,
         extra:appendBoxBelow(currentLine, false)
         currentLine = extra
     end
-    flame.pop()
+    -- flame.pop()
     return currentLine, i
 end

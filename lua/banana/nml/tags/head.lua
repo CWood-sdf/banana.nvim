@@ -6,10 +6,10 @@ local t = require("banana.lazyRequire")("banana.nml.tag")
 ---@type Banana.Renderer
 local function renderer(_, ast, hl, parentWidth, parentHeight, _, _, inherit,
                         extra)
-    flame.new("tag:head")
+    -- flame.new("tag:head")
     local b = require("banana.box")
     if extra.isRealRender then
-        flame.pop()
+        -- flame.pop()
         return b.Box:new()
     end
     ---@type Banana.Box
@@ -19,7 +19,7 @@ local function renderer(_, ast, hl, parentWidth, parentHeight, _, _, inherit,
         v.actualTag:renderRoot(ast, hl, parentWidth, parentHeight, inherit, extra)
     end
     -- flame.expect("tag:head")
-    flame.pop()
+    -- flame.pop()
     return ret
 end
 ---@type Banana.TagInfo

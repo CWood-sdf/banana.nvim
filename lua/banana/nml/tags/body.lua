@@ -6,7 +6,7 @@ local t = require("banana.lazyRequire")("banana.nml.tag")
 ---@type Banana.Renderer
 local function renderer(self, ast, parentHl, parentWidth, parentHeight, startX,
                         startY, inherit, extra)
-    flame.new("tag:body")
+    -- flame.new("tag:body")
     local b = require("banana.box")
     if not extra.isRealRender then
         return b.Box:new()
@@ -17,7 +17,7 @@ local function renderer(self, ast, parentHl, parentWidth, parentHeight, startX,
     for _, box, _ in self:blockIter(ast, ret.hlgroup, parentWidth, parentHeight, startX, startY, inherit, extra) do
         ret:appendBoxBelow(box)
     end
-    flame.pop()
+    -- flame.pop()
     return ret
 end
 ---@type Banana.TagInfo

@@ -53,8 +53,8 @@ local function fillWithDates(document, cont, month, year)
 end
 ---@param document Banana.Instance
 return function (document)
-    local monthNum = tonumber(vim.fn.strftime("%m"))
-    local yearNum = tonumber(vim.fn.strftime("%Y"))
+    local monthNum = tonumber(vim.fn.strftime("%m")) or 12
+    local yearNum = tonumber(vim.fn.strftime("%Y")) or 2024
     local container = document:getElementById("calendarContainer")
     local monthDiv = document:getElementById("month")
     local yearDiv = document:getElementById("year")

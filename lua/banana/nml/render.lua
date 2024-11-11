@@ -203,7 +203,7 @@ end
 ---@return Banana.Box
 function TagInfo:renderComponent(ast, parentHl, parentWidth, parentHeight,
                                  startX, startY, inherit, extra)
-    flame.new("TagInfo:renderComponent")
+    -- flame.new("TagInfo:renderComponent")
     ast:_tryMountComponent()
     table.insert(extra.componentStack, ast)
 
@@ -213,7 +213,7 @@ function TagInfo:renderComponent(ast, parentHl, parentWidth, parentHeight,
         parentWidth,
         parentHeight, startX, startY, inherit, extra)
     table.remove(extra.componentStack, #extra.componentStack)
-    flame.pop()
+    -- flame.pop()
     return ret:render()
 end
 

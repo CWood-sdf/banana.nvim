@@ -8,7 +8,6 @@
       >
         <div style="text-align: right; padding: 2ch 1ch">%day</div>
       </div>
-      <script src="banana_test.calendartest"></script>
     </template>
     <style>
       nml {

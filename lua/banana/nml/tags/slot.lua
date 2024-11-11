@@ -8,7 +8,7 @@ local log = require("banana.lazyRequire")("banana.utils.log")
 ---@type Banana.Renderer
 local function renderer(self, ast, parentHl, parentWidth, parentHeight, startX,
                         startY, inherit, extra)
-    flame.new("tag:slot")
+    -- flame.new("tag:slot")
     local lastEl = extra.componentStack[#extra.componentStack]
     local renderable = lastEl:_getSlot(ast.attributes["name"])
     local b = require("banana.box")
@@ -18,13 +18,13 @@ local function renderer(self, ast, parentHl, parentWidth, parentHeight, startX,
         for _, box, _ in self:blockIter(ast, ret.hlgroup, parentWidth, parentHeight, startX, startY, inherit, extra) do
             ret:appendBoxBelow(box)
         end
-        flame.pop()
+        -- flame.pop()
         return ret
     end
     local ret = renderable.actualTag:getRendered(renderable, parentHl,
         parentWidth,
         parentHeight, startX, startY, inherit, extra)
-    flame.pop()
+    -- flame.pop()
     return ret:render()
 end
 ---@type Banana.TagInfo

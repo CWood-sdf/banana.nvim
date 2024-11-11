@@ -137,7 +137,6 @@ return function (self, ast, parentHl, parentWidth, parentHeight, startX, startY,
     local centerBox = self:render(ast, parentHl, contentWidth, parentHeight,
         startX, startY, inherit, extra)
     flame.pop()
-    -- -- flame.expect("element render")
     -- flame.pop()
     -- flame.new("getRendered_expansion")
     ---@type Banana.Renderer.Surround

@@ -13,18 +13,18 @@ end
 
 ---@type Banana.Renderer
 local function renderer(_, ast)
-    flame.new("tag:meta")
+    -- flame.new("tag:meta")
     local inst = require("banana.instance").getInstance(ast.instance)
     local name = ast:getAttribute("name")
     if name == nil then
-        flame.pop()
+        -- flame.pop()
         log.throw(
             "Expected a name attribute on a meta tag")
         error("")
     end
     local value = ast:getAttribute("value")
     if value == nil then
-        flame.pop()
+        -- flame.pop()
         log.throw(
             "Expected a value attribute on a meta tag")
         error("")
@@ -35,13 +35,13 @@ local function renderer(_, ast)
         local newName = name:sub(#"win-" + 1, #name)
         inst.winOpts[newName] = tonumber(value) or value
     else
-        flame.pop()
+        -- flame.pop()
         error("Unknown option '" .. name .. "'")
     end
     local b = require("banana.box")
     ---@type Banana.Box
     local ret = b.Box:new()
-    flame.pop()
+    -- flame.pop()
     return ret
 end
 ---@type Banana.TagInfo

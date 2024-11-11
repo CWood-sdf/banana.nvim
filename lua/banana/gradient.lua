@@ -141,7 +141,7 @@ end
 
 ---@return number
 function Gradient:_getRadialColor()
-    flame.new("Gradient:_getRadialColor")
+    -- flame.new("Gradient:_getRadialColor")
     local col = self.col + 0.5
     local line = self.line * 2 + 0.5
     if self.cacheDirty then
@@ -167,7 +167,7 @@ function Gradient:_getRadialColor()
     local dist = math.sqrt(offY * offY + offX * offX)
     local mult = 1 - dist / radius
 
-    flame.pop()
+    -- flame.pop()
     return mult
 end
 
@@ -175,7 +175,7 @@ end
 function Gradient:_getLinearColor()
     local col = self.col
     local line = self.line
-    flame.new("Gradient:_getLinearColor")
+    -- flame.new("Gradient:_getLinearColor")
     if self.cacheDirty then
         -- measure from center of char
         local centerX = (self.width - 1) / 2
@@ -251,7 +251,7 @@ function Gradient:_getLinearColor()
 
     local mult = (-len + halfGradLine) / (2 * halfGradLine)
 
-    flame.pop()
+    -- flame.pop()
     return mult
 end
 
@@ -287,7 +287,7 @@ function Gradient:nextCharColor()
     --  Determine dist to center point
 
 
-    flame.new("Gradient:nextCharColor")
+    -- flame.new("Gradient:nextCharColor")
     local mult
     if self.type == "linear" then
         mult = self:_getLinearColor()
@@ -327,13 +327,13 @@ function Gradient:nextCharColor()
     if mult > mp then
         local ret = self:_lerpColors(stop, next,
             (mult - mp) / (2 * (next.start.computed - mp)) + 0.5)
-        flame.pop()
+        -- flame.pop()
         return ret
     end
 
     local ret = self:_lerpColors(stop, next,
         0.5 - (mp - mult) / (2 * (mp - stop.start.computed)))
-    flame.pop()
+    -- flame.pop()
     return ret
 end
 

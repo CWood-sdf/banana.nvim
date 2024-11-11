@@ -118,7 +118,7 @@ log.new = function (config, standalone)
         if level < levels[config.level] or true then
             return
         end
-        flame.new("log", true)
+        -- flame.new("log", true)
         local nameupper = level_config.name:upper()
 
         local msg = message_maker(...)
@@ -161,7 +161,7 @@ log.new = function (config, standalone)
             fp:write(str)
             fp:close()
         end
-        flame.pop(true)
+        -- flame.pop(true)
     end
 
     for i, x in ipairs(config.modes) do

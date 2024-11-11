@@ -38,6 +38,7 @@ local flameCounts = {}
 local flameAlls = {}
 
 local function recordTime(time, recordAll)
+    if not isdev() then return end
     if #flameStack == 0 then
         return
     end
@@ -63,6 +64,7 @@ local function recordTime(time, recordAll)
 end
 
 local function startTime(time)
+    if not isdev() then return end
     local flame = flameStack[#flameStack]
     if flame == nil then
         return
@@ -93,9 +95,7 @@ function M.new(name, skipLog)
 end
 
 function M.expect(name)
-    if not isdev() then
-        return
-    end
+    if not isdev() then return end
     if flameStack[#flameStack] ~= name then
         log.throw("Expected flamestack to be " ..
             name .. ", but got " .. flameStack[#flameStack])

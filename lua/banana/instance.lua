@@ -716,7 +716,7 @@ function Instance:_render()
     -- please dont remove this
     collectgarbage("stop")
     log.trace("Instance:render with " .. #self.scripts .. " scripts")
-    -- flame.newIter()
+    flame.newIter()
     -- if n == 30 then
     -- flame.reset()
     -- end
@@ -749,6 +749,7 @@ function Instance:_render()
     flame.new("renderAll")
     local stuffToRender = self:_virtualRender(self.ast, width, height)
     flame.pop()
+    local renderTime = vim.loop.hrtime() - startTime
     local skip = false
     for _, script in ipairs(self.scripts) do
         skip = true
@@ -756,7 +757,6 @@ function Instance:_render()
     end
     self.scripts = {}
 
-    local renderTime = vim.loop.hrtime() - startTime
     startTime = vim.loop.hrtime()
     if skip then
         self.rendering = false
@@ -813,8 +813,8 @@ function Instance:_render()
     end
     if self.DEBUG_showPerf then
         n = n + 1
-        avg = avg + renderTime
-        -- avg = (avg * (n - 1) + renderTime) / n
+        -- avg = avg + renderTime
+        avg = (avg * (n - 1) + renderTime) / n
         local l = {
             -- "",
             astTime / 1e6 .. "ms to parse",
@@ -876,7 +876,7 @@ function Instance:_render()
         -- vim.api.nvim_set_option_value("modifiable", false, {
         --     buf = self.bufnr
         -- })
-        -- self:writeLinesToDebugWin(extraLines)
+        self:_writeLinesToDebugWin(extraLines)
     end
     self.rendering = false
     self.renderRequested = false
@@ -892,9 +892,9 @@ end
 ---@param noclear boolean?
 function Instance:_highlight(lines, offset, bufnr, winid, ns, noclear)
     noclear = noclear or false
-    flame.new(":_highlight")
+    -- flame.new(":_highlight")
     offset = offset or 0
-    flame.new("hl:ns")
+    -- flame.new("hl:ns")
     ns = ns or self.highlightNs or 1
     winid = winid or self.winid or 0
     bufnr = bufnr or self.bufnr or 0
@@ -905,7 +905,7 @@ function Instance:_highlight(lines, offset, bufnr, winid, ns, noclear)
         -- vim.api.nvim_win_set_hl_ns(self.winid, self.highlightNs)
         -- self.highlightNs = nil
     end
-    flame.pop()
+    -- flame.pop()
     if bufnr == nil or not vim.api.nvim_buf_is_valid(bufnr) then
         log.throw(
             "Unreachable (buf is invalid in higlightBuffer)")
@@ -986,7 +986,7 @@ function Instance:_highlight(lines, offset, bufnr, winid, ns, noclear)
                 else
                     --flame.new("hl:set_hl")
                     if isGrad then
-                        flame.new("_highlight:setGrad")
+                        -- flame.new("_highlight:setGrad")
                         local fg = word.style.fg
                         local bg = word.style.bg
                         local bgGrad = type(bg) == "table"
@@ -1020,20 +1020,20 @@ function Instance:_highlight(lines, offset, bufnr, winid, ns, noclear)
                                 word.style.fg = "#000000"
                             end
                             hlGroup = "banana_hl_" .. hlId
-                            flame.new("_highlight:set_hl/")
+                            -- flame.new("_highlight:set_hl/")
                             vim.api.nvim_set_hl(ns, hlGroup,
                                 word.style)
                             vim.api.nvim_buf_add_highlight(bufnr, ns,
                                 hlGroup, row,
                                 charI + col - 1,
                                 col + charI - 1 + charByteSize)
-                            flame.pop()
+                            -- flame.pop()
                             hlId = hlId + 1
                             charI = charI + charByteSize
                         end
                         word.style.fg = fg
                         word.style.bg = bg
-                        flame.pop()
+                        -- flame.pop()
                     else
                         hlGroup = "banana_hl_" .. hlId
                         vim.api.nvim_set_hl(ns, hlGroup, word
@@ -1066,7 +1066,7 @@ function Instance:_highlight(lines, offset, bufnr, winid, ns, noclear)
         row = row + 1
         --flame.pop()
     end
-    flame.pop()
+    -- flame.pop()
 end
 
 ---Loads a partial nml file at {file} to be the content of the ast
