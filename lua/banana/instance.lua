@@ -111,13 +111,13 @@ function Instance:_virtualRender(ast, width, height)
         rendered:stripRightSpace(bg)
     end
     if extra.debug then
-        self:writeBoxToDebugWin(extra.trace)
+        self:_writeBoxToDebugWin(extra.trace)
         -- rendered:appendBoxBelow(extra.trace)
     end
     return rendered:getLines()
 end
 
-function Instance:openDebugWin()
+function Instance:_openDebugWin()
     if self.DEBUG_bufNr == nil or not vim.api.nvim_buf_is_valid(self.DEBUG_bufNr) then
         self.DEBUG_bufNr = vim.api.nvim_create_buf(false, true)
         vim.api.nvim_set_option_value("filetype", "", {
@@ -149,7 +149,7 @@ function Instance:openDebugWin()
     end
 end
 
-function Instance:clearDebugWinBuf()
+function Instance:_clearDebugWinBuf()
     if self.DEBUG_bufNr == nil or not vim.api.nvim_buf_is_valid(self.DEBUG_bufNr) then
         return
     end
@@ -157,7 +157,7 @@ function Instance:clearDebugWinBuf()
 end
 
 ---@param lines string[]
-function Instance:writeLinesToDebugWin(lines)
+function Instance:_writeLinesToDebugWin(lines)
     if self.DEBUG_bufNr == nil or not vim.api.nvim_buf_is_valid(self.DEBUG_bufNr) then
         return
     end
@@ -169,7 +169,7 @@ function Instance:writeLinesToDebugWin(lines)
 end
 
 ---@param box Banana.Box
-function Instance:writeBoxToDebugWin(box)
+function Instance:_writeBoxToDebugWin(box)
     if self.DEBUG_bufNr == nil or not vim.api.nvim_buf_is_valid(self.DEBUG_bufNr) then
         return
     end
@@ -186,6 +186,8 @@ function Instance:writeBoxToDebugWin(box)
         self.highlightNs, false)
 end
 
+---Sets the name of the buffer
+---@param str string the new buffer name
 function Instance:setBufName(str)
     self.bufname = str
 end
@@ -253,7 +255,8 @@ function Instance:new()
     return inst
 end
 
----@param filename string
+---Uses a given string in nml require format as the source of the instance
+---@param filename string the nml file to use
 function Instance:useFile(filename)
     local ast, styleRules, scripts = require("banana.require").nmlRequire(
         filename)
@@ -263,7 +266,8 @@ function Instance:useFile(filename)
     self:_applyId(ast)
 end
 
----@param nml string
+---Uses a given nml string as the source of the instance
+---@param nml string the nml string
 function Instance:useNml(nml)
     local ast, styleRules, scripts = require("banana.require").nmlLoadString(nml)
     self.scripts = scripts
@@ -297,6 +301,7 @@ function Instance:_attachAutocmds()
     })
 end
 
+---Closes the window this instance is managing
 function Instance:close()
     self.isVisible = false
     vim.api.nvim_win_close(self.winid, false)
@@ -304,6 +309,7 @@ end
 
 local n = 0
 local avg = 0
+---Opens the window this instance is managing
 function Instance:open()
     self.isVisible = true
     n = 0
@@ -311,6 +317,7 @@ function Instance:open()
     self:_render()
 end
 
+---Returns true if the instance is open
 ---@return boolean
 function Instance:isOpen()
     return self.isVisible
@@ -319,7 +326,7 @@ end
 ---runs a lua require string as a script
 ---@param str string
 ---@param opts Banana.Instance.RouteParams?
-function Instance:runScriptAt(str, opts)
+function Instance:_runScriptAt(str, opts)
     local script = require(str)
     if type(script) == "function" then
         script(self, opts)
@@ -332,15 +339,19 @@ function Instance:runScriptAt(str, opts)
     end
 end
 
+---Uses the given buffer number as the buffer to write to
+---@param bufnr number
 function Instance:useBuffer(bufnr)
     self.bufnr = bufnr
 end
 
+---Returns the number of the buffer
+---@return number?
 function Instance:getBufnr()
     return self.bufnr
 end
 
----@deprecated just use buffer =
+---@deprecated just use buffer = (might be undeprecated if there are custom events)
 ---@param ev string|string[]
 ---@param opts vim.api.keyset.create_autocmd
 ---@return number
@@ -366,11 +377,12 @@ function Instance:on(ev, opts)
     return vim.api.nvim_create_autocmd(ev, opts)
 end
 
+---Uses the window number as the window to render to
+---@param winid number
 function Instance:useWindow(winid)
     self.winid = winid
 end
 
----comment
 ---@param mode string
 ---@param lhs string
 ---@param rhs string|fun()
@@ -439,6 +451,7 @@ function Instance:_removeMapsFor(ast)
     self.foreignStyles = newTable
 end
 
+---Returns the body node of this instance
 ---@return Banana.Ast
 function Instance:body()
     if self._body ~= nil then
@@ -512,6 +525,7 @@ function Instance:_applyStyleDeclarations(ast, rules)
     end
 end
 
+---Returns the parameters for the current running script
 ---@return Banana.Instance.RouteParams?
 function Instance:getScriptParams()
     return self.currentParams
@@ -527,7 +541,7 @@ function Instance:_runScript(script, opts)
     elseif #script > 0 and script:sub(1, 1) == "@" then
         local str = script:sub(2, #script)
         f = function (o)
-            self:runScriptAt(str, o)
+            self:_runScriptAt(str, o)
         end
     else
         script = "local document = require('banana.instance').getInstance(" ..
@@ -681,6 +695,7 @@ function Instance:_requestRender()
     self:_deferRender()
 end
 
+---Forces the instance to rerender the window (AVOID USING)
 function Instance:forceRerender()
     self.renderRequested = false
     self:_render()
@@ -723,8 +738,8 @@ function Instance:_render()
 
     local width, height = self:_createWinAndBuf()
     if self.DEBUG then
-        self:openDebugWin()
-        self:clearDebugWinBuf()
+        self:_openDebugWin()
+        self:_clearDebugWinBuf()
     end
 
     local winTime = vim.loop.hrtime() - startTime
@@ -1055,8 +1070,8 @@ function Instance:_highlight(lines, offset, bufnr, winid, ns, noclear)
 end
 
 ---Loads a partial nml file at {file} to be the content of the ast
----@param file string
----@param ast Banana.Ast
+---@param file string the file to use
+---@param ast Banana.Ast the ast to send the content to
 ---@param remove boolean? Whether to remove all the child elements, default true
 ---@param preserve boolean? Whether to not clone the ast, default false.
 function Instance:loadNmlTo(file, ast, remove, preserve)
@@ -1111,7 +1126,8 @@ function Instance:_loadScriptFor(script, ast, params)
     end)
 end
 
----@param sel string
+---Works just like js querySelectorAll
+---@param sel string the selector to use
 ---@return Banana.Ast[]
 function Instance:querySelectorAll(sel)
     local rule = sel .. "{}"
@@ -1124,7 +1140,8 @@ function Instance:querySelectorAll(sel)
     return asts
 end
 
----@param name string
+---works just like js getElementsByClassName
+---@param name string the classname to search by
 ---@return Banana.Ast[]
 function Instance:getElementsByClassName(name)
     if nilAst == nil then
@@ -1142,7 +1159,8 @@ function Instance:getElementsByClassName(name)
     return asts
 end
 
----@param name string
+---works like js getElementById
+---@param name string the id to search for
 ---@return Banana.Ast
 function Instance:getElementById(name)
     if nilAst == nil then
@@ -1164,7 +1182,8 @@ function Instance:getElementById(name)
     return asts[1]
 end
 
----@param name string
+---works like js getElementsByTagName
+---@param name string the tag name to search for
 ---@return Banana.Ast[]
 function Instance:getElementsByTag(name)
     if nilAst == nil then
@@ -1186,7 +1205,8 @@ function Instance:getElementsByTag(name)
     return asts
 end
 
----@param name string
+---Creates an element that can be attached to the dom later
+---@param name string the name of the element tag
 ---@return Banana.Ast
 function Instance:createElement(name)
     local ast = require("banana.nml.ast").Ast:new(name, M.getNilAst(),
