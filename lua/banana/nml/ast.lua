@@ -780,13 +780,6 @@ end
 function M.getComputedValue(unit, parentWidth, extras)
     if unit.unit == "ch" then
         return unit.value
-        -- elseif unit.unit == "fr" then
-        --     if extras[1] == nil then
-        --         log.throw("fr unit requires an extra parameter")
-        --         error("")
-        --     end
-        --     local mult = unit.value
-        --     return math.floor(mult * extras[1])
     elseif unit.unit == "%" then
         local mult = unit.value / 100
         return math.floor(mult * parentWidth)
@@ -882,7 +875,7 @@ function M.Ast:_resolveUnits(parentWidth, parentHeight, extras)
             value = {
                 unit = "ch",
                 computed = self.style["height"][1].value.computed *
-                    self.style["aspect-ratio"][1].value / 2,
+                    self.style["aspect-ratio"][1].value * 2,
                 value = self.style.height[1].value.computed *
                     self.style["aspect-ratio"][1].value,
             }

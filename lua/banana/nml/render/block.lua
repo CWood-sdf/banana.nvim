@@ -77,6 +77,7 @@ end
 ---@param hl Banana.Highlight?
 ---@return Banana.Box, Banana.Box?
 local function handleOverflow(ast, i, currentLine, append, maxWidth, hl)
+    maxWidth = math.max(1, maxWidth)
     -- flame.new("handleOverflow")
     -- if currentLine:height() == 0 then
     --     currentLine:appendStr("", nil)

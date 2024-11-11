@@ -1,11 +1,8 @@
 <nml>
   <head>
-    <template name="Date">
+    <template name="Date" style="width: 100%; aspect-ratio: 1">
       <style></style>
-      <div
-        style="hl-bg: #00aaaa; width: 100%; aspect-ratio: 1"
-        id="daycontainer"
-      >
+      <div style="hl-bg: #00aaaa; height: 100%" id="daycontainer">
         <div style="text-align: right; padding: 2ch 1ch">%day</div>
       </div>
     </template>
@@ -33,7 +30,7 @@
   </head>
 
   <body>
-    <div id="calendarContainer" style="width: 90%">
+    <div id="calendarContainer" style="width: 95%">
       <div>
         <span id="month"></span>
         <span sp=" ">%sp</span>

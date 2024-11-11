@@ -112,7 +112,7 @@ function Instance:_virtualRender(ast, width, height)
     end
     if extra.debug then
         self:_writeBoxToDebugWin(extra.trace)
-        -- rendered:appendBoxBelow(extra.trace)
+        rendered:appendBoxBelow(extra.trace)
     end
     return rendered:getLines()
 end

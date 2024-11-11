@@ -182,7 +182,7 @@ return function (self, ast, parentHl, parentWidth, parentHeight, startX, startY,
             extra.trace:appendBoxBelow(ret:render(true), false)
         end
     end
-    if ast.style["height"] ~= nil and not ast:parent():isNil() then
+    if ast.style["height"] ~= nil and (not ast:parent():isNil() or ast.tag == "template") then
         ret.center:clean()
         local height = ast.style["height"][1].value.computed
             - ast:paddingTop() - ast:paddingBottom()
