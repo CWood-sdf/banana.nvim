@@ -491,7 +491,6 @@ function M.Box:renderOver(other, left, top)
     other:clean()
     left = math.max(left, 0)
     top = math.max(top, 0)
-    self._width = math.max(other._width + left, self._width)
     -- make sure that current box reaches starting point
     while #self.lines < top do
         local box = M.Box:new(self.hlgroup)
