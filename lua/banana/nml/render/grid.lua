@@ -154,7 +154,7 @@ local function getTemplates(values, sizeInDirection, start, min, isCol, ast, gap
         local v = values[i]
         if v ~= nil then
             local value = v.value
-            if value.unit ~= "fr" then
+            if value.unit ~= "fr" and value.unit ~= "nfr" then
                 ---@cast value Banana.Ncss.UnitValue
                 local resolve = _ast.calcUnitNoMod(value, sizeInDirection, {})
                 ---@type Banana.Renderer.GridTemplate
@@ -211,6 +211,9 @@ local function getTemplates(values, sizeInDirection, start, min, isCol, ast, gap
         end
         local resolve = math.floor(fr * widthPer)
         local extraAdded = math.min(math.ceil(fr), extraWidthNeeded)
+        if v ~= nil and v.value.unit == "nfr" then
+            extraAdded = 0
+        end
         ret[j] = {
             start = 0,
             size = resolve + extraAdded,

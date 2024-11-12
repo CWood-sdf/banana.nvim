@@ -326,6 +326,7 @@ function M.Box:append(box, strat)
     -- merge
     while i < #self.lines and boxI <= #box.lines do
         for _, v in ipairs(box.lines[boxI]) do
+            self.lines[i + 1] = self.lines[i + 1] or {}
             table.insert(self.lines[i + 1], v)
         end
         boxI = boxI + 1
@@ -490,6 +491,7 @@ function M.Box:renderOver(other, left, top)
     other:clean()
     left = math.max(left, 0)
     top = math.max(top, 0)
+    self._width = math.max(other._width + left, self._width)
     -- make sure that current box reaches starting point
     while #self.lines < top do
         local box = M.Box:new(self.hlgroup)

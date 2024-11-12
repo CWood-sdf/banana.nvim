@@ -1,8 +1,10 @@
 <nml>
   <head>
     <template name="Date" style="width: 100%; aspect-ratio: 1">
-      <style></style>
-      <div style="hl-bg: #00aaaa; height: 100%" id="daycontainer">
+      <div
+        style="hl-bg: hl-extract(bg, NormalFloat); height: 100%"
+        id="daycontainer"
+      >
         <div style="text-align: right; padding: 2ch 1ch">%day</div>
       </div>
     </template>
@@ -12,13 +14,13 @@
       }
       .calendar {
         display: grid;
-        grid-template-columns: repeat(7, 1fr);
+        grid-template-columns: repeat(7, 1nfr);
         row-gap: 1ch;
         column-gap: 1ch;
       }
       .calendarHeader {
         display: grid;
-        grid-template-columns: repeat(7, 1fr);
+        grid-template-columns: repeat(7, 1nfr);
         grid-template-rows: 1ch;
         column-gap: 1ch;
         margin: 0ch 1ch;
@@ -26,11 +28,17 @@
       .calendarHeader > div {
         text-align: center;
       }
+      body {
+        height: 100%;
+        padding-left: 2ch;
+        padding-top: 2ch;
+      }
     </style>
+    <title>calendar</title>
   </head>
 
   <body>
-    <div id="calendarContainer" style="width: 95%">
+    <div id="calendarContainer" style="width: 100%">
       <div>
         <span id="month"></span>
         <span sp=" ">%sp</span>
@@ -48,5 +56,6 @@
       <div class="calendar"></div>
     </div>
     <script src="banana_test.calendar"></script>
+    <script src="banana_test.calendar-anim"></script>
   </body>
 </nml>

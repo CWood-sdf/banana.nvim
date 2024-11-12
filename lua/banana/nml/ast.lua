@@ -888,10 +888,10 @@ function M.Ast:_resolveUnits(parentWidth, parentHeight, extras)
             type = "unit",
             value = {
                 unit = "ch",
-                computed = self.style["width"][1].value.computed /
-                    self.style["aspect-ratio"][1].value / 2,
-                value = self.style.width[1].value.computed /
-                    self.style["aspect-ratio"][1].value / 2,
+                computed = math.floor(self.style["width"][1].value.computed /
+                    self.style["aspect-ratio"][1].value / 2),
+                value = math.floor(self.style.width[1].value.computed /
+                    self.style["aspect-ratio"][1].value / 2),
             }
         }
         self.style.height = { height }
