@@ -205,6 +205,7 @@ function TagInfo:renderComponent(ast, parentHl, parentWidth, parentHeight,
                                  startX, startY, inherit, extra)
     -- flame.new("TagInfo:renderComponent")
     ast:_tryMountComponent()
+    extra.componentStack = extra.componentStack or {}
     table.insert(extra.componentStack, ast)
 
     ast.componentTree:_resolveUnits(parentWidth, parentHeight, {})

@@ -32,7 +32,6 @@ end
 local function easeout(progress)
     return cubicBezier(progress, 0.00, 1, 0, 1)
 end
-local last = 0
 
 ---@param document Banana.Instance
 return function (document)
@@ -40,8 +39,6 @@ return function (document)
     timer = vim.fn.timer_start(20, function ()
         i = i + 1
         local v = math.floor(easeout(i / 100) * 100)
-        -- vim.notify((v - last) .. "\n")
-        last = v
         calendar:setStyleValue("hl-bg",
             "radial-gradient(blue, hl-extract(bg, NormalFloat) " .. v .. "%)")
         if i >= 100 then
