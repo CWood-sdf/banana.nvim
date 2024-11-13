@@ -7,7 +7,7 @@ A blazingly fast html renderer for neovim
 > This project is still in early development.  
 > Expect breaking changes and bugs, and please report any issues you encounter.
 
-> [!INFO]
+> [!NOTE]
 >
 > If there is a css/html feature that is not currently implemented, please submit an issue and it should probably be implemented within a few days
 
