@@ -427,7 +427,6 @@ end
 ---@param styleTp string
 ---@return string
 local function getListItemUl(styleTp)
-    print(_str.charWidth(styleTp))
     if _str.charWidth(styleTp) < 3 then
         return styleTp
     end
