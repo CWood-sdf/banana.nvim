@@ -14,7 +14,7 @@ local default_config = {
     plugin = "banana.nvim",
 
     -- Should print the output to neovim while running
-    use_console = false,
+    use_console = true,
 
     -- Should highlighting be used in console (using echohl)
     highlights = true,
@@ -67,13 +67,13 @@ local unpack = unpack or table.unpack
 ---@diagnostic disable-next-line: inject-field
 log.new = function (config, standalone)
     if require("banana.utils.debug").isdev() then
-        -- default_config.level = "trace"
+        default_config.level = "trace"
     end
 
     config = vim.tbl_deep_extend("force", default_config, config)
 
     local outfile = string.format("%s/%s.log",
-        vim.api.nvim_call_function("stdpath", { "data" }), config.plugin)
+        vim.api.nvim_call_function("stdpath", { "log" }), config.plugin)
 
     -- print("Log level: ", config.level)
     local obj
@@ -115,7 +115,7 @@ log.new = function (config, standalone)
 
     local log_at_level = function (level, level_config, message_maker, ...)
         -- Return early if we're below the config.level
-        if level < levels[config.level] or true then
+        if level < levels[config.level] then
             return
         end
         -- flame.new("log", true)

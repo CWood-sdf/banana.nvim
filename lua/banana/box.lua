@@ -426,6 +426,9 @@ function M.Box:appendBoxBelow(box, expand)
     for _, v in ipairs(box.lines) do
         table.insert(self.lines, newLine())
         for _, w in ipairs(v) do
+            if #self.lines == 0 then
+                self.lines = {}
+            end
             table.insert(self.lines[#self.lines], word(w.word, w.style))
         end
     end
@@ -533,6 +536,11 @@ function M.Box:renderOver(other, left, top)
 
         local charsToCut = other._width
         while charsToCut > 0 and line[wordIndex] ~= nil do
+            -- i have absolutely no idea why this condition needs to be here
+            -- but sometimes things break bc
+            if line[wordIndex] == nil then
+                line[wordIndex] = word("", nil)
+            end
             local str = line[wordIndex].word
             -- case 2
             if wordSize - count > other._width and count ~= 0 then

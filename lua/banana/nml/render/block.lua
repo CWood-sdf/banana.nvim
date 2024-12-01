@@ -132,6 +132,7 @@ return function (ast, parentHl, i, parentWidth, parentHeight, startX, startY,
     local extra = nil
     local startI = i
     while i <= #ast.nodes do
+        log.trace("TagInfo: renderBlock loop " .. i)
         local v = ast.nodes[i]
         if v == nil then
             break
@@ -139,7 +140,7 @@ return function (ast, parentHl, i, parentWidth, parentHeight, startX, startY,
         if v == "" then
         elseif type(v) == "string" then
             if v:sub(1, 1) == "&" then
-                error("Entity support is nonexistent")
+                log.throw("Entity support is nonexistent")
             elseif v:sub(1, 1) == "%" then
                 if v:sub(2, 2) == "%" then
                     v = "%"

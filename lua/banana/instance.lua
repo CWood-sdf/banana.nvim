@@ -81,7 +81,7 @@ function Instance:_virtualRender(ast, width, height)
     --flame.new("virtualRender")
     ---@type Banana.Line[]
     local ret = {}
-    setmetatable(ret, { __mode = "kv" })
+    -- setmetatable(ret, { __mode = "kv" })
     local tag = ast.actualTag
     ---@type Banana.Renderer.ExtraInfo
     local extra = {
@@ -91,7 +91,7 @@ function Instance:_virtualRender(ast, width, height)
         debug = self.DEBUG_showBuild,
         isRealRender = true,
     }
-    setmetatable(extra, { __mode = "kv" })
+    -- setmetatable(extra, { __mode = "kv" })
     local rendered = tag:renderRoot(ast, nil, width, height, {
         text_align = "left",
         position = "static",
@@ -247,7 +247,7 @@ function Instance:new()
             signcolumn = "no",
         },
     }
-    setmetatable(inst.foreignStyles, { __mode = "kv" })
+    -- setmetatable(inst.foreignStyles, { __mode = "kv" })
     setmetatable(inst, { __index = Instance })
     instances[id] = inst
     vim.api.nvim_set_hl(inst.highlightNs, M.defaultWinHighlight, inst.winhl)
@@ -622,7 +622,14 @@ function Instance:_createWinAndBuf()
 
 
     if self.bufnr == nil or not vim.api.nvim_buf_is_valid(self.bufnr) then
-        self.bufnr = vim.api.nvim_create_buf(false, false)
+        self.bufnr = vim.api.nvim_create_buf(true, true)
+        vim.api.nvim_set_option_value("modifiable", true, {
+            buf = self.bufnr
+        })
+        local cwd = vim.fn.getcwd()
+        if vim.fn.isdirectory(cwd .. "/" .. self.bufname) == 1 or vim.fn.isdirectory(self.bufname) == 1 then
+            self.bufname = ""
+        end
         vim.api.nvim_buf_set_name(self.bufnr, self.bufname)
         for k, v in pairs(self.bufOpts) do
             vim.api.nvim_set_option_value(k, v, { buf = self.bufnr })
@@ -640,8 +647,8 @@ function Instance:_createWinAndBuf()
             style = "minimal",
             -- zindex = 1000,
         })
-        vim.api.nvim_set_current_win(self.winid)
         vim.api.nvim_win_set_buf(self.winid, self.bufnr)
+        vim.api.nvim_set_current_win(self.winid)
         vim.api.nvim_set_option_value("signcolumn", "no", { win = self.winid })
         vim.api.nvim_set_option_value("wrap", false, { win = self.winid })
         for k, v in pairs(self.winOpts) do
@@ -667,6 +674,7 @@ function Instance:_createWinAndBuf()
         if change then
             vim.api.nvim_win_set_config(self.winid, conf)
         end
+        vim.api.nvim_win_set_buf(self.winid, self.bufnr)
     end
 
     return width, height
@@ -712,6 +720,7 @@ function Instance:_render()
     if self.renderRequested then
         return
     end
+    self.rendering = true
 
     -- please dont remove this
     collectgarbage("stop")
@@ -720,7 +729,6 @@ function Instance:_render()
     -- if n == 30 then
     -- flame.reset()
     -- end
-    self.rendering = true
     local startTime = vim.loop.hrtime()
     local actualStart = startTime
     local astTime = 0
@@ -784,6 +792,8 @@ function Instance:_render()
     vim.api.nvim_set_option_value("buftype", "nofile", {
         buf = self.bufnr
     })
+    log.trace("Flushing " ..
+        #lines .. " lines to buffer " .. self.bufnr .. " on win " .. self.winid)
     vim.api.nvim_buf_set_lines(self.bufnr, 0, -1, false, lines)
     vim.api.nvim_set_option_value("modifiable", false, {
         buf = self.bufnr
