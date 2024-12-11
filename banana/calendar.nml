@@ -25,6 +25,9 @@
         column-gap: 1ch;
         margin: 0ch 1ch;
       }
+      .calendarHeader > :nth-child(3n + 1) {
+        hl-bg: gray;
+      }
       .calendarHeader > div {
         text-align: center;
       }

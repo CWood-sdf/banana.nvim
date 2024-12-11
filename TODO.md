@@ -39,16 +39,16 @@
 
 ### Components
 
-- [ ] Per-file components? or define components with special tag (template?)?
-- [ ] Child content (\<slot>)
-- [ ] Attributes
-- [ ] Dom queryable in contained scripts, but not outside (unless shadow=false)
-- [ ] Inline/block detection
-- [ ] Need a special renderer that just renders sub stuff?
-- [ ] Seperate shadow dom (aka all component doms are stored as seperate trees)
-- [ ] `shadow` property? (if !shadow then clone tree (also queryabledom), if shadow then noclone)
-- [ ] Closelyish follows webcomponents
-- [ ] should be similarish to loadNmlTo
+- [x] Per-file components? or define components with special tag (template?)?
+- [x] Child content (\<slot>)
+- [x] Attributes
+- [x] Dom queryable in contained scripts, but not outside (unless shadow=false)
+- [x] Inline/block detection
+- [x] Need a special renderer that just renders sub stuff?
+- [x] Seperate shadow dom (aka all component doms are stored as seperate trees)
+- [x] `shadow` property? (if !shadow then clone tree (also queryabledom), if shadow then noclone)
+- [x] Closelyish follows webcomponents
+- [x] should be similarish to loadNmlTo
 
 ### Styling Language
 
@@ -64,7 +64,7 @@
 
 - [x] handles overflow
 - [x] text-align (missing justify)
-- [ ] aspect-ratio
+- [x] aspect-ratio
 - [x] display: flex, grid, none
 - [x] height/width
 - [ ] list-style

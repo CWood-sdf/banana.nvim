@@ -3,7 +3,9 @@ local log = require("banana.lazyRequire")("banana.utils.log")
 local M = {}
 ---@enum FilterType
 M.FilterType = {
+    --- takes an ast and returns the descendants that fit
     Selector = 0,
+    --- takes an ast and returns whether it matches a specific pattern
     Where = 1,
 }
 
@@ -17,9 +19,9 @@ M.Specificity = {
     Pseudoclass = 1 * maxCount,
     Id = 1 * maxCount * maxCount,
     Inline = 1 * maxCount * maxCount * maxCount,
-
 }
 
+---A representation of a selector that takes in an ast and returns new ast nodes (eg child selector)
 ---@class (exact) Banana.Ncss.Selector
 ---@field select? fun(ast: Banana.Ast): boolean
 ---@field manualSelect? fun(ast: Banana.Ast): Banana.Ast[]
@@ -65,6 +67,7 @@ end
 ---@return Banana.Ncss.Selector
 function M.newSelector(select, specificity)
     ---@type Banana.Ncss.Selector
+    ---@diagnostic disable-next-line: missing-fields
     local selector = {
         select      = select,
         filterType  = M.FilterType.Selector,
@@ -140,6 +143,7 @@ M.selectors = {
 ---@return Banana.Ncss.Selector
 function M.newManualSelector(select, specificity)
     ---@type Banana.Ncss.Selector
+    ---@diagnostic disable-next-line: missing-fields
     local selector = {
         manualSelect = select,
         filterType   = M.FilterType.Selector,
@@ -155,11 +159,14 @@ end
 ---@class (exact) Banana.Ncss.Where
 ---@field satisfies fun(ast: Banana.Ast): boolean
 ---@field filterType FilterType
+---@field init fun(self: Banana.Ncss.Where)
 ---@field specificity number
+---@field iterForward boolean only use this if you have a reason
 local Where = {
     satisfies   = function () return true end,
     filterType  = M.FilterType.Where,
     specificity = 0,
+    iterForward = false,
 }
 
 ---@return Banana.Ncss.Selector
@@ -169,10 +176,15 @@ end
 
 ---@param satisfies fun(ast: Banana.Ast): boolean
 ---@param specificity number
+---@param iterForward boolean? only use this if you have a reason
+---@param init fun(self: Banana.Ncss.Where)?
 ---@return Banana.Ncss.Where
-function M.newWhere(satisfies, specificity)
+function M.newWhere(satisfies, specificity, iterForward, init)
     ---@type Banana.Ncss.Where
+    ---@diagnostic disable-next-line: missing-fields
     local where = {
+        init        = init or function () end,
+        iterForward = iterForward or false,
         satisfies   = satisfies,
         filterType  = M.FilterType.Where,
         specificity = specificity,
@@ -204,8 +216,20 @@ function Query:find(ast)
     end
     local ret = self.rootSelector:getMatches(ast)
     for _, v in ipairs(self.filters) do
-        if v.filterType == M.FilterType.Where then
+        if v.filterType == M.FilterType.Where and v.iterForward then
             ---@cast v Banana.Ncss.Where
+            v:init()
+            local i = 1
+            while i < #ret do
+                if not v.satisfies(ret[i]) then
+                    table.remove(ret, i)
+                else
+                    i = i + 1
+                end
+            end
+        elseif v.filterType == M.FilterType.Where then
+            ---@cast v Banana.Ncss.Where
+            v:init()
             for i = #ret, 1, -1 do
                 if not v.satisfies(ret[i]) then
                     table.remove(ret, i)

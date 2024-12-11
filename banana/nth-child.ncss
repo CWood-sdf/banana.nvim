@@ -1,0 +1,10 @@
+li:nth-child(-4n - 4) { }
+li:nth-child(-4n + 4) { }
+li:nth-child(4n + 4) { }
+li:nth-child(-4n) { }
+li:nth-child(-n) { }
+li:nth-child(4n) { }
+li:nth-child(-4) { }
+li:nth-child(4) { }
+li:nth-child(n) { }
+li:nth-child(even) { }

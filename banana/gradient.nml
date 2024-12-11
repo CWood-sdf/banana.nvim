@@ -2,20 +2,24 @@
   <head>
     <style>
       nml {
-        width: 50%;
+        width: 90%;
+      }
+      body {
+        padding-top: 8ch;
+        padding-left: 8ch;
       }
 
       .grad {
         hl-bg: radial-gradient(#ff8000 30% 60%, #0000ff);
-        width: 65ch;
+        width: 100%;
         height: 7ch;
       }
 
       .tgrad {
-        hl-bg: radial-gradient(red, orange, yellow, green, blue);
-        hl-fg: radial-gradient(black, black, black, black, white);
+        /* hl-bg: radial-gradient(red, orange, yellow, green, blue); */
+        /* hl-fg: radial-gradient(black, black, black, black, white); */
         /* hl-fg: #000000; */
-        /* hl-bg: linear-gradient(45deg, #ffffff, #0000ff); */
+        hl-fg: linear-gradient(45deg, #ff8000, #0000ff);
         width: fit-content;
       }
       /* .small { */
@@ -28,18 +32,27 @@
     </style>
   </head>
   <body>
-    <!-- <div class="grad"></div> -->
 
     <div>
       <!-- prettier-ignore -->
       <div class="tgrad" s=" ">
-<pre> ______  ___   _   _   ___   _   _   ___      _     _             </pre>
-<pre> | ___ \/ _ \ | \ | | / _ \ | \ | | / _ \    | |   | |            </pre>
-<pre> | |_/ / /_\ \|  \| |/ /_\ \|  \| |/ /_\ \   | |__ | |___      __ </pre>
-<pre> | ___ \  _  || . ` ||  _  || . ` ||  _  |   | '_ \| __\ \ /\ / / </pre>
-<pre> | |_/ / | | || |\  || | | || |\  || | | |_  | |_) | |_ \ V  V /  </pre>
-<pre> \____/\_| |_/\_| \_/\_| |_/\_| \_/\_| |_( ) |_.__/ \__| \_/\_/   </pre>
-<pre>                                         |/                       </pre>
+
+<pre> ____    ___  ___  __ __ ____ ___ ___         ____  ______ __    __ </pre>
+<pre>|    \  /  _]/   \|  |  |    |   |   |       |    \|      |  |__|  |</pre>
+<pre>|  _  |/  [_|     |  |  ||  || _   _ |       |  o  )      |  |  |  |</pre>
+<pre>|  |  |    _]  O  |  |  ||  ||  \_/  |       |     |_|  |_|  |  |  |</pre>
+<pre>|  |  |   [_|     |  :  ||  ||   |   |__     |  O  | |  | |  `  '  |</pre>
+<pre>|  |  |     |     |\   / |  ||   |   |  |    |     | |  |  \      / </pre>
+<pre>|__|__|_____|\___/  \_/ |____|___|___|_ |    |_____| |__|   \_/\_/  </pre>
+<pre>                                       \|                           </pre>
+
+<!-- <pre> ______  ___   _   _   ___   _   _   ___      _     _             </pre> -->
+<!-- <pre> | ___ \/ _ \ | \ | | / _ \ | \ | | / _ \    | |   | |            </pre> -->
+<!-- <pre> | |_/ / /_\ \|  \| |/ /_\ \|  \| |/ /_\ \   | |__ | |___      __ </pre> -->
+<!-- <pre> | ___ \  _  || . ` ||  _  || . ` ||  _  |   | '_ \| __\ \ /\ / / </pre> -->
+<!-- <pre> | |_/ / | | || |\  || | | || |\  || | | |_  | |_) | |_ \ V  V /  </pre> -->
+<!-- <pre> \____/\_| |_/\_| \_/\_| |_/\_| \_/\_| |_( ) |_.__/ \__| \_/\_/   </pre> -->
+<!-- <pre>                                         |/                       </pre> -->
       </div>
     </div>
   </body>

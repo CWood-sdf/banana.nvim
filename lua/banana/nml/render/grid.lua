@@ -248,7 +248,7 @@ end
 ---@return Banana.Box, integer
 function M.render(ast, parentHl, parentWidth, parentHeight, startX,
                   startY, inherit, extra)
-    -- flame.new("TagInfo:renderGridBlock")
+    flame.new("TagInfo:renderGridBlock")
     local insert = table.insert
     local hl = ast:_mixHl(parentHl)
     local so = M.getGridSo()
@@ -737,7 +737,7 @@ function M.render(ast, parentHl, parentWidth, parentHeight, startX,
             start)
     end
 
-    -- flame.pop()
+    flame.pop()
     return ret, #ast.nodes + 1
 end
 
