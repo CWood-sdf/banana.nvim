@@ -2,12 +2,6 @@
 
 ## [0.2.0](https://github.com/CWood-sdf/banana.nvim/compare/v0.1.0...v0.2.0) (2024-12-11)
 
-This release introduces support for two really important things: gradients and components!
-
-Gradients (unlike in css) can be applied as both a background *and* foreground highlight. Currently, only radial and linear gradients are supported (but without custom color space interpolation), however, a framework is currently in place that will allow other gradient types to be made really easily. 
-
-Components are also a very important thing for building good applications. The current component system is partially inspired by web components and svelte's component system. It is currently very rudimentary but is powerful enough for most use cases while avoiding the headaches of web components.
-
 
 ### Features
 
