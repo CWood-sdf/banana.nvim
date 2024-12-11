@@ -1,5 +1,54 @@
 # Changelog
 
+## [0.2.0](https://github.com/CWood-sdf/banana.nvim/compare/v0.1.0...v0.2.0) (2024-12-11)
+
+
+### Features
+
+* **api:** add getComponentRoot and getAttributeSubstitution ([09c4cab](https://github.com/CWood-sdf/banana.nvim/commit/09c4cab006b636e76574e95bdeefffac24c886a7))
+* **api:** remove getComponentRoot ([2d6749e](https://github.com/CWood-sdf/banana.nvim/commit/2d6749efb720c23bce711336b4a94361768256b6))
+* **component:** dont render after running scripts jic the script changes layout ([a4d7b2b](https://github.com/CWood-sdf/banana.nvim/commit/a4d7b2bd633ddfe4bc463548e6fa6fd9124e3b1e))
+* **component:** import when declared in a script ([758c6f0](https://github.com/CWood-sdf/banana.nvim/commit/758c6f0b92496f151d1069691748ea424045ad66))
+* **component:** more component work ([a9636b8](https://github.com/CWood-sdf/banana.nvim/commit/a9636b8118678c28212277e4672e7c347b7e8b41))
+* **component:** more work ([9a17671](https://github.com/CWood-sdf/banana.nvim/commit/9a17671b84b97944d069e7d59b4dd77d58bb5da3))
+* **component:** more work on getting the system working ([4aab84f](https://github.com/CWood-sdf/banana.nvim/commit/4aab84fad9508101a80afdfb8943033bc44e169f))
+* **components:** start working on components ([bf0b7dc](https://github.com/CWood-sdf/banana.nvim/commit/bf0b7dcb07ee9ec59f87e6b2bb3194c28dd80303))
+* counter ([948dd0b](https://github.com/CWood-sdf/banana.nvim/commit/948dd0bccd9e431115236ec5b51a986ad85118b5))
+* **Gradient:** add caching for linear colors ([82fb519](https://github.com/CWood-sdf/banana.nvim/commit/82fb519ddf1225c3deac97c6d5616447587b2613))
+* **Gradient:** add caching for radial-gradient ([38df71f](https://github.com/CWood-sdf/banana.nvim/commit/38df71fce096c035386927d89d3fc9894d3c3d54))
+* **gradient:** add color stop parser, and have functions return mult ([a948fb1](https://github.com/CWood-sdf/banana.nvim/commit/a948fb1980657f696f5d7813bb1a71ef2f250d9c))
+* **gradient:** add name to color parser ([b2e97ad](https://github.com/CWood-sdf/banana.nvim/commit/b2e97adb5d8f07269c014da4c9a3b7d4a53e1274))
+* **gradient:** add og radial-gradient ([fa6146b](https://github.com/CWood-sdf/banana.nvim/commit/fa6146b341121b7b6fe723ed2fc056fd0e2ad8af))
+* **gradient:** first working linear-grad prototype ([df221ee](https://github.com/CWood-sdf/banana.nvim/commit/df221ee2e91c1ff7bf95191c1c31f2e525b2709d))
+* **gradient:** fix random things ([ba59292](https://github.com/CWood-sdf/banana.nvim/commit/ba59292a8041b3b7e8c29b5a05a53783a266e623))
+* **gradient:** full color stops ([62a610f](https://github.com/CWood-sdf/banana.nvim/commit/62a610f0e08fb475ff87d49ae230cf61a5bd2e45))
+* **gradient:** linear works for all angles ([9c81a00](https://github.com/CWood-sdf/banana.nvim/commit/9c81a003fa41fa62011d985a087d73af8fb7059c))
+* **grid:** add nfr unit ([d6b72b4](https://github.com/CWood-sdf/banana.nvim/commit/d6b72b4978ecff5e4f34a19ebda52aac5d750381))
+* **Instance:** add debug window for debug output (instead of bottom) ([82fb519](https://github.com/CWood-sdf/banana.nvim/commit/82fb519ddf1225c3deac97c6d5616447587b2613))
+* **linear-gradient:** add support for "to ..." ([3b4f813](https://github.com/CWood-sdf/banana.nvim/commit/3b4f813ae79ac60490bb1090e5fd9b086197eb06))
+* **linear-gradient:** support for angle ([7c47b15](https://github.com/CWood-sdf/banana.nvim/commit/7c47b15924e545d5464fde51109808fda06e4740))
+* **ncss:** add aspect-ratio ([09c4cab](https://github.com/CWood-sdf/banana.nvim/commit/09c4cab006b636e76574e95bdeefffac24c886a7))
+* **ncss:** add nth-child pseudo class selector ([caba20a](https://github.com/CWood-sdf/banana.nvim/commit/caba20a8a99dd6d8906eabcd77605763cb6e187b))
+* **nml:** prep treesitter for components ([80f2b3f](https://github.com/CWood-sdf/banana.nvim/commit/80f2b3f45601c0c6541bccf5198d3ab5399ff963))
+* **render:** dont have infinite loop when width=0 ([2e3d837](https://github.com/CWood-sdf/banana.nvim/commit/2e3d837bf0f1e80ad8f4fb44d7b0250773cfb74d))
+* **tag:** move functions to new file ([4aab84f](https://github.com/CWood-sdf/banana.nvim/commit/4aab84fad9508101a80afdfb8943033bc44e169f))
+
+
+### Bug Fixes
+
+* **aspect-ratio:** floor values ([d6b72b4](https://github.com/CWood-sdf/banana.nvim/commit/d6b72b4978ecff5e4f34a19ebda52aac5d750381))
+* **box:** prevent nil errors ([d6b72b4](https://github.com/CWood-sdf/banana.nvim/commit/d6b72b4978ecff5e4f34a19ebda52aac5d750381))
+* **box:** regression in grid unit tests ([eb33842](https://github.com/CWood-sdf/banana.nvim/commit/eb33842899c27ad847d37efcac259ba770d33f26))
+* **component:** force componentStack to be a guaranteed value ([8f1e8c8](https://github.com/CWood-sdf/banana.nvim/commit/8f1e8c8ad8030a499a7717abbc8f0d54fb5f543f))
+* **component:** import things properly ([20aa25c](https://github.com/CWood-sdf/banana.nvim/commit/20aa25c6b31a84dcb836434b3805900e8acbbc9e))
+* **component:** prevent cyclic imports ([934b1d5](https://github.com/CWood-sdf/banana.nvim/commit/934b1d56111c38e151fc4227e4215f513aaed33a))
+* **gradient:** properly compute widthToCorner for linear ([2a1f524](https://github.com/CWood-sdf/banana.nvim/commit/2a1f524de29ff6ee0459f000a1e0eeb2cdb0cd10))
+* **grid:** call .render() ([ab65019](https://github.com/CWood-sdf/banana.nvim/commit/ab65019b5f0f0624739924dbb096bbcd0d3c7c2a))
+* **grid:** prevent 0 index from being used ([09c4cab](https://github.com/CWood-sdf/banana.nvim/commit/09c4cab006b636e76574e95bdeefffac24c886a7))
+* **instance:** check if dir exists so netrw doesnt open up ([3350039](https://github.com/CWood-sdf/banana.nvim/commit/3350039f1fd223ba960d1fc2622bbf2086ebb4ab))
+* **nml:** attach src= scripts to component ([09c4cab](https://github.com/CWood-sdf/banana.nvim/commit/09c4cab006b636e76574e95bdeefffac24c886a7))
+* **render:** list style color contains color of parent element ([cef59e9](https://github.com/CWood-sdf/banana.nvim/commit/cef59e97ce906b936d3b6beb4dcca7e370f13fd0))
+
 ## [0.1.0](https://github.com/CWood-sdf/banana.nvim/compare/v0.0.1...v0.1.0) (2024-08-23)
 
 
