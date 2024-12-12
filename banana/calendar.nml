@@ -5,10 +5,13 @@
         style="hl-bg: hl-extract(bg, NormalFloat); height: 100%"
         id="daycontainer"
       >
-        <div style="text-align: right; padding: 2ch 1ch">%day</div>
+        <div style="text-align: left; padding: 2ch 1ch">%day</div>
       </div>
     </template>
     <style>
+      .calendarHeader > div.cool:nth-of-type(odd) {
+        hl-bg: gray;
+      }
       nml {
         width: 50%;
       }
@@ -25,8 +28,12 @@
         column-gap: 1ch;
         margin: 0ch 1ch;
       }
-      .calendarHeader > :nth-child(3n + 1) {
-        hl-bg: gray;
+      .calendarHeader2 {
+        display: grid;
+        grid-template-columns: repeat(7, 1nfr);
+        grid-template-rows: 1ch;
+        column-gap: 1ch;
+        margin: 0ch 1ch;
       }
       .calendarHeader > div {
         text-align: center;
@@ -48,10 +55,10 @@
         <span id="year"></span>
       </div>
       <div class="calendarHeader">
-        <div>Sun</div>
+        <div class="cool">Sun</div>
         <div>Mon</div>
-        <div>Tue</div>
-        <div>Wed</div>
+        <div class="cool">Tue</div>
+        <div class="cool">Wed</div>
         <div>Thu</div>
         <div>Fri</div>
         <div>Sat</div>

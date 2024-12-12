@@ -27,8 +27,14 @@ M.Specificity = {
 ---@field manualSelect? fun(ast: Banana.Ast): Banana.Ast[]
 ---@field filterType FilterType
 ---@field specificity number
+---@field init fun(self: Banana.Ncss.Selector)
+---@field requireSorted boolean?
+---@field dbg boolean
 local Selector = {
+    requireSorted = false,
+    dbg = false,
     select = function () return true end,
+    init = function () end,
     manualSelect = nil,
     filterType = M.FilterType.Selector,
     specificity = 0,
@@ -64,14 +70,19 @@ end
 
 ---@param select fun(ast: Banana.Ast): boolean
 ---@param specificity number
+---@param requireSorted boolean?
+---@param init fun(self: Banana.Ncss.Selector)?
 ---@return Banana.Ncss.Selector
-function M.newSelector(select, specificity)
+function M.newSelector(select, specificity, requireSorted, init)
     ---@type Banana.Ncss.Selector
     ---@diagnostic disable-next-line: missing-fields
     local selector = {
-        select      = select,
-        filterType  = M.FilterType.Selector,
-        specificity = specificity
+        requireSorted = requireSorted or false,
+        init          = init or function () end,
+        select        = select,
+        filterType    = M.FilterType.Selector,
+        specificity   = specificity,
+        dbg           = init ~= nil,
     }
 
     setmetatable(selector, {
@@ -140,14 +151,16 @@ M.selectors = {
 
 ---@param select fun(ast: Banana.Ast): Banana.Ast[]
 ---@param specificity number
+---@param requireSorted boolean?
 ---@return Banana.Ncss.Selector
-function M.newManualSelector(select, specificity)
+function M.newManualSelector(select, specificity, requireSorted)
     ---@type Banana.Ncss.Selector
     ---@diagnostic disable-next-line: missing-fields
     local selector = {
-        manualSelect = select,
-        filterType   = M.FilterType.Selector,
-        specificity  = specificity
+        manualSelect  = select,
+        filterType    = M.FilterType.Selector,
+        specificity   = specificity,
+        requireSorted = requireSorted or false,
     }
 
     setmetatable(selector, {
@@ -157,37 +170,46 @@ function M.newManualSelector(select, specificity)
 end
 
 ---@class (exact) Banana.Ncss.Where
+---@field castWarning string?
+---@field requireSorted boolean
 ---@field satisfies fun(ast: Banana.Ast): boolean
 ---@field filterType FilterType
 ---@field init fun(self: Banana.Ncss.Where)
 ---@field specificity number
----@field iterForward boolean only use this if you have a reason
+---@field dbg boolean
 local Where = {
+    dbg         = false,
     satisfies   = function () return true end,
     filterType  = M.FilterType.Where,
     specificity = 0,
-    iterForward = false,
 }
 
 ---@return Banana.Ncss.Selector
 function Where:toSelector()
-    return M.newSelector(self.satisfies, self.specificity)
+    if self.castWarning ~= nil then
+        log.throw(self.castWarning)
+    end
+    return M.newSelector(self.satisfies, self.specificity, self.requireSorted,
+        self.init)
 end
 
 ---@param satisfies fun(ast: Banana.Ast): boolean
 ---@param specificity number
----@param iterForward boolean? only use this if you have a reason
+---@param requireSorted boolean?
 ---@param init fun(self: Banana.Ncss.Where)?
+---@param castWarning string?
 ---@return Banana.Ncss.Where
-function M.newWhere(satisfies, specificity, iterForward, init)
+function M.newWhere(satisfies, specificity, requireSorted, init, castWarning)
     ---@type Banana.Ncss.Where
     ---@diagnostic disable-next-line: missing-fields
     local where = {
-        init        = init or function () end,
-        iterForward = iterForward or false,
-        satisfies   = satisfies,
-        filterType  = M.FilterType.Where,
-        specificity = specificity,
+        requireSorted = requireSorted or false,
+        init          = init or function () end,
+        dbg           = init ~= nil,
+        satisfies     = satisfies,
+        filterType    = M.FilterType.Where,
+        specificity   = specificity,
+        castWarning   = castWarning
     }
 
     setmetatable(where, {
@@ -206,6 +228,76 @@ local Query = {
     filters = {}
 }
 
+---@param arr Banana.Ast[]
+function Query:_sortArr(arr)
+    ---@type { [Banana.Ast]: number }
+    local elementMap = {}
+    table.sort(arr, function (l, r)
+        local ln = 0
+        if elementMap[l] == nil then
+            for i, node in l._parent:childIterWithI() do
+                elementMap[node] = i
+                if node == l then
+                    ln = i
+                    break
+                end
+            end
+        else
+            ln = elementMap[l]
+        end
+        local rn = 0
+        if elementMap[r] == nil then
+            for i, node in r._parent:childIterWithI() do
+                elementMap[node] = i
+                if node == r then
+                    rn = i
+                    break
+                end
+            end
+        else
+            rn = elementMap[r]
+        end
+        return ln < rn
+    end)
+end
+
+---@return boolean
+function Query:_matches(ast)
+    if not self.rootSelector.select(ast) then
+        return false
+    end
+    for _, f in ipairs(self.filters) do
+        if f.filterType ~= M.FilterType.Where then
+            log.throw("_matches can only use filters")
+            error("")
+        end
+        if not f.satisfies(ast) then
+            return false
+        end
+    end
+    return true
+end
+
+---@param arr (Banana.Ast|string)[]
+---@return Banana.Ast[]
+function Query:_applyTo(arr)
+    local ret = {}
+    for _, v in ipairs(self.filters) do
+        v:init()
+    end
+    for _, v in ipairs(arr) do
+        -- this is just to allow child_selector to be fast
+        if type(v) == "string" then
+            goto continue
+        end
+        if self:_matches(v) then
+            table.insert(ret, v)
+        end
+        ::continue::
+    end
+    return ret
+end
+
 ---@param ast Banana.Ast
 ---@return Banana.Ast[]
 function Query:find(ast)
@@ -214,41 +306,42 @@ function Query:find(ast)
             "rootSelector is nil in Ncss Query")
         error("")
     end
+    self.rootSelector:init()
     local ret = self.rootSelector:getMatches(ast)
+    local sorted = false
     for _, v in ipairs(self.filters) do
-        if v.filterType == M.FilterType.Where and v.iterForward then
+        v:init()
+        if v.requireSorted and not sorted then
+            sorted = true
+            self:_sortArr(ret)
+        end
+        if v.filterType == M.FilterType.Where then
             ---@cast v Banana.Ncss.Where
-            v:init()
             local i = 1
-            while i < #ret do
+            while i <= #ret do
                 if not v.satisfies(ret[i]) then
                     table.remove(ret, i)
                 else
                     i = i + 1
                 end
             end
-        elseif v.filterType == M.FilterType.Where then
-            ---@cast v Banana.Ncss.Where
-            v:init()
-            for i = #ret, 1, -1 do
-                if not v.satisfies(ret[i]) then
-                    table.remove(ret, i)
-                end
-            end
         elseif v.filterType == M.FilterType.Selector then
+            sorted = false
             ---@type { [Banana.Ast]: boolean }
+            local retMap = {}
+            ---@type Banana.Ast[]
             local newRet = {}
             ---@cast v Banana.Ncss.Selector
             for _, a in ipairs(ret) do
                 local extras = v:getMatches(a)
                 for _, r in ipairs(extras) do
-                    newRet[r] = true
+                    if retMap[r] == nil then
+                        retMap[r] = true
+                        table.insert(newRet, r)
+                    end
                 end
             end
-            ret = {}
-            for k, _ in pairs(newRet) do
-                table.insert(ret, k)
-            end
+            ret = newRet
         end
     end
 

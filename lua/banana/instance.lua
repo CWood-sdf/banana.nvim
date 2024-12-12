@@ -79,8 +79,6 @@ local Instance = {}
 ---@return Banana.Line[]
 function Instance:_virtualRender(ast, width, height)
     --flame.new("virtualRender")
-    ---@type Banana.Line[]
-    local ret = {}
     -- setmetatable(ret, { __mode = "kv" })
     local tag = ast.actualTag
     ---@type Banana.Renderer.ExtraInfo
@@ -367,11 +365,13 @@ function Instance:on(ev, opts)
         opts.command = nil
     else
         local cb = opts.callback
-        opts.callback = function ()
+        opts.callback = function (args)
             if not self.isVisible then
                 return
             end
-            cb()
+            if cb ~= nil then
+                cb(args)
+            end
         end
     end
     return vim.api.nvim_create_autocmd(ev, opts)

@@ -5,8 +5,99 @@ local log = require("banana.lazyRequire")("banana.utils.log")
 local M = {}
 ---@module 'banana.ncss.query'
 local q = require("banana.lazyRequire")("banana.ncss.query")
+
+---@param param TSNode
+---@param parser Banana.Ncss.ParseData
+---@return number, number
+local function parseAnBExpr(param, parser)
+    local inc = 0
+    local base = 0
+    if param:type() == ts_types.binary_expression then
+        local left = param:child(0)
+        local opN = param:child(1)
+        local right = param:child(2)
+        if right == nil or opN == nil or left == nil then
+            log.throw("Unreachable")
+            error("")
+        end
+        if left:type() ~= ts_types.integer_value then
+            log.throw(
+                "Expected left side of An+B expression to be an integer")
+            error("")
+        end
+        if left:child(0) == nil then
+            log.throw(
+                "The left side of an An+B expression in :nth-of-type must contain an 'n'")
+            error("")
+        end
+        local leftEndRow, leftEndCol = left:end_()
+        leftEndCol = leftEndCol - 1
+        inc = tonumber(parser:getStringFromRange(
+            { left:start() },
+            { leftEndRow, leftEndCol })) or 0
+        if right:type() ~= ts_types.integer_value then
+            log.throw(
+                "Expected right side of An+B expression to be an integer")
+            error("")
+        end
+        if right:child(0) ~= nil then
+            log.throw(
+                "Expected right side of An+B expression to be a pure integer with no units")
+            error("")
+        end
+        base = tonumber(parser:getStringFromRange({ right:start() },
+            { right:end_() })) or 0
+        local op = parser:getStringFromRange({ opN:start() }, { opN:end_() })
+        if op == "-" then
+            base = base * -1
+        elseif op ~= "+" then
+            log.throw(
+                "Expected operator in An+B expression to either be + or -, instead got '" ..
+                op .. "'")
+        end
+    elseif param:type() == ts_types.integer_value then
+        local leftEndRow, leftEndCol = param:end_()
+        if param:child(0) ~= nil then
+            leftEndCol = leftEndCol - 1
+            inc = tonumber(parser:getStringFromRange(
+                { param:start() },
+                { leftEndRow, leftEndCol })) or 0
+        else
+            leftEndCol = leftEndCol - 1
+            base = tonumber(parser:getStringFromRange(
+                { param:start() },
+                { leftEndRow, leftEndCol })) or 0
+        end
+    elseif param:type() == ts_types.tag_name then
+        local str = parser:getStringFromRange({ param:start() },
+            { param:end_() })
+        if str == "even" then
+            base = 2
+            inc = 2
+        elseif str == "odd" then
+            base = 1
+            inc = 2
+        elseif str == "n" then
+            base = 1
+            inc = 1
+        elseif str == "-n" then
+            log.warn(":nth-of-type(-n) will select nothing")
+            base = 0
+            inc = -1
+        else
+            log.throw(
+                "Invalid word in :nth-of-type(), expected 'even', 'odd', or 'n' but got '" ..
+                str .. "'")
+        end
+    else
+        log.throw(
+            ":nth-of-type requires one argument (either a An + B expression or even/odd")
+        error("")
+    end
+    return base, inc
+end
 ---@alias Banana.Ncss.PseudoGenRet fun(ast: Banana.Ast): boolean
----@type { [string]: fun(node: TSNode?, parser: Banana.Ncss.ParseData): Banana.Ncss.PseudoGenRet, number?}
+---@type { [string]: fun(node: TSNode?, parser: Banana.Ncss.ParseData): ((fun(ast: Banana.Ast): boolean), number?, boolean?, fun()?, string?) }
 local pseudoClasses = {
     ["not"] = function (node, parser)
         if node == nil then
@@ -44,6 +135,54 @@ local pseudoClasses = {
             return true
         end, spec
     end,
+    ["nth-of-type"] = function (node, parser)
+        if node == nil then
+            log.throw(":nth-of-type requires a parameter")
+            error("")
+        end
+        local child = node:child(1)
+        if child == nil then
+            log.throw(
+                ":nth-of-type requires one argument (either a An + B expression or even/odd")
+            error("")
+        end
+        local base, inc = parseAnBExpr(child, parser)
+        ---@type { [Banana.Ast]: number }
+        local parentNums = {}
+        local init = function ()
+            parentNums = {}
+        end
+        local fn = function (v)
+            ---@cast v Banana.Ast
+
+            if inc == 0 and base == 0 then return true end
+            if base == 1 and inc == 1 then return true end
+            if inc >= 0 and base > #v._parent.nodes then
+                return false
+            end
+            if inc <= 0 and base < 1 then
+                return false
+            end
+            local num = 1
+            if parentNums[v._parent] == nil then
+                parentNums[v._parent] = 1
+            else
+                num = parentNums[v._parent]
+            end
+
+            local ret = false
+            if (num - base) % math.abs(inc) == 0 then
+                if (inc < 0 and num <= base) or (inc > 0 and num >= base) then
+                    ret = true
+                end
+            end
+            parentNums[v._parent] = num + 1
+            return ret
+        end
+        local spec = q.Specificity.Pseudoclass
+        return fn, spec, true, init,
+            "casting nth-of-type to a selector will cause undefined behavior (NOTE: this is usually done because nth-of-type is directly after a child (>) or descendant ( ) selector). You might be meaning to use nth-child selector or accidentally put a space in your selector"
+    end,
     ["nth-child"] = function (node, parser)
         if node == nil then
             log.throw(":nth-child requires a parameter")
@@ -55,97 +194,13 @@ local pseudoClasses = {
                 ":nth-child requires one argument (either a An + B expression or even/odd")
             error("")
         end
-        ---@type fun(ast: Banana.Ast): boolean
-        local fn = nil
-        local base = 0
-        local inc = 0
-        if child:type() == ts_types.binary_expression then
-            local left = child:child(0)
-            local opN = child:child(1)
-            local right = child:child(2)
-            if right == nil or opN == nil or left == nil then
-                log.throw("Unreachable")
-                error("")
-            end
-            if left:type() ~= ts_types.integer_value then
-                log.throw(
-                    "Expected left side of An+B expression to be an integer")
-                error("")
-            end
-            if left:child(0) == nil then
-                log.throw(
-                    "The left side of an An+B expression in :nth-child must contain an 'n'")
-                error("")
-            end
-            local leftEndRow, leftEndCol = left:end_()
-            leftEndCol = leftEndCol - 1
-            inc = tonumber(parser:getStringFromRange(
-                { left:start() },
-                { leftEndRow, leftEndCol })) or 0
-            if right:type() ~= ts_types.integer_value then
-                log.throw(
-                    "Expected right side of An+B expression to be an integer")
-                error("")
-            end
-            if right:child(0) ~= nil then
-                log.throw(
-                    "Expected right side of An+B expression to be a pure integer with no units")
-                error("")
-            end
-            base = tonumber(parser:getStringFromRange({ right:start() },
-                { right:end_() })) or 0
-            local op = parser:getStringFromRange({ opN:start() }, { opN:end_() })
-            if op == "-" then
-                base = base * -1
-            elseif op ~= "+" then
-                log.throw(
-                    "Expected operator in An+B expression to either be + or -, instead got '" ..
-                    op .. "'")
-            end
-        elseif child:type() == ts_types.integer_value then
-            local leftEndRow, leftEndCol = child:end_()
-            if child:child(0) ~= nil then
-                leftEndCol = leftEndCol - 1
-                inc = tonumber(parser:getStringFromRange(
-                    { child:start() },
-                    { leftEndRow, leftEndCol })) or 0
-            else
-                leftEndCol = leftEndCol - 1
-                base = tonumber(parser:getStringFromRange(
-                    { child:start() },
-                    { leftEndRow, leftEndCol })) or 0
-            end
-        elseif child:type() == ts_types.tag_name then
-            local str = parser:getStringFromRange({ child:start() },
-                { child:end_() })
-            if str == "even" then
-                base = 2
-                inc = 2
-            elseif str == "odd" then
-                base = 1
-                inc = 2
-            elseif str == "n" then
-                base = 1
-                inc = 1
-            elseif str == "-n" then
-                log.warn(":nth-child(-n) will select nothing")
-                base = 0
-                inc = -1
-            else
-                log.throw(
-                    "Invalid word in :nth-child(), expected 'even', 'odd', or 'n' but got '" ..
-                    str .. "'")
-            end
-        else
-            log.throw(
-                ":nth-child requires one argument (either a An + B expression or even/odd")
-            error("")
-        end
-        fn = function (v)
+        local base, inc = parseAnBExpr(child, parser)
+        local fn = function (v)
             if inc == 0 and base == 0 then return true end
             if inc >= 0 and base > #v._parent.nodes then
                 return false
             end
+            if base == 1 and inc == 1 then return true end
             if inc <= 0 and base < 1 then
                 return false
             end
@@ -208,8 +263,6 @@ local pseudoClasses = {
     end,
 
 }
----@module 'banana.ncss.tsTypes'
-local ts_types = require("banana.lazyRequire")("banana.ncss.tsTypes")
 ---@type { [Banana.Ncss.TSTypes]: fun(node: TSNode, parser: Banana.Ncss.ParseData): Banana.Ncss.Where|Banana.Ncss.Selector }
 M.queryParsers = {
     [ts_types.pseudo_class_selector] = function (node, parser)
@@ -236,12 +289,16 @@ M.queryParsers = {
                 name .. "'")
             error("")
         end
-        local fn, spec = parse(node:child(argsIndex), parser)
+        local fn, spec, sorted, init, castWarning = parse(node:child(argsIndex),
+            parser)
         spec = spec or q.Specificity.Pseudoclass
         if isSel then
-            return q.newSelector(fn, spec)
+            if castWarning ~= nil then
+                log.throw(castWarning)
+            end
+            return q.newSelector(fn, spec, sorted, init)
         end
-        return q.newWhere(fn, spec)
+        return q.newWhere(fn, spec, sorted, init, castWarning)
     end,
     [ts_types.universal_selector] = function ()
         return q.newSelector(function () return true end, q.Specificity.Star)
@@ -273,25 +330,14 @@ M.queryParsers = {
             if arr == nil then
                 arr = {}
             end
+            for _, v in ipairs(query.filters) do
+                v:init()
+            end
             for _, v in ipairs(ast.nodes) do
                 if type(v) == "string" then
                     goto continue
                 end
-                local canInsert = false
-                if query.rootSelector.select(v) then
-                    canInsert = true
-                end
-                local i = 1
-                while canInsert and query.filters[i] ~= nil do
-                    if query.filters[i].filterType ~= q.FilterType.Where then
-                        log.throw(
-                            "descendant_selector can only have where filters")
-                        error("")
-                    end
-                    canInsert = query.filters[i].satisfies(v)
-                    i         = i + 1
-                end
-                if canInsert then
+                if query:_matches(v) then
                     table.insert(arr, v)
                 end
                 sel(v, arr)
@@ -330,31 +376,7 @@ M.queryParsers = {
         end
 
         return q.newManualSelector(function (ast)
-            local ret = {}
-            for _, v in ipairs(ast.nodes) do
-                if type(v) == "string" then
-                    goto continue
-                end
-                local canInsert = false
-                if query.rootSelector.select(v) then
-                    canInsert = true
-                end
-                local i = 1
-                while canInsert and query.filters[i] ~= nil do
-                    if query.filters[i].filterType ~= q.FilterType.Where then
-                        log.throw(
-                            "child_selector can only have where filters")
-                        error("")
-                    end
-                    canInsert = query.filters[i].satisfies(v)
-                    i         = i + 1
-                end
-                if canInsert then
-                    table.insert(ret, v)
-                end
-                ::continue::
-            end
-            return ret
+            return query:_applyTo(ast.nodes)
         end, query.specificity)
     end,
 
