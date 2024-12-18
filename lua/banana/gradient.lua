@@ -15,7 +15,7 @@ local flame = require("banana.lazyRequire")("banana.utils.debug_flame")
 ---@field start? Banana.Ncss.UnitValue
 ---@field midpoint? Banana.Ncss.UnitValue
 
----@class (exact) Banana.Gradient
+---@class Banana.Gradient
 ---@field width number?
 ---@field height number?
 ---@field type "radial"|"linear"
@@ -28,19 +28,92 @@ local flame = require("banana.lazyRequire")("banana.utils.debug_flame")
 ---@field repeating boolean
 ---@field line? number
 ---@field col? number
----@field owned boolean
----@field parent? Banana.Gradient
----@field children? Banana.Gradient
----@field childI? number
 ---@field lenNeeded boolean
+---@field private locked boolean
+---@field private cloneList Banana.Gradient[]
+---@field private freeIndex number
+---@field private cloneOwner Banana.Gradient?
 ---@field private cache number[]
 ---@field private cacheDirty boolean
+---@field private parentListIndex? number
+---@field private owner? Banana.Ast
 local Gradient = {}
 
 ---@class (exact) Banana.Highlight: vim.api.keyset.highlight
 ---@field fg? string|Banana.Gradient
 ---@field bg? string|Banana.Gradient
 ---@field __name? string
+
+---@param ast Banana.Ast
+---@return Banana.Gradient
+function Gradient:getInstance(ast)
+    if ast == self.owner then
+        return self
+    end
+    if self.cloneOwner ~= nil then
+        return self.cloneOwner:getInstance(ast)
+    end
+    local ret
+    if not self.locked then
+        self.locked = true
+        ret = self
+    else
+        -- search list for available
+        while self.freeIndex <= #self.cloneList do
+            if not self.cloneList[self.freeIndex].locked then
+                ret            = self.cloneList[self.freeIndex]
+                self.freeIndex = self.freeIndex + 1
+                break
+            end
+            self.freeIndex = self.freeIndex + 1
+        end
+        if ret == nil then
+            ret = self:_clone()
+            self.freeIndex = #self.cloneList + 1
+        end
+    end
+    ret.owner = ast
+    return ret
+end
+
+---@return Banana.Gradient
+function Gradient:_clone()
+    if self.cloneOwner ~= nil then
+        return self.cloneOwner:_clone()
+    end
+    ---@type Banana.Gradient
+    ---@diagnostic disable-next-line: missing-fields
+    local clone = {
+        locked = false,
+        type = self.type,
+        colors = self.colors,
+        borders = self.borders,
+        angleOffset = self.angleOffset,
+        sideTarget = self.sideTarget,
+        cornerTarget = self.cornerTarget,
+        distanceOffset = self.distanceOffset,
+        repeating = self.repeating,
+        lenNeeded = self.lenNeeded,
+        cloneOwner = self,
+        cache = {},
+        cacheDirty = true,
+        cloneList = {},
+        freeIndex = 0,
+    }
+    setmetatable(clone, { __index = Gradient })
+
+    table.insert(self.cloneList, clone)
+    clone.parentListIndex = #self.cloneList
+    return clone
+end
+
+function Gradient:unlock()
+    self.owner = nil
+    self.locked = false
+    if self.cloneOwner ~= nil and self.parentListIndex < self.cloneOwner.freeIndex then
+        self.cloneOwner.freeIndex = self.parentListIndex
+    end
+end
 
 function Gradient:startLineRender()
     self.col = 0
@@ -250,6 +323,18 @@ function Gradient:_getLinearColor()
     local len = (gradX * gradLineX + gradY * gradLineY) / halfGradLine
 
     local mult = (-len + halfGradLine) / (2 * halfGradLine)
+    -- print("l,c")
+    -- print(line .. ", " .. col)
+    -- print("wtoc, htoc")
+    -- print(widthToCorner .. ", " .. heightToCorner)
+    -- print("lineX, lineY")
+    -- print(gradLineX .. ", " .. gradLineY)
+    -- print("halfLine")
+    -- print(halfGradLine)
+    -- print("gradX,Y")
+    -- print(gradX .. ", " .. gradY)
+    -- print("len: " .. len)
+    -- print("mult: " .. mult)
 
     -- flame.pop()
     return mult
@@ -260,6 +345,7 @@ end
 ---@param m number
 ---@return string
 function Gradient:_lerpColors(l, r, m)
+    -- print("Lerping on " .. m)
     local red   = (r.r - l.r) * m + l.r
     local green = (r.g - l.g) * m + l.g
     local blue  = (r.b - l.b) * m + l.b
@@ -267,8 +353,14 @@ function Gradient:_lerpColors(l, r, m)
     red         = math.min(math.max(red, 0), 255)
     green       = math.min(math.max(green, 0), 255)
     blue        = math.min(math.max(blue, 0), 255)
+    -- print(red, green, blue)
 
     return string.format("#%02x%02x%02x", red, green, blue)
+end
+
+function Gradient:_testSpot(row, col)
+    self.line = row
+    self.col = col
 end
 
 ---Returns the highlight color, and also whether end of line has been reached
@@ -400,16 +492,21 @@ end
 
 ---@return Banana.Gradient
 function M.linearGradient()
+    -- vim.notify("creating linear gradient\n")
     ---@type Banana.Gradient
+    ---@diagnostic disable-next-line: missing-fields
     local gradient = {
+        locked = false,
+        cloneOwner = nil,
+        cloneList = {},
+        freeIndex = 1,
         cacheDirty = true,
         cache = {},
         lenNeeded = true,
-        owned = false,
         repeating = false,
         colors = {},
         type = "linear",
-        angleOffset = 30,
+        angleOffset = 0,
     }
     setmetatable(gradient, { __index = Gradient })
     return gradient
@@ -418,11 +515,15 @@ end
 ---@return Banana.Gradient
 function M.radialGradient()
     ---@type Banana.Gradient
+    ---@diagnostic disable-next-line: missing-fields
     local gradient = {
+        locked = false,
+        cloneOwner = nil,
+        cloneList = {},
+        freeIndex = 1,
         cacheDirty = true,
         cache = {},
         lenNeeded = true,
-        owned = false,
         repeating = false,
         type = "radial",
         colors = {},

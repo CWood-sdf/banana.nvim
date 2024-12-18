@@ -20,13 +20,13 @@ M.padNames = { "left", "top", "right", "bottom" }
 ---@field rightX number
 ---@field bottomY number
 
----@class (exact) Banana.Ast
+---@class Banana.Ast
 ---@field nodes (string|Banana.Ast)[]
 ---@field tag string
 ---@field attributes Banana.Attributes
 ---@field actualTag Banana.TagInfo
 ---@field style { [string]: Banana.Ncss.StyleValue[] }
----@field hl Banana.Highlight?
+---@field hl Banana.Highlight
 ---@field private padding Banana.Ncss.UnitValue[]
 ---@field private margin Banana.Ncss.UnitValue[]
 ---@field classes? { [string]: boolean }
@@ -75,7 +75,9 @@ function M.Ast:new(tag, parent, source)
         path = {}
     end
     ---@type Banana.Ast
+    ---@diagnostic disable-next-line: missing-fields
     local ast = {
+        hl = {},
         inlineStyle = {},
         componentPath = path,
         fromFile = source,
@@ -588,7 +590,8 @@ function M.Ast:_defaultStyles()
         },
     }
     self.style = {}
-    self.hl = nil
+    self:_unlockGradients()
+    self.hl = {}
     self.precedences = {}
 end
 
@@ -633,7 +636,23 @@ function M.Ast:clone()
     newAst.attributes = vim.fn.deepcopy(self.attributes)
     newAst.actualTag = self.actualTag
     newAst.style = vim.fn.deepcopy(self.style)
+    local fg = self.hl.fg
+    local bg = self.hl.bg
+    self.hl.bg = nil
+    self.hl.fg = nil
     newAst.hl = vim.fn.deepcopy(self.hl)
+    if type(bg) == "table" then
+        newAst.hl.bg = bg:getInstance(newAst)
+    else
+        newAst.hl.bg = bg
+    end
+    self.hl.bg = bg
+    if type(fg) == "table" then
+        newAst.hl.fg = fg:getInstance(newAst)
+    else
+        newAst.hl.fg = fg
+    end
+    self.hl.fg = fg
     newAst.padding = vim.fn.deepcopy(self.padding)
     newAst.margin = vim.fn.deepcopy(self.margin)
     if self.classes ~= nil then
@@ -651,6 +670,28 @@ function M.Ast:clone()
     ---@cast newAst Banana.Ast
     newAst:_clearStyles()
     return newAst
+end
+
+function M.Ast:_unlockGradients()
+    if type(self.hl.fg) == "table" then
+        ---@diagnostic disable-next-line: param-type-mismatch
+        self.hl.fg:unlock()
+    end
+    if type(self.hl.bg) == "table" then
+        ---@diagnostic disable-next-line: param-type-mismatch
+        self.hl.bg:unlock()
+    end
+end
+
+function M.Ast:_lockGradients()
+    if type(self.hl.fg) == "table" then
+        ---@diagnostic disable-next-line: param-type-mismatch
+        self.hl.fg = self.hl.fg:getInstance(self)
+    end
+    if type(self.hl.bg) == "table" then
+        ---@diagnostic disable-next-line: param-type-mismatch
+        self.hl.bg = self.hl.bg:getInstance(self)
+    end
 end
 
 ---Sets the attribute {name} to {value}
@@ -755,11 +796,9 @@ function M.Ast:_mixHl(parentHl)
     if self.tag == "h1" then
         ret.bold = true
     end
-    if self.hl ~= nil then
-        -- setmetatable(self.hl, { __mode = "kv" })
-    end
 
-    for k, v in pairs(self.hl or {}) do
+
+    for k, v in pairs(self.hl) do
         ret[k] = v
     end
     for k, v in pairs(parentHl or {}) do
@@ -935,14 +974,19 @@ function M.Ast:_applyStyleDeclarations(declarations, basePrec)
         end
         self.precedences[v.name] = prec
         if v.name:sub(1, 3) == "hl-" then
-            self.hl = self.hl or {}
             local name = v.name:sub(4, _str.charWidth(v.name))
 
             local value = v.values[1]
             if value.type == "plain" and value.value == "inherit" then
                 goto continue
             end
+            if (name == "fg" or name == "bg") and type(self.hl[name]) == "table" then
+                ---@type Banana.Gradient
+                local t = self.hl[name]
+                t:unlock()
+            end
             self.hl[name] = value.value
+            self:_lockGradients()
         elseif v.name:sub(1, 8) == "padding-" then
             local side = v.name:sub(9, #v.name)
 
