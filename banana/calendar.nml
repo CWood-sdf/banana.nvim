@@ -9,9 +9,7 @@
       </div>
     </template>
     <style>
-      .calendarHeader > div.cool:nth-of-type(odd) {
-        hl-bg: gray;
-      }
+      /*asdf */
       nml {
         width: 50%;
       }
@@ -43,24 +41,24 @@
         padding-left: 2ch;
         padding-top: 2ch;
       }
-      .gg {
-        height: 6ch;
-        aspect-ratio: 1;
-        hl-bg: linear-gradient(45deg, #000000, #ffffff);
-        margin-bottom: 1ch;
-      }
+      /* .gg { */
+      /*   height: 6ch; */
+      /*   aspect-ratio: 1; */
+      /*   hl-bg: linear-gradient(45deg, #000000, #ffffff); */
+      /*   margin-bottom: 1ch; */
+      /* } */
     </style>
     <title>calendar</title>
   </head>
 
   <body>
-    <div style="display: flex">
-      <div class="gg"></div>
-      <div class="gg"></div>
-      <div class="gg"></div>
-      <div class="gg"></div>
-      <div class="gg"></div>
-    </div>
+    <!-- <div style="display: flex"> -->
+    <!--   <div class="gg"></div> -->
+    <!--   <div class="gg"></div> -->
+    <!--   <div class="gg"></div> -->
+    <!--   <div class="gg"></div> -->
+    <!--   <div class="gg"></div> -->
+    <!-- </div> -->
     <div id="calendarContainer" style="width: 100%">
       <div>
         <span id="month"></span>

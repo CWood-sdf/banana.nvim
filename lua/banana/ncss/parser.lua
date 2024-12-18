@@ -267,11 +267,16 @@ function M.parse(tree, parser)
             "Parsed treesitter tree must be a stylesheet type for ncss parser")
         error("")
     end
-    local firstChild = tree:child(0)
-    if firstChild == nil then
-        -- empty tag
-        return {}
-    end
+    local j = 0
+    local firstChild
+    repeat
+        firstChild = tree:child(j)
+        if firstChild == nil then
+            -- empty tag
+            return {}
+        end
+        j = j + 1
+    until firstChild:type() ~= ts_types.comment
     if firstChild:type() == ts_types.block then
         local block = M.parseBlock(firstChild, parser)
         return { RuleSet:new(nil, block) }
