@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.3.0](https://github.com/CWood-sdf/banana.nvim/compare/v0.2.0...v0.3.0) (2024-12-19)
+
+
+### Features
+
+* **ncss:** add list-style-type:number ([2178260](https://github.com/CWood-sdf/banana.nvim/commit/2178260de647b48b375663b945af768744ca7061))
+* **ncss:** add support for nth-of-type ([4302d40](https://github.com/CWood-sdf/banana.nvim/commit/4302d400990ba1bc815abbeb9bf40d026b6cf4be))
+* **Query:** add helper functions ([4302d40](https://github.com/CWood-sdf/banana.nvim/commit/4302d400990ba1bc815abbeb9bf40d026b6cf4be))
+
+
+### Bug Fixes
+
+* **gradient:** allow gradients to be applied to multiple ast nodes ([8c88f11](https://github.com/CWood-sdf/banana.nvim/commit/8c88f11490d7918742baadac40e437c571d52719))
+* **ncss:** allow parsing comments ([bdf1a3f](https://github.com/CWood-sdf/banana.nvim/commit/bdf1a3f44ad76f3d3dee412a62db6259096aebc5))
+
 ## [0.2.0](https://github.com/CWood-sdf/banana.nvim/compare/v0.1.0...v0.2.0) (2024-12-11)
 
 
