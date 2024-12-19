@@ -13,6 +13,7 @@
       nml {
         width: 50%;
       }
+      /* asdf */
       .calendar {
         display: grid;
         grid-template-columns: repeat(7, 1nfr);
@@ -41,12 +42,6 @@
         padding-left: 2ch;
         padding-top: 2ch;
       }
-      /* .gg { */
-      /*   height: 6ch; */
-      /*   aspect-ratio: 1; */
-      /*   hl-bg: linear-gradient(45deg, #000000, #ffffff); */
-      /*   margin-bottom: 1ch; */
-      /* } */
     </style>
     <title>calendar</title>
   </head>
