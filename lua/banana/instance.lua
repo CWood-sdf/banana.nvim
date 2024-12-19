@@ -963,107 +963,100 @@ function Instance:_highlight(lines, offset, bufnr, winid, ns, noclear)
                     hasFgGrad = true
                 end
             end
-            if word.style ~= nil then
-                if word.style.__name ~= nil then
-                    ns = 0
-                    --flame.new("hl:named_hl")
-                    hlGroup = word.style.__name or "Normal"
-                    local hl = vim.api.nvim_get_hl(ns, {
-                        name = hlGroup,
-                    })
-                    local keysCount = #vim.tbl_keys(word.style)
-                    -- Apparently i have to use json to detect vim.empty_dict()
-                    local hlNotExists = vim.json.encode(hl) == "{}"
-                    -- If there are default highlight options, and the highlight does not exist, create it
-                    if isGrad then
-                        log.throw(
-                            "ERROR: gradients cannot be used as default fields for named highlights")
-                    end
-                    if hlNotExists and keysCount > 1 then
-                        --flame.new("hl:create_named")
-                        local opts = vim.deepcopy(word.style)
-                        opts.__name = nil
-                        if opts == nil then
-                            log.throw(
-                                "Unreachable [highlightBuffer colorOpts is nil]")
-                            error("")
-                        end
-                        vim.api.nvim_set_hl(0, hlGroup, opts)
-                        --flame.pop()
-                    elseif hlNotExists then
-                        hlGroup = M.defaultWinHighlight
-                    end
-                else
-                    --flame.new("hl:set_hl")
-                    if isGrad then
-                        -- flame.new("_highlight:setGrad")
-                        local fg = word.style.fg
-                        local bg = word.style.bg
-                        local bgGrad = type(bg) == "table"
-                        local fgGrad = type(fg) == "table"
-                        if bgGrad and not hasBgGrad then
-                            table.insert(gradients, bg)
-                        end
-                        if fgGrad and not hasFgGrad then
-                            table.insert(gradients, fg)
-                        end
-                        local charI = 1
-                        -- local wordI = orgI
-                        -- local wordStr = v[orgI].word
-                        while charI <= byteCount do
-                            local char = word.word:sub(charI, charI)
-
-                            local charByteSize = _str.codepointLen(char)
-
-                            if bgGrad then
-                                ---@diagnostic disable-next-line: need-check-nil, param-type-mismatch
-                                word.style.bg = bg:nextCharColor()
-                                -- print(bg.width)
-                            end
-
-                            if fgGrad and char ~= " " then
-                                ---@diagnostic disable-next-line: need-check-nil, param-type-mismatch
-                                word.style.fg = fg:nextCharColor()
-                            elseif fgGrad then
-                                ---@diagnostic disable-next-line: need-check-nil, param-type-mismatch
-                                fg:skipNext(1)
-                                word.style.fg = "#000000"
-                            end
-                            hlGroup = "banana_hl_" .. hlId
-                            -- flame.new("_highlight:set_hl/")
-                            vim.api.nvim_set_hl(ns, hlGroup,
-                                word.style)
-                            vim.api.nvim_buf_add_highlight(bufnr, ns,
-                                hlGroup, row,
-                                charI + col - 1,
-                                col + charI - 1 + charByteSize)
-                            -- flame.pop()
-                            hlId = hlId + 1
-                            charI = charI + charByteSize
-                        end
-                        word.style.fg = fg
-                        word.style.bg = bg
-                        -- flame.pop()
-                    else
-                        hlGroup = "banana_hl_" .. hlId
-                        vim.api.nvim_set_hl(ns, hlGroup, word
-                            .style)
-                        hlId = hlId + 1
-                    end
-                    -- usedHighlights[optsStr] = hlGroup
-                    --flame.pop()
-                end
-                --flame.new("hl:add_hl")
-                if not isGrad then
-                    vim.api.nvim_buf_add_highlight(bufnr, ns, hlGroup, row,
-                        col,
-                        col + byteCount)
-                end
-                --flame.pop()
-            else
+            if word.style == nil then
                 hlGroup = M.defaultWinHighlight
                 -- hlGroup = "NormalFloat"
                 ns = 0
+            elseif word.style.__name ~= nil then
+                ns = 0
+                --flame.new("hl:named_hl")
+                hlGroup = word.style.__name or "Normal"
+                local hl = vim.api.nvim_get_hl(ns, {
+                    name = hlGroup,
+                })
+                local keysCount = #vim.tbl_keys(word.style)
+                -- Apparently i have to use json to detect vim.empty_dict()
+                local hlNotExists = vim.json.encode(hl) == "{}"
+                -- If there are default highlight options, and the highlight does not exist, create it
+                if isGrad then
+                    log.throw(
+                        "ERROR: gradients cannot be used as default fields for named highlights")
+                end
+                if hlNotExists and keysCount > 1 then
+                    --flame.new("hl:create_named")
+                    local opts = vim.deepcopy(word.style)
+                    opts.__name = nil
+                    if opts == nil then
+                        log.throw(
+                            "Unreachable [highlightBuffer colorOpts is nil]")
+                        error("")
+                    end
+                    vim.api.nvim_set_hl(0, hlGroup, opts)
+                    --flame.pop()
+                elseif hlNotExists then
+                    hlGroup = M.defaultWinHighlight
+                end
+            elseif isGrad then
+                -- flame.new("_highlight:setGrad")
+                local fg = word.style.fg
+                local bg = word.style.bg
+                local bgGrad = type(bg) == "table"
+                local fgGrad = type(fg) == "table"
+                if bgGrad and not hasBgGrad then
+                    table.insert(gradients, bg)
+                end
+                if fgGrad and not hasFgGrad then
+                    table.insert(gradients, fg)
+                end
+                local charI = 1
+                -- local wordI = orgI
+                -- local wordStr = v[orgI].word
+                while charI <= byteCount do
+                    local char = word.word:sub(charI, charI)
+
+                    local charByteSize = _str.codepointLen(char)
+
+                    if bgGrad then
+                        ---@diagnostic disable-next-line: need-check-nil, param-type-mismatch
+                        word.style.bg = bg:nextCharColor()
+                        -- print(bg.width)
+                    end
+
+                    if fgGrad and char ~= " " then
+                        ---@diagnostic disable-next-line: need-check-nil, param-type-mismatch
+                        word.style.fg = fg:nextCharColor()
+                    elseif fgGrad then
+                        ---@diagnostic disable-next-line: need-check-nil, param-type-mismatch
+                        fg:skipNext(1)
+                        word.style.fg = "#000000"
+                    end
+                    hlGroup = "banana_hl_" .. hlId
+                    -- flame.new("_highlight:set_hl/")
+                    vim.api.nvim_set_hl(ns, hlGroup,
+                        word.style)
+                    vim.api.nvim_buf_add_highlight(bufnr, ns,
+                        hlGroup, row,
+                        charI + col - 1,
+                        col + charI - 1 + charByteSize)
+                    -- flame.pop()
+                    hlId = hlId + 1
+                    charI = charI + charByteSize
+                end
+                word.style.fg = fg
+                word.style.bg = bg
+                -- flame.pop()
+            else
+                hlGroup = "banana_hl_" .. hlId
+                vim.api.nvim_set_hl(ns, hlGroup, word
+                    .style)
+                hlId = hlId + 1
+                -- usedHighlights[optsStr] = hlGroup
+                --flame.pop()
+            end
+            if not isGrad then
+                vim.api.nvim_buf_add_highlight(bufnr, ns, hlGroup, row,
+                    col,
+                    col + byteCount)
             end
             col = col + byteCount
             --flame.pop()

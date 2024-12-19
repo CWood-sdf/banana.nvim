@@ -486,6 +486,9 @@ local function getListItemOl(styleTp, counter)
         local code = string.byte("a") + counter
         return string.char(code) .. "."
     end
+    if styleTp == "number" then
+        return counter .. ""
+    end
     if _str.codepointLen(styleTp:sub(1, 1)) == #styleTp then
         local code = string.byte(styleTp, 1, #styleTp) + counter
         return string.char(code)
@@ -503,6 +506,9 @@ function M.Ast:_getMaxListWidth(styleTp)
     local len = #self.nodes
     if styleTp == "alpha" or styleTp == "Alpha" then
         return 3
+    end
+    if styleTp == "number" then
+        return math.floor(math.log10(len) + 1) + 2
     end
     if styleTp == "roman" or styleTp == "Roman" then
         -- if someone has roman numerals going to over 888 then im kinda scared
@@ -1066,6 +1072,7 @@ function M.Ast:remove()
         self.componentTree._parent = self
         self.componentTree:remove()
     end
+    self:_unlockGradients()
     require("banana.instance").getInstance(self.instance):_removeMapsFor(self)
     self._parent = nil
     self:_requestRender()

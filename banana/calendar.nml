@@ -1,77 +1,14 @@
 <nml>
   <head>
-    <template name="Date" style="width: 100%; aspect-ratio: 1">
-      <div
-        style="hl-bg: hl-extract(bg, NormalFloat); height: 100%"
-        id="daycontainer"
-      >
-        <div style="text-align: left; padding: 2ch 1ch">%day</div>
-      </div>
-    </template>
     <style>
-      /*asdf */
-      nml {
-        width: 50%;
-      }
-      /* asdf */
-      .calendar {
-        display: grid;
-        grid-template-columns: repeat(7, 1nfr);
-        row-gap: 1ch;
-        column-gap: 1ch;
-      }
-      .calendarHeader {
-        display: grid;
-        grid-template-columns: repeat(7, 1nfr);
-        grid-template-rows: 1ch;
-        column-gap: 1ch;
-        margin: 0ch 1ch;
-      }
-      .calendarHeader2 {
-        display: grid;
-        grid-template-columns: repeat(7, 1nfr);
-        grid-template-rows: 1ch;
-        column-gap: 1ch;
-        margin: 0ch 1ch;
-      }
-      .calendarHeader > div {
-        text-align: center;
-      }
-      body {
-        height: 100%;
-        padding-left: 2ch;
-        padding-top: 2ch;
+      div {
+        width: 40ch;
+        height: 20ch;
+        hl-bg: linear-gradient(45deg, orange, blue);
       }
     </style>
-    <title>calendar</title>
   </head>
-
   <body>
-    <!-- <div style="display: flex"> -->
-    <!--   <div class="gg"></div> -->
-    <!--   <div class="gg"></div> -->
-    <!--   <div class="gg"></div> -->
-    <!--   <div class="gg"></div> -->
-    <!--   <div class="gg"></div> -->
-    <!-- </div> -->
-    <div id="calendarContainer" style="width: 100%">
-      <div>
-        <span id="month"></span>
-        <span sp=" ">%sp</span>
-        <span id="year"></span>
-      </div>
-      <div class="calendarHeader">
-        <div class="cool">Sun</div>
-        <div>Mon</div>
-        <div class="cool">Tue</div>
-        <div class="cool">Wed</div>
-        <div>Thu</div>
-        <div>Fri</div>
-        <div>Sat</div>
-      </div>
-      <div class="calendar"></div>
-    </div>
-    <script src="banana_test.calendar"></script>
-    <script src="banana_test.calendar-anim"></script>
+    <div>gradient</div>
   </body>
 </nml>
