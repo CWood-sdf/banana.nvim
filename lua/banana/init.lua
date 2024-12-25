@@ -100,6 +100,7 @@ function M.installTsParsers()
 end
 
 function M.installLibbanana()
+    vim.print("Installing libbanana")
     local job = vim.fn.jobstart("zig build -Doptimize=ReleaseFast",
         {
             cwd = M.getInstallDir() .. "/zig",
@@ -110,11 +111,13 @@ function M.installLibbanana()
                 p1 = p1 or ""
                 p2 = p2 or ""
                 p3 = p3 or ""
+                vim.print("stderr:", p1, p2, p3)
             end,
             on_stdout = function (p1, p2, p3)
                 p1 = p1 or ""
                 p2 = p2 or ""
                 p3 = p3 or ""
+                vim.print("stdout: ", p1, p2, p3)
             end
         })
 
