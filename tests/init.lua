@@ -112,6 +112,8 @@ function M.setup()
     print("libbanana path: " .. libbananaPath)
     vim.cmd("so " .. M.root() .. "/build.lua")
     print("libbanana exists: " .. vim.fn.filereadable(libbananaPath))
+    require("banana").installLibbanana()
+    require("banana")._statInstallDir()
 end
 
 M.setup()
