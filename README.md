@@ -11,6 +11,10 @@ A blazingly fast html renderer for neovim
 >
 > If there is a css/html feature that is not currently implemented, please submit an issue and it should probably be implemented within a few days
 
+> [!NOTE]
+>
+> Banana only works on neovim version 0.10.0 and above
+
 ## Example
 
 This is the banana hello world:
