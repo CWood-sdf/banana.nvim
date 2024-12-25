@@ -111,37 +111,11 @@ function M.installLibbanana()
                 p1 = p1 or ""
                 p2 = p2 or ""
                 p3 = p3 or ""
-                vim.print("stderr:", p1, p2, p3)
             end,
             on_stdout = function (p1, p2, p3)
                 p1 = p1 or ""
                 p2 = p2 or ""
                 p3 = p3 or ""
-                vim.print("stdout: ", p1, p2, p3)
-            end
-        })
-
-    vim.fn.jobwait({ job })
-end
-
-function M._statInstallDir()
-    local job = vim.fn.jobstart("ls -a",
-        {
-            cwd = M.getInstallDir(),
-            detach = true,
-            on_exit = function (p1, p2, p3)
-            end,
-            on_stderr = function (p1, p2, p3)
-                p1 = p1 or ""
-                p2 = p2 or ""
-                p3 = p3 or ""
-                vim.print("ls stderr:", p1, p2, p3)
-            end,
-            on_stdout = function (p1, p2, p3)
-                p1 = p1 or ""
-                p2 = p2 or ""
-                p3 = p3 or ""
-                vim.print("ls stdout: ", p1, p2, p3)
             end
         })
 
