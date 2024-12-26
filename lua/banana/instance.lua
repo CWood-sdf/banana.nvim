@@ -8,6 +8,22 @@ local flame = require("banana.lazyRequire")("banana.utils.debug_flame")
 local M = {}
 M.defaultWinHighlight = "NormalFloat"
 
+---@param v string
+---@return string
+local function getEventName(v)
+    return "BananaDocument" .. v
+end
+
+local events = {
+    Open = "",
+    Leave = "",
+    Close = "",
+    ScriptDone = "",
+}
+for key, _ in pairs(events) do
+    events[key] = getEventName(key)
+end
+
 ---@class Banana.NilAst
 
 ---@type Banana.NilAst?
@@ -61,6 +77,7 @@ local instances = {}
 ---@field stripRight boolean
 ---@field rendering boolean
 ---@field DEBUG_showPerf boolean
+---@field lastRenderScripts boolean
 ---@field private DEBUG_winId? number
 ---@field private DEBUG_hlId? number
 ---@field private DEBUG_bufNr? number
@@ -118,7 +135,7 @@ end
 function Instance:_openDebugWin()
     if self.DEBUG_bufNr == nil or not vim.api.nvim_buf_is_valid(self.DEBUG_bufNr) then
         self.DEBUG_bufNr = vim.api.nvim_create_buf(false, true)
-        vim.api.nvim_set_option_value("filetype", "", {
+        vim.api.nvim_set_option_value("filetype", "nml", {
             buf = self.DEBUG_bufNr
         })
     else
@@ -128,7 +145,7 @@ function Instance:_openDebugWin()
     end
     if self.DEBUG_winId == nil or not vim.api.nvim_win_is_valid(self.DEBUG_winId) then
         local w = math.floor(self.DEBUG_winWidth or vim.o.columns / 2.5)
-        self.DEBUG_winId = vim.api.nvim_open_win(self.DEBUG_bufNr, true, {
+        self.DEBUG_winId = vim.api.nvim_open_win(self.DEBUG_bufNr, false, {
             col = vim.o.columns - w,
             row = 2,
             relative = "editor",
@@ -213,6 +230,7 @@ function Instance:new()
     local id = #instances
     ---@type Banana.Instance
     local inst = {
+        lastRenderScripts = false,
         DEBUG_showBuild = false,
         DEBUG_dumpTree = false,
         DEBUG_stressTest = false,
@@ -255,8 +273,19 @@ end
 
 ---Uses a given string in nml require format as the source of the instance
 ---@param filename string the nml file to use
-function Instance:useFile(filename)
+function Instance:requireNml(filename)
     local ast, styleRules, scripts = require("banana.require").nmlRequire(
+        filename)
+    self.scripts = scripts
+    self.styleRules = styleRules
+    self.ast = ast
+    self:_applyId(ast)
+end
+
+---Uses a given filename as the source of the instance
+---@param filename string the nml file to use
+function Instance:useFile(filename)
+    local ast, styleRules, scripts = require("banana.require").nmlLoad(
         filename)
     self.scripts = scripts
     self.styleRules = styleRules
@@ -286,6 +315,22 @@ function Instance:_attachAutocmds()
     vim.api.nvim_create_autocmd({ "WinLeave" }, {
         group = self.augroup,
         callback = function (args)
+            if vim.api.nvim_get_current_win() ~= self.winid then
+                return
+            end
+            self:_fireEvent("Leave")
+            if args.buf == self.bufnr then
+                self.isVisible = false
+            end
+        end,
+    })
+    vim.api.nvim_create_autocmd({ "QuitPre" }, {
+        group = self.augroup,
+        callback = function (args)
+            if vim.api.nvim_get_current_win() ~= self.winid then
+                return
+            end
+            self:_fireEvent("Close")
             if args.buf == self.bufnr then
                 self.isVisible = false
             end
@@ -297,10 +342,32 @@ function Instance:_attachAutocmds()
             self:_requestRender()
         end,
     })
+    self:on("Close", {
+        group = self.augroup,
+        callback = function ()
+            if self.DEBUG and
+                self.DEBUG_winId ~= nil and
+                vim.api.nvim_win_is_valid(self.DEBUG_winId)
+            then
+                vim.api.nvim_win_close(self.DEBUG_winId, true)
+            end
+        end,
+    })
+end
+
+function Instance:_fireEvent(e)
+    pcall(vim.api.nvim_exec_autocmds, "User", {
+        pattern = "BananaDocument" .. e,
+        data = {
+            documentId = self.instanceId
+        },
+    })
 end
 
 ---Closes the window this instance is managing
 function Instance:close()
+    self:_fireEvent("Leave")
+    self:_fireEvent("Close")
     self.isVisible = false
     vim.api.nvim_win_close(self.winid, false)
 end
@@ -312,6 +379,7 @@ function Instance:open()
     self.isVisible = true
     n = 0
     avg = 0
+    self:_fireEvent("Open")
     self:_render()
 end
 
@@ -349,11 +417,25 @@ function Instance:getBufnr()
     return self.bufnr
 end
 
----@deprecated just use buffer = (might be undeprecated if there are custom events)
 ---@param ev string|string[]
 ---@param opts vim.api.keyset.create_autocmd
----@return number
+---@return number|number[]
 function Instance:on(ev, opts)
+    if type(ev) == "table" then
+        local ret = {}
+        for _, v in ipairs(ev) do
+            table.insert(ret, self:on(v, opts))
+        end
+        return ret
+    end
+    if type(ev) ~= "string" then
+        log.throw(
+            "Expected a string or string[] as the first parameter to Instance:on()")
+    end
+    if events[ev] ~= nil then
+        opts.pattern = events[ev]
+        ev = "User"
+    end
     if opts.command ~= nil then
         local cmd = opts.command
         opts.callback = function ()
@@ -393,8 +475,7 @@ function Instance:_setRemap(mode, lhs, rhs, opts, dep)
         self.keymaps[mode] = {}
     end
     if self.bufnr == nil then
-        log.throw(
-            "Buf does not exist")
+        log.throw("Buf does not exist")
         error("")
     end
     if self.keymaps[mode][lhs] == nil then
@@ -622,7 +703,7 @@ function Instance:_createWinAndBuf()
 
 
     if self.bufnr == nil or not vim.api.nvim_buf_is_valid(self.bufnr) then
-        self.bufnr = vim.api.nvim_create_buf(true, true)
+        self.bufnr = vim.api.nvim_create_buf(false, true)
         vim.api.nvim_set_option_value("modifiable", true, {
             buf = self.bufnr
         })
@@ -630,7 +711,9 @@ function Instance:_createWinAndBuf()
         if vim.fn.isdirectory(cwd .. "/" .. self.bufname) == 1 or vim.fn.isdirectory(self.bufname) == 1 then
             self.bufname = ""
         end
-        vim.api.nvim_buf_set_name(self.bufnr, self.bufname)
+        pcall(function ()
+            vim.api.nvim_buf_set_name(self.bufnr, self.bufname)
+        end)
         for k, v in pairs(self.bufOpts) do
             vim.api.nvim_set_option_value(k, v, { buf = self.bufnr })
         end
@@ -726,9 +809,6 @@ function Instance:_render()
     collectgarbage("stop")
     log.trace("Instance:render with " .. #self.scripts .. " scripts")
     flame.newIter()
-    -- if n == 30 then
-    -- flame.reset()
-    -- end
     local startTime = vim.loop.hrtime()
     local actualStart = startTime
     local astTime = 0
@@ -770,6 +850,7 @@ function Instance:_render()
         self.rendering = false
         self.renderRequested = true
         self:_deferRender()
+        self:_fireEvent("ScriptDone")
         return
     end
 
@@ -1238,7 +1319,7 @@ function M.newInstance(filename, bufferName)
     end
     local instance = Instance:new()
     instance:setBufName(bufferName)
-    instance:useFile(filename)
+    instance:requireNml(filename)
     return instance
 end
 
