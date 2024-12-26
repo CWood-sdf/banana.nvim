@@ -10,11 +10,23 @@ local t = require("banana.lazyRequire")("banana.nml.tag")
 local function renderer(self, ast, parentHl, parentWidth, parentHeight, startX,
                         startY, inherit, extra)
     -- flame.new("tag:slot")
-    local ret = self:renderInlineEl(ast, parentHl, parentWidth, parentHeight,
-        startX,
-        startY, inherit, extra)
+    local lastEl = extra.componentStack[#extra.componentStack]
+    local renderable = lastEl:_getSlot(ast.attributes["name"])
+    local b = require("banana.box")
+    if renderable:isNil() then
+        local ret = b.Box:new()
+        ret.hlgroup = ast:_mixHl(parentHl)
+        for _, box, _ in self:blockIter(ast, ret.hlgroup, parentWidth, parentHeight, startX, startY, inherit, extra) do
+            ret:appendBoxBelow(box)
+        end
+        -- flame.pop()
+        return ret
+    end
+    local ret = renderable.actualTag:getRendered(renderable, parentHl,
+        parentWidth,
+        parentHeight, startX, startY, inherit, extra)
     -- flame.pop()
-    return ret
+    return ret:render()
 end
 ---@type Banana.TagInfo
 local M = t.newTag(

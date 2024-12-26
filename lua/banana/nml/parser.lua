@@ -319,6 +319,9 @@ function Parser:parseTag(tree, parent, isSpecial)
             error("")
         end
         ret = ast.Ast:new(tagNameStr, parent, self.source)
+        if tagNameStr == "slot" and parent.actualTag.formatType ~= _tag.FormatType.Block then
+            parent.actualTag.formatType = _tag.FormatType.Inline
+        end
     end
 
     local attrs, decls = self:parseAttributes(firstChild)
@@ -341,14 +344,14 @@ function Parser:parseTag(tree, parent, isSpecial)
         -- im assuming parent is nil in template only files
         if parent == nil then
             log.throw(
-                "an import tag statement is not allowed to be the only tag in a file")
+                "an template import tag statement is not allowed to be the only tag in a file")
             error()
         end
         local root = nil
         if attrs["onparent"] ~= nil then
             root = parent
         else
-            root = parent:root()
+            root = parent:getRootNode()
         end
         root.componentPath = root.componentPath or nil
         table.insert(root.componentPath,
@@ -364,7 +367,7 @@ function Parser:parseTag(tree, parent, isSpecial)
         if attrs["onparent"] ~= nil then
             root = parent
         else
-            root = parent:root()
+            root = parent:getRootNode()
         end
 
         root.componentPath = root.componentPath or nil
@@ -411,7 +414,7 @@ function Parser:parseTag(tree, parent, isSpecial)
                     "Unreachable")
                 error("")
             end
-            ret:appendTextNode(self:getStrFromNode(child))
+            ret:appendTextNodeNoEscape(self:getStrFromNode(child))
         elseif child:type() == M.ts_types.element then
             ---@cast ret Banana.Ast
             local element, comps = self:parseElement(child, ret)
@@ -430,7 +433,7 @@ function Parser:parseTag(tree, parent, isSpecial)
                         "Unreachable")
                     error("")
                 end
-                ret:appendNode(element)
+                ret:appendChild(element)
             end
         elseif child:type() == M.ts_types.entity then
             if ret == nil then
@@ -438,14 +441,14 @@ function Parser:parseTag(tree, parent, isSpecial)
                     "Unreachable")
                 error("")
             end
-            ret:appendTextNode(self:getStrFromNode(child))
+            ret:appendTextNodeNoEscape(self:getStrFromNode(child))
         elseif child:type() == M.ts_types.substitution then
             if ret == nil then
                 log.throw(
                     "Unreachable")
                 error("")
             end
-            ret:appendTextNode(self:getStrFromNode(child))
+            ret:appendTextNodeNoEscape(self:getStrFromNode(child))
         elseif child:type() == M.ts_types.raw_text and isScript then
             scriptStr = self.lexer:getStrFromRange({ child:start() },
                 { child:end_() })
@@ -488,16 +491,11 @@ function Parser:parseTag(tree, parent, isSpecial)
     if isTemplate then
         components = components or {}
         local allInline = true
-        local selfClosing = true
         for v in self.currentComponent.ast:childIter() do
             if v.actualTag.formatType ~= _tag.FormatType.Inline then
                 allInline = false
             end
-            if v.tag == "slot" then
-                selfClosing = false
-            end
         end
-        self.currentComponent.ast.actualTag.selfClosing = selfClosing
         if allInline then
             self.currentComponent.ast.actualTag.formatType = require(
                 "banan.nml.render").FormatType.Inline
