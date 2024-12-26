@@ -9,6 +9,9 @@ local b = require("banana.lazyRequire")("banana.box")
 ---@module 'banana.nml.tag'
 local _tag = require("banana.lazyRequire")("banana.nml.tag")
 
+---@module 'banana.nml.entity'
+local entity = require("banana.lazyRequire")("banana.nml.entity")
+
 ---@param targetWidth number
 ---@param box Banana.Box
 ---@param hl Banana.Highlight?
@@ -140,7 +143,15 @@ return function (ast, parentHl, i, parentWidth, parentHeight, startX, startY,
         if v == "" then
         elseif type(v) == "string" then
             if v:sub(1, 1) == "&" then
-                log.throw("Entity support is nonexistent")
+                if v:sub(#v, #v) ~= ";" then
+                    v = v .. ";"
+                end
+                local en = v
+                v = entity[v]
+                if v == nil then
+                    log.throw("Unknown entity: " .. en)
+                    error("")
+                end
             elseif v:sub(1, 1) == "%" then
                 if v:sub(2, 2) == "%" then
                     v = "%"
