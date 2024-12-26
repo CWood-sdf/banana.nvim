@@ -29,16 +29,16 @@ nml {
 ]])
 
 
-describe("Stupid things in the past", function()
-    it("shouldnt massively overflow line below flex", function()
-        local document = require('banana.instance').emptyInstance()
+describe("Stupid things in the past", function ()
+    it("shouldnt massively overflow line below flex", function ()
+        local document = require("banana.instance").emptyInstance()
         local flexbox = document:createElement("div")
         flexbox:addClass("flex")
         local setw = document:createElement("setw")
         setw:addClass("setw")
 
-        flexbox:appendNode(setw)
-        document:body():appendNode(setw:clone())
+        flexbox:appendChild(setw)
+        document:body():appendChild(setw:clone(true))
         local expectedBody = {
             "     ",
             "~!!!~",

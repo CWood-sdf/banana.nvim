@@ -41,7 +41,7 @@ local function fillWithDates(document, cont, month, year)
         newDay:setAttribute("year", year .. "")
         local row, col = getGridPlacement(month, day, year)
         newDay:setStyle("grid-row: " .. row .. "; grid-column: " .. col .. ";")
-        cont:appendNode(newDay)
+        cont:appendChild(newDay)
 
         day = day + 1
         timestamp = timestamp + 24 * 3600

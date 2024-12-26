@@ -1,5 +1,5 @@
 -- a test file that serves as a template for other tests
-local h = require('tests.helpers')
+local h = require("tests.helpers")
 local code = nml([[
 <nml>
 <head>
@@ -20,9 +20,9 @@ nml {
 </nml>
 ]])
 
-describe("clone", function()
-    it("renders", function()
-        local inst = require('banana.instance').emptyInstance()
+describe("clone", function ()
+    it("renders", function ()
+        local inst = require("banana.instance").emptyInstance()
         inst:useNml(code)
         inst.DEBUG = false
         inst.stripRight = false
@@ -37,8 +37,8 @@ describe("clone", function()
         }
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
-        local clone = inst:getElementsByTag("div")[1]:clone()
-        inst:body():appendNode(clone)
+        local clone = inst:getElementsByTag("div")[1]:clone(true)
+        inst:body():appendChild(clone)
 
         expectedMap = {
             "     ",
@@ -71,9 +71,9 @@ describe("clone", function()
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
 
-        local clone2 = clone:clone()
+        local clone2 = clone:clone(true)
 
-        inst:body():appendNode(clone2)
+        inst:body():appendChild(clone2)
         expectedMap = {
             "     ",
             "a    ",

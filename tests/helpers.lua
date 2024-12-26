@@ -18,11 +18,12 @@ function M.bufToBgMap(bufnr)
             local opts = nil
             if ext == nil then
                 opts = {
-                    name = require('banana.instance').defaultWinHighlight,
+                    name = require("banana.instance").defaultWinHighlight,
                     link = true,
                 }
                 ext = {
-                    ns_id = require('banana.instance').getInstance(1).highlightNs
+                    ns_id = require("banana.instance").getInstance(1)
+                                                      .highlightNs
                 }
             else
                 opts = {
@@ -44,7 +45,7 @@ function M.bufToBgMap(bufnr)
                 bgI = bgI + 1
                 foundBgs[bg] = bgChar
             end
-            if char ~= ' ' then
+            if char ~= " " then
                 line = line .. char
             else
                 line = line .. bgChar
@@ -84,7 +85,9 @@ function M.assertBgMapsMatch(bufMap, expectedMap)
         elseif bufMap[i] ~= expectedMap[i] then
             M.printRenders(bufMap, expectedMap)
             error("line " ..
-                i .. " expected '" .. bufMap[i] .. "' to be '" .. expectedMap[i] .. "'")
+                i ..
+                " expected '" ..
+                bufMap[i] .. "' to be '" .. expectedMap[i] .. "'")
         end
         i = i + 1
     end
@@ -109,23 +112,23 @@ end
 ---@return Banana.Ast
 local function parseSpec(spec, document)
     -- print("parsing spec '" .. spec .. "'")
-    local name = vim.split(spec, '#')[1]
+    local name = vim.split(spec, "#")[1]
     -- print("el name '" .. name .. "'")
-    spec = vim.split(spec, '#')[2]
+    spec = vim.split(spec, "#")[2]
     -- print("new spec '" .. spec .. "'")
     local ret = document:createElement(name)
-    local split = vim.split(spec, ':')
+    local split = vim.split(spec, ":")
     local contents = split[#split]
     -- print("contents '" .. contents .. "'")
     ret:setTextContent(contents)
     spec = split[1]
     -- print("new spec '" .. spec .. "'")
-    local rest = vim.split(spec, '%.')
+    local rest = vim.split(spec, "%.")
     local id = rest[1]
     -- print("id '" .. id .. "'")
     if id ~= "" then
         -- print("setting id")
-        ret:setAttribute('id', id)
+        ret:setAttribute("id", id)
     end
     for i = 2, #rest do
         -- print("adding class '" .. rest[i] .. "'")
@@ -144,7 +147,7 @@ function M.createElements(specs, document, target)
     for _, v in ipairs(specs) do
         local el = parseSpec(v, document)
         if target ~= nil then
-            target:appendNode(el)
+            target:appendChild(el)
         else
             table.insert(ret, el)
         end
@@ -159,7 +162,8 @@ function M.boundsMatch(ast, bound)
     assert(box ~= nil, "Expected a bounding box")
     for k, v in pairs(bound) do
         if box[k] ~= v then
-            error("Expected bound '" .. k .. "' to be " .. v .. " but got " .. box[k])
+            error("Expected bound '" ..
+                k .. "' to be " .. v .. " but got " .. box[k])
         end
     end
 end

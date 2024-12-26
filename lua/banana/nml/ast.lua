@@ -7,6 +7,8 @@ local log = require("banana.lazyRequire")("banana.utils.log")
 local M = {}
 ---@module 'banana.utils.string'
 local _str = require("banana.lazyRequire")("banana.utils.string")
+---@module 'banana.instance'
+local _inst = require("banana.lazyRequire")("banana.instance")
 
 M.left = 1
 M.top = 2
@@ -21,6 +23,7 @@ M.padNames = { "left", "top", "right", "bottom" }
 ---@field bottomY number
 
 ---@class Banana.Ast
+---@field data table?
 ---@field nodes (string|Banana.Ast)[]
 ---@field tag string
 ---@field attributes Banana.Attributes
@@ -174,9 +177,9 @@ function M.Ast:_mountComponent()
         log.throw("Could not find component '" .. self.tag .. "'")
         error()
     end
-    local ast = component.ast:clone()
+    local ast = component.ast:clone(true)
     ast.componentParent = self
-    local inst = require("banana.instance").getInstance(self.instance)
+    local inst = _inst.getInstance(self.instance)
     if inst == nil then
         log.throw("Could not find instance")
         error()
@@ -200,16 +203,21 @@ function M.Ast:_getSlot(name)
             return v
         end
     end
-    return require("banana.instance").getNilAst()
+    return _inst.getNilAst()
 end
 
 ---Returns the root node of this section of the dom tree
 ---@return Banana.Ast
-function M.Ast:root()
+function M.Ast:getRootNode()
     if self._parent:isNil() then
         return self
     end
-    return self:parent():root()
+    return self:parent():getRootNode()
+end
+
+---@return string
+function M.Ast:getTagName()
+    return self.tag
 end
 
 ---Returns the first style value for the given {style} or nil if not found
@@ -636,14 +644,167 @@ local function applyAstMeta(ast)
     end
 end
 
----Duplicates this node and all its children (note: does NOT copy attached events)
+function M.Ast:cloneNode(deep)
+    return self:clone(deep)
+end
+
+---Adds {child} to this node's child list right before {referenceNode}
+---@param child Banana.Ast|string
+---@param referenceNode Banana.Ast|string
+function M.Ast:insertBefore(child, referenceNode)
+    if type(child) == "table" then
+        child:_breakParentTies()
+        child._parent = self
+    end
+    local found = false
+    for i, v in ipairs(self.nodes) do
+        if v == referenceNode then
+            found = true
+            table.insert(self.nodes, i, child)
+            break
+        end
+    end
+    if not found then
+        table.insert(self.node, 1, child)
+    end
+    self:_requestRender()
+end
+
+---Removes {child} from this node's child list
+---@param child Banana.Ast|string
+---@return Banana.Ast|string|nil
+function M.Ast:removeChild(child)
+    if type(child) == "table" then
+        child:_breakParentTies()
+        child._parent = self
+        return child
+    end
+    for i, v in ipairs(self.nodes) do
+        if v == child then
+            table.remove(self.nodes, i)
+            self:_requestRender()
+            return child
+        end
+    end
+    return nil
+end
+
+---Replaces {child} from this node's child list with {newChild}
+---@param child Banana.Ast|string
+---@param newChild Banana.Ast|string
+---@return Banana.Ast|string|nil
+function M.Ast:replaceChild(newChild, child)
+    for i, v in ipairs(self.nodes) do
+        if v == child then
+            self.nodes[i] = newChild
+            if type(child) == "table" then
+                child:remove()
+            else
+                self:_requestRender()
+            end
+            if type(newChild) == "table" then
+                newChild:_breakParentTies()
+                newChild._parent = self
+            end
+            return child
+        end
+    end
+    return nil
+end
+
+---@param allowString false? whether to include the string nodes
 ---@return Banana.Ast
-function M.Ast:clone()
+---@overload fun(allowString: true): Banana.Ast|string
+function M.Ast:firstChild(allowString)
+    if allowString then
+        return self.nodes[1] or _inst.getNilAst()
+    end
+    return self:child(1) or _inst.getNilAst()
+end
+
+---@param allowString false? whether to include the string nodes
+---@return Banana.Ast
+---@overload fun(allowString: true): Banana.Ast|string
+function M.Ast:lastChild(allowString)
+    if allowString then
+        return self.nodes[#self.nodes] or _inst.getNilAst()
+    end
+    for i = #self.nodes, 1, -1 do
+        if type(self.nodes[i]) == "table" then
+            return self.nodes[i]
+        end
+    end
+    return _inst.getNilAst()
+end
+
+---@param allowString false? whether to include the string nodes
+---@return Banana.Ast
+---@overload fun(allowString: true): Banana.Ast|string
+function M.Ast:nextSibling(allowString)
+    local j = 0
+    local parNodes = self._parent.nodes
+    for i, v in ipairs(parNodes) do
+        if v == self then
+            j = i
+        end
+    end
+    if j == 0 then
+        return _inst.getNilAst()
+    end
+    if allowString then
+        return parNodes[j + 1] or _inst.getNilAst()
+    end
+    j = j + 1
+    while j <= #parNodes and type(parNodes) ~= "table" do
+        j = j + 1
+    end
+    return parNodes[j] or _inst.getNilAst()
+end
+
+---@param allowString false? whether to include the string nodes
+---@return Banana.Ast
+---@overload fun(allowString: true): Banana.Ast|string
+function M.Ast:previousSibling(allowString)
+    local j = 0
+    local parNodes = self._parent.nodes
+    for i, v in ipairs(parNodes) do
+        if v == self then
+            j = i
+        end
+    end
+    if j == 0 then
+        return _inst.getNilAst()
+    end
+    if allowString then
+        return parNodes[j + 1] or _inst.getNilAst()
+    end
+    j = j + 1
+    while j <= #parNodes and type(parNodes) ~= "table" do
+        j = j + 1
+    end
+    return parNodes[j] or _inst.getNilAst()
+end
+
+---Returns the document owner
+---@return Banana.Instance
+function M.Ast:ownerDocument()
+    return _inst.getInstance(self.instance or 0)
+end
+
+---Duplicates this node and all its children (note: does NOT copy attached events)
+---@param deep boolean
+---@return Banana.Ast
+function M.Ast:clone(deep)
+    deep = deep or false
     local newAst = {}
     newAst.nodes = {}
     for _, v in ipairs(self.nodes) do
         if type(v) ~= "string" then
-            table.insert(newAst.nodes, v:clone())
+            if deep then
+                table.insert(newAst.nodes, v:clone(deep))
+            else
+                table.insert(newAst.nodes, v)
+            end
         else
             table.insert(newAst.nodes, v)
         end
@@ -675,7 +836,7 @@ function M.Ast:clone()
         newAst.classes = vim.fn.deepcopy(self.classes)
     end
     newAst.instance = self.instance
-    newAst._parent = require("banana.instance").getNilAst()
+    newAst._parent = _inst.getNilAst()
     if self.inlineStyle ~= nil then
         newAst.inlineStyle = vim.fn.deepcopy(self.inlineStyle)
     end
@@ -1066,26 +1227,31 @@ end
 
 ---removes the ast node from the dom
 function M.Ast:remove()
-    if self._parent == require("banana.instance").getNilAst() then
+    if self._parent == nil then return end
+    if self._parent == _inst.getNilAst() then
         log.throw(
             "Attempting to remove the root node")
         error("")
     end
+    self:_breakParentTies()
+    -- if self.componentTree ~= nil then
+    --     -- just add it to prevent the root node removal error
+    --     self.componentTree._parent = self
+    --     self.componentTree:remove()
+    -- end
+    self:_unlockGradients()
+    _inst.getInstance(self.instance):_removeMapsFor(self)
+    self:_requestRender()
+end
+
+function M.Ast:_breakParentTies()
     for i, v in ipairs(self._parent.nodes) do
         if v == self then
             table.remove(self._parent.nodes, i)
             break
         end
     end
-    if self.componentTree ~= nil then
-        -- just add it to prevent the root node removal error
-        self.componentTree._parent = self
-        self.componentTree:remove()
-    end
-    self:_unlockGradients()
-    require("banana.instance").getInstance(self.instance):_removeMapsFor(self)
     self._parent = nil
-    self:_requestRender()
 end
 
 ---Returns the attribute value for {name} or nil if not found
@@ -1098,17 +1264,31 @@ end
 ---Adds {text} to the child list of the node
 ---@param text string the text to add to the node
 function M.Ast:appendTextNode(text)
+    if text:sub(1, 1) == "%" then
+        table.insert(self.nodes, "%%")
+        text = text:sub(2, #text)
+    elseif text:sub(1, 1) == "&" then
+        table.insert(self.nodes, "&amp;")
+        text = text:sub(2, #text)
+    end
+    table.insert(self.nodes, text)
+    self:_requestRender()
+end
+
+---Adds {text} to the child list of the node
+---@param text string the text to add to the node
+function M.Ast:appendTextNodeNoEscape(text)
     table.insert(self.nodes, text)
     self:_requestRender()
 end
 
 ---Adds {node} as a child to this node
 ---@param node Banana.Ast the node to append as a child
-function M.Ast:appendNode(node)
+function M.Ast:appendChild(node)
     node._parent = self
     table.insert(self.nodes, node)
     if self.instance ~= nil then
-        require("banana.instance").getInstance(self.instance):_applyId(node)
+        _inst.getInstance(self.instance):_applyId(node)
     end
     self:_requestRender()
 end
@@ -1255,6 +1435,26 @@ end
 
 ---Returns an iterator over all the children of this node
 ---@return fun(): Banana.Ast?
+function M.Ast:allChildIter()
+    local i = 0
+    return function ()
+        --flame.new("Ast:childIter")
+        i = i + 1
+        while type(self.nodes[i]) ~= "table" do
+            i = i + 1
+            if i > #self.nodes then
+                --flame.pop()
+                return nil
+            end
+        end
+        --flame.pop()
+        ---@diagnostic disable-next-line: return-type-mismatch
+        return self.nodes[i]
+    end
+end
+
+---Returns an iterator over all the children of this node
+---@return fun(): Banana.Ast?
 function M.Ast:childIter()
     local i = 0
     return function ()
@@ -1285,7 +1485,7 @@ function M.Ast:child(i)
             end
         end
     end
-    return require("banana.instance").getNilAst()
+    return _inst.getNilAst()
 end
 
 ---returns what the attribute substitution (eg %attr in nml) would be for {name}
@@ -1425,7 +1625,7 @@ function M.Ast:attachRemap(mode, lhs, mods, rhs, opts)
         end
         return true
     end
-    local inst = require("banana.instance").getInstance(self.instance)
+    local inst = _inst.getInstance(self.instance)
     if inst == nil then
         log.throw("ast does not have an associated document")
         error("")
@@ -1437,7 +1637,7 @@ function M.Ast:_requestRender()
     if self.instance == nil then
         return
     end
-    local inst = require("banana.instance").getInstance(self.instance)
+    local inst = _inst.getInstance(self.instance)
     if inst == nil then
         log.throw("ast does not have an associated document")
         error("")

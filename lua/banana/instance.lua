@@ -1169,12 +1169,12 @@ function Instance:loadNmlTo(file, ast, remove, preserve)
     local content, rules, scripts = require("banana.require").nmlRequire(sides
         [1])
     if not preserve then
-        content = content:clone()
+        content = content:clone(true)
     end
     if remove then
         ast:removeChildren()
     end
-    ast:appendNode(content)
+    ast:appendChild(content)
     -- save styles for scoped styles
     self:_loadStyleFor(rules, content)
     ---@type { [string]: string }
