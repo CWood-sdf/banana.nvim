@@ -240,28 +240,38 @@ end
 ---@return string[]
 function M.Ast:_dumpTree(pad)
     pad = pad or 0
+    local padStr = string.rep(" ", pad)
     local ret = {
-        string.rep(" ", pad) .. self.tag .. ": "
+        padStr .. "<" .. self.tag
     }
     local id = self:getAttribute("id")
     if id ~= nil then
-        ret[1] = ret[1] .. "#" .. id .. " "
+        table.insert(ret, padStr .. "  id=\"" .. id .. "\"")
     end
-    for v, s in pairs(self.classes or {}) do
-        if s then
-            ret[1] = ret[1] .. "." .. v .. " "
-        end
+    ret[#ret] = ret[#ret] .. ">"
+    if self.classes ~= nil and #self.classes ~= 0 then
+        table.insert(ret,
+            padStr .. "  class=\"" .. vim.iter(self.classes):join(" ") .. "\"")
     end
     pad = pad + 2
     for _, v in ipairs(self.nodes) do
         if type(v) == "string" then
-            table.insert(ret, string.rep(" ", pad) .. v)
+            if #self.nodes == 1 then
+                ret[#ret] = ret[#ret] .. " " .. v
+            else
+                table.insert(ret, padStr .. v)
+            end
         else
             local dump = v:_dumpTree(pad)
             for _, d in ipairs(dump) do
                 table.insert(ret, d)
             end
         end
+    end
+    if #self.nodes == 0 or (type(self.nodes[1]) == "string" and #self.nodes == 1) then
+        ret[#ret] = ret[#ret] .. " </" .. self.tag .. "> "
+    else
+        table.insert(ret, padStr .. "</" .. self.tag .. "> ")
     end
     return ret
 end
