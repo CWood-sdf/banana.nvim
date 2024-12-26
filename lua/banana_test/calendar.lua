@@ -96,4 +96,7 @@ return function (document)
         days:removeChildren()
         fillWithDates(document, days, monthNum, yearNum)
     end, {})
+    document:body():attachRemap("n", "q", {}, function ()
+        document:close()
+    end, {})
 end

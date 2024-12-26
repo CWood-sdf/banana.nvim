@@ -14,6 +14,13 @@ local ncssAsts = {
 
 }
 
+---@type "memo"|"reload"|"reload_active"
+local storeMode = "memo"
+
+function M.parseReload()
+    storeMode = "reload"
+end
+
 ---@param components Banana.Component[]
 ---@return { [string]: Banana.Component }
 local function componentListToMap(components)
@@ -39,9 +46,15 @@ end
 ---@param filename string
 ---@return Banana.Ast, Banana.Ncss.RuleSet[], string[]
 function M.nmlLoad(filename)
-    if nmlAsts[filename] ~= nil then
+    if nmlAsts[filename] ~= nil and storeMode == "memo" then
         return nmlAsts[filename][2], nmlAsts[filename][1].styleSets,
             nmlAsts[filename][1].scripts
+    end
+
+    local endStoreMode = storeMode
+    if storeMode == "reload" then
+        storeMode = "reload_active"
+        endStoreMode = "memo"
     end
     local parser = require("banana.nml.parser").fromFile(filename)
     if parser == nil then
@@ -58,6 +71,7 @@ function M.nmlLoad(filename)
         require("banana.nml.cleanAst").cleanAst(v.ast)
     end
     nmlAsts[filename] = { parser, ast, componentListToMap(components or {}) }
+    storeMode = endStoreMode
     return ast, parser.styleSets, parser.scripts
 end
 
@@ -182,7 +196,7 @@ end
 ---@param filename string
 ---@return Banana.Ncss.RuleSet[]
 function M.ncssLoad(filename)
-    if ncssAsts[filename] ~= nil then
+    if ncssAsts[filename] ~= nil and storeMode == "memo" then
         return ncssAsts[filename]
     end
     local rules = require("banana.ncss.parser").parseFile(filename)

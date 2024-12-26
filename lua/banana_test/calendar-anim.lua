@@ -1,5 +1,5 @@
 local i = 0
-local timer = 0
+local timer = nil
 
 ---@param t number
 ---@param x1 number
@@ -13,8 +13,7 @@ end
 
 ---@param t number
 ---@param p0 number
----@param p1 number
----@param p2 number
+---@param p1 number @param p2 number
 ---@param p3 number
 ---@return number
 local function cubicBezier(t, p0, p1, p2, p3)
@@ -35,14 +34,39 @@ end
 
 ---@param document Banana.Instance
 return function (document)
-    local calendar = document:getElementsByTag("body")[1]
-    timer = vim.fn.timer_start(20, function ()
-        i = i + 1
-        local v = math.floor(easeout(i / 100) * 100)
-        calendar:setStyleValue("hl-bg",
-            "radial-gradient(blue, hl-extract(bg, NormalFloat) " .. v .. "%)")
-        if i >= 100 then
-            vim.fn.timer_stop(timer)
-        end
-    end, { ["repeat"] = -1 })
+    local calendar = document:body()
+    -- i = 0
+    -- timer = vim.fn.timer_start(20, function ()
+    --     i = i + 1
+    --     local v = math.floor(easeout(i / 100) * 100)
+    --     calendar:setStyleValue("hl-bg",
+    --         "radial-gradient(blue, hl-extract(bg, NormalFloat) " .. v .. "%)")
+    --     if i >= 100 then
+    --         vim.fn.timer_stop(timer)
+    --     end
+    -- end, { ["repeat"] = -1 })
+    -- document:on("Close", {
+    --     calback = function ()
+    --         vim.fn.timer_stop(timer)
+    --     end
+    -- })
+    document:on({ "Open", "ScriptDone" }, {
+        callback = function ()
+            i = 0
+            if timer == nil then
+                timer = vim.fn.timer_start(20, function ()
+                    i = i + 1
+                    local v = math.floor(easeout(i / 100) * 100)
+                    calendar:setStyleValue("hl-bg",
+                        "radial-gradient(blue, hl-extract(bg, NormalFloat) " ..
+                        v .. "%)")
+                    if i >= 100 then
+                        vim.fn.timer_stop(timer)
+                        timer = nil
+                    end
+                end, { ["repeat"] = -1 })
+            end
+        end,
+        group = vim.api.nvim_create_augroup("calendar-anim", { clear = true })
+    })
 end
