@@ -1,0 +1,213 @@
+*banana-instance.txt*            For             Last change: 2024 December 27
+
+==============================================================================
+Table of Contents                          *banana-instance-table-of-contents*
+
+  - body                                                |banana-instance-body|
+  - close                                              |banana-instance-close|
+  - createElement                              |banana-instance-createelement|
+  - forceRerender                              |banana-instance-forcererender|
+  - getBufnr                                        |banana-instance-getbufnr|
+  - getElementById                            |banana-instance-getelementbyid|
+  - getElementsByClassName            |banana-instance-getelementsbyclassname|
+  - getElementsByTag                        |banana-instance-getelementsbytag|
+  - getScriptParams                          |banana-instance-getscriptparams|
+  - isOpen                                            |banana-instance-isopen|
+  - loadNmlTo                                      |banana-instance-loadnmlto|
+  - new                                                  |banana-instance-new|
+  - on                                                    |banana-instance-on|
+  - open                                                |banana-instance-open|
+  - querySelectorAll                        |banana-instance-queryselectorall|
+  - setBufName                                    |banana-instance-setbufname|
+  - useBuffer                                      |banana-instance-usebuffer|
+  - requireNml                                    |banana-instance-requirenml|
+  - useFile                                          |banana-instance-usefile|
+  - useNml                                            |banana-instance-usenml|
+  - useWindow                                      |banana-instance-usewindow|
+The Instance class is the first of two API surfaces that you will use for most
+of your code in banana. It is the type of the `document` variable that is
+predefined on all `<script>` tags
+
+The methods are:
+
+
+BODY                                                    *banana-instance-body*
+
+Returns the body node of the instance.
+
+- **Returns**: `Banana.Ast` - The body node.
+
+
+CLOSE                                                  *banana-instance-close*
+
+Closes the window that this instance is managing.
+
+
+CREATEELEMENT                                  *banana-instance-createelement*
+
+Creates a new element with the specified tag name that can later be attached to
+the DOM.
+
+- **Parameters**:
+    - `name` (string): The name of the element tag.
+- **Returns**: `Banana.Ast` - The created AST node.
+
+
+FORCERERENDER                                  *banana-instance-forcererender*
+
+Forces the instance to re-render the window. **Use sparingly, as this may
+affect performance.**
+
+
+GETBUFNR                                            *banana-instance-getbufnr*
+
+Gets the buffer number used by the instance.
+
+- **Returns**: `number?` - The buffer number or `nil` if not set.
+
+
+GETELEMENTBYID                                *banana-instance-getelementbyid*
+
+Finds an element by its ID, similar to JavaScript’s `getElementById`.
+
+- **Parameters**:
+    - `name` (string): The ID to search for.
+- **Returns**: `Banana.Ast` - The matched AST node.
+
+
+GETELEMENTSBYCLASSNAME                *banana-instance-getelementsbyclassname*
+
+Finds elements by their class name, similar to JavaScript’s
+`getElementsByClassName`.
+
+- **Parameters**:
+    - `name` (string): The class name to search for.
+- **Returns**: `Banana.Ast[]` - An array of matched AST nodes.
+
+
+GETELEMENTSBYTAG                            *banana-instance-getelementsbytag*
+
+Finds elements by their tag name, similar to JavaScript’s
+`getElementsByTagName`.
+
+- **Parameters**:
+    - `name` (string): The tag name to search for.
+- **Returns**: `Banana.Ast[]` - An array of matched AST nodes.
+
+
+GETSCRIPTPARAMS                              *banana-instance-getscriptparams*
+
+Returns the parameters for the currently running script associated with the
+instance.
+
+- **Returns**: `Banana.Instance.RouteParams?` - The route parameters or `nil` if not set.
+
+
+ISOPEN                                                *banana-instance-isopen*
+
+Checks if the instance is currently open.
+
+- **Returns**: `boolean` - `true` if the instance is open, `false` otherwise.
+
+
+LOADNMLTO                                          *banana-instance-loadnmlto*
+
+Loads a partial NML file to the specified AST node.
+
+- **Parameters**:
+    - `file` (string): The NML file to load.
+    - `ast` (`Banana.Ast`): The AST node to load the content into.
+    - `remove` (boolean?): Whether to remove all child elements (default: `true`).
+    - `preserve` (boolean?): Whether to prevent cloning the AST (default: `false`).
+
+
+NEW                                                      *banana-instance-new*
+
+Creates a new instance.
+
+- **Returns**: `Banana.Instance` - The new instance object.
+
+
+ON                                                        *banana-instance-on*
+
+A wrapper around `nvim_create_autocmd` that attaches the autocmd to the render
+buffer
+
+This function also allows you to use the special events:
+
+- `Close` when the window is closed with `:q` or `document:close()`
+- `Leave` fired on `WinLeave`
+- `Open` fired on `document:open()`
+- `ScriptDone` fired after scripts have ran
+- **Parameters**:
+    - `ev` (string|string[]): The event or events to associate with.
+    - `opts` (`vim.api.keyset.create_autocmd`): Options for creating the auto-command.
+- **Returns**: `number` - The event ID.
+
+
+OPEN                                                    *banana-instance-open*
+
+Opens the window that this instance is managing.
+
+
+QUERYSELECTORALL                            *banana-instance-queryselectorall*
+
+Selects all elements matching the specified selector, similar to JavaScript’s
+`querySelectorAll`.
+
+- **Parameters**:
+    - `sel` (string): The selector to match elements.
+- **Returns**: `Banana.Ast[]` - An array of matched AST nodes.
+
+
+SETBUFNAME                                        *banana-instance-setbufname*
+
+Sets the name of the buffer.
+
+- **Parameters**:
+    - `str` (string): The new buffer name.
+
+
+USEBUFFER                                          *banana-instance-usebuffer*
+
+Sets the specified buffer number as the buffer for the instance.
+
+- **Parameters**:
+    - `bufnr` (number): The buffer number to use.
+
+
+REQUIRENML                                        *banana-instance-requirenml*
+
+Loads the nml file specified at the nml require string as the root of the
+document
+
+- **Parameters**:
+    - `location` (string): The nml require string
+
+
+USEFILE                                              *banana-instance-usefile*
+
+Uses a nml specified file as the source of the instance
+
+- **Parameters**:
+    - `filename` (string): The NML file to use as the source.
+
+
+USENML                                                *banana-instance-usenml*
+
+Uses a given NML string as the source of the instance.
+
+- **Parameters**:
+    - `nml` (string): The NML string to use.
+
+
+USEWINDOW                                          *banana-instance-usewindow*
+
+Sets the specified window ID as the window for the instance to render to.
+
+- **Parameters**:
+    - `winid` (number): The window ID to use.
+
+Generated by panvimdoc <https://github.com/kdheepak/panvimdoc>
+
+vim:tw=78:ts=8:noet:ft=help:norl:

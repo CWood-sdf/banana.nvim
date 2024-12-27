@@ -1,0 +1,448 @@
+*banana-properties.txt*           For            Last change: 2024 December 27
+
+==============================================================================
+Table of Contents                        *banana-properties-table-of-contents*
+
+  - Properties                                  |banana-properties-properties|
+1. Highlighting                               |banana-properties-highlighting|
+  - hl-underline                 |banana-properties-highlighting-hl-underline|
+  - hl-italic                       |banana-properties-highlighting-hl-italic|
+  - hl-bold                           |banana-properties-highlighting-hl-bold|
+  - hl-fg                               |banana-properties-highlighting-hl-fg|
+  - hl-bg                               |banana-properties-highlighting-hl-bg|
+  - hl-__name                       |banana-properties-highlighting-hl-__name|
+  - hl-link                           |banana-properties-highlighting-hl-link|
+2. Sizing                                           |banana-properties-sizing|
+  - width                                     |banana-properties-sizing-width|
+  - height                                   |banana-properties-sizing-height|
+  - aspect-ratio                       |banana-properties-sizing-aspect-ratio|
+3. Miscellaneous                             |banana-properties-miscellaneous|
+  - text-align                    |banana-properties-miscellaneous-text-align|
+  - display                          |banana-properties-miscellaneous-display|
+  - list-style-type          |banana-properties-miscellaneous-list-style-type|
+4. Flex properties                         |banana-properties-flex-properties|
+  - flex-basis                  |banana-properties-flex-properties-flex-basis|
+  - flex-shrink                |banana-properties-flex-properties-flex-shrink|
+  - flex-grow                    |banana-properties-flex-properties-flex-grow|
+  - flex-wrap                    |banana-properties-flex-properties-flex-wrap|
+5. Grid properties                         |banana-properties-grid-properties|
+  - grid-template-columns|banana-properties-grid-properties-grid-template-columns|
+  - grid-template-rows  |banana-properties-grid-properties-grid-template-rows|
+  - grid-row                      |banana-properties-grid-properties-grid-row|
+  - grid-column                |banana-properties-grid-properties-grid-column|
+  - row-gap                        |banana-properties-grid-properties-row-gap|
+  - column-gap                  |banana-properties-grid-properties-column-gap|
+6. positioning                                 |banana-properties-positioning|
+  - position                          |banana-properties-positioning-position|
+  - z-index                            |banana-properties-positioning-z-index|
+  - left                                  |banana-properties-positioning-left|
+  - right                                |banana-properties-positioning-right|
+  - top                                    |banana-properties-positioning-top|
+  - bottom                              |banana-properties-positioning-bottom|
+7. padding and margin                   |banana-properties-padding-and-margin|
+  - padding                     |banana-properties-padding-and-margin-padding|
+  - padding-left           |banana-properties-padding-and-margin-padding-left|
+  - padding-right         |banana-properties-padding-and-margin-padding-right|
+  - padding-top             |banana-properties-padding-and-margin-padding-top|
+  - padding-bottom       |banana-properties-padding-and-margin-padding-bottom|
+  - margin                       |banana-properties-padding-and-margin-margin|
+  - margin-left             |banana-properties-padding-and-margin-margin-left|
+  - margin-right           |banana-properties-padding-and-margin-margin-right|
+  - margin-top               |banana-properties-padding-and-margin-margin-top|
+  - margin-bottom         |banana-properties-padding-and-margin-margin-bottom|
+
+PROPERTIES                                      *banana-properties-properties*
+
+For most of the properties on this page, you can just look up its documentation
+on the mdn docs here
+<https://developer.mozilla.org/en-US/docs/Web/CSS/Reference>
+
+- |banana-properties-hl-underline|
+- |banana-properties-hl-italic|
+- |banana-properties-hl-bold|
+- |banana-properties-hl-fg|
+- |banana-properties-hl-bg|
+- |banana-properties-hl-__name|
+- |banana-properties-hl-link|
+- |banana-properties-aspect-ratio|
+- |banana-properties-list-style-type|
+- |banana-properties-text-align|
+- |banana-properties-flex-basis|
+- |banana-properties-flex-shrink|
+- |banana-properties-flex-grow|
+- |banana-properties-flex-wrap|
+- |banana-properties-grid-template-columns|
+- |banana-properties-grid-template-rows|
+- |banana-properties-grid-row|
+- |banana-properties-grid-column|
+- |banana-properties-row-gap|
+- |banana-properties-column-gap|
+- |banana-properties-z-index|
+- |banana-properties-padding-left|
+- |banana-properties-padding-right|
+- |banana-properties-padding-top|
+- |banana-properties-padding-bottom|
+- |banana-properties-margin-left|
+- |banana-properties-margin-right|
+- |banana-properties-margin-top|
+- |banana-properties-margin-bottom|
+
+Following is all the properties currently allowed:
+
+
+==============================================================================
+1. Highlighting                               *banana-properties-highlighting*
+
+
+HL-UNDERLINE                     *banana-properties-highlighting-hl-underline*
+
+Accepts:
+
+- `<bool>`
+
+
+HL-ITALIC                           *banana-properties-highlighting-hl-italic*
+
+Accepts:
+
+- `<bool>`
+
+
+HL-BOLD                               *banana-properties-highlighting-hl-bold*
+
+Accepts:
+
+- `<bool>`
+
+
+HL-FG                                   *banana-properties-highlighting-hl-fg*
+
+Accepts:
+
+- `<color>`
+- `<gradient>`
+- `<plain value>` (eg red)
+
+
+HL-BG                                   *banana-properties-highlighting-hl-bg*
+
+Accepts:
+
+- `<color>`
+- `<gradient>`
+- `<plain value>` (eg red)
+
+
+HL-__NAME                           *banana-properties-highlighting-hl-__name*
+
+Sets the name of the highlight group to allow global overriding. See Highlights
+<Highlights> for more info
+
+Accepts:
+
+- `<string>`
+- `<plain value>`
+
+
+HL-LINK                               *banana-properties-highlighting-hl-link*
+
+Accepts:
+
+- `<string>`
+- `<plain value>`
+
+
+==============================================================================
+2. Sizing                                           *banana-properties-sizing*
+
+
+WIDTH                                         *banana-properties-sizing-width*
+
+Accepts:
+
+- `<number>(ch|%)`
+
+
+HEIGHT                                       *banana-properties-sizing-height*
+
+Accepts:
+
+- `<number>(ch|%)`
+
+
+ASPECT-RATIO                           *banana-properties-sizing-aspect-ratio*
+
+Sets the aspect ratio of the element
+
+docs <https://developer.mozilla.org/en-US/docs/Web/CSS/aspect-ratio>
+
+Accepts:
+
+- `<number>`
+
+
+==============================================================================
+3. Miscellaneous                             *banana-properties-miscellaneous*
+
+
+TEXT-ALIGN                        *banana-properties-miscellaneous-text-align*
+
+Accepts:
+
+- `left`
+- `right`
+- `center`
+- `initial`
+- `inherit`
+
+
+DISPLAY                              *banana-properties-miscellaneous-display*
+
+Accepts:
+
+- `grid`
+- `flex`
+- `inherit`
+- `initial`
+- `none`
+
+
+LIST-STYLE-TYPE              *banana-properties-miscellaneous-list-style-type*
+
+Changes the bullet point type of all children elements. (Default "*")
+
+Accepts:
+
+- `<string>` (eg "●" changes ul li’s to ●)
+- `roman`. Lowercase roman numerals (only works in `<ol>`)
+- `Roman`. Uppercase roman numerals (only works in `<ol>`)
+- `alpha`. Lowercase letters (only works in `<ol>`)
+- `Alpha`. Uppercase letters (only works in `<ol>`)
+- `number`. Numbers (only works in `<ol>`)
+- `star`. A "*" (only works in `<ul>`)
+- `dash`. A "-" (only works in `<ul>`)
+
+
+==============================================================================
+4. Flex properties                         *banana-properties-flex-properties*
+
+
+FLEX-BASIS                      *banana-properties-flex-properties-flex-basis*
+
+Accepts:
+
+- `<number>(ch|%)`
+
+
+FLEX-SHRINK                    *banana-properties-flex-properties-flex-shrink*
+
+Accepts:
+
+- `<number>`
+
+
+FLEX-GROW                        *banana-properties-flex-properties-flex-grow*
+
+Accepts:
+
+- `<number>`
+
+
+FLEX-WRAP                        *banana-properties-flex-properties-flex-wrap*
+
+Accepts:
+
+- `wrap`
+- `nowrap`
+
+
+==============================================================================
+5. Grid properties                         *banana-properties-grid-properties*
+
+
+GRID-TEMPLATE-COLUMNS*banana-properties-grid-properties-grid-template-columns*
+
+The special thing about this is the `nfr` unit. This stands for "non expandable
+fractional". This exists because the default behavior in banana is to fill all
+available spacewhen using `fr` potentially causing the first few columns to be
+bigger than the last columns by a character or two. This might break other
+things like `aspect-ratio`
+
+Accepts:
+
+- `<number>(ch|%|fr|nfr)...`
+
+
+GRID-TEMPLATE-ROWS      *banana-properties-grid-properties-grid-template-rows*
+
+Accepts:
+
+- `<number>(ch|%|fr|nfr)...`
+
+
+GRID-ROW                          *banana-properties-grid-properties-grid-row*
+
+Accepts:
+
+- `<integer>`
+- `span <integer>`
+- `<integer> / <integer>`
+- `<integer> / span <integer>`
+
+
+GRID-COLUMN                    *banana-properties-grid-properties-grid-column*
+
+Accepts:
+
+- `<integer>`
+- `span <integer>`
+- `<integer> / <integer>`
+- `<integer> / span <integer>`
+
+
+ROW-GAP                            *banana-properties-grid-properties-row-gap*
+
+Accepts:
+
+- `<number>(ch|%)`
+
+
+COLUMN-GAP                      *banana-properties-grid-properties-column-gap*
+
+Accepts:
+
+- `<number>(ch|%)`
+
+
+==============================================================================
+6. positioning                                 *banana-properties-positioning*
+
+
+POSITION                              *banana-properties-positioning-position*
+
+Accepts:
+
+- `absolute`
+- `static`
+- `relative`
+- `inherit`
+- `initial`
+
+
+Z-INDEX                                *banana-properties-positioning-z-index*
+
+Accepts:
+
+- `<integer>`
+
+
+LEFT                                      *banana-properties-positioning-left*
+
+Accepts:
+
+- `<number>(ch|%)`
+
+
+RIGHT                                    *banana-properties-positioning-right*
+
+Accepts:
+
+- `<number>(ch|%)`
+
+
+TOP                                        *banana-properties-positioning-top*
+
+Accepts:
+
+- `<number>(ch|%)`
+
+
+BOTTOM                                  *banana-properties-positioning-bottom*
+
+Accepts:
+
+- `<number>(ch|%)`
+
+
+==============================================================================
+7. padding and margin                   *banana-properties-padding-and-margin*
+
+
+PADDING                         *banana-properties-padding-and-margin-padding*
+
+Accepts:
+
+- `<unit>`
+- `<unit> <unit>`
+- `<unit> <unit> <unit>`
+- `<unit> <unit> <unit> <unit>`
+
+
+PADDING-LEFT               *banana-properties-padding-and-margin-padding-left*
+
+Accepts:
+
+- `<number>(ch|%)`
+
+
+PADDING-RIGHT             *banana-properties-padding-and-margin-padding-right*
+
+Accepts:
+
+- `<number>(ch|%)`
+
+
+PADDING-TOP                 *banana-properties-padding-and-margin-padding-top*
+
+Accepts:
+
+- `<number>(ch|%)`
+
+
+PADDING-BOTTOM           *banana-properties-padding-and-margin-padding-bottom*
+
+Accepts:
+
+- `<number>(ch|%)`
+
+
+MARGIN                           *banana-properties-padding-and-margin-margin*
+
+Accepts:
+
+- `<unit>`
+- `<unit> <unit>`
+- `<unit> <unit> <unit>`
+- `<unit> <unit> <unit> <unit>`
+
+
+MARGIN-LEFT                 *banana-properties-padding-and-margin-margin-left*
+
+Accepts:
+
+- `<number>(ch|%)`
+
+
+MARGIN-RIGHT               *banana-properties-padding-and-margin-margin-right*
+
+Accepts:
+
+- `<number>(ch|%)`
+
+
+MARGIN-TOP                   *banana-properties-padding-and-margin-margin-top*
+
+Accepts:
+
+- `<number>(ch|%)`
+
+
+MARGIN-BOTTOM             *banana-properties-padding-and-margin-margin-bottom*
+
+Accepts:
+
+- `<number>(ch|%)`
+
+Generated by panvimdoc <https://github.com/kdheepak/panvimdoc>
+
+vim:tw=78:ts=8:noet:ft=help:norl:
