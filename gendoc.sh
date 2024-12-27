@@ -7,20 +7,20 @@ mkdir temp
 
 echo "Cloning wiki and panvimdoc"
 git clone https://github.com/CWood-sdf/banana.nvim.wiki wiki
-git clone https://github.com/kdheepak/panvimdoc
+
+cd wiki
 
 echo "running ./doc.sh"
+# the shell files for this are in https://github.com/CWood-sdf/banana.nvim.wiki
 ./doc.sh
-
-echo "cleanup"
-rm wiki temp panvimdoc -rf
 
 cd ..
 
-echo "moving doc to here"
-rm doc -rf
-mv gendoc/doc doc
+echo "moving doc/ to here"
+mv wiki/doc doc
+
+echo "removing wiki/"
+rm wiki -rf
 
 echo "generating helptags"
 vim -c "helpt doc" -c q
-
