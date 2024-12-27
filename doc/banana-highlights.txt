@@ -63,7 +63,9 @@ Banana also does not support passing multiple gradients to one color field
 
 >css
     div {
-      hl-bg: linear-gradient(45deg, orange, blue);
+      /* This is not allowed */
+      hl-bg: linear-gradient(45deg, orange, blue)
+        linear-gradient(90deg, white, black);
     }
 <
 
