@@ -1,4 +1,3 @@
-local h = require("tests.helpers")
 local code = [[
 <nml>
 <head>
@@ -10,10 +9,30 @@ local code = [[
 </nml>
 ]]
 
+local codeshort = [[
+<nml>
+<head>
+<meta buf-filetype="lua">
+</head>
+
+<body>
+</body>
+</nml>
+]]
+
 describe("Meta ", function ()
     it("sets filetype", function ()
         local inst = require("banana.instance").emptyInstance()
         inst:useNml(code)
+        inst.DEBUG = false
+        inst.stripRight = false
+        inst:open()
+
+        assert(vim.bo[inst.bufnr].filetype == "lua")
+    end)
+    it("sets filetype with shorthand", function ()
+        local inst = require("banana.instance").emptyInstance()
+        inst:useNml(codeshort)
         inst.DEBUG = false
         inst.stripRight = false
         inst:open()
