@@ -1,0 +1,22 @@
+name: CI
+on: gollum
+
+jobs:
+  tests:
+    strategy:
+      matrix:
+        os: [ubuntu-22.04]
+        rev: [nightly]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: rhysd/action-setup-vim@v1
+        with:
+          neovim: true
+          version: ${{ matrix.rev }}
+      - name: Generate documentation
+        run: |
+          ./gendoc.sh
+          git add doc
+          git commit -m "chore(build): auto generate docs from wiki"
+          git push

@@ -24,5 +24,3 @@ mv gendoc/doc doc
 echo "generating helptags"
 vim -c "helpt doc" -c q
 
-git add doc
-git commit -m "chore(build): auto generate docs from wiki"
