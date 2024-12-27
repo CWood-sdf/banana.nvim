@@ -19,6 +19,7 @@ jobs:
       - name: Generate documentation
         run: |
           ./gendoc.sh
-          git add doc
-          git commit -m "chore(build): auto generate docs from wiki"
-          git push
+      - uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          file_pattern: "doc"
+          commit_message: "chore(build): auto-generate docs"
