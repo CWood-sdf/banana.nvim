@@ -78,7 +78,7 @@ hyphen, then the attribute name, with a value
 for example, to set the buffer filetype, use this tag:
 
 >html
-    <meta buf-filetype="lua"></meta>
+    <meta name="buf-filetype" value="lua" />
 <
 
 currently, the only supported identifiers are `buf` and `win` (for buffer
