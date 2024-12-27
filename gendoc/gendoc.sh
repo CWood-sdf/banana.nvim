@@ -4,5 +4,5 @@ newname=$(echo $1)
 
 echo "Documenting $newname"
 
-../panvimdoc/panvimdoc.sh --input-file $1 --project-name banana-$1 || echo "Failed"
+../panvimdoc/panvimdoc.sh --input-file $1 --project-name banana-$1 --scripts-dir ../panvimdoc/scripts || echo "Failed"
 
