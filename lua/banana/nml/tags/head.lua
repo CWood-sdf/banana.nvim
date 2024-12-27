@@ -16,7 +16,7 @@ local function renderer(_, ast, hl, parentWidth, parentHeight, _, _, inherit,
     local ret = b.Box:new()
     -- not actually rendering anything bc its all metadata tags
     for v in ast:childIter() do
-        v.actualTag:renderRoot(ast, hl, parentWidth, parentHeight, inherit, extra)
+        v.actualTag:renderRoot(v, hl, parentWidth, parentHeight, inherit, extra)
     end
     -- flame.expect("tag:head")
     -- flame.pop()
