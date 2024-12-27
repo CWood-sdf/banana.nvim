@@ -81,8 +81,14 @@ for example, to set the buffer filetype, use this tag:
     <meta name="buf-filetype" value="lua" />
 <
 
-currently, the only supported identifiers are `buf` and `win` (for buffer
-options and window options, respectively).
+if only one attribute is set on the meta tag, you can use the shorthand:
+
+>html
+    <meta buf-filetype="lua" />
+<
+
+currently, the only supported identifiers are `buf-name` and `win-name` (for
+`vim.bo\[bufnr].name` and `vim.wo\[winnr].name`, respectively).
 
 
 NML                                                          *banana-tags-nml*
