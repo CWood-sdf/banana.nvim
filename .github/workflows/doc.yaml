@@ -18,6 +18,8 @@ jobs:
           version: ${{ matrix.rev }}
       - name: Generate documentation
         run: |
+          sudo wget https://github.com/jgm/pandoc/releases/download/3.6.1/pandoc-3.6.1-1-amd64.deb
+          sudo dpkg -i pandoc-3.6.1-1-amd64.deb
           ./gendoc.sh
       - uses: stefanzweifel/git-auto-commit-action@v5
         with:
