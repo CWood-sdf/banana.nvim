@@ -16,11 +16,12 @@ M.right = 3
 M.bottom = 4
 M.padNames = { "left", "top", "right", "bottom" }
 
+---A **1** indexed bounding box
 ---@class (exact) Banana.Ast.BoundingBox
----@field leftX number
----@field topY number
----@field rightX number
----@field bottomY number
+---@field leftX number The left edge, inclusive
+---@field topY number The top edge, inclusive
+---@field rightX number The right edge, exclusive
+---@field bottomY number The bottom edge, exclusive
 
 ---@class Banana.Ast
 ---@field data table?
