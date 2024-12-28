@@ -85,19 +85,20 @@ describe("Flex test", function ()
         inst.stripRight = false
         inst:open()
         h.createElements({
-            "div#.fr1:a",
-            "div#:a",
-            "div#.fr1:a",
-            "div#.fr1:a",
+            "div#a.fr1:a",
+            "div#b:b",
+            "div#c.fr1:c",
+            "div#d.fr1:d",
         }, inst, inst:getElementById("flex"))
 
         local expectedMap = {
             "         ",
-            "~a~~aa~a~",
+            "~a~~bc~d~",
             "         ",
         }
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
+        h.assertGridBoundsMatch(expectedMap, inst)
     end)
     it("uneven frs work", function ()
         local inst = require("banana.instance").emptyInstance()
@@ -106,19 +107,20 @@ describe("Flex test", function ()
         inst.stripRight = false
         inst:open()
         h.createElements({
-            "div#:a",
-            "div#.fr1:a",
-            "div#.fr1:a",
-            "div#.fr1:a",
+            "div#a:a",
+            "div#b.fr1:b",
+            "div#c.fr1:c",
+            "div#d.fr1:d",
         }, inst, inst:getElementById("flex"))
 
         local expectedMap = {
             "         ",
-            "~aa~~a~a~",
+            "~ab~~c~d~",
             "         ",
         }
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
+        h.assertGridBoundsMatch(expectedMap, inst)
     end)
     it("fr units work", function ()
         local inst = require("banana.instance").emptyInstance()
@@ -127,19 +129,20 @@ describe("Flex test", function ()
         inst.stripRight = false
         inst:open()
         h.createElements({
-            "div#.fr1:a",
-            "div#.fr1:a",
-            "div#.fr1:a",
-            "div#.fr1:a",
+            "div#a.fr1:a",
+            "div#b.fr1:b",
+            "div#c.fr1:c",
+            "div#d.fr1:d",
         }, inst, inst:getElementById("flex"))
 
         local expectedMap = {
             "         ",
-            "~a~a~a~a~",
+            "~a~b~c~d~",
             "         ",
         }
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
+        h.assertGridBoundsMatch(expectedMap, inst)
     end)
     it("single item with flex properties 2", function ()
         local inst = require("banana.instance").emptyInstance()
@@ -280,18 +283,19 @@ describe("Flex test", function ()
         inst.stripRight = false
         inst:open()
         h.createElements({
-            "div#.basis-2ch.grow:a",
-            "div#.grow:a",
-            "div#.grow:a",
+            "div#a.basis-2ch.grow:a",
+            "div#b.grow:b",
+            "div#c.grow:c",
         }, inst, inst:getElementById("flex"))
 
         local expectedMap = {
             "         ",
-            "~a~~~a~a~",
+            "~a~~~b~c~",
             "         ",
         }
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
+        h.assertGridBoundsMatch(expectedMap, inst)
     end)
 
     it("flex-wrap property with wrapping", function ()
@@ -301,22 +305,28 @@ describe("Flex test", function ()
         inst.stripRight = false
         inst:open()
         h.createElements({
-            "div#.basis-2ch.grow.green:a",
-            "div#.basis-2ch.grow.green:a",
-            "div#.basis-2ch.grow.green:a",
-            "div#.basis-2ch.grow.green:a",
-            "div#.basis-2ch.grow.green:a",
+            "div#a.basis-2ch.grow.green:a",
+            "div#b.basis-2ch.grow.green:b",
+            "div#c.basis-2ch.grow.green:c",
+            "div#d.basis-2ch.grow.green:d",
+            "div#e.basis-2ch.grow.green:e",
         }, inst, inst:getElementById("flex"))
 
         inst:getElementById("flex"):addClass("wrap")
 
         local expectedMap = {
             "         ",
-            "~a!a!a!a!",
-            "~a!!!!!!!",
+            "~a!b!c!d!",
+            "~e!!!!!!!",
         }
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
+        h.assertGridBoundsMatch(expectedMap, inst, "!", function (k, m)
+            if k ~= "e" then
+                m.bottomY = 3
+            end
+            return m
+        end)
     end)
 
     it("flex-wrap property without wrapping", function ()
@@ -326,19 +336,20 @@ describe("Flex test", function ()
         inst.stripRight = false
         inst:open()
         h.createElements({
-            "div#.basis-2ch.grow:a",
-            "div#.basis-2ch.grow:a",
-            "div#.basis-2ch.grow:a",
-            "div#.basis-2ch.grow:a",
-            "div#.basis-2ch.grow:a",
+            "div#a.basis-2ch.grow:a",
+            "div#b.basis-2ch.grow:b",
+            "div#c.basis-2ch.grow:c",
+            "div#d.basis-2ch.grow:d",
+            "div#e.basis-2ch.grow:e",
         }, inst, inst:getElementById("flex"))
 
         local expectedMap = {
             "           ",
-            "~a~a~a~a~a~",
+            "~a~b~c~d~e~",
             "           ",
         }
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
+        h.assertGridBoundsMatch(expectedMap, inst)
     end)
 end)

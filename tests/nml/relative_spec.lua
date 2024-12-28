@@ -1,4 +1,4 @@
-local h = require('tests.helpers')
+local h = require("tests.helpers")
 local code = nml([[
 <nml>
     <style>
@@ -41,9 +41,9 @@ local code = nml([[
 </nml>
 ]])
 
-describe("Relative", function()
-    it("relatives", function()
-        local inst = require('banana.instance').emptyInstance()
+describe("Relative", function ()
+    it("relatives", function ()
+        local inst = require("banana.instance").emptyInstance()
         inst:useNml(code)
         inst.DEBUG = false
         inst.stripRight = false

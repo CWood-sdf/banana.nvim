@@ -1,4 +1,4 @@
-local h = require('tests.helpers')
+local h = require("tests.helpers")
 local code = nml([[
 <nml>
 <head>
@@ -39,9 +39,9 @@ position: absolute;
 ]])
 
 
-describe("Div rendering", function()
-    it("absolutes", function()
-        local inst = require('banana.instance').emptyInstance()
+describe("Div rendering", function ()
+    it("absolutes", function ()
+        local inst = require("banana.instance").emptyInstance()
         inst:useNml(code)
         inst.DEBUG = false
         inst.stripRight = false
@@ -57,8 +57,8 @@ describe("Div rendering", function()
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
     end)
-    it("z-index 2", function()
-        local inst = require('banana.instance').emptyInstance()
+    it("z-index 2", function ()
+        local inst = require("banana.instance").emptyInstance()
         inst:useNml(code)
         inst.DEBUG = false
         inst.stripRight = false
@@ -77,8 +77,8 @@ describe("Div rendering", function()
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
     end)
-    it("z-index 1", function()
-        local inst = require('banana.instance').emptyInstance()
+    it("z-index 1", function ()
+        local inst = require("banana.instance").emptyInstance()
         inst:useNml(code)
         inst.DEBUG = false
         inst.stripRight = false

@@ -90,6 +90,7 @@ nml {
 </nml>
 ]])
 
+
 describe("Grid test", function ()
     it("cursor weirdness", function ()
         local inst = require("banana.instance").emptyInstance()
@@ -99,12 +100,12 @@ describe("Grid test", function ()
         inst:open()
         inst:querySelectorAll(".grid")[1]:addClass("grid-template-both")
         h.createElements({
-            "div#:a",
-            "div#.column-defined-2:b",
-            "div#.column-defined-2:c",
-            "div#:d",
-            "div#:e",
-            "div#:f",
+            "div#a:a",
+            "div#b.column-defined-2:b",
+            "div#c.column-defined-2:c",
+            "div#d:d",
+            "div#e:e",
+            "div#f:f",
         }, inst, inst:querySelectorAll(".grid")[1])
 
         local expectedMap = {
@@ -118,6 +119,7 @@ describe("Grid test", function ()
         }
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
+        h.assertGridBoundsMatch(expectedMap, inst)
     end)
     it("both-templates-mixed-row-col-precedence", function ()
         local inst = require("banana.instance").emptyInstance()
@@ -127,15 +129,15 @@ describe("Grid test", function ()
         inst:open()
         inst:querySelectorAll(".grid")[1]:addClass("grid-template-both-mixed")
         h.createElements({
-            "div#:a",
-            "div#:b",
-            "div#.row-defined.column-defined:c",
-            "div#:d",
-            "div#:e",
-            "div#:f",
-            "div#:g",
-            "div#:h",
-            "div#:i",
+            "div#a:a",
+            "div#b:b",
+            "div#c.row-defined.column-defined:c",
+            "div#d:d",
+            "div#e:e",
+            "div#f:f",
+            "div#g:g",
+            "div#h:h",
+            "div#i:i",
         }, inst, inst:querySelectorAll(".grid")[1])
 
         local expectedMap = {
@@ -148,6 +150,7 @@ describe("Grid test", function ()
         }
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
+        h.assertGridBoundsMatch(expectedMap, inst)
     end)
     it("both-templates-mixed-row-col-precedence-2", function ()
         local inst = require("banana.instance").emptyInstance()
@@ -157,15 +160,15 @@ describe("Grid test", function ()
         inst:open()
         inst:querySelectorAll(".grid")[1]:addClass("grid-template-both-mixed")
         h.createElements({
-            "div#:a",
-            "div#:b",
-            "div#.row-defined.column-defined-2:c",
-            "div#.row-defined:d",
-            "div#.row-defined:e",
-            "div#:f",
-            "div#:g",
-            "div#:h",
-            "div#:i",
+            "div#a:a",
+            "div#b:b",
+            "div#c.row-defined.column-defined-2:c",
+            "div#d.row-defined:d",
+            "div#e.row-defined:e",
+            "div#f:f",
+            "div#g:g",
+            "div#h:h",
+            "div#i:i",
         }, inst, inst:querySelectorAll(".grid")[1])
 
         local expectedMap = {
@@ -178,6 +181,7 @@ describe("Grid test", function ()
         }
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
+        h.assertGridBoundsMatch(expectedMap, inst)
     end)
     it("both-templates-mixed-row-col-precedence-3", function ()
         local inst = require("banana.instance").emptyInstance()
@@ -187,16 +191,16 @@ describe("Grid test", function ()
         inst:open()
         inst:querySelectorAll(".grid")[1]:addClass("grid-template-both-mixed")
         h.createElements({
-            "div#:a",
-            "div#:b",
-            "div#.row-defined.column-defined-2:c",
-            "div#.row-defined.column-defined-2:j",
-            "div#.row-defined:d",
-            "div#.row-defined:e",
-            "div#:f",
-            "div#:g",
-            "div#:h",
-            "div#:i",
+            "div#a:a",
+            "div#b:b",
+            "div#c.row-defined.column-defined-2:c",
+            "div#j.row-defined.column-defined-2:j",
+            "div#d.row-defined:d",
+            "div#e.row-defined:e",
+            "div#f:f",
+            "div#g:g",
+            "div#h:h",
+            "div#i:i",
         }, inst, inst:querySelectorAll(".grid")[1])
 
         local expectedMap = {
@@ -209,6 +213,7 @@ describe("Grid test", function ()
         }
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
+        h.assertGridBoundsMatch(expectedMap, inst)
     end)
     it("both-templates-mixed-row-col-precedence-z", function ()
         local inst = require("banana.instance").emptyInstance()
@@ -218,16 +223,16 @@ describe("Grid test", function ()
         inst:open()
         inst:querySelectorAll(".grid")[1]:addClass("grid-template-both-mixed")
         h.createElements({
-            "div#:a",
-            "div#:b",
-            "div#.row-defined.column-defined-2.z:c",
-            "div#.row-defined.column-defined-2:j",
-            "div#.row-defined:d",
-            "div#.row-defined:e",
-            "div#:f",
-            "div#:g",
-            "div#:h",
-            "div#:i",
+            "div#a:a",
+            "div#b:b",
+            "div#c.row-defined.column-defined-2.z:c",
+            "div#j.row-defined.column-defined-2:j",
+            "div#d.row-defined:d",
+            "div#e.row-defined:e",
+            "div#f:f",
+            "div#g:g",
+            "div#h:h",
+            "div#i:i",
         }, inst, inst:querySelectorAll(".grid")[1])
 
         local expectedMap = {
@@ -240,6 +245,7 @@ describe("Grid test", function ()
         }
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
+        h.assertGridBoundsMatch(expectedMap, inst)
     end)
     it("both-templates-mixed", function ()
         local inst = require("banana.instance").emptyInstance()
@@ -249,15 +255,15 @@ describe("Grid test", function ()
         inst:open()
         inst:querySelectorAll(".grid")[1]:addClass("grid-template-both-mixed")
         h.createElements({
-            "div#:a",
-            "div#:b",
-            "div#:c",
-            "div#:d",
-            "div#:e",
-            "div#:f",
-            "div#:g",
-            "div#:h",
-            "div#:i",
+            "div#a:a",
+            "div#b:b",
+            "div#c:c",
+            "div#d:d",
+            "div#e:e",
+            "div#f:f",
+            "div#g:g",
+            "div#h:h",
+            "div#i:i",
         }, inst, inst:querySelectorAll(".grid")[1])
 
         local expectedMap = {
@@ -270,6 +276,7 @@ describe("Grid test", function ()
         }
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
+        h.assertGridBoundsMatch(expectedMap, inst)
     end)
     it("both-templates", function ()
         local inst = require("banana.instance").emptyInstance()
@@ -279,15 +286,15 @@ describe("Grid test", function ()
         inst:open()
         inst:querySelectorAll(".grid")[1]:addClass("grid-template-both")
         h.createElements({
-            "div#:a",
-            "div#:b",
-            "div#:c",
-            "div#:d",
-            "div#:e",
-            "div#:f",
-            "div#:g",
-            "div#:h",
-            "div#:i",
+            "div#a:a",
+            "div#b:b",
+            "div#c:c",
+            "div#d:d",
+            "div#e:e",
+            "div#f:f",
+            "div#g:g",
+            "div#h:h",
+            "div#i:i",
         }, inst, inst:querySelectorAll(".grid")[1])
 
         local expectedMap = {
@@ -301,6 +308,7 @@ describe("Grid test", function ()
         }
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
+        h.assertGridBoundsMatch(expectedMap, inst)
     end)
     it("columns-mixed", function ()
         local inst = require("banana.instance").emptyInstance()
@@ -310,18 +318,19 @@ describe("Grid test", function ()
         inst:open()
         inst:querySelectorAll(".grid")[1]:addClass("grid-template-columns-mixed")
         h.createElements({
-            "div#:a",
-            "div#:a",
-            "div#:a",
-            "div#:a",
+            "div#a:a",
+            "div#b:b",
+            "div#c:c",
+            "div#d:d",
         }, inst, inst:querySelectorAll(".grid")[1])
 
         local expectedMap = {
             "          ",
-            "aa~~a~~a~~",
+            "ab~~c~~d~~",
         }
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
+        h.assertGridBoundsMatch(expectedMap, inst)
     end)
     it("columns-defined", function ()
         local inst = require("banana.instance").emptyInstance()
@@ -331,18 +340,19 @@ describe("Grid test", function ()
         inst:open()
         inst:querySelectorAll(".grid")[1]:addClass("grid-template-columns")
         h.createElements({
-            "div#:a",
-            "div#:a",
-            "div#:a",
-            "div#:a",
+            "div#a:a",
+            "div#b:b",
+            "div#c:c",
+            "div#d:d",
         }, inst, inst:querySelectorAll(".grid")[1])
 
         local expectedMap = {
             "          ",
-            "a~a~a~a~!!",
+            "a~b~c~d~!!",
         }
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
+        h.assertGridBoundsMatch(expectedMap, inst)
     end)
     it("rows-mixed", function ()
         local inst = require("banana.instance").emptyInstance()
@@ -352,24 +362,25 @@ describe("Grid test", function ()
         inst:open()
         inst:querySelectorAll(".grid")[1]:addClass("grid-template-rows-mixed")
         h.createElements({
-            "div#:a",
-            "div#:a",
-            "div#:a",
-            "div#:a",
+            "div#a:a",
+            "div#b:b",
+            "div#c:c",
+            "div#d:d",
         }, inst, inst:querySelectorAll(".grid")[1])
 
         local expectedMap = {
             "          ",
             "a~~~~~~~~~",
-            "a~~~~~~~~~",
+            "b~~~~~~~~~",
             "~~~~~~~~~~",
-            "a~~~~~~~~~",
+            "c~~~~~~~~~",
             "~~~~~~~~~~",
-            "a~~~~~~~~~",
+            "d~~~~~~~~~",
             "~~~~~~~~~~",
         }
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
+        h.assertGridBoundsMatch(expectedMap, inst)
     end)
     it("rows-defined", function ()
         local inst = require("banana.instance").emptyInstance()
@@ -379,10 +390,10 @@ describe("Grid test", function ()
         inst:open()
         inst:querySelectorAll(".grid")[1]:addClass("grid-template-rows")
         h.createElements({
-            "div#:a",
-            "div#:a",
-            "div#:a",
-            "div#:a",
+            "div#a:a",
+            "div#b:b",
+            "div#c:c",
+            "div#d:d",
         }, inst, inst:querySelectorAll(".grid")[1])
 
         local expectedMap = {
@@ -390,16 +401,17 @@ describe("Grid test", function ()
             "a~~~~~~~~~",
             "~~~~~~~~~~",
             "~~~~~~~~~~",
-            "a~~~~~~~~~",
+            "b~~~~~~~~~",
             "~~~~~~~~~~",
             "~~~~~~~~~~",
-            "a~~~~~~~~~",
+            "c~~~~~~~~~",
             "~~~~~~~~~~",
             "~~~~~~~~~~",
-            "a~~~~~~~~~",
+            "d~~~~~~~~~",
         }
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
+        h.assertGridBoundsMatch(expectedMap, inst)
     end)
     it("column-gap-pct", function ()
         local inst = require("banana.instance").emptyInstance()
@@ -409,19 +421,20 @@ describe("Grid test", function ()
         inst:open()
         inst:querySelectorAll(".grid")[1]:addClass("column-gap-pct")
         h.createElements({
-            "div#.row-defined:a",
-            "div#.row-defined:a",
-            "div#.row-defined:a",
-            "div#.row-defined:a",
-            "div#.row-defined:a",
+            "div#a.row-defined:a",
+            "div#b.row-defined:b",
+            "div#c.row-defined:c",
+            "div#d.row-defined:d",
+            "div#e.row-defined:e",
         }, inst, inst:querySelectorAll(".grid")[1])
 
         local expectedMap = {
             "          ",
-            "a~!a!a!a!a",
+            "a~!b!c!d!e",
         }
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
+        h.assertGridBoundsMatch(expectedMap, inst)
     end)
     it("column-gap-ch", function ()
         local inst = require("banana.instance").emptyInstance()
@@ -431,19 +444,20 @@ describe("Grid test", function ()
         inst:open()
         inst:querySelectorAll(".grid")[1]:addClass("column-gap-ch")
         h.createElements({
-            "div#.row-defined:a",
-            "div#.row-defined:a",
-            "div#.row-defined:a",
-            "div#.row-defined:a",
-            "div#.row-defined:a",
+            "div#a.row-defined:a",
+            "div#b.row-defined:b",
+            "div#c.row-defined:c",
+            "div#d.row-defined:d",
+            "div#e.row-defined:e",
         }, inst, inst:querySelectorAll(".grid")[1])
 
         local expectedMap = {
             "          ",
-            "a~!a!a!a!a",
+            "a~!b!c!d!e",
         }
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
+        h.assertGridBoundsMatch(expectedMap, inst)
     end)
     it("row-gap-pct", function ()
         local inst = require("banana.instance").emptyInstance()
@@ -453,27 +467,28 @@ describe("Grid test", function ()
         inst:open()
         inst:querySelectorAll(".grid")[1]:addClass("row-gap-pct")
         h.createElements({
-            "div#:a",
-            "div#:a",
-            "div#:a",
-            "div#:a",
-            "div#:a",
+            "div#a:a",
+            "div#b:b",
+            "div#c:c",
+            "div#d:d",
+            "div#e:e",
         }, inst, inst:querySelectorAll(".grid")[1])
 
         local expectedMap = {
             "          ",
             "a~~~~~~~~~",
             "!!!!!!!!!!",
-            "a~~~~~~~~~",
+            "b~~~~~~~~~",
             "!!!!!!!!!!",
-            "a~~~~~~~~~",
+            "c~~~~~~~~~",
             "!!!!!!!!!!",
-            "a~~~~~~~~~",
+            "d~~~~~~~~~",
             "!!!!!!!!!!",
-            "a~~~~~~~~~",
+            "e~~~~~~~~~",
         }
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
+        h.assertGridBoundsMatch(expectedMap, inst)
     end)
     it("row-gap-ch", function ()
         local inst = require("banana.instance").emptyInstance()
@@ -483,27 +498,28 @@ describe("Grid test", function ()
         inst:open()
         inst:querySelectorAll(".grid")[1]:addClass("row-gap-ch")
         h.createElements({
-            "div#:a",
-            "div#:a",
-            "div#:a",
-            "div#:a",
-            "div#:a",
+            "div#a:a",
+            "div#b:b",
+            "div#c:c",
+            "div#d:d",
+            "div#e:e",
         }, inst, inst:querySelectorAll(".grid")[1])
 
         local expectedMap = {
             "          ",
             "a~~~~~~~~~",
             "!!!!!!!!!!",
-            "a~~~~~~~~~",
+            "b~~~~~~~~~",
             "!!!!!!!!!!",
-            "a~~~~~~~~~",
+            "c~~~~~~~~~",
             "!!!!!!!!!!",
-            "a~~~~~~~~~",
+            "d~~~~~~~~~",
             "!!!!!!!!!!",
-            "a~~~~~~~~~",
+            "e~~~~~~~~~",
         }
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
+        h.assertGridBoundsMatch(expectedMap, inst)
     end)
     it("basic grid works", function ()
         local inst = require("banana.instance").emptyInstance()
@@ -512,25 +528,26 @@ describe("Grid test", function ()
         inst.stripRight = false
         inst:open()
         h.createElements({
-            "div#:a",
-            "div#:a",
-            "div#:a",
-            "div#:a",
-            "div#:a",
+            "div#a:a",
+            "div#b:b",
+            "div#c:c",
+            "div#d:d",
+            "div#e:e",
         }, inst, inst:querySelectorAll(".grid")[1])
 
         local expectedMap = {
             "          ",
             "a~~~~~~~~~",
-            "a~~~~~~~~~",
-            "a~~~~~~~~~",
-            "a~~~~~~~~~",
-            "a~~~~~~~~~",
+            "b~~~~~~~~~",
+            "c~~~~~~~~~",
+            "d~~~~~~~~~",
+            "e~~~~~~~~~",
             "          ",
             "          ",
         }
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
+        h.assertGridBoundsMatch(expectedMap, inst)
     end)
     it("basic grid works", function ()
         local inst = require("banana.instance").emptyInstance()
@@ -539,23 +556,24 @@ describe("Grid test", function ()
         inst.stripRight = false
         inst:open()
         h.createElements({
-            "div#.row-defined:a",
-            "div#.row-defined:a",
-            "div#:a",
-            "div#:a",
-            "div#:a",
+            "div#a.row-defined:a",
+            "div#b.row-defined:b",
+            "div#c:c",
+            "div#d:d",
+            "div#e:e",
         }, inst, inst:querySelectorAll(".grid")[1])
 
         local expectedMap = {
             "          ",
-            "a~~~~a~~~~",
-            "a~~~~a~~~~",
-            "a~~~~!!!!!",
+            "a~~~~b~~~~",
+            "c~~~~d~~~~",
+            "e~~~~!!!!!",
             "          ",
             "          ",
         }
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
+        h.assertGridBoundsMatch(expectedMap, inst)
     end)
     it("row-defined 1", function ()
         local inst = require("banana.instance").emptyInstance()
@@ -564,11 +582,11 @@ describe("Grid test", function ()
         inst.stripRight = false
         inst:open()
         h.createElements({
-            "div#.row-defined-range:a",
-            "div#.row-defined-range:b",
-            "div#:c",
-            "div#:d",
-            "div#:e",
+            "div#a.row-defined-range:a",
+            "div#b.row-defined-range:b",
+            "div#c:c",
+            "div#d:d",
+            "div#e:e",
         }, inst, inst:querySelectorAll(".grid")[1])
 
         local expectedMap = {
@@ -581,6 +599,7 @@ describe("Grid test", function ()
         }
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
+        h.assertGridBoundsMatch(expectedMap, inst)
     end)
     it("row-defined 2", function ()
         local inst = require("banana.instance").emptyInstance()
@@ -589,11 +608,11 @@ describe("Grid test", function ()
         inst.stripRight = false
         inst:open()
         h.createElements({
-            "div#:c",
-            "div#:d",
-            "div#.row-defined-range:a",
-            "div#.row-defined-range:b",
-            "div#:e",
+            "div#c:c",
+            "div#d:d",
+            "div#a.row-defined-range:a",
+            "div#b.row-defined-range:b",
+            "div#e:e",
         }, inst, inst:querySelectorAll(".grid")[1])
 
         local expectedMap = {
@@ -606,6 +625,7 @@ describe("Grid test", function ()
         }
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
+        h.assertGridBoundsMatch(expectedMap, inst)
     end)
     it("row-defined 3", function ()
         local inst = require("banana.instance").emptyInstance()
@@ -614,11 +634,11 @@ describe("Grid test", function ()
         inst.stripRight = false
         inst:open()
         h.createElements({
-            "div#:c",
-            "div#:d",
-            "div#.row-span:a",
-            "div#.row-span:b",
-            "div#:e",
+            "div#c:c",
+            "div#d:d",
+            "div#a.row-span:a",
+            "div#b.row-span:b",
+            "div#e:e",
         }, inst, inst:querySelectorAll(".grid")[1])
 
         local expectedMap = {
@@ -634,6 +654,7 @@ describe("Grid test", function ()
         }
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
+        h.assertGridBoundsMatch(expectedMap, inst)
     end)
     it("row-defined 4", function ()
         local inst = require("banana.instance").emptyInstance()
@@ -642,11 +663,11 @@ describe("Grid test", function ()
         inst.stripRight = false
         inst:open()
         h.createElements({
-            "div#:c",
-            "div#.row-defined-range-span:d",
-            "div#.row-defined-range-span:a",
-            "div#.row-defined-range-span:b",
-            "div#:e",
+            "div#c:c",
+            "div#d.row-defined-range-span:d",
+            "div#a.row-defined-range-span:a",
+            "div#b.row-defined-range-span:b",
+            "div#e:e",
         }, inst, inst:querySelectorAll(".grid")[1])
 
         local expectedMap = {
@@ -659,6 +680,7 @@ describe("Grid test", function ()
         }
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
+        h.assertGridBoundsMatch(expectedMap, inst)
     end)
     it("col-defined 1", function ()
         local inst = require("banana.instance").emptyInstance()
@@ -667,11 +689,11 @@ describe("Grid test", function ()
         inst.stripRight = false
         inst:open()
         h.createElements({
-            "div#.column-defined-range:a",
-            "div#.column-defined-range:b",
-            "div#:c",
-            "div#:d",
-            "div#:e",
+            "div#a.column-defined-range:a",
+            "div#b.column-defined-range:b",
+            "div#c:c",
+            "div#d:d",
+            "div#e:e",
         }, inst, inst:querySelectorAll(".grid")[1])
 
         local expectedMap = {
@@ -684,6 +706,7 @@ describe("Grid test", function ()
         }
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
+        h.assertGridBoundsMatch(expectedMap, inst)
     end)
     it("col-defined 2", function ()
         local inst = require("banana.instance").emptyInstance()
@@ -692,11 +715,11 @@ describe("Grid test", function ()
         inst.stripRight = false
         inst:open()
         h.createElements({
-            "div#:c",
-            "div#.column-defined-range:a",
-            "div#.column-defined-range:b",
-            "div#:d",
-            "div#:e",
+            "div#c:c",
+            "div#a.column-defined-range:a",
+            "div#b.column-defined-range:b",
+            "div#d:d",
+            "div#e:e",
         }, inst, inst:querySelectorAll(".grid")[1])
 
         local expectedMap = {
@@ -709,6 +732,7 @@ describe("Grid test", function ()
         }
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
+        h.assertGridBoundsMatch(expectedMap, inst)
     end)
     it("col-defined 3", function ()
         local inst = require("banana.instance").emptyInstance()
@@ -717,11 +741,11 @@ describe("Grid test", function ()
         inst.stripRight = false
         inst:open()
         h.createElements({
-            "div#:c",
-            "div#:d",
-            "div#.column-defined-range:a",
-            "div#.column-defined-range:b",
-            "div#:e",
+            "div#c:c",
+            "div#d:d",
+            "div#a.column-defined-range:a",
+            "div#b.column-defined-range:b",
+            "div#e:e",
         }, inst, inst:querySelectorAll(".grid")[1])
 
         local expectedMap = {
@@ -734,6 +758,12 @@ describe("Grid test", function ()
         }
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
+        h.assertGridBoundsMatch(expectedMap, inst, "~", function (k, v)
+            if k == "d" then
+                v.bottomY = 3
+            end
+            return v
+        end)
     end)
     it("col-defined 4", function ()
         local inst = require("banana.instance").emptyInstance()
@@ -742,11 +772,11 @@ describe("Grid test", function ()
         inst.stripRight = false
         inst:open()
         h.createElements({
-            "div#:c",
-            "div#:d",
-            "div#.column-defined-range-span:a",
-            "div#.column-defined-range-span:b",
-            "div#:e",
+            "div#c:c",
+            "div#d:d",
+            "div#a.column-defined-range-span:a",
+            "div#b.column-defined-range-span:b",
+            "div#e:e",
         }, inst, inst:querySelectorAll(".grid")[1])
 
         local expectedMap = {
@@ -758,6 +788,7 @@ describe("Grid test", function ()
         }
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
+        h.assertGridBoundsMatch(expectedMap, inst)
     end)
     it("col-span", function ()
         local inst = require("banana.instance").emptyInstance()
@@ -766,11 +797,11 @@ describe("Grid test", function ()
         inst.stripRight = false
         inst:open()
         h.createElements({
-            "div#:c",
-            "div#:d",
-            "div#.column-span:b",
-            "div#.column-span:a",
-            "div#:e",
+            "div#c:c",
+            "div#d:d",
+            "div#b.column-span:b",
+            "div#a.column-span:a",
+            "div#e:e",
         }, inst, inst:querySelectorAll(".grid")[1])
 
         local expectedMap = {
@@ -783,6 +814,12 @@ describe("Grid test", function ()
         }
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
+        h.assertGridBoundsMatch(expectedMap, inst, "~", function (k, v)
+            if k == "d" then
+                v.bottomY = 3
+            end
+            return v
+        end)
     end)
     it("col-defined 5", function ()
         local inst = require("banana.instance").emptyInstance()
@@ -791,11 +828,11 @@ describe("Grid test", function ()
         inst.stripRight = false
         inst:open()
         h.createElements({
-            "div#:c",
-            "div#:d",
-            "div#.column-defined-range-span:b",
-            "div#.column-defined-range-span-2:a",
-            "div#:e",
+            "div#c:c",
+            "div#d:d",
+            "div#b.column-defined-range-span:b",
+            "div#a.column-defined-range-span-2:a",
+            "div#e:e",
         }, inst, inst:querySelectorAll(".grid")[1])
 
         local expectedMap = {
@@ -807,5 +844,11 @@ describe("Grid test", function ()
         }
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
+        h.assertGridBoundsMatch(expectedMap, inst, "~", function (k, v)
+            if k == "b" then
+                v.bottomY = 3
+            end
+            return v
+        end)
     end)
 end)
