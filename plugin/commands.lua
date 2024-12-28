@@ -9,11 +9,10 @@ vim.api.nvim_create_user_command("BananaSo", function (opts)
     local buftitle = "scratch"
     local inst = require("banana.instance").emptyInstance()
     require("banana.require").parseReload()
-    inst.DEBUG = true
-    inst.DEBUG_dumpTree = true
     inst:useFile(file)
     inst:setBufName(buftitle)
     inst:open()
+    vim.notify("Instance id: " .. inst.instanceId)
 end, {
     nargs = "*",
 })
