@@ -341,6 +341,10 @@
     "named": false
   },
   {
+    "type": "a",
+    "named": false
+  },
+  {
     "type": "attribute_name",
     "named": true
   },

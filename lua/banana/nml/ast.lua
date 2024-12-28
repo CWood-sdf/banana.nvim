@@ -974,6 +974,10 @@ function M.Ast:_mixHl(parentHl)
         ret.bold = true
     end
 
+    if self.tag == "a" then
+        ret.underline = true
+    end
+
 
     for k, v in pairs(self.hl) do
         ret[k] = v

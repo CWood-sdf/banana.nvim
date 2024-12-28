@@ -81,6 +81,7 @@ local instances = {}
 ---@field rendering boolean
 ---@field DEBUG_showPerf boolean
 ---@field lastRenderScripts boolean
+---@field urlAsts Banana.Ast[] a list of the rendered a tags
 ---@field private DEBUG_winId? number
 ---@field private DEBUG_hlId? number
 ---@field private DEBUG_bufNr? number
@@ -138,7 +139,7 @@ end
 function Instance:_openDebugWin()
     if self.DEBUG_bufNr == nil or not vim.api.nvim_buf_is_valid(self.DEBUG_bufNr) then
         self.DEBUG_bufNr = vim.api.nvim_create_buf(false, true)
-        vim.api.nvim_set_option_value("filetype", "nml", {
+        vim.api.nvim_set_option_value("filetype", "markdown", {
             buf = self.DEBUG_bufNr
         })
     else
@@ -233,6 +234,7 @@ function Instance:new()
     local id = #instances
     ---@type Banana.Instance
     local inst = {
+        urlAsts = {},
         lastRenderScripts = false,
         DEBUG_showBuild = false,
         DEBUG_dumpTree = false,
@@ -843,6 +845,7 @@ function Instance:_render()
 
     -- self:body():resolveUnits(width, height, {})
     flame.new("renderAll")
+    self.urlAsts = {}
     local stuffToRender = self:_virtualRender(self.ast, width, height)
     flame.pop()
     local renderTime = vim.loop.hrtime() - startTime
@@ -885,13 +888,15 @@ function Instance:_render()
     log.trace("Flushing " ..
         #lines .. " lines to buffer " .. self.bufnr .. " on win " .. self.winid)
     vim.api.nvim_buf_set_lines(self.bufnr, 0, -1, false, lines)
-    vim.api.nvim_set_option_value("modifiable", false, {
-        buf = self.bufnr
-    })
+    vim.api.nvim_set_option_value("modifiable", self.bufOpts.modifiable or false,
+        {
+            buf = self.bufnr
+        })
 
     local bufTime = vim.loop.hrtime() - startTime
     startTime = vim.loop.hrtime()
     self:_highlight(stuffToRender, 0)
+    self:_dumpUrls(self.bufnr, self.highlightNs)
 
     local hlTime = vim.loop.hrtime() - startTime
     totalTime = totalTime + vim.loop.hrtime() - actualStart
@@ -986,6 +991,27 @@ function Instance:_render()
     -- collectgarbage()
 end
 
+---@param bufnr number
+---@param ns number
+function Instance:_dumpUrls(bufnr, ns)
+    vim.api.nvim_set_hl(ns, "asdfasdf", { fg = "#ff0000" })
+    for _, v in ipairs(self.urlAsts) do
+        -- vim.notify(vim.inspect(v.boundBox) .. "\n")
+        -- 8 14
+        vim.api.nvim_buf_set_extmark(bufnr, ns,
+            v.boundBox.topY - 1,
+            v.boundBox.leftX - 1,
+            {
+                -- end_row is inclusive, end_col is exclusive, hence the
+                -- subtracting 1 and 2 difference
+                end_col = v.boundBox.rightX - 1,
+                end_row = v.boundBox.bottomY - 2,
+                hl_group = "asdfasdf",
+                url = v:getAttribute("href")
+            })
+    end
+end
+
 ---@param lines Banana.Line[]
 ---@param offset number?
 ---@param bufnr number?
@@ -1058,9 +1084,9 @@ function Instance:_highlight(lines, offset, bufnr, winid, ns, noclear)
             if word.style == nil then
                 hlGroup = M.defaultWinHighlight
                 -- hlGroup = "NormalFloat"
-                ns = 0
+                -- ns = 0
             elseif word.style.__name ~= nil then
-                ns = 0
+                -- ns = 0
                 --flame.new("hl:named_hl")
                 hlGroup = word.style.__name or "Normal"
                 local hl = vim.api.nvim_get_hl(ns, {
@@ -1126,10 +1152,12 @@ function Instance:_highlight(lines, offset, bufnr, winid, ns, noclear)
                     -- flame.new("_highlight:set_hl/")
                     vim.api.nvim_set_hl(ns, hlGroup,
                         word.style)
-                    vim.api.nvim_buf_add_highlight(bufnr, ns,
-                        hlGroup, row,
-                        charI + col - 1,
-                        col + charI - 1 + charByteSize)
+                    self:_highlightText(bufnr, ns, row, charI + col - 1,
+                        col + charI - 1 + charByteSize, hlGroup)
+                    -- vim.api.nvim_buf_add_highlight(bufnr, ns,
+                    --     hlGroup, row,
+                    --     charI + col - 1,
+                    --     col + charI - 1 + charByteSize)
                     -- flame.pop()
                     hlId = hlId + 1
                     charI = charI + charByteSize
@@ -1146,9 +1174,11 @@ function Instance:_highlight(lines, offset, bufnr, winid, ns, noclear)
                 --flame.pop()
             end
             if not isGrad then
-                vim.api.nvim_buf_add_highlight(bufnr, ns, hlGroup, row,
-                    col,
-                    col + byteCount)
+                self:_highlightText(bufnr, ns, row, col, col + byteCount, hlGroup)
+
+                -- vim.api.nvim_buf_add_highlight(bufnr, ns, hlGroup, row,
+                --     col,
+                --     col + byteCount)
             end
             col = col + byteCount
             --flame.pop()
@@ -1162,6 +1192,13 @@ function Instance:_highlight(lines, offset, bufnr, winid, ns, noclear)
         --flame.pop()
     end
     -- flame.pop()
+end
+
+function Instance:_highlightText(bufnr, ns, row, col, endCol, group)
+    vim.api.nvim_buf_set_extmark(bufnr, ns, row, col, {
+        end_col = endCol,
+        hl_group = group,
+    })
 end
 
 ---Loads a partial nml file at {file} to be the content of the ast

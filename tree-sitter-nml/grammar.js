@@ -19,6 +19,7 @@ module.exports = grammar({
         source_file: ($) => repeat($._node),
         _start_tag_name: (_) =>
             choice(
+                "a",
                 "nml",
                 "title",
                 "pre",
