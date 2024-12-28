@@ -78,7 +78,6 @@ return function (ast, parentHl, parentWidth, parentHeight, startX,
     local renders = {}
     local rendersLen = 0
 
-    -- base render for non fr els
     for _, v in ipairs(ast.nodes) do
         if type(v) == "string" then
             goto continue
@@ -97,9 +96,6 @@ return function (ast, parentHl, parentWidth, parentHeight, startX,
         end
         local rendered = v.actualTag:getRendered(v, hl, basisVal, parentHeight,
             startX, startY, inherit, extra)
-        -- if rendered:getHeight() < currentHeight then
-        --     rendered:expandHeightTo(currentHeight)
-        -- end
 
         inherit.min_size = true
 
@@ -179,31 +175,39 @@ return function (ast, parentHl, parentWidth, parentHeight, startX,
     local lines = {}
     ---@type [Banana.Renderer.PartialRendered, Banana.Ast][]
     local line = {}
+
     for i = 1, #renders do
         local v = renders[i]
         if v == nil then
             log.throw("rendered " .. i .. " was nil!")
             error("")
         end
-        if yInc > 0 then
-            renders[i][2]:_increaseTopBound(yInc)
-        end
+
         if inc + renders[i][1]:getWidth() > parentWidth and #line > 0 and isWrap then
             table.insert(lines, line)
             local maxH = 0
+
             for _, el in ipairs(line) do
                 maxH = math.max(el[1]:getHeight(), maxH)
             end
+
             for _, el in ipairs(line) do
                 if el[1]:getHeight() < maxH then
                     el[1]:expandHeightTo(maxH)
                     el[2]:_increaseHeightBoundBy(maxH - el[1]:getHeight())
                 end
             end
+
             yInc = yInc + line[1][1]:getHeight()
             line = {}
             inc = 0
         end
+
+        if yInc > 0 then
+            renders[i][2]:_increaseTopBound(yInc)
+        end
+
+
         table.insert(line, renders[i])
         v[2]:_increaseLeftBound(inc)
         inc = inc + v[1]:getWidth()

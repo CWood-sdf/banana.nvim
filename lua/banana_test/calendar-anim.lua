@@ -35,21 +35,6 @@ end
 ---@param document Banana.Instance
 return function (document)
     local calendar = document:body()
-    -- i = 0
-    -- timer = vim.fn.timer_start(20, function ()
-    --     i = i + 1
-    --     local v = math.floor(easeout(i / 100) * 100)
-    --     calendar:setStyleValue("hl-bg",
-    --         "radial-gradient(blue, hl-extract(bg, NormalFloat) " .. v .. "%)")
-    --     if i >= 100 then
-    --         vim.fn.timer_stop(timer)
-    --     end
-    -- end, { ["repeat"] = -1 })
-    -- document:on("Close", {
-    --     calback = function ()
-    --         vim.fn.timer_stop(timer)
-    --     end
-    -- })
     document:on({ "Open", "ScriptDone" }, {
         callback = function ()
             i = 0
