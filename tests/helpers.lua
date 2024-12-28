@@ -156,14 +156,94 @@ function M.createElements(specs, document, target)
 end
 
 ---@param ast Banana.Ast
----@param bound Banana.Ast.BoundingBox
-function M.boundsMatch(ast, bound)
+---@param ... Banana.Ast.BoundingBox
+function M.boundsMatch(ast, ...)
     local box = ast.boundBox
     assert(box ~= nil, "Expected a bounding box")
-    for k, v in pairs(bound) do
-        if box[k] ~= v then
-            error("Expected bound '" ..
-                k .. "' to be " .. v .. " but got " .. box[k])
+
+    local all = { ... }
+    local matches = 0
+    local msgs = ""
+    for i, bound in ipairs(all) do
+        local works = true
+        msgs = msgs .. "Bound " .. i .. ": \n"
+        for k, v in pairs(bound) do
+            if box[k] ~= v then
+                works = false
+                msgs = msgs ..
+                    "Expected bound '" ..
+                    k .. "' to be " .. v .. " but got " .. box[k] .. "\n"
+            end
+        end
+        if works then
+            matches = matches + 1
+        end
+    end
+    if matches == 0 then
+        error(msgs)
+    end
+end
+
+--- Converts a map with alpha characters to bounding boxes.
+--- @param map string[] A table of strings representing the map.
+--- @param sep string?
+--- @return { [string]: Banana.Ast.BoundingBox} A table mapping characters to their bounding boxes.
+local function mapToBoundingBoxes(map, sep)
+    local boundingBoxes = {}
+    sep = sep or "~"
+
+    for row = 1, #map do
+        local line = map[row]
+        for col = 1, #line do
+            local char = line:sub(col, col)
+            if char:match("%a") then -- Check if it's an alpha character
+                -- Start processing the bounding box
+                if not boundingBoxes[char] then
+                    boundingBoxes[char] = { leftX = col, topY = row }
+                end
+
+                -- Calculate the bottom and right edges by scanning for the bounds
+                local bbox = boundingBoxes[char]
+                local currentRow = row + 1
+
+                -- Find the bottom edge
+                while currentRow <= #map and map[currentRow]:sub(col, col) == sep do
+                    currentRow = currentRow + 1
+                end
+                bbox.bottomY = currentRow
+
+                -- Find the right edge
+                local currentCol = col + 1
+                while currentCol <= #line and map[row]:sub(currentCol, currentCol) == sep do
+                    currentCol = currentCol + 1
+                end
+                bbox.rightX = currentCol
+            end
+        end
+    end
+
+    return boundingBoxes
+end
+
+---@param disp string[]
+---@param document Banana.Instance
+function M.assertGridBoundsMatch(disp, document, sep, mod)
+    ---@type { [string]: Banana.Ast.BoundingBox }
+    local map = mapToBoundingBoxes(disp, sep)
+    if type(sep) == "function" then
+        mod = sep
+        sep = nil
+    end
+    mod = mod or function (_, v) return v end
+    for n, v in pairs(map) do
+        v = mod(n, v)
+        local el = document:getElementById(n)
+        local ok, e = pcall(function ()
+            M.boundsMatch(el, v)
+        end)
+        if not ok then
+            vim.notify("Failed on: " .. n .. " with box " .. vim.inspect(v))
+            error(e)
         end
     end
 end
