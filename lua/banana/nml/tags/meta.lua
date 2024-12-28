@@ -40,6 +40,12 @@ local function renderer(_, ast)
             return ret
         end
     end
+    if value == "true" or value == "false" then
+        value = value == "true"
+    end
+    if tonumber(value) ~= nil then
+        value = tonumber(value)
+    end
     if inst == nil then
         log.warn("Instance is undefined in meta tag")
         return ret
