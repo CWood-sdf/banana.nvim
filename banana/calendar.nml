@@ -51,13 +51,6 @@
   </head>
 
   <body>
-    <!-- <div style="display: flex"> -->
-    <!--   <div class="gg"></div> -->
-    <!--   <div class="gg"></div> -->
-    <!--   <div class="gg"></div> -->
-    <!--   <div class="gg"></div> -->
-    <!--   <div class="gg"></div> -->
-    <!-- </div> -->
     <div id="calendarContainer" style="width: 100%">
       <div>
         <span id="month"></span>

@@ -14,6 +14,9 @@ local function getEventName(v)
     return "BananaDocument" .. v
 end
 
+---@alias Banana.EventType "Open"|"Leave"|"Close"|"ScriptDone"
+
+---@type { [Banana.EventType]: string }
 local events = {
     Open = "",
     Leave = "",
@@ -244,8 +247,8 @@ function Instance:new()
         renderRequested = false,
         keymaps = {},
         bufname = "Banana empty " .. id,
-        highlightNs = vim.api.nvim_create_namespace("banana_instance_" .. ids),
-        augroup = vim.api.nvim_create_augroup("banana_instance_" .. ids, {}),
+        highlightNs = vim.api.nvim_create_namespace("banana_instance_hl_" .. ids),
+        augroup = vim.api.nvim_create_augroup("banana_instance_au_" .. ids, {}),
         ---@diagnostic disable-next-line: assign-type-mismatch
         ast = nilAst,
         styleRules = {},
@@ -355,6 +358,7 @@ function Instance:_attachAutocmds()
     })
 end
 
+---@param e Banana.EventType
 function Instance:_fireEvent(e)
     pcall(vim.api.nvim_exec_autocmds, "User", {
         pattern = "BananaDocument" .. e,
@@ -763,7 +767,8 @@ function Instance:_createWinAndBuf()
     return width, height
 end
 
-function Instance:_deferRender()
+---@param post fun()?
+function Instance:_deferRender(post)
     vim.defer_fn(function ()
         if self.rendering then
             self:_deferRender()
@@ -774,6 +779,9 @@ function Instance:_deferRender()
         self:_render()
         self.renderRequested = false
         self.rendering = false
+        if post ~= nil then
+            post()
+        end
     end, 10)
 end
 
@@ -849,8 +857,9 @@ function Instance:_render()
     if skip then
         self.rendering = false
         self.renderRequested = true
-        self:_deferRender()
-        self:_fireEvent("ScriptDone")
+        self:_deferRender(function ()
+            self:_fireEvent("ScriptDone")
+        end)
         return
     end
 
@@ -891,10 +900,12 @@ function Instance:_render()
 
     if self.DEBUG_dumpTree then
         local dump = self.ast:_dumpTree()
+        table.insert(extraLines, "```nml")
         for _, v in ipairs(dump) do
             table.insert(extraLines, v)
         end
         table.insert(extraLines, "")
+        table.insert(extraLines, "```")
     end
 
     if self.DEBUG_stressTest then
@@ -1306,6 +1317,7 @@ function Instance:_addScripts(scripts)
     end
 end
 
+---Creates an instance with associated nml file and buffer name
 ---@param filename string
 ---@param bufferName string
 ---@return Banana.Instance
@@ -1323,14 +1335,16 @@ function M.newInstance(filename, bufferName)
     return instance
 end
 
+---Creates an instance with no associated document
 ---@return Banana.Instance
 function M.emptyInstance()
     return Instance:new()
 end
 
+---Returns the instance with given id
 ---@overload fun(id: string): Banana.Instance?
 ---@param id number
----@return Banana.Instance
+---@return Banana.Instance?
 function M.getInstance(id)
     if id == nil then
         log.throw(
@@ -1351,20 +1365,23 @@ function M.getInstance(id)
     return instances[id]
 end
 
+---Returns the value of the nil ast
 ---@return Banana.Ast
 function M.getNilAst()
     ---@diagnostic disable-next-line: return-type-mismatch
     return nilAst
 end
 
+---Returns a list of all the instance ids
 ---@return number[]
 function M.listInstanceIds()
     local ret = {}
-    for i, _ in ipairs(instances) do
-        table.insert(ret, i)
+    for i, v in ipairs(instances) do
+        if type(v) == "table" then
+            table.insert(ret, i)
+        end
     end
     return ret
-    -- return vim.iter(ipairs(instances)):map(function (i, _) return i end):totable()
 end
 
 return M
