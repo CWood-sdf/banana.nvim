@@ -20,7 +20,9 @@ local function renderer(self, ast, parentHl, parentWidth, parentHeight, startX,
     if ast:parent().listCounter ~= nil then
         widthAlloted = ast:parent():_getMaxListWidth(inherit.list_style_type)
     end
+    widthAlloted = widthAlloted
     parentWidth = parentWidth - widthAlloted
+    startX = startX + widthAlloted
 
     local render = self:renderInlineEl(ast, parentHl, parentWidth, parentHeight,
         startX, startY, inherit, extra)
@@ -32,7 +34,10 @@ local function renderer(self, ast, parentHl, parentWidth, parentHeight, startX,
         extra.trace:appendBoxBelow(
             dbg.traceBreak("Adding list item '" .. listTick .. "'"), false)
     end
-    listTick = string.rep(" ", widthAlloted - _str.charWidth(listTick)) ..
+    local extraSpace = string.rep(" ",
+        widthAlloted - 1 - _str.charWidth(listTick))
+    -- minus 1 to ensure at least one space
+    listTick = extraSpace ..
         listTick
     local box = b.Box:new(parentHl)
     box:appendStr(listTick)

@@ -21,7 +21,7 @@ local function splitLineBoxOnce(targetWidth, box, hl)
     if targetWidth < 1 then
         targetWidth = 1
     end
-    if box:width() < targetWidth then
+    if box:width() <= targetWidth then
         -- flame.pop()
         return box, b.Box:new(hl)
     end

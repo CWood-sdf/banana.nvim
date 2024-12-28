@@ -526,9 +526,6 @@ function M.Ast:_getMaxListWidth(styleTp)
     if styleTp == "alpha" or styleTp == "Alpha" then
         return 3
     end
-    if styleTp == "number" then
-        return math.floor(math.log10(len) + 1) + 2
-    end
     if styleTp == "roman" or styleTp == "Roman" then
         -- if someone has roman numerals going to over 888 then im kinda scared
         if len >= 888 then
@@ -548,8 +545,9 @@ function M.Ast:_getMaxListWidth(styleTp)
         if len >= 1 then return 1 end
         return 0
     end
+    return math.floor(math.log10(len) + 1) + 2
 
-    return math.ceil(math.log10(len)) + 2
+    -- return math.ceil(math.log10(len)) + 2
 end
 
 ---@param styleTp string
@@ -1264,6 +1262,13 @@ end
 ---@return string?
 function M.Ast:getAttribute(name)
     return self.attributes[name]
+end
+
+---Returns true if this node has attribute {name} set
+---@param name string
+---@return boolean
+function M.Ast:hasAttribute(name)
+    return self.attributes[name] ~= nil
 end
 
 ---Adds {text} to the child list of the node
