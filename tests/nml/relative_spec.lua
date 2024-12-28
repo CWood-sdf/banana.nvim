@@ -33,7 +33,7 @@ local code = nml([[
     <div>
 
         <span id="rel"> a </span>
-        <span> a </span>
+        <span id="b"> b </span>
     </div>
 
     </body>
@@ -51,7 +51,7 @@ describe("Relative", function ()
 
         local expectedMap = {
             "          ",
-            "a~~~a~~~!!",
+            "a~~~b~~~!!",
             "~~~~~~~~!!",
             "~~~~~~~~!!",
         }
@@ -65,10 +65,12 @@ describe("Relative", function ()
             topY = 2,
             bottomY = 5,
         })
+        h.assertGridBoundsMatch(expectedMap, inst, "~",
+            function (k, v) if k == "b" then return v end end)
         el:addClass("rel")
         expectedMap = {
             "          ",
-            "~~~~a!!!~~",
+            "~~~~b!!!~~",
             "a!!!!!!!~~",
             "!!!!!!!!~~",
             "!!!!      ",
@@ -80,10 +82,13 @@ describe("Relative", function ()
             topY = 3,
             bottomY = 6,
         })
+        h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
+        h.assertGridBoundsMatch(expectedMap, inst, "!",
+            function (k, v) if k == "b" then return v end end)
         el:addClass("rel-left")
         expectedMap = {
             "          ",
-            "~~~~a!!!~~",
+            "~~~~b!!!~~",
             "~a!!!!!!~~",
             "~!!!!!!!~~",
             " !!!!     ",
@@ -96,5 +101,12 @@ describe("Relative", function ()
             bottomY = 6,
         })
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
+        h.assertGridBoundsMatch(expectedMap, inst, "!",
+            function (k, v)
+                if k == "b" then
+                    v.bottomY = v.bottomY - 1
+                    return v
+                end
+            end)
     end)
 end)

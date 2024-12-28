@@ -77,7 +77,7 @@ describe("span rendering", function ()
 
         local span = inst:getElementsByTag("span")[1]
         span:setStyle(
-        "width: 100%; height: 100%; text-align: center; padding-top: 1ch;")
+            "width: 100%; height: 100%; text-align: center; padding-top: 1ch;")
         local expectedMap = {
             "     ",
             "~~~~~",
@@ -149,7 +149,7 @@ describe("span rendering", function ()
 
         local span = inst:getElementsByTag("span")[1]
         span:setStyle(
-        "width: 2ch; height: 3ch; position: relative; left: 1ch; top: 1ch;")
+            "width: 2ch; height: 3ch; position: relative; left: 1ch; top: 1ch;")
         local expectedMap = {
             "     ",
             "     ",

@@ -1,4 +1,4 @@
-local h = require('tests.helpers')
+local h = require("tests.helpers")
 local code = nml([[
 <nml>
 <head>
@@ -18,16 +18,16 @@ nml {
 </head>
 <body>
 <br>
-<div class="w50">
-
+<div class="w50" id="a">
+a
 </div>
 </body>
 </nml>
 ]])
 
-describe("Percentage tests", function()
-    it("regular percents", function()
-        local inst = require('banana.instance').emptyInstance()
+describe("Percentage tests", function ()
+    it("regular percents", function ()
+        local inst = require("banana.instance").emptyInstance()
         inst:useNml(code)
         inst.DEBUG = false
         inst.stripRight = false
@@ -36,7 +36,7 @@ describe("Percentage tests", function()
 
         local expectedMap = {
             "        ",
-            "    ~~~~",
+            "    a~~~",
             "    ~~~~",
             "    ~~~~",
             "    ~~~~",
@@ -46,9 +46,10 @@ describe("Percentage tests", function()
         }
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
+        h.assertGridBoundsMatch(expectedMap, inst)
     end)
-    it("regular percents", function()
-        local inst = require('banana.instance').emptyInstance()
+    it("regular percents", function ()
+        local inst = require("banana.instance").emptyInstance()
         inst:useNml(code)
         inst.DEBUG = false
         inst.stripRight = false
@@ -56,7 +57,7 @@ describe("Percentage tests", function()
 
         local expectedMap = {
             "        ",
-            "~~~~    ",
+            "a~~~    ",
             "~~~~    ",
             "~~~~    ",
             "~~~~    ",
@@ -66,9 +67,10 @@ describe("Percentage tests", function()
         }
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
+        h.assertGridBoundsMatch(expectedMap, inst)
     end)
-    it("percents with padding", function()
-        local inst = require('banana.instance').emptyInstance()
+    it("percents with padding", function ()
+        local inst = require("banana.instance").emptyInstance()
         inst:useNml(code)
         inst.DEBUG = false
         inst.stripRight = false
@@ -77,7 +79,7 @@ describe("Percentage tests", function()
 
         local expectedMap = {
             "        ",
-            "    ~~  ",
+            "    a~  ",
             "    ~~  ",
             "    ~~  ",
             "    ~~  ",
@@ -87,5 +89,6 @@ describe("Percentage tests", function()
         }
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
+        h.assertGridBoundsMatch(expectedMap, inst)
     end)
 end)

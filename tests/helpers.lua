@@ -237,6 +237,9 @@ function M.assertGridBoundsMatch(disp, document, sep, mod)
     mod = mod or function (_, v) return v end
     for n, v in pairs(map) do
         v = mod(n, v)
+        if v == nil then
+            goto continue
+        end
         local el = document:getElementById(n)
         local ok, e = pcall(function ()
             M.boundsMatch(el, v)
@@ -245,6 +248,7 @@ function M.assertGridBoundsMatch(disp, document, sep, mod)
             vim.notify("Failed on: " .. n .. " with box " .. vim.inspect(v))
             error(e)
         end
+        ::continue::
     end
 end
 

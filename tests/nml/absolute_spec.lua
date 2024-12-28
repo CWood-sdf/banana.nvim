@@ -7,7 +7,7 @@ nml {
     width: 5ch;
     height: 5ch;
 }
-#one {
+#a {
     hl-bg: #ff0000;
 position: absolute;
  left: 1ch;
@@ -16,7 +16,7 @@ position: absolute;
  height: 3ch;
 
 }
-#two {
+#b {
     hl-bg: #00ff00;
 position: absolute;
  left: 2ch;
@@ -30,9 +30,11 @@ position: absolute;
 
 <body>
 <br>
-<div id="one">
+<div id="a">
+a
 </div>
-<div id="two">
+<div id="b">
+b
 </div>
 </body>
 </nml>
@@ -49,13 +51,17 @@ describe("Div rendering", function ()
 
         local expectedMap = {
             "     ",
-            " ~~~ ",
-            " ~!!!",
+            " a~~ ",
+            " ~b!!",
             " ~!!!",
             "  !!!",
         }
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
+        h.assertGridBoundsMatch(expectedMap, inst, "~",
+            function (k, v) if k == "a" then return v end end)
+        h.assertGridBoundsMatch(expectedMap, inst, "!",
+            function (k, v) if k == "b" then return v end end)
     end)
     it("z-index 2", function ()
         local inst = require("banana.instance").emptyInstance()
@@ -65,17 +71,21 @@ describe("Div rendering", function ()
         inst:open()
         local expectedMap = {
             "     ",
-            " ~~~ ",
-            " ~!!!",
+            " a~~ ",
+            " ~b!!",
             " ~!!!",
             "  !!!",
         }
-        local one = inst:getElementById("one")
-        one:setStyleValue("z-index", "1")
-        local two = inst:getElementById("two")
-        two:setStyleValue("z-index", "2")
+        local a = inst:getElementById("a")
+        a:setStyleValue("z-index", "1")
+        local b = inst:getElementById("b")
+        b:setStyleValue("z-index", "2")
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
+        h.assertGridBoundsMatch(expectedMap, inst, "~",
+            function (k, v) if k == "a" then return v end end)
+        h.assertGridBoundsMatch(expectedMap, inst, "!",
+            function (k, v) if k == "b" then return v end end)
     end)
     it("z-index 1", function ()
         local inst = require("banana.instance").emptyInstance()
@@ -85,14 +95,18 @@ describe("Div rendering", function ()
         inst:open()
         local expectedMap = {
             "     ",
-            " ~~~ ",
+            " a~~ ",
             " ~~~!",
             " ~~~!",
             "  !!!",
         }
-        local one = inst:getElementById("one")
-        one:setStyleValue("z-index", "1")
+        local a = inst:getElementById("a")
+        a:setStyleValue("z-index", "1")
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
+        h.assertGridBoundsMatch(expectedMap, inst, "~",
+            function (k, v) if k == "a" then return v end end)
+        -- h.assertGridBoundsMatch(expectedMap, inst, "!",
+        --     function (k, v) if k == "b" then return v end end)
     end)
 end)
