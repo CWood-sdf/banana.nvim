@@ -180,7 +180,7 @@ function M.Ast:_mountComponent()
     end
     local ast = component.ast:clone(true)
     ast.componentParent = self
-    local inst = _inst.getInstance(self.instance)
+    local inst = self:ownerDocument()
     if inst == nil then
         log.throw("Could not find instance")
         error()
@@ -787,7 +787,16 @@ end
 ---Returns the document owner
 ---@return Banana.Instance
 function M.Ast:ownerDocument()
-    return _inst.getInstance(self.instance or 0)
+    if self.instance == nil then
+        log.throw("ast does not have an associated document")
+        error("")
+    end
+    local ret = _inst.getInstance(self.instance or 0)
+    if ret == nil then
+        log.throw("ast does not have an associated document")
+        error("")
+    end
+    return ret
 end
 
 ---Duplicates this node and all its children (note: does NOT copy attached events)
@@ -1243,7 +1252,7 @@ function M.Ast:remove()
     --     self.componentTree:remove()
     -- end
     self:_unlockGradients()
-    _inst.getInstance(self.instance):_removeMapsFor(self)
+    self:ownerDocument():_removeMapsFor(self)
     self:_requestRender()
 end
 
@@ -1298,7 +1307,7 @@ function M.Ast:appendChild(node)
     node._parent = self
     table.insert(self.nodes, node)
     if self.instance ~= nil then
-        _inst.getInstance(self.instance):_applyId(node)
+        self:ownerDocument():_applyId(node)
     end
     self:_requestRender()
 end
@@ -1635,11 +1644,7 @@ function M.Ast:attachRemap(mode, lhs, mods, rhs, opts)
         end
         return true
     end
-    local inst = _inst.getInstance(self.instance)
-    if inst == nil then
-        log.throw("ast does not have an associated document")
-        error("")
-    end
+    local inst = self:ownerDocument()
     inst:_setRemap(mode, lhs, actualRhs, opts, self)
 end
 
@@ -1647,7 +1652,7 @@ function M.Ast:_requestRender()
     if self.instance == nil then
         return
     end
-    local inst = _inst.getInstance(self.instance)
+    local inst = self:ownerDocument()
     if inst == nil then
         log.throw("ast does not have an associated document")
         error("")
