@@ -59,7 +59,7 @@ this may seem underwhelming as the above result can be done in a few lines of lu
 
 ### Other examples
 
-Currently there are four examples: a todo app, a partial clone of the lazy.nvim plugin, an example tree element, and a counter app.
+Currently there are four examples: a todo app, a partial clone of the lazy.nvim plugin ui, an example tree element, and a counter app.
 
 The todo's files are contained in banana/example/todo.nml and lua/banana_example/todo.lua. You can run it with `require('banana').runTodo()`
 
@@ -88,6 +88,12 @@ Banana can be installed like this in lazy:
 ```lua
 return {
   "CWood-sdf/banana.nvim",
+  opts = {
+    -- if set to false, then you must call require("banana").initTsParsers() somewhere else
+    -- this allows you to remove treesitter as a dependency so that you can continue lazy loading it
+    -- if set to true, then it auto creates the treesitter parsers and loads nvim-treesitter
+    setupTs = true,
+  },
   dependencies = {
       "nvim-treesitter/nvim-treesitter",
   },
