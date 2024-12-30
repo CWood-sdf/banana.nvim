@@ -13,22 +13,30 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+      - name: Checkout wiki code
+        uses: actions/checkout@v4
+        with:
+          repository: ${{github.repository}}.wiki
+          path: banana.nvim.wiki
       - name: Update wiki
         run: |
-          git clone https://github.com/CWood-sdf/banana.nvim.wiki
           mv banana.nvim.wiki/.git ./wikigit
           rm banana.nvim.wiki -rf
           cp wiki banana.nvim.wiki -r
           mv ./wikigit ./banana.nvim.wiki/.git
-          MSG=$(git log -1 | tail -1)
-          cd banana.nvim.wiki
-          git status
-          git config --global user.email "actions@github.com"
-          git config --global user.name "CWood-sdf"
-          git add .
-          git commit -m "$MSG"
-          git push
           cd ..
+      - name: Push to wiki
+        run: |
+          cd banana.nvim.wiki
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add .
+          MSG=$(git log -1 | tail -1)
+          echo "$MSG"
+          git diff-index --quiet HEAD || git commit -m "$MSG" && git push
+          cd ..
+      - name: Remove wiki
+        run: |
           rm banana.nvim.wiki -rf
       - uses: rhysd/action-setup-vim@v1
         with:
