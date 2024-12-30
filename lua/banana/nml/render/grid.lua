@@ -3,12 +3,12 @@ local flame = require("banana.lazyRequire")("banana.utils.debug_flame")
 ---@module 'banana.utils.log'
 local log = require("banana.lazyRequire")("banana.utils.log")
 local M = {}
----@module 'banana.nml.ast'
-local _ast = require("banana.lazyRequire")("banana.nml.ast")
 ---@module 'banana.box'
 local b = require("banana.lazyRequire")("banana.box")
 ---@module 'ffi'
 local ffi = require("banana.lazyRequire")("ffi")
+-- ---@module 'banana.ncss.unit'
+-- local unit = require("banana.lazyRequire")("banana.ncss.unit")
 
 -- Grid todo:
 -- grid-template-areas
@@ -156,7 +156,7 @@ local function getTemplates(values, sizeInDirection, start, min, isCol, ast, gap
             local value = v.value
             if value.unit ~= "fr" and value.unit ~= "nfr" then
                 ---@cast value Banana.Ncss.UnitValue
-                local resolve = _ast.calcUnitNoMod(value, sizeInDirection, {})
+                local resolve = value:computeClone(sizeInDirection)
                 ---@type Banana.Renderer.GridTemplate
                 local ins = {
                     start = 0,
@@ -277,20 +277,17 @@ function M.render(ast, parentHl, parentWidth, parentHeight, startX,
     ---@type (Banana.Ast|number|Banana.Ncss.StyleValue[])[]
     local colAndNonSpecEls = {}
 
-    local rowGap = ast:_computeUnitFor("row-gap", parentHeight, {}) or 0
-    local columnGap = ast:_computeUnitFor("column-gap", parentWidth, {}) or 0
+    local rowGap = ast:_computeUnitFor("row-gap", parentHeight) or 0
+    local columnGap = ast:_computeUnitFor("column-gap", parentWidth) or 0
 
     local colTemplatesDef = ast:_allStylesFor("grid-template-columns")
-    if colTemplatesDef == nil then
-        colTemplatesDef = {}
-    end
 
     maxCol = #colTemplatesDef
 
     for i, node in ast:childIterWithI() do
         local rows = node:_allStylesFor("grid-row")
         local cols = node:_allStylesFor("grid-column")
-        if cols ~= nil then
+        if #cols ~= 0 then
             -- need to preload max columns bc of this case:
             -- first two elements non-defined
             -- next two have grid-column: 1/3 (or span 2 or 1 / span 2...)
@@ -311,30 +308,30 @@ function M.render(ast, parentHl, parentWidth, parentHeight, startX,
         end
         -- According to validations.lua (as of now), [2] only supports span,
         -- which is NOT considered a definite element
-        if rows == nil or #rows == 2 then
+        if #rows == 0 or #rows == 2 then
             insert(colAndNonSpecEls, node)
             insert(colAndNonSpecEls, i)
-            if rows == nil then
+            if #rows == 0 then
                 insert(colAndNonSpecEls, {})
             else
                 insert(colAndNonSpecEls, rows)
             end
-            if cols == nil then
+            if #cols == 0 then
                 insert(colAndNonSpecEls, {})
             else
                 insert(colAndNonSpecEls, cols)
             end
             goto continue
         end
-        if cols == nil or #cols == 2 then
+        if #cols == 0 or #cols == 2 then
             insert(rowEls, node)
             insert(rowEls, i)
-            if rows == nil then
+            if #rows == 0 then
                 insert(rowEls, {})
             else
                 insert(rowEls, rows)
             end
-            if cols == nil then
+            if #cols == 0 then
                 insert(rowEls, {})
             else
                 insert(rowEls, cols)
@@ -547,9 +544,6 @@ function M.render(ast, parentHl, parentWidth, parentHeight, startX,
         true, ast,
         columnGap)
     local rows = ast:_allStylesFor("grid-template-rows")
-    if rows == nil then
-        rows = {}
-    end
     rowTemplates = getTemplates(rows, parentHeight, 0, maxRow, false, ast,
         rowGap)
     so.freeSection(thing)
@@ -630,7 +624,7 @@ function M.render(ast, parentHl, parentWidth, parentHeight, startX,
         end
         actualHeight = actualHeight + rowGap * (rowSpan - 1)
         actualWidth = actualWidth + columnGap * (colSpan - 1)
-        node:_resolveUnits(actualWidth, actualHeight, {})
+        node:_resolveUnits(actualWidth, actualHeight)
         -- flame.new("getRendered")
         local rendered = node.actualTag:getRendered(node, hl, actualWidth,
             actualHeight, x, startY,

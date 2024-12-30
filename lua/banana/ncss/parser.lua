@@ -52,6 +52,12 @@ function ParseData:getStringFromRange(left, right)
     return ret
 end
 
+---@param node TSNode
+---@return string
+function ParseData:getStringFromNode(node)
+    return self:getStringFromRange({ node:start() }, { node:end_() })
+end
+
 ---@class (exact) Banana.Ncss.StyleDeclaration
 ---@field name string
 ---@field values Banana.Ncss.StyleValue[]

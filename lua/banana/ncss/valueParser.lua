@@ -1,24 +1,19 @@
 ---@module 'banana.utils.log'
-local log = require("banana.lazyRequire")("banana.utils.log")
+local log      = require("banana.lazyRequire")("banana.utils.log")
+---@module 'banana.ncss.unit'
+local _unit    = require("banana.lazyRequire")("banana.ncss.unit")
 ---@module 'banana.utils.string'
-local _str = require("banana.lazyRequire")("banana.utils.string")
-local M = {}
+local _str     = require("banana.lazyRequire")("banana.utils.string")
+---@module 'banana.ncss.exprtree'
+local exprtree = require("banana.lazyRequire")("banana.ncss.exprtree")
+local M        = {}
 ---@module 'banana.ncss.tsTypes'
 local ts_types = require("banana.lazyRequire")("banana.ncss.tsTypes")
----@class (exact) Banana.Ncss.UnitValue
----@field value number
----@field unit string
----@field computed number|nil
-local Value = {
-    value = 0,
-    unit = "%",
-
-}
 
 
 ---@alias Banana.Ncss.StyleValue.Types "color"|"integer"|"plain"|"float"|"string"|"unit"|"boolean"|"slash"
 
----@alias Banana.Ncss.StyleValueType number|string|Banana.Ncss.UnitValue|boolean|Banana.Gradient
+---@alias Banana.Ncss.StyleValueType number|string|Banana.Ncss.UnitValue|boolean|Banana.Gradient|Banana.Ncss.ExpressionTree
 
 ---@class (exact) Banana.Ncss.StyleValue
 ---@field value Banana.Ncss.StyleValueType
@@ -188,10 +183,7 @@ end
 function M.newUnitValue(value, unit)
     ---@type Banana.Ncss.StyleValue
     local ret = {
-        value = {
-            value = value,
-            unit = unit
-        },
+        value = _unit.newUnit(unit, value),
         type = "unit",
     }
     setmetatable(ret, { __index = StyleValue })
@@ -308,15 +300,15 @@ end
 ---@field keepComma? boolean
 ---@field argsCount number
 ---@field fn fun(params: Banana.Ncss.StyleValue[], parser: Banana.Ncss.ParseData): Banana.Ncss.StyleValue[]|Banana.Ncss.StyleValue
----@field argsType (Banana.Ncss.StyleValue.Types|Banana.Ncss.StyleValue.Types[])[]
+---@field argsType ((Banana.Ncss.StyleValue.Types|"any")|(Banana.Ncss.StyleValue.Types|"any")[])[]
 local Function = {
 
 }
 ---@param args number
 ---@param fn fun(params: Banana.Ncss.StyleValue[], parser: Banana.Ncss.ParseData): Banana.Ncss.StyleValue[]|Banana.Ncss.StyleValue
----@param argsType (Banana.Ncss.StyleValue.Types|Banana.Ncss.StyleValue.Types[])[]
+---@param argsType ((Banana.Ncss.StyleValue.Types|"any")|(Banana.Ncss.StyleValue.Types|"any")[])[]
 ---@param keepComma? boolean
-function Function:new(fn, args, argsType, keepComma)
+local function newFunction(fn, args, argsType, keepComma)
     if #argsType ~= args and args ~= -1 then
         log.throw(
             "Could not match argument size to type size")
@@ -331,7 +323,7 @@ function Function:new(fn, args, argsType, keepComma)
     }
     -- if args == -1 and #argsType ~= 1 then
     --     log.throw(
-    --         "Got a parameter pack (arglen = -1) in Function:new for css function, but did not get 1 argument type (got " ..
+    --         "Got a parameter pack (arglen = -1) in newFunction for css function, but did not get 1 argument type (got " ..
     --         #argsType .. " argument types)")
     -- end
     setmetatable(ret, { __index = Function })
@@ -367,7 +359,10 @@ end
 
 ---@type { [string]: Banana.Ncss.Function}
 local cssFunctions = {
-    ["repeat"] = Function:new(function (params, _)
+    ["calc"] = newFunction(function (params, parser)
+        return params[1]
+    end, 1, { "any" }),
+    ["repeat"] = newFunction(function (params, _)
         local count = params[1].value
         local ret = {}
         for i = 1, count do
@@ -378,7 +373,7 @@ local cssFunctions = {
         end
         return ret
     end, -1, { "integer", "unit" }),
-    ["radial-gradient"] = Function:new(function (params, _)
+    ["radial-gradient"] = newFunction(function (params, _)
         -- either we get an angle or a "to ..." (can target corner) or nothing
 
         local i = 1
@@ -410,7 +405,7 @@ local cssFunctions = {
         }
         return ret
     end, -1, {}, true),
-    ["linear-gradient"] = Function:new(function (params, _)
+    ["linear-gradient"] = newFunction(function (params, _)
         -- either we get an angle or a "to ..." (can target corner) or nothing
 
         local i = 1
@@ -480,7 +475,7 @@ local cssFunctions = {
         }
         return ret
     end, -1, {}, true),
-    rgb = Function:new(function (params, _)
+    rgb = newFunction(function (params, _)
         local red = params[1].value
         local green = params[2].value
         local blue = params[3].value
@@ -491,7 +486,7 @@ local cssFunctions = {
         local num = red * 256 * 256 + green * 256 + blue
         return M.newColorValue(string.format("#%06x", num))
     end, 3, { "integer", "integer", "integer" }),
-    ["hl-extract"] = Function:new(function (params, _)
+    ["hl-extract"] = newFunction(function (params, _)
         local section = params[1].value
         local hl = params[2].value
         ---@cast hl string
@@ -631,7 +626,7 @@ local cssParsers = {
                 expected = fn.argsType[math.min(j, #fn.argsType)]
             end
             if type(expected) == "string" then
-                if pType ~= expected then
+                if pType ~= expected and expected ~= "any" then
                     log.throw(
                         "Expected type '" ..
                         expected ..
@@ -676,6 +671,43 @@ local cssParsers = {
         end
         return M.parseCssValue(child, parser)
     end,
+    binary_expression = function (tree, parser, text)
+        local operator = tree:child(1)
+        local first = tree:child(0)
+        local second = tree:child(2)
+        if operator == nil or first == nil or second == nil then
+            log.throw(
+                "Unreachable: nil ast tree while parsing binary_expression")
+            error("")
+        end
+        local op = parser:getStringFromNode(operator)
+        local left = M.parseCssValue(first, parser)
+        local right = M.parseCssValue(second, parser)
+        if #left ~= 1 then
+            log.throw(
+                "Expected only one value when parsing the left side of a binary expression")
+        end
+        if #right ~= 1 then
+            log.throw(
+                "Expected only one value when parsing the right side of a binary expression")
+        end
+        local fn
+        if op == "-" then
+            fn = exprtree.newSubTree
+        elseif op == "+" then
+            fn = exprtree.newAddTree
+        elseif op == "/" then
+            fn = exprtree.newDivTree
+        elseif op == "*" then
+            fn = exprtree.newMultTree
+        else
+            log.throw("Unknown operator in ncss binary expression: '" ..
+                op .. "', NOTE: only allows -, +, /, and *")
+            error("")
+        end
+        local t = fn(left[1], right[1])
+        return t:flatten()
+    end
 }
 
 ---@param tree TSNode

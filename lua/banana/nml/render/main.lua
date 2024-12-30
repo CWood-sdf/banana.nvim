@@ -1,17 +1,19 @@
 ---@module 'banana.nml.render.partialRendered'
-local p = require("banana.lazyRequire")("banana.nml.render.partialRendered")
+local p     = require("banana.lazyRequire")("banana.nml.render.partialRendered")
 ---@module 'banana.box'
-local b = require("banana.lazyRequire")("banana.box")
+local b     = require("banana.lazyRequire")("banana.box")
 ---@module 'banana.utils.case'
-local case = require("banana.lazyRequire")("banana.utils.case")
+local case  = require("banana.lazyRequire")("banana.utils.case")
 ---@module 'banana.utils.debug_flame'
 local flame = require("banana.lazyRequire")("banana.utils.debug_flame")
+---@module 'banana.box'
+local box   = require("banana.lazyRequire")("banana.box")
 
 ---@module 'banana.utils.debug'
-local dbg = require("banana.lazyRequire")("banana.utils.debug")
+local dbg   = require("banana.lazyRequire")("banana.utils.debug")
 
 ---@module 'banana.nml.tag'
-local _tag = require("banana.lazyRequire")("banana.nml.tag")
+local _tag  = require("banana.lazyRequire")("banana.nml.tag")
 
 ---@param ast Banana.Ast
 ---@param extraWidth number
@@ -182,9 +184,9 @@ return function (self, ast, parentHl, parentWidth, parentHeight, startX, startY,
             extra.trace:appendBoxBelow(ret:render(true), false)
         end
     end
-    if ast.style["height"] ~= nil and (not ast:parent():isNil() or ast.tag == "template") then
+    if ast:hasStyle("height") and (not ast:parent():isNil() or ast.tag == "template") then
         ret.center:clean()
-        local height = ast.style["height"][1].value.computed
+        local height = ast:_firstStyleComputedValue("height")
             - ast:paddingTop() - ast:paddingBottom()
         -- height = math.min(height, parentHeight)
         ret.heightExpansion = height - ret.center:height()
@@ -243,7 +245,7 @@ return function (self, ast, parentHl, parentWidth, parentHeight, startX, startY,
             box = render,
             left = startX - 1 - ast:paddingLeft(),
             top = startY - 1 - ast:paddingTop(),
-            z = (ast.style["z-index"] or { {} })[1].value or 0
+            z = ast:_firstStyleValue("z-index", 0)
         })
         ast.relativeBoxId = #root.relativeBoxes
         ret.center = newRet
@@ -255,14 +257,14 @@ return function (self, ast, parentHl, parentWidth, parentHeight, startX, startY,
         ret.widthExpansion = 0
         ret.heightExpansion = 0
         if ast:hasStyle("left") then
-            startX = startX - ast.style.left[1].value.computed
+            startX = startX - ast:_firstStyleComputedValue("left", 0)
         elseif ast:hasStyle("right") then
-            startX = startX + ast.style.right[1].value.computed
+            startX = startX + ast:_firstStyleComputedValue("right", 0)
         end
         if ast:hasStyle("top") then
-            startY = startY - ast.style.top[1].value.computed
+            startY = startY - ast:_firstStyleComputedValue("top", 0)
         elseif ast:hasStyle("bottom") then
-            startY = startY + ast.style.bottom[1].value.computed
+            startY = startY + ast:_firstStyleComputedValue("bottom", 0)
         end
         if extra.debug then
             extra.trace:appendBoxBelow(dbg.traceBreak("new render"), false)

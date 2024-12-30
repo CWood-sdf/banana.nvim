@@ -621,6 +621,7 @@ end
 ---@return Banana.Nml.Parser
 function M.fromString(content, source)
     source = source or "@@string"
+    ---@cast source string
     require("banana").initTsParsers()
     local arr = nil
     local langTree = nil
@@ -634,7 +635,10 @@ function M.fromString(content, source)
         arr = langTree:parse(true)
     end
     if langTree == nil or arr == nil then
-        log.throw("Could not parse nml tree")
+        log.throw(
+            "Could not parse nml tree at '" ..
+            source ..
+            "'. Try runnning :InspectTree in the nml file to see if there is a treesitter ERROR")
         error("")
     end
     local ncssChild = langTree:children()["ncss"]
@@ -650,11 +654,9 @@ function M.fromString(content, source)
     local children = parsed:child(0)
     if children == nil then
         log.throw(
-            "found no children")
+            "Nml tree has no children")
         error("")
     end
-
-    -- delete the buffer
 
     local lex = lexer.fromString(content)
 
@@ -666,7 +668,7 @@ end
 function M.fromFile(path)
     local file = io.open(path)
     if file == nil then
-        print("Failed to open code file")
+        print("Failed to open nml file '" .. path .. "'")
         return nil
     end
     local content = file:read("*a")

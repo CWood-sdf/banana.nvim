@@ -1,6 +1,7 @@
 ---@module 'banana.utils.log'
 local log = require("banana.lazyRequire")("banana.utils.log")
 local M = {}
+
 ---@enum FilterType
 M.FilterType = {
     --- takes an ast and returns the descendants that fit

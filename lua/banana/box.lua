@@ -59,6 +59,24 @@ local function cloneLine(line)
     return ret
 end
 
+local defaultFillStack = { " " }
+
+---@param c string
+function M.addFillChar(c)
+    table.insert(defaultFillStack, c)
+end
+
+function M.popFillChar()
+    table.remove(defaultFillStack, #defaultFillStack)
+    if #defaultFillStack == 0 then
+        defaultFillStack = { " " }
+    end
+end
+
+function M.getFillChar()
+    return defaultFillStack[#defaultFillStack]
+end
+
 ---@class (exact) Banana.Box
 ---@field private lines Banana.Line[]
 ---@field private _width integer
@@ -69,7 +87,7 @@ M.Box = {
     lines = emptyLineArr(),
     _width = 0,
     dirty = false,
-    fillChar = " ",
+    fillChar = M.getFillChar(),
     hlgroup = nil,
 }
 
@@ -209,10 +227,11 @@ function M.Box:new(hlgroup)
         lines = emptyLineArr(),
         _width = 0,
         dirty = false,
-        fillChar = " ",
+        fillChar = M.getFillChar(),
         hlgroup = hlgroup,
 
     }
+
     if box.hlgroup ~= nil then
         setmetatable(box.hlgroup, { __mode = "kv" })
     end

@@ -1,7 +1,5 @@
 ---@module 'banana.nml.tag'
 local _tag = require("banana.lazyRequire")("banana.nml.tag")
----@module 'banana.utils.debug_flame'
-local flame = require("banana.lazyRequire")("banana.utils.debug_flame")
 ---@module 'banana.utils.log'
 local log = require("banana.lazyRequire")("banana.utils.log")
 local M = {}
@@ -9,6 +7,8 @@ local M = {}
 local _str = require("banana.lazyRequire")("banana.utils.string")
 ---@module 'banana.instance'
 local _inst = require("banana.lazyRequire")("banana.instance")
+---@module 'banana.ncss.unit'
+local unit = require("banana.lazyRequire")("banana.ncss.unit")
 
 M.left = 1
 M.top = 2
@@ -29,7 +29,7 @@ M.padNames = { "left", "top", "right", "bottom" }
 ---@field tag string
 ---@field attributes Banana.Attributes
 ---@field actualTag Banana.TagInfo
----@field style { [string]: Banana.Ncss.StyleValue[] }
+---@field private style { [string]: Banana.Ncss.StyleValue[] }
 ---@field hl Banana.Highlight
 ---@field private padding Banana.Ncss.UnitValue[]
 ---@field private margin Banana.Ncss.UnitValue[]
@@ -95,40 +95,16 @@ function M.Ast:new(tag, parent, source)
         attributes = {},
         instance = nil,
         padding = {
-            {
-                value = 0,
-                unit = "ch",
-            },
-            {
-                value = 0,
-                unit = "ch",
-            },
-            {
-                value = 0,
-                unit = "ch",
-            },
-            {
-                value = 0,
-                unit = "ch",
-            },
+            unit.newUnit("ch", 0),
+            unit.newUnit("ch", 0),
+            unit.newUnit("ch", 0),
+            unit.newUnit("ch", 0),
         },
         margin = {
-            {
-                value = 0,
-                unit = "ch",
-            },
-            {
-                value = 0,
-                unit = "ch",
-            },
-            {
-                value = 0,
-                unit = "ch",
-            },
-            {
-                value = 0,
-                unit = "ch",
-            },
+            unit.newUnit("ch", 0),
+            unit.newUnit("ch", 0),
+            unit.newUnit("ch", 0),
+            unit.newUnit("ch", 0),
         },
         style = {},
     }
@@ -221,28 +197,50 @@ function M.Ast:getTagName()
     return self.tag
 end
 
----Returns the first style value for the given {style} or nil if not found
+---Returns the {n}th style value for the given {style} or nil if not found
+---Removes expression tree from the possibility
 ---@param style string the style to lookup
+---@param n number
 ---@return Banana.Ncss.StyleValue?
-function M.Ast:_firstStyle(style)
+function M.Ast:_nthStyle(style, n)
     local s = self.style[style]
     if s == nil then
         return nil
     end
-    return s[1]
+    local ret = s[n]
+    if ret == nil then
+        return nil
+    end
+    if type(ret.value) ~= "table" then
+        return ret
+    end
+    if ret.value.isExprTree then
+        local v = ret.value
+        ---@cast v Banana.Ncss.ExpressionTree
+        -- should be able to assume that units will already be computed
+        if ret.type ~= "unit" then
+            v:compute(0)
+        end
+        ret = v.computed
+        if ret == nil then
+            log.throw("Expression tree returned nil value")
+        end
+    end
+    return ret
+end
+
+---Returns the first style value for the given {style} or nil if not found
+---Removes expression tree from the possibility
+---@param style string the style to lookup
+---@return Banana.Ncss.StyleValue?
+function M.Ast:_firstStyle(style)
+    return self:_nthStyle(style, 1)
 end
 
 ---@return boolean
 function M.Ast:_isComponent()
     local ret, _ = require("banana.nml.parser").isValidComponentName(self.tag)
     return ret
-end
-
----Returns all style values for the style string
----@param style string the style to lookup
----@return Banana.Ncss.StyleValue[]?
-function M.Ast:_allStylesFor(style)
-    return self.style[style]
 end
 
 ---@param pad number?
@@ -285,6 +283,18 @@ function M.Ast:_dumpTree(pad)
     return ret
 end
 
+---Returns all style values for the style string
+---@param style string the style to lookup
+---@return Banana.Ncss.StyleValue[]
+function M.Ast:_allStylesFor(style)
+    local ret = {}
+    local arr = self.style[style] or {}
+    for i, _ in ipairs(arr) do
+        table.insert(ret, self:_nthStyle(style, i))
+    end
+    return ret
+end
+
 ---Returns the first style value or a given default
 ---@param style string the style to lookup
 ---@param default Banana.Ncss.StyleValueType
@@ -298,6 +308,7 @@ function M.Ast:_firstStyleValue(style, default)
     return val.value
 end
 
+---Takes a unit style and returns the computed value
 ---@param style string
 ---@param default number
 ---@return number
@@ -307,6 +318,8 @@ function M.Ast:_firstStyleComputedValue(style, default)
     if val == nil or val.type ~= "unit" then
         return default
     end
+    -- since we used _firstStyle, can safely ignore
+    ---@diagnostic disable-next-line: return-type-mismatch
     return val.value.computed
 end
 
@@ -569,48 +582,16 @@ function M.Ast:_defaultStyles()
         self.listCounter = 1
     end
     self.padding = {
-        {
-            value = 0,
-            computed = 0,
-            unit = "ch",
-        },
-        {
-            value = 0,
-            computed = 0,
-            unit = "ch",
-        },
-        {
-            value = 0,
-            computed = 0,
-            unit = "ch",
-        },
-        {
-            value = 0,
-            computed = 0,
-            unit = "ch",
-        },
+        unit.newUnit("ch", 0, 0),
+        unit.newUnit("ch", 0, 0),
+        unit.newUnit("ch", 0, 0),
+        unit.newUnit("ch", 0, 0),
     }
     self.margin = {
-        {
-            value = 0,
-            computed = 0,
-            unit = "ch",
-        },
-        {
-            value = 0,
-            computed = 0,
-            unit = "ch",
-        },
-        {
-            value = 0,
-            computed = 0,
-            unit = "ch",
-        },
-        {
-            value = 0,
-            computed = 0,
-            unit = "ch",
-        },
+        unit.newUnit("ch", 0, 0),
+        unit.newUnit("ch", 0, 0),
+        unit.newUnit("ch", 0, 0),
+        unit.newUnit("ch", 0, 0),
     }
     self.style = {}
     self:_unlockGradients()
@@ -820,7 +801,7 @@ function M.Ast:clone(deep)
     newAst.tag = self.tag
     newAst.attributes = vim.fn.deepcopy(self.attributes)
     newAst.actualTag = self.actualTag
-    newAst.style = vim.fn.deepcopy(self.style)
+    newAst.style = vim.fn.copy(self.style)
     local fg = self.hl.fg
     local bg = self.hl.bg
     self.hl.bg = nil
@@ -999,43 +980,6 @@ function M.Ast:_mixHl(parentHl)
     return ret
 end
 
----@param unit Banana.Ncss.UnitValue
----@param parentWidth number
----@param extras number[]
----@return number
----@diagnostic disable-next-line: unused-local
-function M.getComputedValue(unit, parentWidth, extras)
-    if unit.unit == "ch" then
-        return unit.value
-    elseif unit.unit == "%" then
-        local mult = unit.value / 100
-        return math.floor(mult * parentWidth)
-    end
-    error("Undefined unit '" .. unit.unit .. "'")
-    return unit.value
-end
-
----@param unit Banana.Ncss.UnitValue
----@param parentWidth number
----@param extras number[]
----@return Banana.Ncss.UnitValue
-function M.calcUnitNoMod(unit, parentWidth, extras)
-    return {
-        unit = unit.unit,
-        value = unit.value,
-        computed = M.getComputedValue(unit, parentWidth, extras)
-    }
-end
-
----@param unit Banana.Ncss.UnitValue
----@param parentWidth number
----@param extras number[]
----@return number
-function M.calcUnitInPlace(unit, parentWidth, extras)
-    unit.computed = M.getComputedValue(unit, parentWidth, extras)
-    return unit.computed
-end
-
 ---Returns the width of the node's bounding box (content+padding)
 ---@return number
 function M.Ast:getWidth()
@@ -1049,9 +993,8 @@ end
 
 ---@param prop string
 ---@param basedOn number
----@param extras number[]
 ---@return number?
-function M.Ast:_computeUnitFor(prop, basedOn, extras)
+function M.Ast:_computeUnitFor(prop, basedOn)
     local style = self.style[prop]
     local ret = nil
     if style ~= nil then
@@ -1060,7 +1003,11 @@ function M.Ast:_computeUnitFor(prop, basedOn, extras)
                 goto continue
             end
             ---@diagnostic disable-next-line: param-type-mismatch
-            local v = M.calcUnitInPlace(s.value, basedOn, extras)
+            local v = s.value:compute(basedOn)
+            if type(v) == "table" then
+                v = v.value.computed
+            end
+            ---@cast v number
             if ret == nil then
                 ret = v
             end
@@ -1072,62 +1019,70 @@ end
 
 ---@param parentWidth number
 ---@param parentHeight number
----@param extras? number[]
-function M.Ast:_resolveUnits(parentWidth, parentHeight, extras)
+function M.Ast:_resolveUnits(parentWidth, parentHeight)
     --flame.new("Ast:resolveUnits")
-    extras = extras or {}
     --flame.new("Ast:resolveUnits_marg")
     for i, v in ipairs(self.margin) do
         if i % 2 == 1 then
-            M.calcUnitInPlace(v, parentWidth, extras)
+            v:compute(parentWidth)
         else
-            M.calcUnitInPlace(v, parentHeight, extras)
+            v:compute(parentWidth)
         end
     end
     for i, v in ipairs(self.padding) do
         if i % 2 == 1 then
-            M.calcUnitInPlace(v, parentWidth, extras)
+            v:compute(parentWidth)
         else
-            M.calcUnitInPlace(v, parentHeight, extras)
+            v:compute(parentWidth)
         end
     end
     --flame.pop()
-    self:_computeUnitFor("list-base-width", parentWidth, extras)
-    self:_computeUnitFor("width", parentWidth, extras)
-    self:_computeUnitFor("height", parentHeight, extras)
-    if self.style.width == nil and self.style.height ~= nil and self.style["aspect-ratio"] ~= nil then
+    self:_computeUnitFor("list-base-width", parentWidth)
+    self:_computeUnitFor("width", parentWidth)
+    self:_computeUnitFor("height", parentHeight)
+    ---@diagnostic disable-next-line: param-type-mismatch
+    local aspectRatio = math.max(self:_firstStyleValue("aspect-ratio", 0), 0)
+
+    if self.style.width == nil and self.style.height ~= nil and aspectRatio ~= 0 then
         ---@type Banana.Ncss.StyleValue
         local width = {
             type = "unit",
-            value = {
+            value = unit {
                 unit = "ch",
-                computed = self.style["height"][1].value.computed *
-                    self.style["aspect-ratio"][1].value * 2,
-                value = self.style.height[1].value.computed *
-                    self.style["aspect-ratio"][1].value,
+                computed = self:_firstStyleComputedValue("height", 0) *
+                    self:_firstStyleValue("aspect-ratio", 1) * 2,
+                value = self:_firstStyleComputedValue("height", 0) *
+                    self:_firstStyleValue("aspect-ratio", 1) * 2
             }
         }
         self.style.width = { width }
-    end
-    if self.style.height == nil and self.style.width ~= nil and self.style["aspect-ratio"] ~= nil then
+    elseif self.style.height == nil and self.style.width ~= nil and aspectRatio ~= 0 then
         ---@type Banana.Ncss.StyleValue
         local height = {
             type = "unit",
-            value = {
-                unit = "ch",
-                computed = math.floor(self.style["width"][1].value.computed /
-                    self.style["aspect-ratio"][1].value / 2),
-                value = math.floor(self.style.width[1].value.computed /
-                    self.style["aspect-ratio"][1].value / 2),
-            }
+            value = unit.newUnit(
+                "ch",
+                math.floor(self:_firstStyleComputedValue("width", 0) /
+                    self:_firstStyleValue("aspect-ratio", 1) / 2),
+                math.floor(self:_firstStyleComputedValue("width", 0) /
+                    self:_firstStyleValue("aspect-ratio", 1) / 2)
+            )
         }
         self.style.height = { height }
+    elseif self.style["aspect-ratio"] ~= nil then
+        if aspectRatio == 0 then
+            log.warn(self.tag ..
+                " element has aspect-ratio set to <= 0. Ignoring this because negative or 0 aspect ratios can cause infinite loops")
+        else
+            log.warn(self.tag ..
+                " element has aspect-ratio, width, and height set. aspect-ratio will do nothing because both width and height are set")
+        end
     end
-    self:_computeUnitFor("top", parentHeight, extras)
-    self:_computeUnitFor("bottom", parentHeight, extras)
-    self:_computeUnitFor("left", parentWidth, extras)
-    self:_computeUnitFor("right", parentWidth, extras)
-    self:_computeUnitFor("flex-basis", parentWidth, extras)
+    self:_computeUnitFor("top", parentHeight)
+    self:_computeUnitFor("bottom", parentHeight)
+    self:_computeUnitFor("left", parentWidth)
+    self:_computeUnitFor("right", parentWidth)
+    self:_computeUnitFor("flex-basis", parentWidth)
     -- self:_computeUnitFor("row-gap", parentWidth, extras)
     -- self:_computeUnitFor("column-gap", parentWidth, extras)
     --flame.pop()

@@ -685,24 +685,25 @@ function Instance:_createWinAndBuf()
     local top = 3
     if self.ast.tag == "nml" then
         self.ast:_resolveUnits(containerWidth, containerHeight)
-        if self.ast.style["width"] ~= nil then
-            width = self.ast.style.width[1].value.computed
+        if self.ast:hasStyle("width") then
+            width = self.ast:_firstStyleComputedValue("width", 0)
             ---@cast width number
         end
-        if self.ast.style["height"] ~= nil then
-            height = self.ast.style.height[1].value.computed
+        if self.ast:hasStyle("height") then
+            height = self.ast:_firstStyleComputedValue("height", 0)
             ---@cast height number
         end
-        if self.ast.style.left ~= nil then
-            left = self.ast.style.left[1].value.computed
-        elseif self.ast.style.right ~= nil then
-            left = containerWidth - self.ast.style.right[1].value.computed -
+        if self.ast:hasStyle("left") then
+            left = self.ast:_firstStyleComputedValue("left", 0)
+        elseif self.ast:hasStyle("right") then
+            left = containerWidth - self.ast:_firstStyleComputedValue("right", 0) -
                 width
         end
-        if self.ast.style.top ~= nil then
-            top = self.ast.style.top[1].value.computed
-        elseif self.ast.style.bottom ~= nil then
-            top = containerHeight - self.ast.style.bottom[1].value.computed -
+        if self.ast:hasStyle("top") then
+            top = self.ast:_firstStyleComputedValue("top", 0)
+        elseif self.ast:hasStyle("bottom") then
+            top = containerHeight -
+                self.ast:_firstStyleComputedValue("bottom", 0) -
                 height
         end
     end
@@ -994,10 +995,10 @@ end
 ---@param bufnr number
 ---@param ns number
 function Instance:_dumpUrls(bufnr, ns)
-    vim.api.nvim_set_hl(ns, "asdfasdf", { fg = "#ff0000" })
     for _, v in ipairs(self.urlAsts) do
         -- vim.notify(vim.inspect(v.boundBox) .. "\n")
         -- 8 14
+        -- pcall(
         vim.api.nvim_buf_set_extmark(bufnr, ns,
             v.boundBox.topY - 1,
             v.boundBox.leftX - 1,
@@ -1006,7 +1007,6 @@ function Instance:_dumpUrls(bufnr, ns)
                 -- subtracting 1 and 2 difference
                 end_col = v.boundBox.rightX - 1,
                 end_row = v.boundBox.bottomY - 2,
-                hl_group = "asdfasdf",
                 url = v:getAttribute("href")
             })
     end
