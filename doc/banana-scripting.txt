@@ -1,4 +1,4 @@
-*banana-scripting.txt*            For            Last change: 2024 December 27
+*banana-scripting.txt*            For            Last change: 2024 December 30
 
 ==============================================================================
 Table of Contents                         *banana-scripting-table-of-contents*
