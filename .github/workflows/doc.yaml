@@ -1,7 +1,8 @@
 name: Docs
 on:
-  gollum:
+  push:
   workflow_dispatch:
+  pull_request:
 
 jobs:
   docs:
@@ -12,6 +13,23 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+      - name: Update wiki
+        run: |
+          git clone https://github.com/CWood-sdf/banana.nvim.wiki
+          mv banana.nvim.wiki/.git ./wikigit
+          rm banana.nvim.wiki -rf
+          cp wiki banana.nvim.wiki -r
+          mv ./wikigit ./banana.nvim.wiki/.git
+          cd banana.nvim.wiki
+          git status
+          cd ..
+      - uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          repository: banana.nvim.wiki
+          commit_message: "chore: update wiki"
+      - name: Remove wiki repo
+        run: |
+          rm banana.nvim.wiki -rf
       - uses: rhysd/action-setup-vim@v1
         with:
           neovim: true
@@ -24,4 +42,5 @@ jobs:
       - uses: stefanzweifel/git-auto-commit-action@v5
         with:
           file_pattern: "doc"
+          repository:
           commit_message: "chore(build): auto-generate docs"
