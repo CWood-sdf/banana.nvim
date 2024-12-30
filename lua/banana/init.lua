@@ -1,4 +1,8 @@
 local M = {}
+
+---@class Banana.Opts
+---@field setupTs boolean
+
 local counterInst = nil
 local todoInst = nil
 local treeInst = nil
@@ -137,6 +141,14 @@ end
 
 function M.editorSetup()
     M.initTsParsers()
+end
+
+---@param opts Banana.Opts
+function M.setup(opts)
+    M.initFiletypes()
+    if opts.setupTs then
+        M.initTsParsers()
+    end
 end
 
 function M.initTsParsers()
