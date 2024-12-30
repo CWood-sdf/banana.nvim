@@ -122,6 +122,23 @@ function M.installLibbanana()
     vim.fn.jobwait({ job })
 end
 
+function M.initFiletypes()
+    vim.filetype.add({
+        extension = {
+            nml = "nml",
+        }
+    })
+    vim.filetype.add({
+        extension = {
+            ncss = "ncss",
+        }
+    })
+end
+
+function M.editorSetup()
+    M.initTsParsers()
+end
+
 function M.initTsParsers()
     if tsInit then
         return
