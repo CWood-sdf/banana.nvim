@@ -55,3 +55,7 @@ local document = require('banana.instance').newInstance("pluginName", "initial b
 ```
 
 An example plugin, [banana-example](https://github.com/CWood-sdf/banana-example), exists that better shows how banana recommends plugins be layed out.
+
+> [!CAUTION]
+>
+> The wiki is hosted on the main repo. If you would like to make updates, please submit a pr with the changes in the wiki/ folder
