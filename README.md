@@ -51,6 +51,10 @@ all of that code results in this window:
 
 ![helloworld](./assets/images/helloworld.png)
 
+The file structure for this example can be seen below:
+
+<img alt="banana-example-filetree" src="https://github.com/user-attachments/assets/0743a4d3-1c41-49eb-9c23-dd6609be3bb2" width="325" /><br />
+
 this may seem underwhelming as the above result can be done in a few lines of lua, but banana starts becoming extremely helpful when you start doing more complex rendering cases like nested tags, css grid display, or css flex display. For a better example, check out [banana-example](https://github.com/CWood-sdf/banana-example) or the other examples below
 
 ### Other examples
