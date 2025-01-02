@@ -10,21 +10,21 @@ local M = {}
 ---@return Banana.Word[]
 local function emptyLine()
     local ret = {}
-    setmetatable(ret, { __mode = "kv" })
+    -- setmetatable(ret, { __mode = "kv" })
     return ret
 end
 
 ---@return Banana.Word[]
 local function newLine(...)
     local ret = { ... }
-    setmetatable(ret, { __mode = "kv" })
+    -- setmetatable(ret, { __mode = "kv" })
     return ret
 end
 
 ---@return Banana.Word[][]
 local function newLineArr(...)
     local ret = { ... }
-    setmetatable(ret, { __mode = "kv" })
+    -- setmetatable(ret, { __mode = "kv" })
     return ret
 end
 
@@ -42,7 +42,7 @@ local function word(str, style)
         word = str,
         style = style,
     }
-    setmetatable(ret, { __mode = "kv" })
+    -- setmetatable(ret, { __mode = "kv" })
     return ret
 end
 
@@ -77,7 +77,7 @@ function M.getFillChar()
     return defaultFillStack[#defaultFillStack]
 end
 
----@class (exact) Banana.Box
+---@class Banana.Box
 ---@field private lines Banana.Line[]
 ---@field private _width integer
 ---@field dirty boolean true when box is a rect of width self.width
@@ -152,6 +152,41 @@ function M.Box:fillString(width)
 end
 
 ---@param width number
+function M.Box:shrinkWidthTo(width)
+    if width > self._width then
+        log.throw(
+            "width is smaller than possible (given target width " ..
+            width .. " when current width is " .. self._width .. ")")
+        error("")
+    end
+    if width == self._width then
+        return
+    end
+    for _, v in ipairs(self.lines) do
+        local w = 0
+        for _, word_ in ipairs(v) do
+            if _str.charWidth(word_.word) + w > width then
+                local keepChars = width - w
+                word_.word = _str.sub(word_.word, 1, 1 + keepChars)
+                w = width
+            else
+                w = w + _str.charWidth(word_.word)
+            end
+        end
+    end
+    self._width = width
+end
+
+---@param width number
+function M.Box:setWidth(width)
+    if width < self._width then
+        self:shrinkWidthTo(width)
+    elseif width > self._width then
+        self:expandWidthTo(width)
+    end
+end
+
+---@param width number
 function M.Box:expandWidthTo(width)
     if width < self._width then
         log.throw(
@@ -219,23 +254,51 @@ function M.Box:expandHeightTo(height)
     end
 end
 
+---@param height number
+function M.Box:shrinkHeightTo(height)
+    if height > #self.lines then
+        log.throw("Height is bigger than possible")
+        error("")
+    end
+    if height == 0 then
+        self.lines = {}
+        return
+    end
+    while #self.lines > height do
+        table.remove(self.lines, #self.lines)
+    end
+end
+
+---@param height number
+function M.Box:setHeight(height)
+    if height < #self.lines then
+        self:shrinkHeightTo(height)
+    elseif height > #self.lines then
+        self:expandHeightTo(height)
+    end
+end
+
 ---@param hlgroup Banana.Highlight?
+---@param fillChar string?
 ---@return Banana.Box
-function M.Box:new(hlgroup)
+function M.Box:new(hlgroup, fillChar)
     ---@type Banana.Box
+    ---@diagnostic disable-next-line: missing-fields
     local box = {
         lines = emptyLineArr(),
         _width = 0,
         dirty = false,
-        fillChar = M.getFillChar(),
+        fillChar = fillChar or M.getFillChar(),
         hlgroup = hlgroup,
-
     }
 
     if box.hlgroup ~= nil then
-        setmetatable(box.hlgroup, { __mode = "kv" })
+        -- setmetatable(box.hlgroup, { __mode = "kv" })
     end
-    setmetatable(box, { __index = M.Box, __mode = "kv" })
+    setmetatable(box, {
+        __index = M.Box,
+        -- __mode = "kv"
+    })
     return box
 end
 
@@ -446,7 +509,7 @@ function M.Box:appendBoxBelow(box, expand)
         table.insert(self.lines, newLine())
         for _, w in ipairs(v) do
             if #self.lines == 0 then
-                self.lines = {}
+                self.lines = { {} }
             end
             table.insert(self.lines[#self.lines], word(w.word, w.style))
         end
