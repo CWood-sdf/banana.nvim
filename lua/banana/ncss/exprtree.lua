@@ -10,11 +10,17 @@ local exprTypes = {
     mul = "mul",
     div = "div",
     var = "var",
-    plain = "plain",
 }
 
--- if we allow expression trees that *cant* be flattened to only return unit
--- then this shouldnt be too bad
+---@param v Banana.Ncss.StyleValueType
+local function isexpr(v)
+    if type(v) ~= "table" then return false end
+
+    return v.isExprTree == true
+end
+
+-- {
+
 ---@class (exact) Banana.Ncss.ExpressionTree
 ---@field type Banana.Ncss.ExpressionTree.Types
 ---@field computed Banana.Ncss.StyleValue?
@@ -33,58 +39,9 @@ function ExprTree:flatten()
     }
 end
 
----@class (exact) Banana.Ncss.ExpressionTree.Plain : Banana.Ncss.ExpressionTree
----@field value Banana.Ncss.StyleValue
-local PlainTree = {
-}
+--}
 
-setmetatable(PlainTree, { __index = ExprTree })
-
----@param value Banana.Ncss.StyleValue
----@return Banana.Ncss.ExpressionTree
-function M.newPlainTree(value)
-    ---@type Banana.Ncss.ExpressionTree.Plain
-    local ret = {
-        isExprTree = true,
-        computeClone = PlainTree.computeClone,
-        flatten = function ()
-            return value
-        end,
-        type = exprTypes.plain,
-        value = value,
-        getType = function (this)
-            ---@cast this Banana.Ncss.ExpressionTree.Plain
-            return this.value.type
-        end,
-        computed = value,
-        compute = PlainTree.compute,
-    }
-    setmetatable(ret, {
-        __index = PlainTree
-    })
-    return ret
-end
-
----@param parentWidth number
----@return Banana.Ncss.StyleValue
-function PlainTree:computeClone(parentWidth)
-    if self.value.type == "unit" then
-        ---@diagnostic disable-next-line: param-type-mismatch, assign-type-mismatch
-        self.value.value = self.value.value:computeClone(parentWidth)
-    end
-    return self.value
-end
-
----@param parentWidth number
----@return Banana.Ncss.StyleValue
-function PlainTree:compute(parentWidth)
-    if self.value.type == "unit" then
-        ---@diagnostic disable-next-line: param-type-mismatch
-        self.value.value:compute(parentWidth)
-    end
-    return self.value
-end
-
+-- {
 ---@class (exact) Banana.Ncss.ExpressionTree.AddSub : Banana.Ncss.ExpressionTree
 ---@field left Banana.Ncss.StyleValue
 ---@field right Banana.Ncss.StyleValue
@@ -168,10 +125,24 @@ end
 
 ---@return Banana.Ncss.StyleValue
 function AddSubTree:flatten()
-    -- allow the error bc it should happen
-    if self:getType() ~= "unit" then
+    if isexpr(self.left.value) or isexpr(self.right.value) then
+        return {
+            value = self,
+            type = self:getType()
+        }
+    elseif self:getType() ~= "unit" then
         -- can send 0 in parentWidth bc not computing a unit
         return self:compute(0)
+    elseif self.left.value.unit == self.right.value.unit then
+        local lv = self.left.value.value
+        local rv = self.right.value.value
+        if self.type == "sub" then
+            rv = -rv
+        end
+        return {
+            type = "unit",
+            value = unit.newUnit(self.left.value.unit, lv + rv),
+        }
     end
     return {
         value = self,
@@ -230,6 +201,11 @@ function AddSubTree:compute(parentWidth)
     return ret
 end
 
+--}
+
+
+-- {
+
 ---@class (exact) Banana.Ncss.ExpressionTree.Div : Banana.Ncss.ExpressionTree
 ---@field left Banana.Ncss.StyleValue
 ---@field right Banana.Ncss.StyleValue
@@ -282,29 +258,22 @@ end
 
 ---@return Banana.Ncss.StyleValue
 function DivTree:flatten()
-    -- allow the error bc it should happen
-    if self:getType() ~= "unit" then
-        return self:compute(0)
-    end
-    local l = self.left
-    if l.value.isExprTree then
+    if isexpr(self.left.value) or isexpr(self.right.value) then
         return {
             type = self:getType(),
             value = self
         }
+    elseif self:getType() ~= "unit" then
+        return self:compute(0)
+    else
+        local u = self.left.value.unit
+        local lv = self.left.value.value
+        local rv = self.right.value
+        return {
+            type = "unit",
+            value = unit.newUnit(u, lv / rv),
+        }
     end
-    local r = self.right
-    if r.value.isExprTree then
-        log.throw("Unreachable: unflattenable float/integer found in DivTree")
-    end
-    ---@cast r Banana.Ncss.StyleValue
-    ---@type Banana.Ncss.StyleValue
-    local ret = {
-        type = "unit",
-        value = unit.newUnit(l.value.unit,
-            l.value.value / r.value)
-    }
-    return ret
 end
 
 ---@param parentWidth number
@@ -314,13 +283,13 @@ function DivTree:compute(parentWidth)
     local right = self.right.value
     local leftType = self.left.type
     local rightType = self.right.type
-    if type(left) == "table" and left.isExprTree then
+    if isexpr(left) then
         ---@diagnostic disable-next-line: cast-local-type, param-type-mismatch
         left = left:compute(parentWidth)
     elseif type(left) == "table" then
         left:compute(parentWidth)
     end
-    if type(right) == "table" and right.isExprTree then
+    if isexpr(right) then
         ---@diagnostic disable-next-line: cast-local-type, param-type-mismatch
         right = right:compute(parentWidth)
     elseif type(right) == "table" then
@@ -346,6 +315,10 @@ function DivTree:compute(parentWidth)
     self.computed = ret
     return ret
 end
+
+--}
+
+-- {
 
 ---@class (exact) Banana.Ncss.ExpressionTree.Mult : Banana.Ncss.ExpressionTree
 ---@field left Banana.Ncss.StyleValue
@@ -392,7 +365,8 @@ function MultTree:getType()
             right .. "' on the right side of a multiplication")
     end
     if left == "unit" and left == right then
-        log.throw("Two unit values cannot be multiplied together in ncss calc().")
+        log.throw(
+            "Two unit values cannot be multiplied together in ncss calc().")
     end
     if left == "unit" or right == "unit" then
         return "unit"
@@ -402,29 +376,33 @@ end
 
 ---@return Banana.Ncss.StyleValue
 function MultTree:flatten()
-    -- allow the error bc it should happen
-    if self:getType() ~= "unit" then
-        return self:compute(0)
-    end
-    local l = self.left.value
-    if type(l) == "table" and l.isExprTree then
+    if isexpr(self.left.value) or isexpr(self.right.value) then
         return {
             type = self:getType(),
             value = self
         }
+    elseif self:getType() ~= "unit" then
+        return self:compute(0)
+    else
+        local u = ""
+        local lv = 0
+        local rv = 0
+        if type(self.left.value) == "table" then
+            u = self.left.value.unit
+            lv = self.left.value.value
+            ---@diagnostic disable-next-line: cast-local-type
+            rv = self.right.value
+        else
+            u = self.right.value.unit
+            lv = self.right.value.value
+            ---@diagnostic disable-next-line: cast-local-type
+            rv = self.left.value
+        end
+        return {
+            type = "unit",
+            value = unit.newUnit(u, lv * rv),
+        }
     end
-    local r = self.right.value
-    if type(r) == "table" and r.isExprTree then
-        log.throw("Unreachable: unflattenable float*integer found in MultTree")
-    end
-    ---@cast r Banana.Ncss.StyleValueType
-    ---@type Banana.Ncss.StyleValue
-    local ret = {
-        type = "unit",
-        value = unit.newUnit(l.unit,
-            l.value * r.value)
-    }
-    return ret
 end
 
 ---@param parentWidth number
@@ -434,13 +412,13 @@ function MultTree:compute(parentWidth)
     local right = self.right.value
     local leftType = self.left.type
     local rightType = self.right.type
-    if left.isExprTree then
+    if isexpr(left) then
         ---@diagnostic disable-next-line: cast-local-type, param-type-mismatch
         left = left:compute(parentWidth)
     elseif type(left) == "table" then
         left:compute(parentWidth)
     end
-    if right.isExprTree then
+    if isexpr(right) then
         ---@diagnostic disable-next-line: cast-local-type, param-type-mismatch
         right = right:compute(parentWidth)
     elseif type(right) == "table" then
@@ -451,20 +429,23 @@ function MultTree:compute(parentWidth)
     if leftType == "unit" then
         ret = {
             type = "unit",
-            value = unit.newUnit("ch", left.value.value / right.value)
+            value = unit.newUnit("ch", left.value.value * right.value)
+        }
+    elseif rightType == "unit" then
+        ret = {
+            type = "unit",
+            value = unit.newUnit("ch", left.value * right.value.value)
         }
     else
         ret = {
             type = floatConvert(leftType, rightType),
-            value = left.value / right.value
+            value = left.value * right.value
         }
-        if ret.type == "integer" then
-            ---@diagnostic disable-next-line: param-type-mismatch
-            ret.value = math.floor(ret.value)
-        end
     end
     self.computed = ret
     return ret
 end
+
+--}
 
 return M
