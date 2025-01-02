@@ -2,6 +2,8 @@
 local _tag = require("banana.lazyRequire")("banana.nml.tag")
 ---@module 'banana.utils.log'
 local log = require("banana.lazyRequire")("banana.utils.log")
+---@module 'banana.utils.debug_flame'
+local flame = require("banana.lazyRequire")("banana.utils.debug_flame")
 local M = {}
 ---@module 'banana.utils.string'
 local _str = require("banana.lazyRequire")("banana.utils.string")
@@ -23,32 +25,35 @@ M.padNames = { "left", "top", "right", "bottom" }
 ---@field rightX number The right edge, exclusive
 ---@field bottomY number The bottom edge, exclusive
 
+---@alias Banana.RelativeBox { box: Banana.Box, left: number, top: number, z: number}[]
+
 ---@class Banana.Ast
----@field data table?
----@field nodes (string|Banana.Ast)[]
----@field tag string
----@field attributes Banana.Attributes
----@field actualTag Banana.TagInfo
----@field private style { [string]: Banana.Ncss.StyleValue[] }
----@field hl Banana.Highlight
+---@field data table? For eventual data sharing between components
+---and (maybe) templating
+---@field nodes (string|Banana.Ast)[] List of text and ast nodes
+---@field tag string The name of the tag
+---@field attributes Banana.Attributes Attributes table
+---@field actualTag Banana.TagInfo The actual tag object
+---@field private style { [string]: Banana.Ncss.StyleValue[] } List of style values
+---@field hl Banana.Highlight The highlight value (derived at style time)
 ---@field private padding Banana.Ncss.UnitValue[]
 ---@field private margin Banana.Ncss.UnitValue[]
----@field classes? { [string]: boolean }
----@field boundBox? Banana.Ast.BoundingBox
----@field precedences { [string]: number }
----@field instance number?
----@field _parent Banana.Ast
----@field inlineStyle Banana.Ncss.StyleDeclaration[]
----@field absoluteAsts? Banana.Ast[]
----@field relativeBoxId? number
----@field hidden boolean
----@field relativeBoxes? { box: Banana.Box, left: number, top: number, z: number}[]
----@field componentPath string[]
----@field listCounter? number
----@field fromFile string
----@field componentCache? { [string]: Banana.Component }
----@field componentTree? Banana.Ast
----@field componentParent? Banana.Ast
+---@field classes? { [string]: boolean } A list of the classes
+---@field boundBox? Banana.Ast.BoundingBox The bounds of the render
+---@field precedences { [string]: number } The precedences of each applied style field
+---@field instance number? The id of the attached instance
+---@field _parent Banana.Ast The parent ast
+---@field inlineStyle Banana.Ncss.StyleDeclaration[] The inline styles
+---@field absoluteAsts? Banana.Ast[] Any absolute asts that will be rendered over this ast
+---@field relativeBoxId? number If position:relative, this will be an index into the renderOver target Ast relativeBoxes
+---@field hidden boolean True if wont be rendered (eg display:none...)
+---@field relativeBoxes? Banana.RelativeBox[] A list of relative boxes to render
+---@field componentPath string[] The search path for components
+---@field listCounter? number For <ol>, starts at 1 and increases every time a descendant <li> is rendered
+---@field fromFile string The file this ast is from
+---@field componentCache? { [string]: Banana.Component } Cache of components
+---@field componentTree? Banana.Ast If is component, will contain <template> to render
+---@field componentParent? Banana.Ast If is <template>, will contain component
 M.Ast = {
     nodes = {},
     tag = "",
@@ -613,12 +618,13 @@ function M.Ast:_clearStyles()
 end
 
 ---Applies the ast metatable to an ast tree (after cloning)
+---@param self Banana.Ast
 ---@param ast Banana.Ast
-local function applyAstMeta(ast)
-    setmetatable(ast, { __index = M.Ast })
+local function applyAstMeta(self, ast)
+    setmetatable(ast, getmetatable(self))
     for _, v in ipairs(ast.nodes) do
         if type(v) ~= "string" then
-            applyAstMeta(v)
+            applyAstMeta(self, v)
             v._parent = ast
         end
     end
@@ -832,7 +838,7 @@ function M.Ast:clone(deep)
     if self.listCounter ~= nil then
         newAst.listCounter = 1
     end
-    applyAstMeta(newAst)
+    applyAstMeta(self, newAst)
     ---@cast newAst Banana.Ast
     newAst:_clearStyles()
     return newAst
