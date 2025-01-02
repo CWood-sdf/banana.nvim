@@ -80,6 +80,27 @@ local function startTime(time)
     flameStarts[flame] = time
 end
 
+---@param class table
+---@param printMethod boolean
+---@return function
+function M.wrapClass(class, name, printMethod)
+    return function (_, v)
+        if type(class[v]) == "function" then
+            return function (...)
+                if printMethod then
+                    M.new(name .. ":" .. v)
+                else
+                    M.new(name)
+                end
+                local ret = class[v](...)
+                M.pop()
+                return ret
+            end
+        end
+        return class[v]
+    end
+end
+
 ---@param name string
 function M.new(name, skipLog)
     if not isdev() then return end
