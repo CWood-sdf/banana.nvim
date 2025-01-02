@@ -1,4 +1,4 @@
-*banana-ncssfunctions.txt*          For          Last change: 2024 December 30
+*banana-ncssfunctions.txt*          For           Last change: 2025 January 02
 
 ==============================================================================
 Table of Contents                     *banana-ncssfunctions-table-of-contents*
