@@ -34,7 +34,24 @@ end
 where `container` is a `div` [tag](https://github.com/CWood-sdf/banana.nvim/wiki/Tags#div) in loaded nml.
 
 ```html
-<div id="container"></div>
+<nml>
+  <head>
+    <style>
+      nml {
+        /* for positioning the floating window */
+        left: 5%;
+        top: 5%;
+      }
+      body {
+        /* for setting the floating window background color */
+        hl-bg: red;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="container"></div>
+  </body>
+</nml>
 ```
 
 and `coolPage` is associated to the file: `your-plugin-name/banana/stuff/coolPage.nml`.
