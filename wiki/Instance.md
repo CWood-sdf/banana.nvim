@@ -113,6 +113,8 @@ This function also allows you to use the special events:
 - `Close` when the window is closed with `:q` or `document:close()`
 - `Leave` fired on `WinLeave`
 - `Open` fired on `document:open()`
+- `OpenPost` fired after document render on `document:open()`
+  - After this event, render information is guranteed to exist
 - `ScriptDone` fired after scripts have ran
 
 - **Parameters**:
