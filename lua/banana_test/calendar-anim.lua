@@ -54,4 +54,11 @@ return function (document)
         end,
         group = vim.api.nvim_create_augroup("calendar-anim", { clear = true })
     })
+    document:on({ "Close" }, {
+        callback = function ()
+            i = 0
+            calendar:setStyleValue("hl-bg",
+                "radial-gradient(blue, hl-extract(bg, NormalFloat) 0%)")
+        end
+    })
 end

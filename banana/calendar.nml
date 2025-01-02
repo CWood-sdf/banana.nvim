@@ -28,8 +28,8 @@
         margin: 0ch 1ch;
       }
       .calendarHeader > * {
-        hl-bg: red;
-        hl-__name: Yo;
+        /* hl-bg: hl-extract(bg, NormalFloat); */
+        /* hl-__name: Yo; */
       }
       .calendarHeader2 {
         display: grid;
