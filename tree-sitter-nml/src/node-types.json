@@ -365,6 +365,10 @@
     "named": false
   },
   {
+    "type": "canvas",
+    "named": false
+  },
+  {
     "type": "div",
     "named": false
   },

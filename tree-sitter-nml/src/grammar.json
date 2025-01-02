@@ -148,6 +148,10 @@
         },
         {
           "type": "STRING",
+          "value": "canvas"
+        },
+        {
+          "type": "STRING",
           "value": "hr"
         },
         {

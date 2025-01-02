@@ -44,7 +44,7 @@ module.exports = grammar({
         erroneous_end_tag_name: (_) => /[^>]+/,
         comment: (_) =>
             seq("<!--", repeat(choice(/[^-]/, /\-[^-]/, /--[^>]/)), "-->"),
-        self_closing_tags: (_) => choice("meta", "br", "hr", "bound"),
+        self_closing_tags: (_) => choice("meta", "br", "canvas", "hr", "bound"),
 
         document: ($) => repeat($._node),
 
