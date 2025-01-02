@@ -14,11 +14,12 @@ local function getEventName(v)
     return "BananaDocument" .. v
 end
 
----@alias Banana.EventType "Open"|"Leave"|"Close"|"ScriptDone"
+---@alias Banana.EventType "Open"|"Leave"|"Close"|"ScriptDone"|"OpenPost"
 
 ---@type { [Banana.EventType]: string }
 local events = {
     Open = "",
+    OpenPost = "",
     Leave = "",
     Close = "",
     ScriptDone = "",
@@ -54,7 +55,7 @@ local instances = {}
 ---@field params { [string]: string }
 ---@field selfNode? Banana.Ast
 
----@class (exact) Banana.Instance
+---@class Banana.Instance
 ---@field DEBUG_stressTest boolean
 ---@field DEBUG_dumpTree boolean
 ---@field DEBUG boolean
@@ -387,6 +388,7 @@ function Instance:open()
     avg = 0
     self:_fireEvent("Open")
     self:_render()
+    self:_fireEvent("OpenPost")
 end
 
 ---Returns true if the instance is open
@@ -811,9 +813,6 @@ function Instance:_render()
         return
     end
     local totalTime = 0
-    if self.renderRequested then
-        return
-    end
     self.rendering = true
 
     -- please dont remove this
@@ -922,7 +921,7 @@ function Instance:_render()
     if self.DEBUG_showPerf then
         n = n + 1
         -- avg = avg + renderTime
-        avg = (avg * (n - 1) + renderTime) / n
+        avg = (avg * (n - 1) + totalTime) / n
         local l = {
             -- "",
             astTime / 1e6 .. "ms to parse",
