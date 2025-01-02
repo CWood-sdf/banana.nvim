@@ -7,9 +7,10 @@ local t = require("banana.lazyRequire")("banana.nml.tag")
 local function renderer(_, ast, parentHl, parentWidth, parentHeight, startX,
                         startY, inherit, extra)
     local b = require("banana.box")
+    parentHl = ast:_mixHl(parentHl)
     -- flame.new("tag:nml")
     -- -@type Banana.Box
-    local ret = b.Box:new()
+    local ret = b.Box:new(parentHl)
     for node in ast:childIter() do
         ---@cast node Banana.Ast
         if node.tag == "head" then

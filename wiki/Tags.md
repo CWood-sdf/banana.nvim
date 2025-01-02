@@ -79,9 +79,9 @@ currently, the only supported identifiers are `buf-name` and `win-name` (for `vi
 the nml tag for a document
 
 Notes/Rules:
-- all nml files that are directly opened by an instance (eg passed as the file parameter to create an instance) must have an nml tag as root tag
-- nml files cannot be styled with highlights (e.g. `hl-bg`)
 
+- all nml files that are directly opened by an instance (eg passed as the file parameter to create an instance) must have an nml tag as root tag
+- setting the background on an `<nml>` tag or `<body>` tag sets the background for the whole window
 
 ## `ol`
 

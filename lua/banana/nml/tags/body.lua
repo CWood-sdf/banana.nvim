@@ -12,10 +12,15 @@ local function renderer(self, ast, parentHl, parentWidth, parentHeight, startX,
         return b.Box:new()
     end
     ---@type Banana.Box
-    local ret = b.Box:new()
-    ret.hlgroup = ast:_mixHl(parentHl)
+    local ret = b.Box:new(ast:_mixHl(parentHl))
     for _, box, _ in self:blockIter(ast, ret.hlgroup, parentWidth, parentHeight, startX, startY, inherit, extra) do
         ret:appendBoxBelow(box)
+    end
+    if ret:height() < parentHeight then
+        ret:expandHeightTo(parentHeight)
+    end
+    if ret:width() < parentWidth then
+        ret:expandWidthTo(parentWidth)
     end
     -- flame.pop()
     return ret
