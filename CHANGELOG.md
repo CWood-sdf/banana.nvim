@@ -1,5 +1,66 @@
 # Changelog
 
+## [0.3.0](https://github.com/CWood-sdf/banana.nvim/compare/v0.2.0...v0.3.0) (2025-01-03)
+
+
+### ⚠ BREAKING CHANGES
+
+* **ast:** rename some methods
+
+### Features
+
+* **ast:** add comments for BoundingBox ([6a10bdc](https://github.com/CWood-sdf/banana.nvim/commit/6a10bdc384e3a8baa001455caab3385e09ddcf0e))
+* **ast:** add some more methods to fit DOM Node interface more ([2037149](https://github.com/CWood-sdf/banana.nvim/commit/2037149f3cc7a08b9864c955f06f9f3ae1fa48c6))
+* **ast:** better managing class list ([69ad506](https://github.com/CWood-sdf/banana.nvim/commit/69ad5063759fe55a909dd4cbc94f9c3a7700be21))
+* **ast:** make style private and force style usage through functions for exprTree ([809dfae](https://github.com/CWood-sdf/banana.nvim/commit/809dfae415f7907671b8d4827e2a5aa7ff5459f3))
+* **ast:** rename some methods ([2037149](https://github.com/CWood-sdf/banana.nvim/commit/2037149f3cc7a08b9864c955f06f9f3ae1fa48c6))
+* **box:** make fillChar actually used ([809dfae](https://github.com/CWood-sdf/banana.nvim/commit/809dfae415f7907671b8d4827e2a5aa7ff5459f3))
+* **box:** weak tables make long term storage unstable ([aafbb03](https://github.com/CWood-sdf/banana.nvim/commit/aafbb034facc0b35cf2ffd37392827ca016c87ad))
+* **canvas:** add fillBg and fillFg ([69ad506](https://github.com/CWood-sdf/banana.nvim/commit/69ad5063759fe55a909dd4cbc94f9c3a7700be21))
+* **canvas:** prototype for basic things ([cc8800d](https://github.com/CWood-sdf/banana.nvim/commit/cc8800d22ff9ed8c85cd86f5917bd53504b7ef7d))
+* **command:** add :BananaSo ([09ae230](https://github.com/CWood-sdf/banana.nvim/commit/09ae23024c0ca987bd51d79e27751a2a0ee1688b))
+* **command:** add notification for instance id ([fa5eea9](https://github.com/CWood-sdf/banana.nvim/commit/fa5eea992d82e5e7584974727e145a5a6a493a2a))
+* **debug:** add class wrap ([6f64cfc](https://github.com/CWood-sdf/banana.nvim/commit/6f64cfc20ed2fe311c5eb4918d3d291dbf0ab7ac))
+* **doc:** add autodocgen scripts ([925af34](https://github.com/CWood-sdf/banana.nvim/commit/925af34492c56f6b5679a73159cb1e99be74018d))
+* **entity:** add entity support ([182719c](https://github.com/CWood-sdf/banana.nvim/commit/182719c51f1e665c61c94415d72be2cb8c7c20f7))
+* **init:** add editorSetup and initFiletypes ([1865a2b](https://github.com/CWood-sdf/banana.nvim/commit/1865a2ba1b4340649e7f6774129b388de0efb320))
+* **instance:** add events and random changes ([7cbb687](https://github.com/CWood-sdf/banana.nvim/commit/7cbb6879cbca20e8e3f21c2d183fa911a59e601b))
+* **instance:** add OpenPost event ([8134640](https://github.com/CWood-sdf/banana.nvim/commit/8134640a0858cdac01ffcf8210e10437474e7a69))
+* **Instance:** update events and undeprecate `Instance:on` ([84d540c](https://github.com/CWood-sdf/banana.nvim/commit/84d540cb0a1293462c1d1918e8287054445bb405))
+* **instance:** use extmarks for highlighting ([3593320](https://github.com/CWood-sdf/banana.nvim/commit/3593320e5d0141baf80bd6c7299f9553d52f421f))
+* **log:** change default level to warn for parse warnings visible by default ([3614967](https://github.com/CWood-sdf/banana.nvim/commit/3614967bc05b8bab7d68fedb1e5f3d9275ba6eea))
+* **meta:** allow shorthand syntax ([c769468](https://github.com/CWood-sdf/banana.nvim/commit/c7694686f475e3e297813e43a5394b0d8f924ee6))
+* **meta:** compute numerical and boolean properties ([d1b45f0](https://github.com/CWood-sdf/banana.nvim/commit/d1b45f078c64b2009535286f2247da3325aa05db))
+* move filetype setup to own file ([783de00](https://github.com/CWood-sdf/banana.nvim/commit/783de002b895ef5fbf971a7533aa662eaeb18571))
+* **ncss:** add calc() prototype ([809dfae](https://github.com/CWood-sdf/banana.nvim/commit/809dfae415f7907671b8d4827e2a5aa7ff5459f3))
+* **ncss:** add list-style-type:number ([2178260](https://github.com/CWood-sdf/banana.nvim/commit/2178260de647b48b375663b945af768744ca7061))
+* **ncss:** add support for nth-of-type ([4302d40](https://github.com/CWood-sdf/banana.nvim/commit/4302d400990ba1bc815abbeb9bf40d026b6cf4be))
+* **ncss:** rework exprtree and remove plain value ([e70ad40](https://github.com/CWood-sdf/banana.nvim/commit/e70ad402a5d967087844c6e906e5bf52a00ddfdf))
+* **nml grammar:** add canvas element ([0b8f41d](https://github.com/CWood-sdf/banana.nvim/commit/0b8f41d606ab628de064163e246577f8788621f4))
+* **Query:** add helper functions ([4302d40](https://github.com/CWood-sdf/banana.nvim/commit/4302d400990ba1bc815abbeb9bf40d026b6cf4be))
+* **require:** allow force reloading ([aac500e](https://github.com/CWood-sdf/banana.nvim/commit/aac500e018099cbf2ca508562eb921f108179c44))
+* **setup:** add setup functions for people's configs ([c958b07](https://github.com/CWood-sdf/banana.nvim/commit/c958b07e4de16e774c3359e18b532c890d181db1))
+* **slot:** allow inline slots ([a6c7d2b](https://github.com/CWood-sdf/banana.nvim/commit/a6c7d2b482710c30bd2fa2ec837c649350061dfe))
+* **tags:** add &lt;a&gt; support ([3593320](https://github.com/CWood-sdf/banana.nvim/commit/3593320e5d0141baf80bd6c7299f9553d52f421f))
+* update tree dump ([deabbfd](https://github.com/CWood-sdf/banana.nvim/commit/deabbfd29271e79591ac59ea8d9a950f82f60200))
+* **zig:** add stuff ([c720dc2](https://github.com/CWood-sdf/banana.nvim/commit/c720dc2fc5cac6a955fff92778d2fee2bb17b22f))
+
+
+### Bug Fixes
+
+* **ast:** parsing class list incorrectly ([1175194](https://github.com/CWood-sdf/banana.nvim/commit/1175194705be2999f82f0c7bccc4b3ecd6bc14a2))
+* **body, nml:** setting hl-bg sets windows background ([4297c30](https://github.com/CWood-sdf/banana.nvim/commit/4297c303cdc595cb8da96091f773868df638e641))
+* **flex:** compute bounding box correctly on wrap ([5af8421](https://github.com/CWood-sdf/banana.nvim/commit/5af84216a99bb3f712db5d206a4fcc9bef8ea415))
+* **gradient:** allow gradients to be applied to multiple ast nodes ([8c88f11](https://github.com/CWood-sdf/banana.nvim/commit/8c88f11490d7918742baadac40e437c571d52719))
+* **head:** pass child component to render ([eea57e6](https://github.com/CWood-sdf/banana.nvim/commit/eea57e6d6979af027cd936a82da2c64b18fff03a))
+* **li:** compute bounding box correctly ([cdacb26](https://github.com/CWood-sdf/banana.nvim/commit/cdacb268f3f45984d512fd15c612c75afa7c40be))
+* **ncss:** allow parsing comments ([bdf1a3f](https://github.com/CWood-sdf/banana.nvim/commit/bdf1a3f44ad76f3d3dee412a62db6259096aebc5))
+
+
+### Miscellaneous Chores
+
+* revert release to 0.3.0 ([2d66a2b](https://github.com/CWood-sdf/banana.nvim/commit/2d66a2b4774dfbaf30094864f6230cfe20a59482))
+
 ## [0.2.0](https://github.com/CWood-sdf/banana.nvim/compare/v0.1.0...v0.2.0) (2024-12-11)
 
 
