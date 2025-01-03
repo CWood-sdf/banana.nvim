@@ -38,7 +38,7 @@ M.padNames = { "left", "top", "right", "bottom" }
 ---@field hl Banana.Highlight The highlight value (derived at style time)
 ---@field private padding Banana.Ncss.UnitValue[]
 ---@field private margin Banana.Ncss.UnitValue[]
----@field classes? { [string]: boolean } A list of the classes
+---@field private classes? { [string]: boolean } A list of the classes
 ---@field boundBox? Banana.Ast.BoundingBox The bounds of the render
 ---@field precedences { [string]: number } The precedences of each applied style field
 ---@field instance number? The id of the attached instance
@@ -260,10 +260,26 @@ function M.Ast:_dumpTree(pad)
     if id ~= nil then
         table.insert(ret, padStr .. "  id=\"" .. id .. "\"")
     end
+    if self.attributes["class"] ~= nil then
+        print("asdf")
+    end
+    self:_parseClassList()
+    if self.classes ~= nil then
+        local classes = ""
+        for k, v in pairs(self.classes) do
+            if v then
+                classes = classes .. k .. " "
+            end
+        end
+        if classes ~= "" then
+            classes = classes:sub(1, #classes - 1)
+            table.insert(ret,
+                padStr .. "  class=\"" .. classes .. "\"")
+        end
+    end
     ret[#ret] = ret[#ret] .. ">"
-    if self.classes ~= nil and #self.classes ~= 0 then
-        table.insert(ret,
-            padStr .. "  class=\"" .. vim.iter(self.classes):join(" ") .. "\"")
+    if self.actualTag.selfClosing then
+        return ret
     end
     pad = pad + 2
     for _, v in ipairs(self.nodes) do
@@ -875,6 +891,9 @@ function M.Ast:setAttribute(name, value)
         return
     end
     self.attributes[name] = value
+    if name == "class" then
+        self.classes = nil
+    end
     self:_requestRender()
 end
 
@@ -907,19 +926,26 @@ function M.Ast:setStyleValue(name, value)
     self:_requestRender()
 end
 
+function M.Ast:_parseClassList()
+    if self.attributes["class"] == nil then
+        self.classes = {}
+        return
+    end
+    if self.classes ~= nil then
+        return
+    end
+    local arr = vim.split(self.attributes["class"], " ")
+    self.classes = {}
+    for _, v in ipairs(arr) do
+        self.classes[v] = true
+    end
+end
+
 ---Returns true if the node has class {c}
 ---@param c string the class to find
 ---@return boolean
 function M.Ast:hasClass(c)
-    if self.classes == nil and self.attributes["class"] ~= nil then
-        local arr = vim.split(self.attributes["class"], " ")
-        self.classes = {}
-        for _, v in ipairs(arr) do
-            self.classes[v] = true
-        end
-    elseif self.classes == nil then
-        self.classes = {}
-    end
+    self:_parseClassList()
     if self.classes[c] == nil then
         return false
     end
@@ -1231,6 +1257,10 @@ end
 ---@param name string the name of the attribute to get
 ---@return string?
 function M.Ast:getAttribute(name)
+    if name == "class" then
+        self:_parseClassList()
+        self.attributes[name] = vim.iter(self.classes or {}):join(" ")
+    end
     return self.attributes[name]
 end
 

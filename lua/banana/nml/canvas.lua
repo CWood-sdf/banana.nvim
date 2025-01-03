@@ -3,7 +3,8 @@ local M = {}
 local box = require "banana.lazyRequire" ("banana.box")
 ---@class Banana.Nml.CanvasContext
 ---@field fillChar string
----@field fillStyle string
+---@field fillBg string
+---@field fillFg string
 ---@field box Banana.Box
 ---@field ast Banana.Ast
 local Context = {
@@ -11,7 +12,8 @@ local Context = {
 
 function Context:background()
     local newBox = box.Box:new({
-        bg = self.fillStyle,
+        bg = self.fillBg,
+        fg = self.fillFg,
     }, self.fillChar)
     local w, h = self:width(), self:height()
     self.box = newBox
@@ -38,17 +40,40 @@ end
 ---@param h number
 function Context:rect(x, y, w, h)
     local overlay = box.Box:new({
-        bg = self.fillStyle,
+        bg = self.fillBg,
+        fg = self.fillFg,
     }, self.fillChar)
     x = math.floor(x)
     y = math.floor(y)
     w = math.floor(w)
     h = math.floor(h)
-    if y >= self:height() or y < 0 then
-        return
+    if h < 0 then
+        y = y + h
+        h = -h
     end
-    if x >= self:width() or x < 0 then
-        return
+    if w < 0 then
+        x = x + w
+        w = -w
+    end
+    if y >= self:height() then
+        local extra = y - self:height() + 1
+        y = self:height() - 1
+        w = w - extra
+    end
+    if y < 0 then
+        local extra = math.abs(y)
+        y = 0
+        h = h - extra
+    end
+    if x >= self:width() then
+        local extra = x - self:width() + 1
+        x = self:width() - 1
+        w = w - extra
+    end
+    if x < 0 then
+        local extra = math.abs(x)
+        x = 0
+        w = w - extra
     end
     overlay:expandHeightTo(math.min(h, self:height() - y))
     overlay:expandWidthTo(math.min(w, self:width() - x))
@@ -76,8 +101,9 @@ end
 ---@param y any
 function Context:point(x, y)
     local overlay = box.Box:new({
-        bg = self.fillStyle,
-    }, self.fillStyle)
+        bg = self.fillBg,
+        fg = self.fillFg,
+    }, self.fillChar)
     x = math.floor(x)
     y = math.floor(y)
     if y >= self:height() or y < 0 then
@@ -108,7 +134,8 @@ function M.newContext(ast)
     ---@diagnostic disable-next-line: missing-fields
     local ctx = {
         fillChar = " ",
-        fillStyle = "#ffffff",
+        fillBg = "#ffffff",
+        fillFg = "#000000",
         box = box.Box:new({ bg = "#ffffff" }),
         ast = ast,
     }
