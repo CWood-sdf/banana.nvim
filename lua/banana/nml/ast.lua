@@ -77,7 +77,7 @@ function M.Ast:new(tag, parent, source)
         actualTag = _tag.newComponentTag(tag)
     end
     actualTag = actualTag or require("banana.nml.tag").makeTag(tag)
-    local path = nil
+    local path
     if source:sub(1, 1) ~= "@" then
         path = { source }
     else
@@ -118,6 +118,36 @@ function M.Ast:new(tag, parent, source)
     end
     setmetatable(ast, { __index = M.Ast })
     return ast
+end
+
+---@param item string?
+---@return any?
+function M.Ast:getData(item)
+    if self.data == nil then
+        if self.componentParent ~= nil then
+            if self.componentParent.data == nil then
+                return nil
+            end
+            return self.componentParent:getData(item)
+        end
+        return self._parent:getData(item)
+    end
+    if item == nil or self.data == nil then
+        return self.data
+    end
+    return self.data[item]
+end
+
+---@param key string
+---@param value any
+---@overload fun(self: Banana.Ast, value: table)
+function M.Ast:setData(key, value)
+    if type(key) == "table" then
+        self.data = key
+        return
+    end
+    self.data = self.data or {}
+    self.data[key] = value
 end
 
 ---@param name string
@@ -804,6 +834,8 @@ function M.Ast:clone(deep)
             table.insert(newAst.nodes, v)
         end
     end
+    newAst.fromFile = self.fromFile
+    newAst.componentPath = self.componentPath
     newAst.tag = self.tag
     newAst.attributes = vim.fn.deepcopy(self.attributes)
     newAst.actualTag = self.actualTag
@@ -1429,13 +1461,6 @@ function M.Ast:allChildIter()
     return function ()
         --flame.new("Ast:childIter")
         i = i + 1
-        while type(self.nodes[i]) ~= "table" do
-            i = i + 1
-            if i > #self.nodes then
-                --flame.pop()
-                return nil
-            end
-        end
         --flame.pop()
         ---@diagnostic disable-next-line: return-type-mismatch
         return self.nodes[i]

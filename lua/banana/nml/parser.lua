@@ -353,7 +353,7 @@ function Parser:parseTag(tree, parent, isSpecial)
         else
             root = parent:getRootNode()
         end
-        root.componentPath = root.componentPath or nil
+        root.componentPath = root.componentPath or {}
         table.insert(root.componentPath,
             require("banana.require").getPathForRequire(attrs["import"], "nml"))
         return nil, components
@@ -370,7 +370,7 @@ function Parser:parseTag(tree, parent, isSpecial)
             root = parent:getRootNode()
         end
 
-        root.componentPath = root.componentPath or nil
+        root.componentPath = root.componentPath or {}
         local componentAst = require("banana.require").nmlRequire(attrs
             ["use-imports-from"])
         for _, v in ipairs(componentAst.componentPath or {}) do

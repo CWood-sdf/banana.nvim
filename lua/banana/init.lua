@@ -18,10 +18,10 @@ local tsInstall = false
 M.test = {
     grid = function ()
         if inst == nil then
-            inst = render.newInstance("calendar", "")
-            inst.DEBUG = true
+            inst = render.newInstance("devtools", "")
+            -- inst.DEBUG = true
             -- inst.DEBUG_showBuild = true
-            inst.DEBUG_showPerf = true
+            -- inst.DEBUG_showPerf = true
             -- inst.DEBUG_dumpTree = true
             -- inst.DEBUG_stressTest = true
         end

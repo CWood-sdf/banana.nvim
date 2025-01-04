@@ -1341,7 +1341,8 @@ end
 ---@return Banana.Ast
 function Instance:createElement(name)
     local ast = require("banana.nml.ast").Ast:new(name, M.getNilAst(),
-        "@@anonElement")
+        self.ast.fromFile)
+    ast.componentPath = self.ast.componentPath
     self:_applyId(ast)
     return ast
 end
