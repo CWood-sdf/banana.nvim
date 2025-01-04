@@ -25,6 +25,7 @@ Table of Contents                               *banana-ast-table-of-contents*
   - getHeight                                |banana-ast-reflection-getheight|
   - isNil                                        |banana-ast-reflection-isnil|
   - getAttribute                          |banana-ast-reflection-getattribute|
+  - getAttributes                        |banana-ast-reflection-getattributes|
   - isLineHovering                      |banana-ast-reflection-islinehovering|
   - isHovering                              |banana-ast-reflection-ishovering|
   - children                                  |banana-ast-reflection-children|
@@ -238,6 +239,13 @@ Gets the attribute value for the specified name, or `nil` if not found.
 - **Parameters**:
     - `name` (string): The attribute name.
 - **Returns**: `string?` - The attribute value or `nil`.
+
+
+GETATTRIBUTES                            *banana-ast-reflection-getattributes*
+
+Returns a map of all attributes to their values
+
+- **Returns**: `{ [string]: string }` - A map of every attribute to its value
 
 
 ISLINEHOVERING                          *banana-ast-reflection-islinehovering*

@@ -10,6 +10,7 @@ banana-ast-reflection-children	banana-ast.txt	/*banana-ast-reflection-children*
 banana-ast-reflection-clonenode	banana-ast.txt	/*banana-ast-reflection-clonenode*
 banana-ast-reflection-firstchild	banana-ast.txt	/*banana-ast-reflection-firstchild*
 banana-ast-reflection-getattribute	banana-ast.txt	/*banana-ast-reflection-getattribute*
+banana-ast-reflection-getattributes	banana-ast.txt	/*banana-ast-reflection-getattributes*
 banana-ast-reflection-getheight	banana-ast.txt	/*banana-ast-reflection-getheight*
 banana-ast-reflection-getrootnode	banana-ast.txt	/*banana-ast-reflection-getrootnode*
 banana-ast-reflection-gettagname	banana-ast.txt	/*banana-ast-reflection-gettagname*
@@ -69,6 +70,7 @@ banana-instance-getbufnr	banana-instance.txt	/*banana-instance-getbufnr*
 banana-instance-getelementbyid	banana-instance.txt	/*banana-instance-getelementbyid*
 banana-instance-getelementsbyclassname	banana-instance.txt	/*banana-instance-getelementsbyclassname*
 banana-instance-getelementsbytag	banana-instance.txt	/*banana-instance-getelementsbytag*
+banana-instance-getprimarynode	banana-instance.txt	/*banana-instance-getprimarynode*
 banana-instance-getscriptparams	banana-instance.txt	/*banana-instance-getscriptparams*
 banana-instance-isopen	banana-instance.txt	/*banana-instance-isopen*
 banana-instance-loadnmlto	banana-instance.txt	/*banana-instance-loadnmlto*
