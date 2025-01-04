@@ -119,12 +119,18 @@ function M.formatInlineContext(ast, clearFirst, clearLast)
             ---@cast node Banana.Ast
             if node.actualTag.formatType == tags.FormatType.Block then
                 log.throw(
-                    "A Block or BlockInline format type element is nested in an inline formatting context")
+                    "A Block or BlockInline format type element (" ..
+                    node.tag ..
+                    ") is nested in an inline formatting context (" ..
+                    ast.tag .. ")")
                 error("")
             end
             if node.actualTag.formatType == tags.FormatType.BlockInline then
                 log.throw(
-                    "A Block or BlockInline format type element is nested in an inline formatting context")
+                    "A Block or BlockInline format type element (" ..
+                    node.tag ..
+                    ") is nested in an inline formatting context (" ..
+                    ast.tag .. ")")
                 error("")
             end
             clearFirst = M.formatInlineContext(node, clearFirst,

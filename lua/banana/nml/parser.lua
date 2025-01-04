@@ -118,20 +118,9 @@ function Parser:parseAttribute(tree)
     end
     local nameStr = self:getStrFromNode(name)
     local value = nil
-    if tree:child_count() >= 3 and nameStr == "style" then
-        local ncssTree = self:getNextInlineNcssParser()
-        local ncssParser = require("banana.ncss.parser").newParseData(self.lexer
-                                                                          .program)
-        local rules = require("banana.ncss.parser").parse(ncssTree, ncssParser)
-        ---@type Banana.Ncss.StyleDeclaration[]
-        local ret = {}
-        for _, rule in ipairs(rules) do
-            for _, decl in ipairs(rule.declarations) do
-                table.insert(ret, decl)
-            end
-        end
-        return nameStr, nil, ret
-    elseif tree:child_count() >= 3 then
+    ---@type Banana.Ncss.StyleDeclaration[]?
+    local decls = nil
+    if tree:child_count() >= 3 then
         local val = tree:child(2)
         ::top::
         if val == nil then
@@ -145,9 +134,23 @@ function Parser:parseAttribute(tree)
             val = val:child(1)
             goto top
         end
+        if nameStr == "style" then
+            local ncssTree = self:getNextInlineNcssParser()
+            local ncssParser = require("banana.ncss.parser").newParseData(self
+                .lexer
+                .program)
+            local rules = require("banana.ncss.parser").parse(ncssTree,
+                ncssParser)
+            decls = {}
+            for _, rule in ipairs(rules) do
+                for _, decl in ipairs(rule.declarations) do
+                    table.insert(decls, decl)
+                end
+            end
+        end
     end
 
-    return nameStr, value, nil
+    return nameStr, value, decls
 end
 
 ---@param tree TSNode
@@ -180,9 +183,8 @@ function Parser:parseAttributes(tree)
             for _, v in ipairs(d) do
                 table.insert(decls, v)
             end
-        else
-            ret[name] = val
         end
+        ret[name] = val
         i = i + 1
     end
 
