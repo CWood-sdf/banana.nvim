@@ -499,8 +499,7 @@ function Parser:parseTag(tree, parent, isSpecial)
             end
         end
         if allInline then
-            self.currentComponent.ast.actualTag.formatType = require(
-                "banan.nml.render").FormatType.Inline
+            self.currentComponent.ast.actualTag = _tag.makeTag("template_inline")
         end
         table.insert(components, 1, self.currentComponent)
         self.currentComponent = nil
