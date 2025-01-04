@@ -11,6 +11,7 @@ The Instance class is the first of two API surfaces that you will use for most o
 - [`getElementsByClassName`](#getElementsByClassName)
 - [`getElementsByTag`](#getElementsByTag)
 - [`getScriptParams`](#getScriptParams)
+- [`getPrimaryNode`](#getPrimaryNode)
 - [`isOpen`](#isOpen)
 - [`loadNmlTo`](#loadNmlTo)
 - [`on`](#on)
@@ -44,7 +45,7 @@ Creates a new element with the specified tag name that can later be attached to 
 
 ## `forceRerender`
 
-Forces the instance to re-render the window. **Use sparingly, as this may affect performance.**
+Forces the instance to re-render the window. **Use sparingly, as this may affect performance.** If there is a problem with the library that requires you to use this function, please submit a bug report
 
 ## `getBufnr`
 
@@ -81,6 +82,38 @@ Finds elements by their tag name, similar to JavaScript's `getElementsByTagName`
 Returns the parameters for the currently running script associated with the instance.
 
 - **Returns**: `Banana.Instance.RouteParams?` - The route parameters or `nil` if not set.
+
+## `getPrimaryNode`
+
+Returns the root node that the script runs in
+For components, returns the `<template>` tag of the current component.
+For scripts running in the main loaded nml file, returns the `<body>` tag.
+For scripts loaded from `loadNmlTo()`, returns the root node of the loaded document
+
+- **Returns**: `Banana.Ast` - The root node of the current script context
+
+### Example
+
+```nml
+<nml>
+  <head>
+    <template name="Tag">
+      <script>
+        -- Returns the template that the script is running in
+        local node = document:getPrimaryNode()
+
+      </script>
+    </template>
+  </head>
+  <body>
+
+    <script>
+      -- returns the body node
+      local node = document:getPrimaryNode()
+    </script>
+  </body>
+</nml>
+```
 
 ## `isOpen`
 

@@ -1257,6 +1257,11 @@ function Instance:_loadScriptFor(script, ast, params)
     end)
 end
 
+---@return Banana.Ast
+function Instance:getPrimaryNode()
+    return self:getScriptParams().selfNode or self:body()
+end
+
 ---Works just like js querySelectorAll
 ---@param sel string the selector to use
 ---@return Banana.Ast[]

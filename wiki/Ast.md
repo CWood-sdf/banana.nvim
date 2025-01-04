@@ -210,6 +210,12 @@ Gets the attribute value for the specified name, or `nil` if not found.
   - `name` (string): The attribute name.
 - **Returns**: `string?` - The attribute value or `nil`.
 
+## `getAttributes`
+
+Returns a map of all attributes to their values
+
+- **Returns**: `{ [string]: string }` - A map of every attribute to its value
+
 ## `isLineHovering`
 
 Checks if the cursor is on the same line as this node.

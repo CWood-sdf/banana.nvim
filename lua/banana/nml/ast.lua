@@ -904,13 +904,22 @@ end
 function M.Ast:setAttribute(name, value)
     if name == "style" then
         self:setStyle(value)
-        return
     end
     self.attributes[name] = value
     if name == "class" then
         self:hasClass("a")
     end
     self:_requestRender()
+end
+
+---@return string[]
+function M.Ast:getAttributes()
+    ---@type { [string]: string }
+    local ret = {}
+    for k, _ in pairs(self.attributes) do
+        ret[k] = self:getAttribute(k) or ""
+    end
+    return ret
 end
 
 ---Sets the elements custom style rules to {value}
