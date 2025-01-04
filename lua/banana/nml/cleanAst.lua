@@ -26,6 +26,7 @@ end
 ---https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_display/Block_formatting_context
 ---@param ast Banana.Ast
 function M.formatBlockContext(ast)
+    log.addCtx("while cleaning " .. ast.tag)
     local i = 1
     local inc = true
     local clearFirst = true
@@ -91,6 +92,7 @@ function M.formatBlockContext(ast)
         end
         inc = true
     end
+    log.popCtx()
 end
 
 ---Reference:
@@ -101,6 +103,7 @@ end
 ---@param clearLast boolean
 ---@return boolean
 function M.formatInlineContext(ast, clearFirst, clearLast)
+    log.addCtx("while cleaning " .. ast.tag)
     local i = 1
     local inc = true
     while i <= #ast.nodes do
@@ -141,6 +144,7 @@ function M.formatInlineContext(ast, clearFirst, clearLast)
         end
         inc = true
     end
+    log.popCtx()
     return clearFirst
 end
 

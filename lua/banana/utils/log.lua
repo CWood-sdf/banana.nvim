@@ -1,5 +1,3 @@
----@module 'banana.utils.debug_flame'
-local flame = require("banana.lazyRequire")("banana.utils.debug_flame")
 -- log.lua
 --
 -- Inspired by rxi/log.lua
@@ -55,6 +53,9 @@ local default_config = {
 ---@field fmt_error fun(...)
 ---@field fatal fun(...)
 ---@field fmt_fatal fun(...)
+---@field addCtx fun(msg: string)
+---@field popCtx fun()
+---@field clearCtx fun()
 
 
 -- {{{ NO NEED TO CHANGE
@@ -181,19 +182,37 @@ log.new = function (config, standalone)
             end)
         end
     end
+    local ctxStack = {}
     obj.assert = function (cond, msg, ...)
+        msg = msg .. "\n" .. vim.iter(ctxStack):rev():join("\n")
+        ctxStack = {}
         if not cond then
             obj.fatal(msg, ...)
             error(msg)
         end
     end
     obj.throw = function (msg, ...)
+        msg = msg .. "\n" .. vim.iter(ctxStack):rev():join("\n")
+        ctxStack = {}
         obj.fatal(msg, ...)
         error(msg)
     end
     obj.fmt_throw = function (msg, ...)
+        msg = msg .. "\n" .. vim.iter(ctxStack):rev():join("\n")
+        ctxStack = {}
         obj.fmt_fatal(msg, ...)
         error(string.format(msg, ...))
+    end
+
+    obj.addCtx = function (msg)
+        table.insert(ctxStack, msg)
+    end
+    obj.popCtx = function ()
+        table.remove(ctxStack, #ctxStack)
+    end
+
+    obj.clearCtx = function ()
+        ctxStack = {}
     end
 end
 

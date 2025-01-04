@@ -817,6 +817,7 @@ function Instance:_render()
 
     -- please dont remove this
     collectgarbage("stop")
+    log.clearCtx()
     log.trace("Instance:render with " .. #self.scripts .. " scripts")
     flame.newIter()
     local startTime = vim.loop.hrtime()
