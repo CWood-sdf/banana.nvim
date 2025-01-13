@@ -189,6 +189,7 @@ function M.Ast:_mountComponent()
         log.throw("Could not find component '" .. self.tag .. "'")
         error()
     end
+    self.actualTag.formatType = component.ast.actualTag.formatType
     local ast = component.ast:clone(true)
     ast.componentParent = self
     local inst = self:ownerDocument()
