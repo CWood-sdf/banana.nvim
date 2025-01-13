@@ -349,6 +349,8 @@ Returns the nth non-string child of the node.
 
 ## `getTextContent`
 
+**Warning**: `getTextContent` currently only works for elements that only contain text/ast nodes (not attribute substitutions or character entities)
+
 Gets the printed text value of this element (excludes newlines).
 
 - **Returns**: `string` - The text content.
