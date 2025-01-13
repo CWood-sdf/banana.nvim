@@ -41,7 +41,7 @@ module.exports = grammar({
         _script_start_tag_name: (_) => "script",
         _style_start_tag_name: (_) => "style",
         _end_tag_name: ($) => $._start_tag_name,
-        erroneous_end_tag_name: (_) => /[^>]+/,
+        erroneous_end_tag_name: (_) => /[^>\s]+/,
         comment: (_) =>
             seq("<!--", repeat(choice(/[^-]/, /\-[^-]/, /--[^>]/)), "-->"),
         self_closing_tags: (_) => choice("meta", "br", "canvas", "hr", "bound"),
@@ -88,7 +88,7 @@ module.exports = grammar({
             seq(
                 "<",
                 alias($._start_tag_name, $.tag_name),
-                repeat($.attribute),
+                repeat(choice($.attribute, "\n", "\r")),
                 ">",
             ),
 
@@ -122,7 +122,8 @@ module.exports = grammar({
                 choice("/>", ">"),
             ),
 
-        end_tag: ($) => seq("</", alias($._end_tag_name, $.tag_name), ">"),
+        end_tag: ($) =>
+            seq("</", alias($._end_tag_name, $.tag_name), /s*/, ">"),
 
         erroneous_end_tag: ($) => seq("</", $.erroneous_end_tag_name, ">"),
 
@@ -146,7 +147,7 @@ module.exports = grammar({
         // no more will ever be added.
         entity: (_) => /&(#([xX][0-9a-fA-F]{1,6}|[0-9]{1,5})|[A-Za-z]{1,30});?/,
 
-        substitution: (_) => /%([\w\-]*|%)/,
+        substitution: (_) => /%([\w\-]*;?|%)/,
 
         quoted_attribute_value: ($) =>
             choice(

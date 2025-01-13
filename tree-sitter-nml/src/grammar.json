@@ -100,7 +100,7 @@
     },
     "erroneous_end_tag_name": {
       "type": "PATTERN",
-      "value": "[^>]+"
+      "value": "[^>\\s]+"
     },
     "comment": {
       "type": "SEQ",
@@ -347,8 +347,21 @@
         {
           "type": "REPEAT",
           "content": {
-            "type": "SYMBOL",
-            "name": "attribute"
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "attribute"
+              },
+              {
+                "type": "STRING",
+                "value": "\n"
+              },
+              {
+                "type": "STRING",
+                "value": "\r"
+              }
+            ]
           }
         },
         {
@@ -514,6 +527,10 @@
           "value": "tag_name"
         },
         {
+          "type": "PATTERN",
+          "value": "s*"
+        },
+        {
           "type": "STRING",
           "value": ">"
         }
@@ -589,7 +606,7 @@
     },
     "substitution": {
       "type": "PATTERN",
-      "value": "%([\\w\\-]*|%)"
+      "value": "%([\\w\\-]*;?|%)"
     },
     "quoted_attribute_value": {
       "type": "CHOICE",

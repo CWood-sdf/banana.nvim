@@ -76,3 +76,17 @@ so maybe have a global flag for global imports that can be stored in Instance. n
 ### scripting/styling
 
 - Instance already has support for this
+
+## ok so what about for actual reusable components
+
+1. we need to be able to share data between them
+   - can be done with setData()
+   - now to render data: hella clunky right now. just need `<item>`/`<data>` tag?
+2. Auto ui/data updates?
+   - yahh we need that bc right now ui automagically updates with document: methods, but not with data
+   - arguably auto data updates are most important
+   - however i dont want to do like react hooks and stuff bc that's so pervasive
+   - banana needs to not be intrusive
+   - autocmds?
+3. Render logic
+   - for/ifs. i know they can be done fast

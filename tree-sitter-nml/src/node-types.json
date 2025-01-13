@@ -118,11 +118,6 @@
     }
   },
   {
-    "type": "erroneous_end_tag_name",
-    "named": true,
-    "fields": {}
-  },
-  {
     "type": "quoted_attribute_value",
     "named": true,
     "fields": {},
@@ -301,6 +296,14 @@
     "fields": {}
   },
   {
+    "type": "\n",
+    "named": false
+  },
+  {
+    "type": "\r",
+    "named": false
+  },
+  {
     "type": "\"",
     "named": false
   },
@@ -378,6 +381,10 @@
   },
   {
     "type": "entity",
+    "named": true
+  },
+  {
+    "type": "erroneous_end_tag_name",
     "named": true
   },
   {
