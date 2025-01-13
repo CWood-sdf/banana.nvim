@@ -54,18 +54,6 @@
     "parse": "tree-sitter parse",
     "test": "tree-sitter test"
   },
-  "tree-sitter": [
-    {
-      "scope": "source.ncss",
-      "file-types": [
-        "ncss"
-      ],
-      "injection-regex": "^ncss$",
-      "highlights": [
-        "queries/highlights.scm"
-      ]
-    }
-  ],
   "eslintConfig": {
     "env": {
       "commonjs": true,
