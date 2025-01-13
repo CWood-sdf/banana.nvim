@@ -1516,6 +1516,9 @@ end
 ---@param name string the attribute to lookup
 ---@return string?
 function M.Ast:getAttributeSubstitution(name)
+    if name:sub(#name, #name) == ";" then
+        name = name:sub(1, #name - 1)
+    end
     local el = self
     local v = nil
     while el.attributes[name] == nil do
