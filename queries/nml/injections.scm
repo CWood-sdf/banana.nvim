@@ -6,6 +6,10 @@
   (#any-of? @_py_script "py-script" "py-repl")
   (#set! injection.language "python"))
 
+((if_clause) @injection.content
+  (#set! injection.language "lua"))
+
+
 (script_element
   (start_tag
     (attribute
@@ -24,3 +28,4 @@
   (text) @injection.content
   (#eq? @_py_config "py-config")
   (#set! injection.language "toml"))
+

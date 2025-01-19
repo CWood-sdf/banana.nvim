@@ -144,7 +144,7 @@ function M.initTsParsers()
     parser_config.nml = {
         install_info = {
             url = M.getInstallDir() .. "/tree-sitter-nml",
-            files = { "src/parser.c" },
+            files = { "src/parser.c", "src/scanner.c" },
             branch = "main",
             generate_requires_npm = false,
             requires_generate_from_grammar = false,

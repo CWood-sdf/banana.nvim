@@ -28,6 +28,11 @@
     "fields": {}
   },
   {
+    "type": "conditional",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "doctype",
     "named": true,
     "fields": {}
@@ -78,6 +83,10 @@
         },
         {
           "type": "substitution",
+          "named": true
+        },
+        {
+          "type": "templating",
           "named": true
         },
         {
@@ -227,6 +236,10 @@
           "named": true
         },
         {
+          "type": "templating",
+          "named": true
+        },
+        {
           "type": "text",
           "named": true
         }
@@ -294,6 +307,222 @@
     "type": "tag_name",
     "named": true,
     "fields": {}
+  },
+  {
+    "type": "template_repeat",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "templating_close",
+          "named": true
+        },
+        {
+          "type": "templating_cont_open",
+          "named": true
+        },
+        {
+          "type": "templating_repeat_decl",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "templating",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "conditional",
+          "named": true
+        },
+        {
+          "type": "doctype",
+          "named": true
+        },
+        {
+          "type": "element",
+          "named": true
+        },
+        {
+          "type": "entity",
+          "named": true
+        },
+        {
+          "type": "erroneous_end_tag",
+          "named": true
+        },
+        {
+          "type": "script_element",
+          "named": true
+        },
+        {
+          "type": "style_element",
+          "named": true
+        },
+        {
+          "type": "substitution",
+          "named": true
+        },
+        {
+          "type": "template_repeat",
+          "named": true
+        },
+        {
+          "type": "templating",
+          "named": true
+        },
+        {
+          "type": "templating_close",
+          "named": true
+        },
+        {
+          "type": "templating_close_start",
+          "named": true
+        },
+        {
+          "type": "templating_decl",
+          "named": true
+        },
+        {
+          "type": "templating_open",
+          "named": true
+        },
+        {
+          "type": "text",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "templating_decl",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "templating_decl_for",
+          "named": true
+        },
+        {
+          "type": "templating_decl_if",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "templating_decl_for",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "comma",
+          "named": true
+        },
+        {
+          "type": "conditional",
+          "named": true
+        },
+        {
+          "type": "if_clause",
+          "named": true
+        },
+        {
+          "type": "loop_in",
+          "named": true
+        },
+        {
+          "type": "named_variable",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "templating_decl_if",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "conditional",
+          "named": true
+        },
+        {
+          "type": "if_clause",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "templating_repeat_decl",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "templating_repeat_else",
+          "named": true
+        },
+        {
+          "type": "templating_repeat_elseif",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "templating_repeat_else",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "conditional",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "templating_repeat_elseif",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "conditional",
+          "named": true
+        },
+        {
+          "type": "if_clause",
+          "named": true
+        }
+      ]
+    }
   },
   {
     "type": "\n",
@@ -372,6 +601,10 @@
     "named": false
   },
   {
+    "type": "comma",
+    "named": true
+  },
+  {
     "type": "div",
     "named": false
   },
@@ -388,6 +621,10 @@
     "named": true
   },
   {
+    "type": "for",
+    "named": false
+  },
+  {
     "type": "head",
     "named": false
   },
@@ -396,12 +633,28 @@
     "named": false
   },
   {
+    "type": "if",
+    "named": false
+  },
+  {
+    "type": "if_clause",
+    "named": true
+  },
+  {
     "type": "li",
     "named": false
   },
   {
+    "type": "loop_in",
+    "named": true
+  },
+  {
     "type": "meta",
     "named": false
+  },
+  {
+    "type": "named_variable",
+    "named": true
   },
   {
     "type": "nml",
@@ -446,6 +699,22 @@
   {
     "type": "template",
     "named": false
+  },
+  {
+    "type": "templating_close",
+    "named": true
+  },
+  {
+    "type": "templating_close_start",
+    "named": true
+  },
+  {
+    "type": "templating_cont_open",
+    "named": true
+  },
+  {
+    "type": "templating_open",
+    "named": true
   },
   {
     "type": "text",
