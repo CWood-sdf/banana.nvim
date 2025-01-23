@@ -12,6 +12,7 @@ local _inst = require("banana.lazyRequire")("banana.instance")
 ---@module 'banana.ncss.unit'
 local unit = require("banana.lazyRequire")("banana.ncss.unit")
 
+
 M.left = 1
 M.top = 2
 M.right = 3
@@ -27,7 +28,10 @@ M.padNames = { "left", "top", "right", "bottom" }
 
 ---@alias Banana.RelativeBox { box: Banana.Box, left: number, top: number, z: number}[]
 
+local astId = 0
+
 ---@class Banana.Ast
+---@field _astId number just an id to keep track of things in debug
 ---@field data table? For eventual data sharing between components
 ---and (maybe) templating
 ---@field nodes (string|Banana.Ast)[] List of text and ast nodes
@@ -87,6 +91,7 @@ function M.Ast:new(tag, parent, source)
     ---@diagnostic disable-next-line: missing-fields
     local ast = {
         hl = {},
+        _astId = astId,
         inlineStyle = {},
         componentPath = path,
         fromFile = source,
@@ -113,10 +118,12 @@ function M.Ast:new(tag, parent, source)
         },
         style = {},
     }
+    astId = astId + 1
     if tag == "ol" then
         ast.listCounter = 1
     end
     setmetatable(ast, { __index = M.Ast })
+
     return ast
 end
 
@@ -618,21 +625,24 @@ function M.Ast:_defaultStyles()
         self.listCounter = 1
     end
     self.padding = {
-        unit.newUnit("ch", 0, 0),
-        unit.newUnit("ch", 0, 0),
-        unit.newUnit("ch", 0, 0),
-        unit.newUnit("ch", 0, 0),
+        unit.newUnit("ch", 0),
+        unit.newUnit("ch", 0),
+        unit.newUnit("ch", 0),
+        unit.newUnit("ch", 0),
     }
     self.margin = {
-        unit.newUnit("ch", 0, 0),
-        unit.newUnit("ch", 0, 0),
-        unit.newUnit("ch", 0, 0),
-        unit.newUnit("ch", 0, 0),
+        unit.newUnit("ch", 0),
+        unit.newUnit("ch", 0),
+        unit.newUnit("ch", 0),
+        unit.newUnit("ch", 0),
     }
     self.style = {}
     self:_unlockGradients()
     self.hl = {}
     self.precedences = {}
+    -- setmetatable(self.hl, weak)
+    -- setmetatable(self.style, weak)
+    -- setmetatable(self.precedences, weak)
 end
 
 function M.Ast:_clearStyles()
@@ -1009,7 +1019,6 @@ end
 function M.Ast:_mixHl(parentHl)
     -- flame.new("Ast:_mixHl")
     local ret = {}
-    -- setmetatable(ret, { __mode = "kv" })
     if self.tag == "h1" then
         ret.bold = true
     end
@@ -1077,14 +1086,14 @@ function M.Ast:_resolveUnits(parentWidth, parentHeight)
         if i % 2 == 1 then
             v:compute(parentWidth)
         else
-            v:compute(parentWidth)
+            v:compute(parentHeight)
         end
     end
     for i, v in ipairs(self.padding) do
         if i % 2 == 1 then
             v:compute(parentWidth)
         else
-            v:compute(parentWidth)
+            v:compute(parentHeight)
         end
     end
     --flame.pop()

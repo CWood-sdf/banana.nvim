@@ -46,6 +46,7 @@ return function (self, ast, parentHl, parentWidth, parentHeight, startX, startY,
     flame.new("getRendered_start")
     ast.relativeBoxId = nil
     local inheritOld = {}
+    -- setmetatable(inherit, { __mode = "kv" })
     for k, _ in pairs(inherit) do
         local style = case.snakeToKebab(k)
         if ast:hasStyle(style) then
@@ -237,6 +238,7 @@ return function (self, ast, parentHl, parentWidth, parentHeight, startX, startY,
             extra.trace:appendBoxBelow(ast:_testDumpBox(), false)
             extra.trace:appendBoxBelow(newRet:clone(), false)
         end
+        ---@type Banana.Ast
         local root = ast
         while root.relativeBoxes == nil do
             root = root._parent

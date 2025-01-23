@@ -842,19 +842,20 @@ local function OutputMemorySnapshot(strSavePath, strExtraFileName, nMaxRescords,
                                 "([\n\r])", "\\n")
                             cOutputer("string: \"" ..
                                 strRepString ..
-                                "\"\t" ..
+                                "\"      " ..
                                 cNameInfo[v] ..
-                                "\t" .. tostring(cRefInfo[v]) .. "\n")
+                                "      " .. tostring(cRefInfo[v]) .. "\n")
                         else
                             cOutputer(tostring(v) ..
-                                "\t" ..
+                                "      " ..
                                 cNameInfo[v] ..
-                                "\t" .. tostring(cRefInfo[v]) .. "\n")
+                                "      " .. tostring(cRefInfo[v]) .. "\n")
                         end
                     else
                         cOutputer(GetOriginalToStringResult(v) ..
-                            "\t" ..
-                            cNameInfo[v] .. "\t" .. tostring(cRefInfo[v]) .. "\n")
+                            "      " ..
+                            cNameInfo[v] ..
+                            "      " .. tostring(cRefInfo[v]) .. "\n")
                     end
                 end
             else
@@ -867,17 +868,19 @@ local function OutputMemorySnapshot(strSavePath, strExtraFileName, nMaxRescords,
                             "\\n")
                         cOutputer("string: \"" ..
                             strRepString ..
-                            "\"\t" ..
-                            cNameInfo[v] .. "\t" .. tostring(cRefInfo[v]) .. "\n")
+                            "\"      " ..
+                            cNameInfo[v] ..
+                            "      " .. tostring(cRefInfo[v]) .. "\n")
                     else
                         cOutputer(tostring(v) ..
-                            "\t" ..
-                            cNameInfo[v] .. "\t" .. tostring(cRefInfo[v]) .. "\n")
+                            "      " ..
+                            cNameInfo[v] ..
+                            "      " .. tostring(cRefInfo[v]) .. "\n")
                     end
                 else
                     cOutputer(GetOriginalToStringResult(v) ..
-                        "\t" ..
-                        cNameInfo[v] .. "\t" .. tostring(cRefInfo[v]) .. "\n")
+                        "      " ..
+                        cNameInfo[v] .. "      " .. tostring(cRefInfo[v]) .. "\n")
                 end
             end
         end

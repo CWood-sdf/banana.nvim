@@ -65,7 +65,7 @@ end
 return function (ast, parentHl, parentWidth, parentHeight, startX,
                  startY, inherit, extra)
     log.trace("TagInfo:renderFlexBlock " .. ast.tag)
-    -- flame.new("renderFlexBlock")
+    flame.new("renderFlexBlock")
     -- possible todos:
     --   abstract out base rendering into a function
     --   inline the current height / line calculation
@@ -243,6 +243,6 @@ return function (ast, parentHl, parentWidth, parentHeight, startX,
     -- end
     inherit.min_size = oldMinSize
 
-    -- flame.pop()
+    flame.pop()
     return ret, #ast.nodes + 1
 end

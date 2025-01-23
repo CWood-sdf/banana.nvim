@@ -69,8 +69,9 @@ local instances = {}
 ---@field styleRules Banana.Ncss.RuleSet[]
 ---@field scripts (string|fun())[]
 ---@field foreignStyles { [Banana.Ast]: Banana.Ncss.RuleSet[] }
----@field keymaps { [string]: { [string]: Banana.Instance.Keymap[] } }
----@field astMapDeps { [Banana.Ast]: [string, string, Banana.Instance.Keymap][] }
+---@field keymaps { [string]: { [string]: (Banana.Instance.Keymap|number)[] } }
+---@field keymapAvailIndex { [string]: { [string]: number }}
+---@field astMapDeps { [Banana.Ast]: [string, string, Banana.Instance.Keymap, number][] }
 ---@field renderRequested boolean
 ---@field renderStart number
 ---@field isVisible boolean
@@ -100,7 +101,7 @@ local Instance = {}
 ---@param height number
 ---@return Banana.Line[]
 function Instance:_virtualRender(ast, width, height)
-    --flame.new("virtualRender")
+    flame.new("virtualRender")
     -- setmetatable(ret, { __mode = "kv" })
     local tag = ast.actualTag
     ---@type Banana.Renderer.ExtraInfo
@@ -110,6 +111,7 @@ function Instance:_virtualRender(ast, width, height)
         trace = require("banana.box").Box:new(),
         debug = self.DEBUG_showBuild,
         isRealRender = true,
+        screenHeight = height,
     }
     -- setmetatable(extra, { __mode = "kv" })
     local rendered = tag:renderRoot(ast, nil, width, height, {
@@ -134,6 +136,7 @@ function Instance:_virtualRender(ast, width, height)
         self:_writeBoxToDebugWin(extra.trace)
         -- rendered:appendBoxBelow(extra.trace)
     end
+    flame.pop()
     return rendered:getLines()
 end
 
@@ -235,6 +238,7 @@ function Instance:new()
     local id = #instances
     ---@type Banana.Instance
     local inst = {
+        keymapAvailIndex = {},
         urlAsts = {},
         lastRenderScripts = false,
         DEBUG_showBuild = false,
@@ -269,12 +273,19 @@ function Instance:new()
             signcolumn = "no",
         },
     }
+    -- setmetatable(inst.astMapDeps, { __mode = "k" })
+    -- setmetatable(inst.foreignStyles, { __mode = "k" })
     -- setmetatable(inst.foreignStyles, { __mode = "kv" })
     setmetatable(inst, { __index = Instance })
     instances[id] = inst
     vim.api.nvim_set_hl(inst.highlightNs, M.defaultWinHighlight, inst.winhl)
     inst:_attachAutocmds()
     return inst
+end
+
+---@return string
+function Instance:_dumpMemory()
+    return vim.inspect(self)
 end
 
 ---Uses a given string in nml require format as the source of the instance
@@ -473,6 +484,28 @@ function Instance:useWindow(winid)
     self.winid = winid
 end
 
+function Instance:_getKeymapFunction(mode, lhs)
+    return function ()
+        for _, remap in ipairs(self.keymaps[mode][lhs]) do
+            if remap.disabled then
+                goto continue
+            end
+            if remap.fn() then
+                break
+            end
+            ::continue::
+        end
+    end
+end
+
+function Instance:_getFeedkeys(mode, oldRhs)
+    return function ()
+        vim.api.nvim_feedkeys(
+            vim.api.nvim_replace_termcodes(oldRhs, true, true, true), mode,
+            true)
+    end
+end
+
 ---@param mode string
 ---@param lhs string
 ---@param rhs string|fun()
@@ -488,42 +521,70 @@ function Instance:_setRemap(mode, lhs, rhs, opts, dep)
     end
     if self.keymaps[mode][lhs] == nil then
         self.keymaps[mode][lhs] = {}
-        vim.keymap.set(mode, lhs, function ()
-            for _, remap in ipairs(self.keymaps[mode][lhs]) do
-                if remap.disabled then
-                    goto continue
-                end
-                if remap.fn() then
-                    break
-                end
-                ::continue::
-            end
-        end, {
+        vim.keymap.set(mode, lhs, self:_getKeymapFunction(mode, lhs), {
             buffer = self.bufnr
         })
     end
     if type(rhs) == "string" then
         local oldRhs = rhs
-        rhs = function ()
-            vim.api.nvim_feedkeys(
-                vim.api.nvim_replace_termcodes(oldRhs, true, true, true), mode,
-                true)
-        end
+        rhs = self:_getFeedkeys(mode, oldRhs)
     end
     ---@type Banana.Instance.Keymap
     local ins = { fn = rhs, opts = opts }
-    table.insert(self.keymaps[mode][lhs], ins)
+    self.keymapAvailIndex[mode] = self.keymapAvailIndex[mode] or {}
+    self.keymapAvailIndex[mode][lhs] = self.keymapAvailIndex[mode][lhs] or 0
+    local avail = self.keymapAvailIndex[mode][lhs]
+    local index
+    if avail ~= 0 then
+        self.keymaps[mode][lhs][avail] = ins
+        index = avail
+        local old = avail
+        for i = avail + 1, #self.keymaps[mode][lhs], 1 do
+            if type(self.keymaps[mode][lhs][i]) == "number" then
+                avail = i
+            end
+        end
+        if avail == old then
+            self.keymapAvailIndex[mode][lhs] = 0
+        else
+            self.keymapAvailIndex[mode][lhs] = avail
+        end
+    else
+        table.insert(self.keymaps[mode][lhs], ins)
+        index = #self.keymaps[mode][lhs]
+    end
     if dep ~= self.ast and dep ~= self:body() then
         self.astMapDeps[dep] = self.astMapDeps[dep] or {}
-        table.insert(self.astMapDeps[dep], { mode, lhs, ins })
+        table.insert(self.astMapDeps[dep],
+            { mode, lhs, nil, index })
     end
 end
 
 ---@param ast Banana.Ast
 function Instance:_removeMapsFor(ast)
-    for _, vals in ipairs(self.astMapDeps[ast] or {}) do
-        local map = vals[3]
-        map.disabled = true
+    if ast.componentTree ~= nil then
+        self:_removeMapsFor(ast.componentTree)
+    end
+    if self.astMapDeps[ast] ~= nil then
+        local newTable = {}
+        -- setmetatable(newTable, { __mode = "k" })
+        for _, v in ipairs(self.astMapDeps[ast] or {}) do
+            local mode, lhs, map, id = v[1], v[2], v[3], v[4]
+            -- map.disabled = true
+            self.keymaps[mode][lhs][id] = 0
+            self.keymapAvailIndex[mode][lhs] = math.min(
+                self.keymapAvailIndex[mode][lhs], id)
+            if self.keymapAvailIndex[mode][lhs] == 0 then
+                self.keymapAvailIndex[mode][lhs] = id
+            end
+        end
+        for k, v in pairs(self.astMapDeps) do
+            if k ~= ast then
+                newTable[k] = v
+            end
+        end
+        self.astMapDeps[ast] = nil
+        self.astMapDeps = newTable
     end
     for _, node in ipairs(ast.nodes) do
         if type(node) ~= "string" then
@@ -658,7 +719,7 @@ end
 
 ---@return number, number
 function Instance:_createWinAndBuf()
-    --flame.new("winAndBuf")
+    flame.new("winAndBuf")
     local headQuery = require("banana.ncss.query").selectors.oneTag("head")
     local headTag = headQuery:getMatches(self.ast)
     if #headTag ~= 0 then
@@ -675,8 +736,8 @@ function Instance:_createWinAndBuf()
             isRealRender = false,
         })
     end
-    --flame.expect("winAndBuf")
-    --flame.pop()
+    flame.expect("winAndBuf")
+    flame.pop()
 
 
     local containerWidth = vim.o.columns
@@ -816,7 +877,7 @@ function Instance:_render()
     self.rendering = true
 
     -- please dont remove this
-    collectgarbage("stop")
+    -- collectgarbage("stop")
     log.clearCtx()
     log.trace("Instance:render with " .. #self.scripts .. " scripts")
     flame.newIter()
@@ -849,18 +910,27 @@ function Instance:_render()
     self.urlAsts = {}
     local stuffToRender = self:_virtualRender(self.ast, width, height)
     flame.pop()
+    -- vim.defer_fn(function ()
+    --     self:_render()
+    -- end, 30)
     local renderTime = vim.loop.hrtime() - startTime
     local skip = false
-    for _, script in ipairs(self.scripts) do
+    for i, script in ipairs(self.scripts) do
         skip = true
+        -- if i == 2 then
+        --     break
+        -- end
         self:_runScript(script, nil)
     end
     self.scripts = {}
 
     startTime = vim.loop.hrtime()
+
     if skip then
         self.rendering = false
         self.renderRequested = true
+        -- collectgarbage("restart")
+        -- collectgarbage("collect")
         self:_deferRender(function ()
             self:_fireEvent("ScriptDone")
         end)
@@ -988,7 +1058,12 @@ function Instance:_render()
     end
     self.rendering = false
     self.renderRequested = false
-    collectgarbage("restart")
+    -- collectgarbage("restart")
+    collectgarbage("collect")
+    collectgarbage()
+    -- collectgarbage()
+    -- collectgarbage()
+    -- collectgarbage()
     -- collectgarbage()
 end
 
@@ -1020,7 +1095,7 @@ end
 ---@param noclear boolean?
 function Instance:_highlight(lines, offset, bufnr, winid, ns, noclear)
     noclear = noclear or false
-    -- flame.new(":_highlight")
+    flame.new(":_highlight")
     offset = offset or 0
     -- flame.new("hl:ns")
     ns = ns or self.highlightNs or 1
@@ -1191,7 +1266,7 @@ function Instance:_highlight(lines, offset, bufnr, winid, ns, noclear)
         row = row + 1
         --flame.pop()
     end
-    -- flame.pop()
+    flame.pop()
 end
 
 function Instance:_highlightText(bufnr, ns, row, col, endCol, group)

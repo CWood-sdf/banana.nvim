@@ -74,6 +74,7 @@ function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX,
                              startY, inherit, extra)
     log.trace("TagInfo:getRendered " ..
         ast.tag .. "#" .. (ast:getAttribute("id") or ""))
+
     local ret = require("banana.nml.render.main")(
         self, ast, parentHl, parentWidth, parentHeight, startX, startY, inherit,
         extra)
@@ -98,7 +99,7 @@ function TagInfo:blockIter(ast, parentHl, parentWidth, parentHeight, startX,
         if i > #ast.nodes then
             return nil
         end
-        -- flame.new("TagInfo:blockIter")
+        flame.new("TagInfo:blockIter")
         local oldI = i
         local render = nil
         if ast:_firstStyleValue("display") == "flex" then
@@ -118,7 +119,7 @@ function TagInfo:blockIter(ast, parentHl, parentWidth, parentHeight, startX,
                 startX, startY, inherit, extra)
         end
         startY = startY + render:height()
-        -- flame.pop()
+        flame.pop()
         return oldI, render, i - oldI
     end
 end
@@ -208,7 +209,7 @@ function TagInfo:renderComponent(ast, parentHl, parentWidth, parentHeight,
     extra.componentStack = extra.componentStack or {}
     table.insert(extra.componentStack, ast)
 
-    ast.componentTree:_resolveUnits(parentWidth, parentHeight, {})
+    ast.componentTree:_resolveUnits(parentWidth, parentHeight)
     local ret = ast.componentTree.actualTag:getRendered(ast.componentTree,
         parentHl,
         parentWidth,

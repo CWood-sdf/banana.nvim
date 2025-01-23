@@ -83,6 +83,8 @@ end
 ---@field dirty boolean true when box is a rect of width self.width
 ---@field fillChar string
 ---@field hlgroup Banana.Highlight?
+---@field private __index Banana.Box|function
+---@field private __mode string
 M.Box = {
     lines = emptyLineArr(),
     _width = 0,
@@ -90,6 +92,8 @@ M.Box = {
     fillChar = M.getFillChar(),
     hlgroup = nil,
 }
+M.Box.__index = flame.wrapClass(M.Box, "Box", false)
+-- M.Box.__mode = "kv"
 
 ---@enum Banana.Box.MergeStrategy
 M.MergeStrategy = {
@@ -292,13 +296,8 @@ function M.Box:new(hlgroup, fillChar)
         hlgroup = hlgroup,
     }
 
-    if box.hlgroup ~= nil then
-        -- setmetatable(box.hlgroup, { __mode = "kv" })
-    end
-    setmetatable(box, {
-        __index = M.Box,
-        -- __mode = "kv"
-    })
+
+    setmetatable(box, M.Box)
     return box
 end
 
@@ -344,6 +343,20 @@ function M.Box:appendLeft(box, strat)
     self.dirty = box.dirty
     self._width = box._width
     box:destroy()
+end
+
+---@return string
+function M.Box:_debugStr()
+    local ret = ""
+    for i, line in ipairs(self.lines) do
+        for _, w in ipairs(line) do
+            ret = ret .. w.word
+        end
+        if i ~= #self.lines then
+            ret = ret .. "\n"
+        end
+    end
+    return ret
 end
 
 ---Appends box to the right, *CONSUMES BOX* (aka rust move)

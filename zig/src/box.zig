@@ -1,32 +1,37 @@
 const std = @import("std");
 const hl = @import("hl.zig");
+pub const ContextError = error{
+    OutOfContexts,
+};
 
 /// API should be like:
 ///
 /// Instance acquires a box context
 /// That box context should be passed down thru render chain
 /// Ideally we could just call box.renderOutput(buf, ns, win...) and it renders using ffi of the nvim_ functions (this would be easy to do for rendering lines)
-const Alloc = std.heap.ArenaAllocator;
-
+/// Current ideas:
+/// Box context contains all strings and highlights and boxes just request data be put into that
 const BoxContext = extern struct {
-    parent: ?usize,
-    allocator: *Alloc,
-    fn init() !BoxContext {
-        const a = try std.heap.c_allocator.create(Alloc);
-        return .{ .allocator = a };
+    arena: std.heap.ArenaAllocator,
+    boxList: std.ArrayList(Box),
+    lines: std.ArrayList(std.ArrayList(u8)),
+    pub fn init(alloc: std.mem.Allocator) BoxContext {
+        const a = std.heap.ArenaAllocator.init(alloc);
+        return .{ .arena = a };
     }
     fn deinit(self: *BoxContext) void {
-        self.allocator.deinit();
-        std.heap.c_allocator.destroy(self.allocator);
+        self.arena.deinit();
     }
 };
 
-var contexts = [_]?BoxContext{null} ** 1000;
-//
+var contexts: []?BoxContext = [_]?BoxContext{null} ** 1000;
 const Word = struct { word: std.ArrayList(u8), style: hl.HlAttrs };
 
 const Box = struct {
-    lines: std.ArrayList(std.ArrayList(Word)),
+    startX: usize,
+    startY: usize,
+    width: usize,
+    height: usize,
     context: usize,
     fn renderToBuf(self: *const Box, buf: i32, ns: i32, win: i32) void {
         _ = self; // autofix
@@ -38,6 +43,18 @@ const Box = struct {
         // need to empty previous context because it is safe to now (AKA neovim wont have any references to any freed strings)
     }
 };
+
+const gpa = std.heap.GeneralPurposeAllocator(.{}){};
+
+pub fn getNewContext() ContextError!usize {
+    for (contexts, 0..) |ctx, i| {
+        if (ctx == null) {
+            contexts[i] = BoxContext.init(std.heap.page_allocator);
+            return i;
+        }
+    }
+    return ContextError.OutOfContexts;
+}
 //
 // pub export fn initRenderCycle() i32 {
 //     for (contexts, 0..) |c, i| {

@@ -23,6 +23,11 @@ local M = {}
 ---@field renderAlign "left"|"center"|"right"
 ---@field maxWidth number
 local PartialRendered = {}
+local meta = {
+    __index = flame.wrapClass(PartialRendered, "PartialRendered", false),
+    -- __mode = "kv"
+}
+local weak = {}
 
 ---@return Banana.Renderer.PartialRendered
 function M.emptyPartialRendered()
@@ -49,9 +54,13 @@ function M.emptyPartialRendered()
         },
 
     }
-    setmetatable(ret, {
-        __index = PartialRendered,
-    })
+    for k, v in pairs(ret) do
+        if type(v) == "table" then
+            ---@diagnostic disable-next-line: param-type-mismatch
+            -- setmetatable(ret[k], weak)
+        end
+    end
+    setmetatable(ret, meta)
     return ret
 end
 
@@ -100,16 +109,18 @@ function PartialRendered:padWith(box, pad, color)
     end
     if pad.left ~= 0 then
         local leftBox = b.Box:new(color)
-        leftBox:expandWidthTo(pad.left)
+        -- print("Pre: '" .. box:_debugStr() .. "'")
         leftBox:expandHeightTo(box:height())
+        leftBox:expandWidthTo(pad.left)
         leftBox:append(box)
         box = leftBox
+        -- print("padding " .. vim.inspect(pad))
+        -- print("Result: '" .. box:_debugStr() .. "'")
     end
     if pad.right ~= 0 then
         local rightBox = b.Box:new(color)
-        -- rightBox:appendStr('', nil)
-        rightBox:expandWidthTo(pad.right)
         rightBox:expandHeightTo(box:height())
+        rightBox:expandWidthTo(pad.right)
         box:append(rightBox)
     end
     return box
@@ -205,6 +216,7 @@ function PartialRendered:applyPad(name, ast)
         self[name].bottom = ast[name][_ast.bottom].computed
         changed = true
     end
+
     --flame.pop()
     return changed
 end

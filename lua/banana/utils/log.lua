@@ -205,10 +205,10 @@ log.new = function (config, standalone)
     end
 
     obj.addCtx = function (msg)
-        table.insert(ctxStack, msg)
+        -- table.insert(ctxStack, msg)
     end
     obj.popCtx = function ()
-        table.remove(ctxStack, #ctxStack)
+        -- table.remove(ctxStack, #ctxStack)
     end
 
     obj.clearCtx = function ()
