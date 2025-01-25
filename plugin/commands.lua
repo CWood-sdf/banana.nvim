@@ -8,6 +8,8 @@ vim.api.nvim_create_user_command("BananaSo", function (opts)
     end
     local buftitle = "scratch"
     local inst = require("banana.instance").emptyInstance()
+    inst.DEBUG_showPerf = true
+    inst.DEBUG = true
     require("banana.require").parseReload()
     inst:useFile(file)
     inst:setBufName(buftitle)

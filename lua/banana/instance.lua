@@ -866,6 +866,20 @@ function Instance:forceRerender()
     self:_render()
 end
 
+function Instance:getFps()
+    local start = vim.uv.hrtime()
+    local count = 0
+    for _ = 1, 1000 do
+        if vim.uv.hrtime() - start > 1000000000 then
+            break
+        end
+        self:_render()
+        count = count + 1
+    end
+    local time = vim.uv.hrtime() - start
+    return count / (time / 1000000000)
+end
+
 function Instance:_render()
     if self.DEBUG_showPerf or self.DEBUG then
         flame.overrideIsDev()

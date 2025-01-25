@@ -1,4 +1,30 @@
-const hl = @import("hl.h");
-
-pub const HlAttrs = hl.HlAttrs;
-pub const HlAttrFlags = hl.HlAttrFlags;
+pub const RgbValue = i32;
+pub const HlAttrFlags = enum(u64) {
+    HL_INVERSE = 1,
+    HL_BOLD = 2,
+    HL_ITALIC = 4,
+    HL_UNDERLINE_MASK = 56,
+    HL_UNDERLINE = 8,
+    HL_UNDERCURL = 16,
+    HL_UNDERDOUBLE = 24,
+    HL_UNDERDOTTED = 32,
+    HL_UNDERDASHED = 40,
+    HL_STANDOUT = 64,
+    HL_STRIKETHROUGH = 128,
+    HL_ALTFONT = 256,
+    HL_NOCOMBINE = 1024,
+    HL_BG_INDEXED = 2048,
+    HL_FG_INDEXED = 4096,
+    HL_DEFAULT = 8192,
+    HL_GLOBAL = 16384,
+};
+pub const HlAttrs = extern struct {
+    rgb_ae_attr: i16 = @import("std").mem.zeroes(c_int),
+    cterm_ae_attr: i16 = @import("std").mem.zeroes(c_int),
+    rgb_fg_color: RgbValue = @import("std").mem.zeroes(RgbValue),
+    rgb_bg_color: RgbValue = @import("std").mem.zeroes(RgbValue),
+    rgb_sp_color: RgbValue = @import("std").mem.zeroes(RgbValue),
+    cterm_fg_color: i16 = @import("std").mem.zeroes(c_int),
+    cterm_bg_color: i16 = @import("std").mem.zeroes(c_int),
+    hl_blend: i32 = @import("std").mem.zeroes(c_int),
+};
