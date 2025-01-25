@@ -26,15 +26,15 @@ pub const ContextError = error{
     ContextNotFound,
 };
 
-/// API should be like:
-///
-/// Instance acquires a box context
-/// That box context should be passed down thru render chain
-/// Ideally we could just call box.renderOutput(buf, ns, win...) and it renders using ffi of the nvim_ functions (this would be easy to do for rendering lines)
-/// Current ideas:
-/// Box context contains all strings and highlights and boxes just request data be put into that
-/// This would require a box to know it's position pre-render (AKA margin and pad need to be calc'd and applied before then)
-///
+// API should be like:
+//
+// Instance acquires a box context
+// That box context should be passed down thru render chain
+// Ideally we could just call box.renderOutput(buf, ns, win...) and it renders using ffi of the nvim_ functions (this would be easy to do for rendering lines)
+// Current ideas:
+// Box context contains all strings and highlights and boxes just request data be put into that
+// This would require a box to know it's position pre-render (AKA margin and pad need to be calc'd and applied before then)
+//
 
 // TODO:
 // - need to handle characters greater than one byte
@@ -43,9 +43,13 @@ pub const ContextError = error{
 // - export all this functionality
 // - need to invert order of rendering (mostly done already)
 // - need to create boxcontexts for flex
-// - enforce box being square
 // - send hls from lua to zig
 const BoxContext = struct {
+    // NOTE: one thing while reading the docs in here is the wording choice is somewhat selective
+    // - position means the 'index' that a user sees
+    //     - in x direction, the sum of the real widths (nvim_strwidth) of all the previous characters in a line
+    //     - in y direction, position and index are the same
+    // - indices means the actual index of self.lines
     arena: std.heap.ArenaAllocator,
     boxList: std.ArrayList(?Box),
     lines: std.ArrayList(std.ArrayList(u8)),
@@ -54,6 +58,8 @@ const BoxContext = struct {
     offsetY: i32,
     width: u32,
     hl: hl.HlAttrs,
+
+    // ctor/dtor
     pub fn init(alloc: std.mem.Allocator) BoxContext {
         var a = std.heap.ArenaAllocator.init(alloc);
         // zig fmt: off
@@ -80,15 +86,10 @@ const BoxContext = struct {
         self.arena.deinit();
     }
 
-    pub fn renderLineOver(self: *BoxContext, startX: usize, startY: usize, line: []u8, color: hl.HlAttrs) void {
-        _ = color; // autofix
-        _ = line; // autofix
-        _ = startY; // autofix
-        _ = startX; // autofix
-        _ = self; // autofix
-    }
+    // low level api, intended for use by the public api functions
 
-    pub fn addLine(self: *BoxContext) void {
+    /// just adds a new line to the end
+    fn addLine(self: *BoxContext) void {
         var newLine = std.ArrayList(u8).init(self.arena.allocator());
         newLine.appendNTimes(' ', self.width);
         self.lines.append(newLine);
@@ -97,10 +98,34 @@ const BoxContext = struct {
         self.hls.append(hlLine);
     }
 
+    /// To be called after a line has finished being changed, to readjust the width
     fn adjustWidthFrom(self: *BoxContext, line: *std.ArrayList(u8)) void {
         self.width = std.math.maxInt(lineWidth(&line), self.width);
     }
 
+    /// returns the index needed for an x position on the line. note that index can be out of bounds, so you will have to readjust the array yourself or call `setCharAt`
+    fn indexForPos(line: *std.ArrayList(u8), pos: usize) usize {
+        // var ret = 0;
+        var cpos = 0;
+        var i = 0;
+        while (cpos < pos) {
+            if (i >= line.items.len) {
+                break;
+            }
+            const byteWidth = codepointLen(line.items[i]);
+            var err: [*]allowzero const u8 = 0;
+            const width = fns.z_nvim_strwidth(line.items[i .. i + byteWidth], &err);
+            cpos += width;
+            i += byteWidth;
+        }
+        // TODO: off by one error here? who knows
+        if (cpos >= pos) {
+            return i;
+        }
+        return i + cpos - pos;
+    }
+
+    /// Sets the char at the x and y indices, readjusts the array if necessary
     fn setCharAt(self: *BoxContext, x: usize, y: usize, char: u8, color: hl.HlAttrs) void {
         while (y < self.lines.items.len) {
             self.addLine();
@@ -110,18 +135,29 @@ const BoxContext = struct {
         self.hls.items[y].appendNTimes(self.hl, sizeDiff);
         self.lines.items[y].items[x] = char;
         self.hls.items[y].items[x] = color;
+    }
+
+    // External api
+
+    pub fn renderLineOver(self: *BoxContext, startX: usize, y: usize, line: []u8, color: hl.HlAttrs) void {
+        for (line, 0..) |char, i| {
+            self.setCharAt(startX + i, y, char, color);
+        }
         self.adjustWidthFrom(&self.lines.items[y]);
     }
 
     pub fn renderCtxOver(self: *BoxContext, other: usize) ContextError!void {
         const otherCtx = contexts[other] orelse return ContextError.ContextNotFound;
-        var i = 0;
         var j = 0;
+        while (self.lines.len < otherCtx.offsetY + otherCtx.lines.len) {
+            self.addLine();
+        }
         while (j < otherCtx.height) {
-            while (i < otherCtx.width) {
-                self.lines.items[j + otherCtx.offsetY].items[i + otherCtx.offsetX] = other.lines.items[j].items[i];
-                i += 1;
+            const startI = indexForPos(&self.lines.items[j + otherCtx.offsetY], otherCtx.offsetX);
+            for (otherCtx.lines.items[j].items, otherCtx.hls.items[j].items, 0..) |char, color, i| {
+                self.setCharAt(i + startI, j + otherCtx.offsetY, char, color);
             }
+            self.adjustWidthFrom(&self.lines.items[j + otherCtx.offsetY]);
             j += 1;
         }
     }

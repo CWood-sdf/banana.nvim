@@ -95,6 +95,8 @@ pub const Error = extern struct {
     msg: [*]allowzero const u8,
 };
 
+pub const ZError = error{ErrorType};
+
 pub const Arena = extern struct {
     current_block: [*]const u8,
     pos: usize,

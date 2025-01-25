@@ -40,11 +40,6 @@ pub fn build(b: *std.Build) void {
     // const tracy = b.option([]const u8, "tracy", "Enable Tracy integration. Supply path to Tracy source");
     // exe.addIncludePath(std.Build.LazyPath{ .path = "src/nvim" });
 
-    // if (tracy) |tracy_path| {
-    exe.addIncludePath(.{ .cwd_relative = "src/nvim" });
-    exe.addIncludePath(.{ .cwd_relative = "src/nvim/src" });
-    // }
-
     // This declares intent for the executable to be installed into the
     // standard location when the user invokes the "install" step (the default
     // step when running `zig build`).

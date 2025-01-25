@@ -1,5 +1,5 @@
 pub const RgbValue = i32;
-pub const HlAttrFlags = enum(u64) {
+pub const HlAttrFlags = enum(u16) {
     HL_INVERSE = 1,
     HL_BOLD = 2,
     HL_ITALIC = 4,
