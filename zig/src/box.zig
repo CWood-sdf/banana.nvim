@@ -49,9 +49,10 @@ const BoxContext = struct {
     // - position means the 'index' that a user sees
     //     - in x direction, the sum of the real widths (nvim_strwidth) of all the previous characters in a line
     //     - in y direction, position and index are the same
+    //     - ie if a character is in x position 3, it will be presented three characters from the left, could be any index because individual characters can be multiple bytes
     // - indices means the actual index of self.lines
     arena: std.heap.ArenaAllocator,
-    boxList: std.ArrayList(?Box),
+    // boxList: std.ArrayList(?Box),
     lines: std.ArrayList(std.ArrayList(u8)),
     hls: std.ArrayList(hl.HlAttrs),
     offsetX: i32,
@@ -65,8 +66,8 @@ const BoxContext = struct {
         // zig fmt: off
         return .{ 
             .arena = a, 
-            .boxList = std.ArrayList(?Box)
-                .init(a.allocator()), 
+            // .boxList = std.ArrayList(?Box)
+            //     .init(a.allocator()), 
             .lines = std.ArrayList(std.ArrayList(u8))
                 .init(a.allocator()), 
             .hls = std.ArrayList(hl.HlAttrs).init(a.allocator()),
@@ -127,9 +128,7 @@ const BoxContext = struct {
 
     /// Sets the char at the x and y indices, readjusts the array if necessary
     fn setCharAt(self: *BoxContext, x: usize, y: usize, char: u8, color: hl.HlAttrs) void {
-        while (y < self.lines.items.len) {
-            self.addLine();
-        }
+        self.ensureLineExists(y);
         const sizeDiff = x + 1 - self.lines.items[y].items.len;
         self.lines.items[y].appendNTimes(' ', sizeDiff);
         self.hls.items[y].appendNTimes(self.hl, sizeDiff);
@@ -137,15 +136,31 @@ const BoxContext = struct {
         self.hls.items[y].items[x] = color;
     }
 
+    /// ensures that index y is accessible
+    fn ensureLineExists(self: *BoxContext, y: usize) void {
+        while (y >= self.lines.items.len) {
+            self.addLine();
+        }
+    }
+
     // External api
 
+    /// sets the default hl of the context
+    pub fn setHl(self: *BoxContext, color: hl.HlAttrs) void {
+        self.hl = color;
+    }
+
+    /// Renders the line over the rest of the box starting at the given x position
     pub fn renderLineOver(self: *BoxContext, startX: usize, y: usize, line: []u8, color: hl.HlAttrs) void {
+        self.ensureLineExists(y);
+        const startIndex = indexForPos(&self.lines.items[y], startX);
         for (line, 0..) |char, i| {
-            self.setCharAt(startX + i, y, char, color);
+            self.setCharAt(startIndex + i, y, char, color);
         }
         self.adjustWidthFrom(&self.lines.items[y]);
     }
 
+    /// Renders the context over the rest of the box
     pub fn renderCtxOver(self: *BoxContext, other: usize) ContextError!void {
         const otherCtx = contexts[other] orelse return ContextError.ContextNotFound;
         var j = 0;
@@ -164,24 +179,6 @@ const BoxContext = struct {
 };
 
 var contexts: [1000]?BoxContext = [1]?BoxContext{null} ** 1000;
-// const Word = struct { word: std.ArrayList(u8), style: hl.HlAttrs };
-
-const Box = struct {
-    startX: usize,
-    startY: usize,
-    width: usize,
-    height: usize,
-    context: usize,
-    fn renderToBuf(self: *const Box, buf: i32, ns: i32, win: i32) void {
-        _ = self; // autofix
-        _ = win; // autofix
-        _ = ns; // autofix
-        _ = buf; // autofix
-        // nvim_buf_set_lines
-        // nvim_buf_ns_clear (or whatever it is)
-        // need to empty previous context because it is safe to now (AKA neovim wont have any references to any freed strings)
-    }
-};
 
 const gpa = std.heap.GeneralPurposeAllocator(.{}){};
 
@@ -196,22 +193,18 @@ pub fn getNewContext() ContextError!usize {
 }
 
 pub fn getContext(i: usize) ContextError!*BoxContext {
-    return &contexts[i] orelse ContextError.ContextNotFound;
+    const ret = &(contexts[i] orelse return ContextError.ContextNotFound);
+    return ret;
 }
-//
-// pub export fn initRenderCycle() i32 {
-//     for (contexts, 0..) |c, i| {
-//         if (c) |_| {} else {
-//             contexts[i] = BoxContext.init() catch return -1;
-//             return @intCast(i);
-//         }
-//     }
-//     return -1;
-// }
-//
-// export fn clearRender(index: u32) void {
-//     if (contexts[index]) |*c| {
-//         c.deinit();
-//     }
-//     contexts[index] = null;
-// }
+
+pub fn removeContextIfExists(i: usize) void {
+    const ctx = contexts[i] orelse return;
+    ctx.deinit();
+    contexts[i] = null;
+}
+
+export fn setCtxBool(i: usize, name: [*:0]u8, value: bool) u32 {
+    var ctx = getContext(i) catch |v| return @intFromError(v);
+    hl.setHlBool(&ctx.hl, std.mem.span(name), value);
+    return 0;
+}
