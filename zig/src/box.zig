@@ -36,23 +36,23 @@ pub const ContextError = error{
 // This would require a box to know it's position pre-render (AKA margin and pad need to be calc'd and applied before then)
 //
 
+// Happy path is NOT overwriting (eg only position:absolute/relative/... over unicode should be sad path)
+// Thus we should not worry about resizing performance
+
 // TODO:
-// - need to handle characters greater than one byte
-// - render areas (for padding and stuff)
-// - render lines properly
-// - export all this functionality
-// - need to invert order of rendering (mostly done already)
-// - need to create boxcontexts for flex
-// - send hls from lua to zig
+// - setCharAt() needs to account for multibyte chars when *overwriting*
+// - need to add a clean() method (same as Box:clean())
+// - add a fillArea() method (padding)
+// - possible perf optimizations in indexForPos()
+// - finalize the c api
 const BoxContext = struct {
     // NOTE: one thing while reading the docs in here is the wording choice is somewhat selective
     // - position means the 'index' that a user sees
     //     - in x direction, the sum of the real widths (nvim_strwidth) of all the previous characters in a line
     //     - in y direction, position and index are the same
-    //     - ie if a character is in x position 3, it will be presented three characters from the left, could be any index because individual characters can be multiple bytes
+    //     - ie if a character is in x position 3, it will be presented three characters from the left, could be any index because individual characters can be multiple bytes/widths
     // - indices means the actual index of self.lines
     arena: std.heap.ArenaAllocator,
-    // boxList: std.ArrayList(?Box),
     lines: std.ArrayList(std.ArrayList(u8)),
     hls: std.ArrayList(hl.HlAttrs),
     offsetX: i32,
@@ -106,7 +106,9 @@ const BoxContext = struct {
 
     /// returns the index needed for an x position on the line. note that index can be out of bounds, so you will have to readjust the array yourself or call `setCharAt`
     fn indexForPos(line: *std.ArrayList(u8), pos: usize) usize {
-        // var ret = 0;
+        // TODO: can prolly have a short-circuit of pos>width -> line.items.len + pos - width
+        // NOTE: above path is prolly the most likely just because we always appending
+
         var cpos = 0;
         var i = 0;
         while (cpos < pos) {
@@ -130,6 +132,7 @@ const BoxContext = struct {
     fn setCharAt(self: *BoxContext, x: usize, y: usize, char: u8, color: hl.HlAttrs) void {
         self.ensureLineExists(y);
         const sizeDiff = x + 1 - self.lines.items[y].items.len;
+        // TODO: handle mutlibyte chars overwriting single byte chars or vice-versa
         self.lines.items[y].appendNTimes(' ', sizeDiff);
         self.hls.items[y].appendNTimes(self.hl, sizeDiff);
         self.lines.items[y].items[x] = char;

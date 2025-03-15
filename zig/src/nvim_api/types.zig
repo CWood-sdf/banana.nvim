@@ -1,3 +1,5 @@
+pub const Buffer = enum(c_int) { _ };
+pub const Window = enum(c_int) { _ };
 pub const ObjectKind = enum(c_int) {
     Nil = 0,
     Boolean = 1,
@@ -19,7 +21,7 @@ pub const LuaRef = c_int;
 pub const String = extern struct {
     data: [*]allowzero const u8,
     size: u64,
-    pub fn fromSlice(slice: []u8) String {
+    pub fn fromSlice(slice: []const u8) String {
         return .{
             .data = slice.ptr,
             .size = slice.len,
@@ -66,10 +68,7 @@ pub fn boolObject(val: Boolean) Object {
     return Object{ .type = .Boolean, .data = .{ .boolean = val } };
 }
 pub fn makeString(val: []const u8) String {
-    return String{
-        .data = val.ptr,
-        .size = val.len,
-    };
+    return String.fromSlice(val);
 }
 
 pub fn stringObject(val: []const u8) Object {
@@ -95,7 +94,7 @@ pub const Error = extern struct {
     msg: [*]allowzero const u8,
 };
 
-pub const ZError = error{ErrorType};
+pub const NvimError = error{Exception, Validation};
 
 pub const Arena = extern struct {
     current_block: [*]const u8,

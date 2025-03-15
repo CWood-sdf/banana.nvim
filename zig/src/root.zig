@@ -1,6 +1,5 @@
 const std = @import("std");
 const testing = std.testing;
-const box = @import("box.zig");
 
 // const booo: ?box.Box = null;
 
@@ -31,11 +30,6 @@ fn getPos(row: u32, column: u32) u32 {
     return (row - 1) * columnLimit + (column - 1);
 }
 
-export fn context_getNew() callconv(.C) usize {
-    const ret = box.getNewContext() catch return 0;
-    return ret + 1;
-}
-
 // extern fn malloc(size: c_int) callconv(.C) *anyopaque;
 // extern fn free(ptr: *anyopaque) callconv(.C) void;
 
@@ -51,6 +45,7 @@ export fn turnOnRange(bs: *BitSetSection, rowStart: u32, colStart: u32, rowEnd: 
     }
     return true;
 }
+
 export fn getNew() callconv(.C) void {
     bitSet.setRangeValue(.{ .start = 0, .end = rowLimit * columnLimit }, false);
     // bitSet.setRange(0, rowLimit * columnLimit, false);
