@@ -28,6 +28,11 @@ pub fn build(b: *std.Build) void {
     // This declares intent for the library to be installed into the standard
     // location when the user invokes the "install" step (the default step when
     // running `zig build`).
+    b.getInstallStep().dependOn(&b.addInstallArtifact(libbanana, .{
+        .dest_dir = .{
+            .override = .{ .custom = "../../lua/banana/" },
+        },
+    }).step);
     b.installArtifact(libbanana);
 
     const exe = b.addExecutable(.{

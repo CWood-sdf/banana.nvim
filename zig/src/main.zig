@@ -1,24 +1,9 @@
 const std = @import("std");
 const hl = @import("hl.zig");
-// const asdf = @cImport({
-//     // @cDefine("DEFINE_FUNC_ATTRIBUTES", "");
-//     // @cDefine("DEFINE_EMPTY_ATTRIBUTES", "");
-//     @cInclude("nvim/api/autocmd.h");
-// });
 
 pub fn main() !void {
-    var h = hl.HlAttrs{};
-    std.debug.print("{d}\n", .{h.rgb_ae_attr});
-    const str = "underdashed";
-    const str2 = "bold";
-    hl.setHlBool(&h, str[0..], true);
-    std.debug.print("{d}\n", .{h.rgb_ae_attr});
-    hl.setHlBool(&h, str[0..], false);
-    std.debug.print("{d}\n", .{h.rgb_ae_attr});
-    hl.setHlBool(&h, str2[0..], true);
-    std.debug.print("{d}\n", .{h.rgb_ae_attr});
-    hl.setHlBool(&h, str[0..], true);
-    std.debug.print("{d}\n", .{h.rgb_ae_attr});
+    var grp: hl.HlAttrs = .{};
+    hl.setHlValue(&grp, "force", true);
 }
 
 test "simple test" {

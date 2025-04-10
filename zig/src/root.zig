@@ -1,10 +1,16 @@
 const std = @import("std");
+const lua = @import("lua_api/lua.zig");
+const b4 = @import("box4.zig");
 const testing = std.testing;
-
-// const booo: ?box.Box = null;
 
 export fn add(a: i32, b: i32) i32 {
     return a + b;
+}
+
+export fn luaopen_banana_libbanana(state: *lua.LuaState) c_int {
+    _ = state;
+    std.debug.print("yoo", .{});
+    return 0;
 }
 
 export fn addToString(str: [*:0]u8) void {
@@ -15,6 +21,14 @@ export fn addToString(str: [*:0]u8) void {
         }
         i += 1;
     }
+}
+
+export fn contextThing() void {
+    var ctx = b4.BoxContext.init(std.heap.page_allocator);
+    defer ctx.deinit();
+
+    var box = b4.Box.newBoxFromContext(&ctx, .{});
+    box.appendStr(@as([]const u8, "asdf")) catch return;
 }
 
 const rowLimit = 300;

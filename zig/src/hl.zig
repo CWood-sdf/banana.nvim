@@ -1,5 +1,7 @@
 const std = @import("std");
+const tp = @import("nvim_api/types.zig");
 const zero = std.mem.zeroes;
+
 pub const RgbValue = i32;
 pub const HlAttrFlags = enum(u16) {
     INVERSE = 0x01,
@@ -23,17 +25,73 @@ pub const HlAttrFlags = enum(u16) {
     DEFAULT = 0x2000,
     GLOBAL = 0x4000,
 };
+pub const OptionalKeys = u64;
+pub const HLGroupID = enum(tp.Integer) { _ };
+pub const Masks = struct {
+    const bg = 1;
+    const fg = 2;
+    const sp = 3;
+    const url = 4;
+    const bold = 5;
+    const link = 6;
+    const blend = 7;
+    const cterm = 8;
+    const force = 9;
+    const italic = 10;
+    const special = 11;
+    const ctermbg = 12;
+    const ctermfg = 13;
+    const default = 14;
+    const altfont = 15;
+    const reverse = 16;
+    const fallback = 17;
+    const standout = 18;
+    const nocombine = 19;
+    const undercurl = 20;
+    const underline = 21;
+    const background = 22;
+    const bg_indexed = 23;
+    const foreground = 24;
+    const fg_indexed = 25;
+    const global_link = 26;
+    const underdashed = 27;
+    const underdotted = 28;
+    const underdouble = 29;
+    const strikethrough = 30;
+};
 pub const HlAttrs = extern struct {
-    rgb_ae_attr: u16 = zero(u16),
-    cterm_ae_attr: u16 = zero(u16),
-    // so we have 24 bits for rgb, that means we can use first 8 bits (sign bit + other) to store special info
-    rgb_fg_color: RgbValue = zero(RgbValue),
-    rgb_bg_color: RgbValue = zero(RgbValue),
-    rgb_sp_color: RgbValue = zero(RgbValue),
-    cterm_fg_color: i16 = zero(i16),
-    cterm_bg_color: i16 = zero(i16),
-    hl_blend: i32 = zero(i32),
-    linkid: u16 = 0,
+    is_set__highlight_: OptionalKeys = 0,
+    bold: tp.Boolean = false,
+    standout: tp.Boolean = false,
+    strikethrough: tp.Boolean = false,
+    underline: tp.Boolean = false,
+    undercurl: tp.Boolean = false,
+    underdouble: tp.Boolean = false,
+    underdotted: tp.Boolean = false,
+    underdashed: tp.Boolean = false,
+    italic: tp.Boolean = false,
+    reverse: tp.Boolean = false,
+    altfont: tp.Boolean = false,
+    nocombine: tp.Boolean = false,
+    default: tp.Boolean = false,
+    cterm: tp.Union(.{ tp.Integer, tp.String }) = tp.nilObject(),
+    foreground: tp.Union(.{ tp.Integer, tp.String }) = tp.nilObject(),
+    fg: tp.Union(.{ tp.Integer, tp.String }) = tp.nilObject(),
+    background: tp.Union(.{ tp.Integer, tp.String }) = tp.nilObject(),
+    bg: tp.Union(.{ tp.Integer, tp.String }) = tp.nilObject(),
+    ctermfg: tp.Union(.{ tp.Integer, tp.String }) = tp.nilObject(),
+    ctermbg: tp.Union(.{ tp.Integer, tp.String }) = tp.nilObject(),
+    special: tp.Union(.{ tp.Integer, tp.String }) = tp.nilObject(),
+    sp: tp.Union(.{ tp.Integer, tp.String }) = tp.nilObject(),
+    link: HLGroupID = @enumFromInt(0),
+    global_link: HLGroupID = @enumFromInt(0),
+    fallback: tp.Boolean = false,
+    blend: tp.Integer = 0,
+    fg_indexed: tp.Boolean = false,
+    bg_indexed: tp.Boolean = false,
+    force: tp.Boolean = false,
+    url: tp.String = tp.String.fromSlice(@as([]const u8, "")),
+
     pub const gradTop: u32 = 0x80000000;
 };
 
@@ -48,31 +106,11 @@ fn lowercase(comptime str: []const u8) []u8 {
     return ret[0..];
 }
 
-pub fn setHlBool(hl: *HlAttrs, name: []const u8, value: bool) void {
-    const enumInfo = @typeInfo(HlAttrFlags);
-    const info =
-        comptime switch (enumInfo) {
-        .Enum => |v| v,
-        else => unreachable,
-    };
-    inline for (info.fields) |idk| {
-        if (std.ascii.eqlIgnoreCase(name, idk.name)) {
-            if (value) {
-                hl.rgb_ae_attr |= idk.value;
-            } else {
-                hl.rgb_ae_attr &= 0xffff ^ idk.value;
-            }
-            break;
-        }
-    }
+pub fn setHlValue(hl: *HlAttrs, comptime name: []const u8, value: @FieldType(HlAttrs, name)) void {
+    @field(hl, name) = value;
+    hl.is_set__highlight_ |= 1 << @field(Masks, name);
 }
 
-pub fn setHlGrad(hl: *HlAttrs, gradid: u16, fg: bool) void {
-    if (fg) {
-        hl.rgb_fg_color = HlAttrs.gradTop;
-        hl.rgb_fg_color |= gradid;
-    } else {
-        hl.rgb_bg_color = HlAttrs.gradTop;
-        hl.rgb_bg_color |= gradid;
-    }
+pub fn clearHlValue(hl: *HlAttrs, comptime name: []const u8) void {
+    hl.is_set__highlight_ &= ~(1 << @field(Masks, name));
 }

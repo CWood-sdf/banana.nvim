@@ -2,8 +2,8 @@ const tp = @import("./types.zig");
 
 pub extern fn nvim_strwidth(str: tp.String, err: *tp.Error) callconv(.C) tp.Integer;
 
-pub fn z_nvim_strwidth(str: []u8) tp.NvimError!tp.Integer {
-    const err = tp.Error{ .type = .None, .msg = 0 };
+pub fn z_nvim_strwidth(str: []const u8) tp.NvimError!tp.Integer {
+    var err = tp.Error{ .type = .None, .msg = @ptrFromInt(0) };
 
     const ret = nvim_strwidth(tp.String.fromSlice(str), &err);
 
@@ -12,8 +12,9 @@ pub fn z_nvim_strwidth(str: []u8) tp.NvimError!tp.Integer {
     // }
     if (err.type != .None) {
         switch (err.type) {
-            .Exception => return NvimError.Exception,
-            .Validation => return NvimError.Validation,
+            .Exception => return tp.NvimError.Exception,
+            .Validation => return tp.NvimError.Validation,
+            else => {},
         }
     }
     return ret;

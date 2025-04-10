@@ -94,10 +94,13 @@ pub const Error = extern struct {
     msg: [*]allowzero const u8,
 };
 
-pub const NvimError = error{Exception, Validation};
+pub const NvimError = error{ Exception, Validation };
 
 pub const Arena = extern struct {
     current_block: [*]const u8,
     pos: usize,
     size: usize,
 };
+pub fn Union(_: anytype) type {
+    return Object;
+}
