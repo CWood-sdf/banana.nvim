@@ -1,7 +1,7 @@
 local M = {}
 
 ---@module 'banana.box'
-local b = require('banana.lazyRequire')('banana.box')
+local b = require("banana.lazyRequire")("banana.box")
 
 ---@param msg string
 ---@return Banana.Box
