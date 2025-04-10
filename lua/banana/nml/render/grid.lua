@@ -1,3 +1,15 @@
+--- TODO: The grid rendering system needs to be reworked (again) to allow for
+--- auto-size columns. the rework would be somewhat minimal (compared to what's
+--- already happened with these functions). it would just be like render the
+--- auto size ones first, then compute widths for everything else, then render
+--- everything else, then combine into one rendering area. Doing things this way
+--- would also allow more complicated values for grid-template-columns (like
+--- minmax functions or something)
+
+--- TODO: Basically we just need to first lay out all the elements (grid
+--- placement) then determine column widths in order of priority (eg static
+--- sized, then auto sized, then ..., then finally distribute to the fr)
+
 ---@module 'banana.utils.debug_flame'
 local flame = require("banana.lazyRequire")("banana.utils.debug_flame")
 ---@module 'banana.utils.log'
@@ -34,7 +46,6 @@ local ffi = require("banana.lazyRequire")("ffi")
 ---@field name string
 ---@field claimants number[]
 ---@field prevLink Banana.Renderer.GridTemplate?
-
 
 ---@param templ Banana.Renderer.GridTemplate
 ---@param fix boolean
