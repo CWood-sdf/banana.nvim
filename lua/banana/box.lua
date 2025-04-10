@@ -490,6 +490,9 @@ function M.Box:appendWord(str, style, strat)
     end
 end
 
+---This function is *ONLY* used for splitting things.
+--- TODO: Delete in favor of box managed splitting
+---
 ---@param i number
 ---@return Banana.Line?
 function M.Box:getLine(i)
