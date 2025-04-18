@@ -92,6 +92,39 @@ nml {
 
 
 describe("Grid test", function ()
+    it("speed test", function ()
+        local start = vim.fn.reltime()
+        for i = 1, 100 do
+            local inst = require("banana.instance").emptyInstance()
+            inst:useNml(code)
+            inst.DEBUG = false
+            inst.stripRight = false
+            inst:open()
+            inst:querySelectorAll(".grid")[1]:addClass("grid-template-both")
+            h.createElements({
+                "div#a:a",
+                "div#b.column-defined-2:b",
+                "div#c.column-defined-2:c",
+                "div#d:d",
+                "div#e:e",
+                "div#f:f",
+            }, inst, inst:querySelectorAll(".grid")[1])
+
+            local expectedMap = {
+                "          ",
+                "a~b~!!!!!!",
+                "~~~~!!!!!!",
+                "~~~~!!!!!!",
+                "!!c~d~e~f~",
+                "!!~~~~~~~~",
+                "!!~~~~~~~~",
+            }
+            inst:forceRerender()
+            h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
+            h.assertGridBoundsMatch(expectedMap, inst)
+        end
+        print(vim.fn.reltimestr(vim.fn.reltime(start)))
+    end)
     it("cursor weirdness", function ()
         local inst = require("banana.instance").emptyInstance()
         inst:useNml(code)

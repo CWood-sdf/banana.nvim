@@ -19,6 +19,7 @@ local M = {}
 local b = require("banana.lazyRequire")("banana.box")
 ---@module 'ffi'
 local ffi = require("banana.lazyRequire")("ffi")
+local so = require("banana.lazyRequire")("banana.libbanana")
 -- ---@module 'banana.ncss.unit'
 -- local unit = require("banana.lazyRequire")("banana.ncss.unit")
 
@@ -246,6 +247,10 @@ local function getTemplates(values, sizeInDirection, start, min, isCol, ast, gap
     end
     return ret
 end
+local function actualRender(ast, parentHl, parentWidth, parentHeight, startX,
+                            startY, inherit, extra)
+
+end
 
 --- renders an element with display:grid
 ---@param ast Banana.Ast
@@ -262,8 +267,7 @@ function M.render(ast, parentHl, parentWidth, parentHeight, startX,
     flame.new("TagInfo:renderGridBlock")
     local insert = table.insert
     local hl = ast:_mixHl(parentHl)
-    local so = M.getGridSo()
-    local thing = so.getNew()
+    local thing = so.grid_getNew()
 
     -- the plan is basically to arrange the grid elements in the places that
     -- they absolutely have to be (eg grid-row or grid-column specified)
@@ -383,7 +387,7 @@ function M.render(ast, parentHl, parentWidth, parentHeight, startX,
         renderOrder[i] = preRender
         maxRow = math.max(maxRow, endRow - 1)
         maxCol = math.max(maxCol, endCol - 1)
-        so.turnOnRange(thing, row, col, endRow, endCol)
+        so.grid_turnOnRange(thing, row, col, endRow, endCol)
         ::continue::
     end
     local j = 1
@@ -427,7 +431,7 @@ function M.render(ast, parentHl, parentWidth, parentHeight, startX,
             for c = column + colSpan - 1, column, -1 do
                 for r = startRow, endRow - 1 do
                     -- lazy load in rows
-                    local enabled = so.isEnabled(thing, r, c)
+                    local enabled = so.grid_isEnabled(thing, r, c)
                     if enabled ~= 0 then
                         column = c + 1
                         shouldBreak = true
@@ -453,7 +457,7 @@ function M.render(ast, parentHl, parentWidth, parentHeight, startX,
         maxRow = math.max(endRow - 1, maxRow)
         maxCol = math.max(column + colSpan - 1, maxCol)
 
-        so.turnOnRange(thing, startRow, column, endRow,
+        so.grid_turnOnRange(thing, startRow, column, endRow,
             column + colSpan)
         j = j + 4
     end
@@ -505,7 +509,7 @@ function M.render(ast, parentHl, parentWidth, parentHeight, startX,
         while not done do
             for r = row, row + rowSpan - 1 do
                 for c = column, column + colSpan - 1 do
-                    if so.isEnabled(thing, r, c) ~= 0 then
+                    if so.grid_isEnabled(thing, r, c) ~= 0 then
                         if colDefined then
                             row = r + 1
                         else
@@ -540,7 +544,7 @@ function M.render(ast, parentHl, parentWidth, parentHeight, startX,
             ast = node,
         }
         renderOrder[i] = preRender
-        so.turnOnRange(thing, row, column, row + rowSpan,
+        so.grid_turnOnRange(thing, row, column, row + rowSpan,
             column + colSpan)
         j = j + 4
     end
@@ -557,7 +561,7 @@ function M.render(ast, parentHl, parentWidth, parentHeight, startX,
     local rows = ast:_allStylesFor("grid-template-rows")
     rowTemplates = getTemplates(rows, parentHeight, 0, maxRow, false, ast,
         rowGap)
-    so.freeSection(thing)
+    so.grid_freeSection(thing)
     local columnLimit = 300
     local rowLimit = 300
     if #columnTemplates > columnLimit then

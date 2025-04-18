@@ -8,6 +8,7 @@ pub const Number = f64;
 extern fn lua_gettop(L: *State) callconv(.C) c_int;
 pub const get_top = lua_gettop;
 
+// stack get functions {
 extern fn lua_tonumber(L: *State, index: c_int) callconv(.C) Number;
 pub const to_number = lua_tonumber;
 pub fn to_int(L: *State, index: c_int) i64 {
@@ -26,6 +27,11 @@ pub fn to_slice(L: *State, index: c_int) []const u8 {
     const chars = to_lstring(L, index, &len);
     return chars[0..len];
 }
+extern fn lua_topointer(L: *State, index: c_int) callconv(.C) *const anyopaque;
+pub const to_pointer = lua_topointer;
+extern fn lua_touserdata(L: *State, index: c_int) callconv(.C) *anyopaque;
+pub const to_userdata = lua_touserdata;
+// }
 
 // stack checking functions {
 extern fn lua_isboolean(L: *State, index: c_int) callconv(.C) c_int;
@@ -56,9 +62,9 @@ pub fn is_cfunction(L: *State, index: c_int) bool {
 // pub fn is_function(L: *State, index: c_int) bool {
 //     return lua_isfunction(L, index) != 0;
 // }
-extern fn lua_islightuserdata(L: *State, index: c_int) callconv(.C) c_int;
-pub fn is_lightuserdata(L: *State, index: c_int) bool {
-    return lua_islightuserdata(L, index) != 0;
+extern fn lua_isuserdata(L: *State, index: c_int) callconv(.C) c_int;
+pub fn is_userdata(L: *State, index: c_int) bool {
+    return lua_isuserdata(L, index) != 0;
 }
 extern fn lua_isnoneornil(L: *State, index: c_int) callconv(.C) c_int;
 pub fn is_noneornil(L: *State, index: c_int) bool {
@@ -77,6 +83,8 @@ pub fn is_thread(L: *State, index: c_int) bool {
 // stach pushing functions {
 extern fn lua_pushvalue(L: *State, index: c_int) callconv(.C) void;
 pub const push_value = lua_pushvalue;
+extern fn lua_pushlightuserdata(L: *State, ptr: *anyopaque) callconv(.C) void;
+pub const push_lightuserdata = lua_pushlightuserdata;
 
 extern fn lua_pushnumber(L: *State, n: Number) callconv(.C) void;
 pub const push_number = lua_pushnumber;
