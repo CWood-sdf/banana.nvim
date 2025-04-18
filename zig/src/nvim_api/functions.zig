@@ -30,3 +30,21 @@ pub extern fn nvim_buf_set_lines(
     arena: *tp.Arena,
     err: *tp.Error,
 ) void;
+
+pub extern fn nvim_buf_add_highlight(
+    buf: tp.Buffer,
+    ns_id: tp.Integer,
+    hl_group: tp.String,
+    line: tp.Integer,
+    col_start: tp.Integer,
+    col_end: tp.Integer,
+    err: *tp.Error,
+) tp.Integer;
+
+pub extern fn nvim_buf_clear_namespace(
+    buf: tp.Buffer,
+    ns_id: tp.Integer,
+    line_start: tp.Integer,
+    line_end: tp.Integer,
+    err: *tp.Error,
+) void;

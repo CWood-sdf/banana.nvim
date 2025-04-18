@@ -6,9 +6,11 @@ const consts = @import("nvim_api/constants.zig");
 const fns = @import("nvim_api/functions.zig");
 const tps = @import("nvim_api/types.zig");
 
+const Highlight = u32;
+
 const Line = struct {
     chars: std.ArrayListUnmanaged(u8),
-    hls: std.ArrayListUnmanaged(Hl.HlAttrs),
+    hls: std.ArrayListUnmanaged(Highlight),
     width: u32,
 
     pub fn init() Line {
@@ -22,7 +24,7 @@ const Line = struct {
         self.chars.deinit(alloc);
         self.hls.deinit(alloc);
     }
-    pub fn appendWord(self: *Line, ctx: *BoxContext, str: []const u8, hl: Hl.HlAttrs) !void {
+    pub fn appendWord(self: *Line, ctx: *BoxContext, str: []const u8, hl: Highlight) !void {
         const width = try fns.z_nvim_strwidth(str);
         try self.chars.appendSlice(ctx.alloc, str);
         self.hls.appendNTimes(ctx.alloc, hl, str.len) catch |e| {
@@ -36,7 +38,7 @@ const Line = struct {
         self: *Line,
         ctx: *BoxContext,
         char: u8,
-        hl: Hl.HlAttrs,
+        hl: Highlight,
         n: u32,
     ) !void {
         try self.chars.appendNTimes(ctx.alloc, char, n);
@@ -84,7 +86,7 @@ pub const BoxContext = struct {
         self.lines.deinit(self.alloc);
         self.boxes.deinit(self.alloc);
     }
-    pub fn stripRightSpace(self: *BoxContext, expectedBg: Hl.HlAttrs) !void {
+    pub fn stripRightSpace(self: *BoxContext, expectedBg: Highlight) !void {
         _ = self; // autofix
         _ = expectedBg; // autofix
     }
@@ -132,6 +134,40 @@ pub const BoxContext = struct {
             }
         }
     }
+    pub fn highlight(self: *BoxContext, L: *lua.State) !void {
+        // if (!lua.is_function(L, 1)) {
+        //     return error.NotAFunction;
+        // }
+        for (self.lines.items, 0..) |line, row| {
+            if (line.hls.items.len == 0) {
+                continue;
+            }
+            var startCol: u32 = 0;
+            var currentHl: Highlight = line.hls.items[0];
+            for (line.hls.items, 0..) |hl, col| {
+                if (currentHl != hl) {
+                    if (currentHl != 0) {
+                        lua.push_value(L, 1);
+                        lua.push_int(L, @intCast(row));
+                        lua.push_int(L, @intCast(startCol));
+                        lua.push_int(L, @intCast(col));
+                        lua.push_int(L, @intCast(currentHl));
+                        lua.call(L, 4, 0);
+                    }
+                    currentHl = hl;
+                    startCol = @intCast(col);
+                }
+            }
+            if (startCol != line.hls.items.len - 1 and currentHl != 0) {
+                lua.push_value(L, 1);
+                lua.push_int(L, @intCast(row));
+                lua.push_int(L, @intCast(startCol));
+                lua.push_int(L, @intCast(line.hls.items.len));
+                lua.push_int(L, @intCast(currentHl));
+                lua.call(L, 4, 0);
+            }
+        }
+    }
 };
 
 pub const Box = extern struct {
@@ -143,7 +179,7 @@ pub const Box = extern struct {
     height: u32,
     dirty: bool,
     currentLine: u32,
-    hlgroup: Hl.HlAttrs,
+    hlgroup: Highlight,
     // TODO: Need to work on this
     // pub fn insertGradientMarker(){}
     // pub fn setGradientSize(){}
@@ -151,8 +187,8 @@ pub const Box = extern struct {
     // TODO: Internal behavior
     // pub fn fillString(width){}
 
-    pub fn newBoxFromContext(ctx: *BoxContext, hlgroup: Hl.HlAttrs) Box {
-        // @compileLog(std.fmt.comptimePrint("{}\n", .{@sizeOf(Hl.HlAttrs)}));
+    pub fn newBoxFromContext(ctx: *BoxContext, hlgroup: Highlight) Box {
+        // @compileLog(std.fmt.comptimePrint("{}\n", .{@sizeOf(Highlight)}));
         return .{
             .height = 0,
             .context = ctx,
@@ -172,6 +208,20 @@ pub const Box = extern struct {
             .context = self.context,
             .offsetX = self.offsetX + x,
             .offsetY = self.offsetY + y,
+            .width = 0,
+            .maxWidth = std.math.maxInt(@FieldType(Box, "width")),
+            .dirty = false,
+            .hlgroup = self.hlgroup,
+        };
+    }
+
+    pub fn newBoxRightOf(self: *Box) Box {
+        return .{
+            .currentLine = 0,
+            .height = 0,
+            .context = self.context,
+            .offsetX = self.offsetX + self.width,
+            .offsetY = self.offsetY,
             .width = 0,
             .maxWidth = std.math.maxInt(@FieldType(Box, "width")),
             .dirty = false,
@@ -277,7 +327,7 @@ pub const Box = extern struct {
     //     self.appendStr_internal(str[0..len]) catch return false;
     //     return true;
     // }
-    pub fn appendWord(self: *Box, str: []const u8, style: Hl.HlAttrs) !void {
+    pub fn appendWord(self: *Box, str: []const u8, style: Highlight) !void {
         const line = self.context.getLine(self.currentLine + self.offsetY);
         try line.?.appendWord(self.context, str, style);
     }
@@ -299,6 +349,21 @@ pub const Box = extern struct {
         _ = top; // autofix
     }
 };
+
+pub fn get_context(ctx: u32) ?*BoxContext {
+    if (ctx >= contexts.items.len) {
+        return null;
+    }
+    if (contexts.items[ctx]) |*c| return c;
+    return null;
+}
+
+pub export fn get_box(ctx: u32, box: u32) ?*Box {
+    const context = get_context(ctx) orelse return null;
+    return context.getBox(box);
+}
+
+// new context {
 pub export fn box_new_context() i32 {
     for (contexts.items, 0..) |item, i| {
         if (item) |_| continue;
@@ -317,6 +382,9 @@ pub fn lua_new_context(state: *lua.State) callconv(.C) c_int {
     return 1;
 }
 
+// }
+
+// delete context {
 pub export fn box_delete_context(ctx: u32) bool {
     if (ctx >= contexts.items.len) {
         return false;
@@ -334,6 +402,10 @@ pub fn lua_delete_context(state: *lua.State) callconv(.C) c_int {
         lua.push_boolean(state, @intFromBool(false));
         return 1;
     }
+    if (!lua.is_number(state, 1)) {
+        lua.push_bool(state, false);
+        return 1;
+    }
     const indexFloat = lua.to_number(state, 1);
     const index: u32 = @intFromFloat(indexFloat);
     const ret = box_delete_context(index);
@@ -341,13 +413,9 @@ pub fn lua_delete_context(state: *lua.State) callconv(.C) c_int {
     return 1;
 }
 
-pub fn get_context(ctx: u32) ?*BoxContext {
-    if (ctx >= contexts.items.len) {
-        return null;
-    }
-    if (contexts.items[ctx]) |*c| return c;
-    return null;
-}
+// }
+
+// context exists {
 pub export fn box_context_exists(ctx: u32) bool {
     if (ctx >= contexts.items.len) {
         return false;
@@ -361,13 +429,19 @@ pub fn lua_context_exists(state: *lua.State) callconv(.C) c_int {
         lua.push_boolean(state, @intFromBool(false));
         return 1;
     }
-    const indexFloat = lua.to_number(state, 1);
-    const index: u32 = @intFromFloat(indexFloat);
+    if (!lua.is_number(state, 1)) {
+        lua.push_boolean(state, @intFromBool(false));
+        return 1;
+    }
+    const index = lua.to_cast_int(state, 1, u32);
+    // const index: u32 = @intFromFloat(indexFloat);
     const ret = box_context_exists(index);
     lua.push_boolean(state, @intFromBool(ret));
     return 1;
 }
+// }
 
+// context render {
 pub export fn box_context_render(ctx: u32, buf: u32) bool {
     const context = get_context(ctx) orelse return false;
     context.render(buf) catch return false;
@@ -380,13 +454,53 @@ pub fn lua_context_render(L: *lua.State) callconv(.C) c_int {
         lua.push_bool(L, false);
         return 1;
     }
+    if (!lua.is_number(L, 1)) {
+        lua.push_bool(L, false);
+        return 1;
+    }
+    if (!lua.is_number(L, 2)) {
+        lua.push_bool(L, false);
+        return 1;
+    }
     const ctx = lua.to_int(L, 1);
     const buf = lua.to_int(L, 2);
     const ret = box_context_render(@intCast(ctx), @intCast(buf));
     lua.push_bool(L, ret);
     return 1;
 }
-pub export fn box_new_from_ctx(ctx: u32, hlgroup: Hl.HlAttrs) i32 {
+
+pub fn lua_context_highlight(L: *lua.State) callconv(.C) c_int {
+    const numArgs = lua.get_top(L);
+    if (numArgs != 2) {
+        lua.push_bool(L, false);
+        return 1;
+    }
+    // if (!lua.is_function(L, 1)) {
+    //     lua.push_bool(L, false);
+    //     return 1;
+    // }
+    if (!lua.is_number(L, 2)) {
+        lua.push_bool(L, false);
+        return 1;
+    }
+
+    const ctx = lua.to_cast_int(L, 2, u32);
+    const context = get_context(ctx);
+    if (context == null) {
+        lua.push_bool(L, false);
+        return 1;
+    }
+    context.?.highlight(L) catch {
+        lua.push_bool(L, false);
+        return 1;
+    };
+    lua.push_bool(L, false);
+    return 1;
+}
+// }
+
+// new box from ctx {
+pub export fn box_new_from_ctx(ctx: u32, hlgroup: Highlight) i32 {
     const context = &contexts.items[ctx].?;
     const ret = context.newBox(Box.newBoxFromContext(context, hlgroup));
     if (ret) |r| return @intCast(r);
@@ -399,14 +513,20 @@ pub fn lua_new_from_ctx(L: *lua.State) callconv(.C) c_int {
         lua.push_number(L, @floatFromInt(-1));
         return 1;
     }
-    const ctxFloat = lua.to_number(L, 1);
-    const ctx: u32 = @intFromFloat(ctxFloat);
-    const ret = box_new_from_ctx(ctx, .{});
+    if (!lua.is_number(L, 1)) {
+        lua.push_number(L, @floatFromInt(-1));
+        return 1;
+    }
+    const ctx = lua.to_cast_int(L, 1, u32);
+    const ret = box_new_from_ctx(ctx, 0);
     lua.push_number(L, @floatFromInt(ret));
     return 1;
 }
+// }
+
+// new box from offset {
 pub export fn box_new_from_offset(ctx: u32, box: u32, x: u32, y: u32) i32 {
-    const self = box_get(ctx, box) orelse return -1;
+    const self = get_box(ctx, box) orelse return -1;
     const ret = self.context.newBox(self.newBoxFromOffset(x, y));
     if (ret) |r| return @intCast(r);
     return -1;
@@ -418,6 +538,22 @@ pub fn lua_new_from_offset(L: *lua.State) callconv(.C) c_int {
         lua.push_int(L, -1);
         return 1;
     }
+    if (!lua.is_number(L, 1)) {
+        lua.push_int(L, -1);
+        return 1;
+    }
+    if (!lua.is_number(L, 2)) {
+        lua.push_int(L, -1);
+        return 1;
+    }
+    if (!lua.is_number(L, 3)) {
+        lua.push_int(L, -1);
+        return 1;
+    }
+    if (!lua.is_number(L, 4)) {
+        lua.push_int(L, -1);
+        return 1;
+    }
     const ctx = lua.to_int(L, 1);
     const box = lua.to_int(L, 2);
     const x = lua.to_int(L, 3);
@@ -426,6 +562,37 @@ pub fn lua_new_from_offset(L: *lua.State) callconv(.C) c_int {
     lua.push_int(L, ret);
     return 1;
 }
+// }
+
+// new box right {
+pub export fn box_new_right_from(ctx: u32, box: u32) i32 {
+    const self = get_box(ctx, box) orelse return -1;
+    const ret = self.context.newBox(self.newBoxRightOf());
+    if (ret) |r| return @intCast(r);
+    return -1;
+}
+pub fn lua_new_right(L: *lua.State) callconv(.C) c_int {
+    const numArgs = lua.get_top(L);
+    if (numArgs != 2) {
+        lua.push_int(L, -1);
+        return 1;
+    }
+    if (!lua.is_number(L, 1)) {
+        lua.push_int(L, -1);
+        return 1;
+    }
+    if (!lua.is_number(L, 2)) {
+        lua.push_int(L, -1);
+        return 1;
+    }
+
+    const ctx = lua.to_int(L, 1);
+    const box = lua.to_int(L, 2);
+    const ret = box_new_right_from(@intCast(ctx), @intCast(box));
+    lua.push_int(L, ret);
+    return 1;
+}
+// }
 
 // prettry sure this is only used for canvas
 pub export fn box_shrink_width_to(self: *Box, width: u32) bool {
@@ -462,15 +629,10 @@ pub fn box_clean(self: *Box) bool {
 }
 
 // *kinda* one of the most needed low level apis
-
+// append str {
 pub export fn box_append_str(self: *Box, str: [*]const u8, len: u32) bool {
     self.appendStr(str[0..len]) catch return false;
     return true;
-}
-
-pub export fn box_get(ctx: u32, box: u32) ?*Box {
-    const context = get_context(ctx) orelse return null;
-    return context.getBox(box);
 }
 
 pub fn lua_append_str(L: *lua.State) callconv(.C) c_int {
@@ -479,11 +641,23 @@ pub fn lua_append_str(L: *lua.State) callconv(.C) c_int {
         lua.push_boolean(L, @intFromBool(false));
         return 1;
     }
+    if (!lua.is_number(L, 1)) {
+        lua.push_boolean(L, @intFromBool(false));
+        return 1;
+    }
+    if (!lua.is_number(L, 2)) {
+        lua.push_boolean(L, @intFromBool(false));
+        return 1;
+    }
+    if (!lua.is_string(L, 3)) {
+        lua.push_boolean(L, @intFromBool(false));
+        return 1;
+    }
     const ctxFloat = lua.to_number(L, 1);
     const ctx: u32 = @intFromFloat(ctxFloat);
     const boxFloat = lua.to_number(L, 2);
     const boxIndex: u32 = @intFromFloat(boxFloat);
-    const box = box_get(ctx, boxIndex);
+    const box = get_box(ctx, boxIndex);
     const str = lua.to_slice(L, 3);
     // std.debug.print("SLICE: {s}\n", .{str});
 
@@ -498,13 +672,50 @@ pub fn lua_append_str(L: *lua.State) callconv(.C) c_int {
     lua.push_bool(L, true);
     return 1;
 }
+// }
 
 // pub fn appendStr(elf: *Box, str: [*]const u8, len: u32) bool {
 //     self.appendStr_internal(str[0..len]) catch return false;
 //     return true;
 // }
 
-pub export fn box_append_word(self: *Box, str: [*]const u8, len: u32, style: Hl.HlAttrs) bool {
+// set hl {
+pub export fn box_set_hl(self: *Box, style: Highlight) void {
+    self.hlgroup = style;
+}
+pub fn lua_set_hl(L: *lua.State) callconv(.C) c_int {
+    const numArgs = lua.get_top(L);
+    if (numArgs != 3) {
+        lua.push_bool(L, false);
+        return 1;
+    }
+    if (!lua.is_number(L, 1)) {
+        lua.push_bool(L, false);
+        return 1;
+    }
+    if (!lua.is_number(L, 2)) {
+        lua.push_bool(L, false);
+        return 1;
+    }
+    if (!lua.is_number(L, 3)) {
+        lua.push_bool(L, false);
+        return 1;
+    }
+    const ctx = lua.to_cast_int(L, 1, u32);
+    const boxId = lua.to_cast_int(L, 2, u32);
+    const hl = lua.to_cast_int(L, 3, u32);
+    const box = get_box(ctx, boxId);
+    if (box == null) {
+        lua.push_bool(L, false);
+        return 1;
+    }
+    box.?.hlgroup = hl;
+    lua.push_bool(L, true);
+    return 1;
+}
+// }
+
+pub export fn box_append_word(self: *Box, str: [*]const u8, len: u32, style: Highlight) bool {
     self.appendWord(str[0..len], style) catch return false;
     return true;
 }
@@ -515,7 +726,7 @@ pub export fn box_append_word(self: *Box, str: [*]const u8, len: u32, style: Hl.
 
 // pub fn appendBoxBelow(box, expand){}
 
-pub export fn box_strip_right_space(ctx: u32, expected_bg: Hl.HlAttrs) bool {
+pub export fn box_strip_right_space(ctx: u32, expected_bg: Highlight) bool {
     const context = &contexts.items[ctx].?;
     context.stripRightSpace(expected_bg) catch return false;
     return true;

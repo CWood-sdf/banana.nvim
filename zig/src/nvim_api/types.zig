@@ -92,14 +92,23 @@ pub const ErrorType = enum(c_int) {
 pub const Error = extern struct {
     type: ErrorType,
     msg: [*]allowzero const u8,
+    pub const empty: Error = .{
+        .type = .None,
+        .msg = @ptrFromInt(0),
+    };
 };
 
 pub const NvimError = error{ Exception, Validation };
 
 pub const Arena = extern struct {
-    current_block: [*]const u8,
+    current_block: [*] allowzero const u8,
     pos: usize,
     size: usize,
+    pub const empty: Arena = .{
+        .current_block = @ptrFromInt(0),
+        .pos = 0,
+        .size = 0,
+    };
 };
 pub fn Union(_: anytype) type {
     return Object;
