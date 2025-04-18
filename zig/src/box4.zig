@@ -1,4 +1,5 @@
 const std = @import("std");
+const lua = @import("lua_api/lua.zig");
 
 const Hl = @import("hl.zig");
 const consts = @import("nvim_api/constants.zig");
@@ -60,17 +61,21 @@ pub const BoxContext = struct {
 
     // ctor/dtor
     pub fn init(alloc: std.mem.Allocator) BoxContext {
-        // zig fmt: off
-        return .{ 
-            .lines = .empty, 
+        return .{
+            .lines = .empty,
             .boxes = .empty,
             .alloc = alloc,
         };
-        // zig fmt: on
     }
-    pub fn newBox(self: *BoxContext, box: Box) ?*Box {
+    pub fn newBox(self: *BoxContext, box: Box) ?u32 {
         self.boxes.append(self.alloc, box) catch return null;
-        return &self.boxes.items[self.boxes.items.len - 1];
+        return @intCast(self.boxes.items.len - 1);
+    }
+    pub fn getBox(self: *const BoxContext, box: u32) ?*Box {
+        if (box >= self.boxes.items.len) {
+            return null;
+        }
+        return &self.boxes.items[box];
     }
     pub fn deinit(self: *BoxContext) void {
         for (self.lines.items) |*line| {
@@ -80,14 +85,52 @@ pub const BoxContext = struct {
         self.boxes.deinit(self.alloc);
     }
     pub fn stripRightSpace(self: *BoxContext, expectedBg: Hl.HlAttrs) !void {
-        _ = self;
-        _ = expectedBg;
+        _ = self; // autofix
+        _ = expectedBg; // autofix
     }
+
     pub fn getLine(self: *BoxContext, line: u32) ?*Line {
         while (self.lines.items.len <= line) {
             self.lines.append(self.alloc, Line.init()) catch return null;
         }
         return &self.lines.items[line];
+    }
+    pub fn render(self: *BoxContext, buf: tps.Integer) !void {
+        var err = tps.Error{ .type = .None, .msg = @ptrFromInt(0) };
+        var arena: tps.Arena = .{
+            .current_block = "",
+            .size = 0,
+            .pos = 0,
+        };
+        const arr = try self.alloc.alloc(tps.Object, self.lines.items.len);
+        defer self.alloc.free(arr);
+
+        for (self.lines.items, 0..) |line, i| {
+            arr[i] = tps.stringObject(line.chars.items);
+        }
+        const replacement: tps.Array = .{
+            .size = self.lines.items.len,
+            .items = arr.ptr,
+            .capacity = self.lines.items.len,
+        };
+        fns.nvim_buf_set_lines(
+            consts.LUA_INTERNAL_CALL,
+            @enumFromInt(buf),
+            0,
+            -1,
+            false,
+            replacement,
+            &arena,
+            &err,
+        );
+
+        if (err.type != .None) {
+            switch (err.type) {
+                .Exception => return tps.NvimError.Exception,
+                .Validation => return tps.NvimError.Validation,
+                else => {},
+            }
+        }
     }
 };
 
@@ -109,6 +152,7 @@ pub const Box = extern struct {
     // pub fn fillString(width){}
 
     pub fn newBoxFromContext(ctx: *BoxContext, hlgroup: Hl.HlAttrs) Box {
+        // @compileLog(std.fmt.comptimePrint("{}\n", .{@sizeOf(Hl.HlAttrs)}));
         return .{
             .height = 0,
             .context = ctx,
@@ -137,8 +181,8 @@ pub const Box = extern struct {
 
     // prettry sure this is only used for canvas
     pub fn shrinkWidthTo(self: *Box, width: u32) !void {
-        _ = self;
-        _ = width;
+        _ = self; // autofix
+        _ = width; // autofix
     }
     pub fn setWidth(self: *Box, width: u32) !void {
         if (self.width == width) {
@@ -163,7 +207,7 @@ pub const Box = extern struct {
     pub fn clone(
         self: *Box,
     ) BoxContext {
-        _ = self;
+        _ = self; // autofix
     }
     // TODO: Unused?
     // pub fn cloneHeightTo(height){}
@@ -222,7 +266,7 @@ pub const Box = extern struct {
 
     // *kinda* one of the most needed low level apis
     pub fn appendStr(self: *Box, str: []const u8) !void {
-        const line = self.context.getLine(self.currentLine);
+        const line = self.context.getLine(self.currentLine + self.offsetY);
         if (line == null) {
             return error.LineIsNull;
         }
@@ -234,7 +278,7 @@ pub const Box = extern struct {
     //     return true;
     // }
     pub fn appendWord(self: *Box, str: []const u8, style: Hl.HlAttrs) !void {
-        const line = self.context.getLine(self.currentLine);
+        const line = self.context.getLine(self.currentLine + self.offsetY);
         try line.?.appendWord(self.context, str, style);
     }
     // TODO: Remove in favor of managed splitting
@@ -248,10 +292,11 @@ pub const Box = extern struct {
 
     // NOTE: Rendering over should *only* happen from prepared box contexts
     pub fn renderOver(self: *Box, other: *BoxContext, left: u32, top: u32) !void {
-        _ = self;
-        _ = other;
-        _ = left;
-        _ = top;
+        if (self.context == other) {
+            return error.SameContext;
+        }
+        _ = left; // autofix
+        _ = top; // autofix
     }
 };
 pub export fn box_new_context() i32 {
@@ -266,14 +311,42 @@ pub export fn box_new_context() i32 {
     return @intCast(i);
 }
 
-pub export fn box_delete_context(ctx: u32) void {
+pub fn lua_new_context(state: *lua.State) callconv(.C) c_int {
+    const res = box_new_context();
+    lua.push_number(state, @floatFromInt(res));
+    return 1;
+}
+
+pub export fn box_delete_context(ctx: u32) bool {
     if (ctx >= contexts.items.len) {
-        return;
+        return false;
     }
     if (contexts.items[ctx]) |*context| {
         context.deinit();
     }
     contexts.items[ctx] = null;
+    return true;
+}
+
+pub fn lua_delete_context(state: *lua.State) callconv(.C) c_int {
+    const numArgs = lua.get_top(state);
+    if (numArgs != 1) {
+        lua.push_boolean(state, @intFromBool(false));
+        return 1;
+    }
+    const indexFloat = lua.to_number(state, 1);
+    const index: u32 = @intFromFloat(indexFloat);
+    const ret = box_delete_context(index);
+    lua.push_boolean(state, @intFromBool(ret));
+    return 1;
+}
+
+pub fn get_context(ctx: u32) ?*BoxContext {
+    if (ctx >= contexts.items.len) {
+        return null;
+    }
+    if (contexts.items[ctx]) |*c| return c;
+    return null;
 }
 pub export fn box_context_exists(ctx: u32) bool {
     if (ctx >= contexts.items.len) {
@@ -281,12 +354,77 @@ pub export fn box_context_exists(ctx: u32) bool {
     }
     return contexts.items[ctx] != null;
 }
-pub export fn box_new_from_ctx(ctx: u32, hlgroup: Hl.HlAttrs) ?*Box {
-    const context = &contexts.items[ctx].?;
-    return context.newBox(Box.newBoxFromContext(context, hlgroup));
+
+pub fn lua_context_exists(state: *lua.State) callconv(.C) c_int {
+    const numArgs = lua.get_top(state);
+    if (numArgs != 1) {
+        lua.push_boolean(state, @intFromBool(false));
+        return 1;
+    }
+    const indexFloat = lua.to_number(state, 1);
+    const index: u32 = @intFromFloat(indexFloat);
+    const ret = box_context_exists(index);
+    lua.push_boolean(state, @intFromBool(ret));
+    return 1;
 }
-pub export fn box_new_from_offset(self: *Box, x: u32, y: u32) ?*Box {
-    return self.context.newBox(self.newBoxFromOffset(x, y));
+
+pub export fn box_context_render(ctx: u32, buf: u32) bool {
+    const context = get_context(ctx) orelse return false;
+    context.render(buf) catch return false;
+    return true;
+}
+
+pub fn lua_context_render(L: *lua.State) callconv(.C) c_int {
+    const numArgs = lua.get_top(L);
+    if (numArgs != 2) {
+        lua.push_bool(L, false);
+        return 1;
+    }
+    const ctx = lua.to_int(L, 1);
+    const buf = lua.to_int(L, 2);
+    const ret = box_context_render(@intCast(ctx), @intCast(buf));
+    lua.push_bool(L, ret);
+    return 1;
+}
+pub export fn box_new_from_ctx(ctx: u32, hlgroup: Hl.HlAttrs) i32 {
+    const context = &contexts.items[ctx].?;
+    const ret = context.newBox(Box.newBoxFromContext(context, hlgroup));
+    if (ret) |r| return @intCast(r);
+    return -1;
+}
+
+pub fn lua_new_from_ctx(L: *lua.State) callconv(.C) c_int {
+    const numArgs = lua.get_top(L);
+    if (numArgs != 1) {
+        lua.push_number(L, @floatFromInt(-1));
+        return 1;
+    }
+    const ctxFloat = lua.to_number(L, 1);
+    const ctx: u32 = @intFromFloat(ctxFloat);
+    const ret = box_new_from_ctx(ctx, .{});
+    lua.push_number(L, @floatFromInt(ret));
+    return 1;
+}
+pub export fn box_new_from_offset(ctx: u32, box: u32, x: u32, y: u32) i32 {
+    const self = box_get(ctx, box) orelse return -1;
+    const ret = self.context.newBox(self.newBoxFromOffset(x, y));
+    if (ret) |r| return @intCast(r);
+    return -1;
+}
+
+pub fn lua_new_from_offset(L: *lua.State) callconv(.C) c_int {
+    const numArgs = lua.get_top(L);
+    if (numArgs != 4) {
+        lua.push_int(L, -1);
+        return 1;
+    }
+    const ctx = lua.to_int(L, 1);
+    const box = lua.to_int(L, 2);
+    const x = lua.to_int(L, 3);
+    const y = lua.to_int(L, 4);
+    const ret = box_new_from_offset(@intCast(ctx), @intCast(box), @intCast(x), @intCast(y));
+    lua.push_int(L, ret);
+    return 1;
 }
 
 // prettry sure this is only used for canvas
@@ -312,7 +450,7 @@ pub export fn box_shrink_height_to(self: *Box, height: u32) bool {
     return true;
 }
 
-pub export fn box_set_heigh(self: *Box, height: u32) bool {
+pub export fn box_set_height(self: *Box, height: u32) bool {
     self.setHeight(height) catch return false;
 
     return true;
@@ -323,11 +461,42 @@ pub fn box_clean(self: *Box) bool {
     return true;
 }
 
-// *kinda* one of thmost needed low level apis
+// *kinda* one of the most needed low level apis
 
 pub export fn box_append_str(self: *Box, str: [*]const u8, len: u32) bool {
     self.appendStr(str[0..len]) catch return false;
     return true;
+}
+
+pub export fn box_get(ctx: u32, box: u32) ?*Box {
+    const context = get_context(ctx) orelse return null;
+    return context.getBox(box);
+}
+
+pub fn lua_append_str(L: *lua.State) callconv(.C) c_int {
+    const numArgs = lua.get_top(L);
+    if (numArgs != 3) {
+        lua.push_boolean(L, @intFromBool(false));
+        return 1;
+    }
+    const ctxFloat = lua.to_number(L, 1);
+    const ctx: u32 = @intFromFloat(ctxFloat);
+    const boxFloat = lua.to_number(L, 2);
+    const boxIndex: u32 = @intFromFloat(boxFloat);
+    const box = box_get(ctx, boxIndex);
+    const str = lua.to_slice(L, 3);
+    // std.debug.print("SLICE: {s}\n", .{str});
+
+    if (box == null) {
+        lua.push_bool(L, false);
+        return 1;
+    }
+    box.?.appendStr(str) catch {
+        lua.push_bool(L, false);
+        return 1;
+    };
+    lua.push_bool(L, true);
+    return 1;
 }
 
 // pub fn appendStr(elf: *Box, str: [*]const u8, len: u32) bool {

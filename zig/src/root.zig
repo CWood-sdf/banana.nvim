@@ -1,5 +1,6 @@
 const std = @import("std");
 const lua = @import("lua_api/lua.zig");
+const luaL = @import("lua_api/luaL.zig");
 const b4 = @import("box4.zig");
 const testing = std.testing;
 
@@ -7,10 +8,22 @@ export fn add(a: i32, b: i32) i32 {
     return a + b;
 }
 
-export fn luaopen_banana_libbanana(state: *lua.LuaState) c_int {
-    _ = state;
+// NOTE: array MUST end with null
+pub const regs = [_]luaL.Reg{
+    luaL.Reg.init("box_context_create", b4.lua_new_context),
+    luaL.Reg.init("box_context_delete", b4.lua_delete_context),
+    luaL.Reg.init("box_context_exists", b4.lua_context_exists),
+    luaL.Reg.init("box_context_render", b4.lua_context_render),
+    luaL.Reg.init("box_new_from_context", b4.lua_new_from_ctx),
+    luaL.Reg.init("box_new_from_offset", b4.lua_new_from_offset),
+    luaL.Reg.init("box_append_str", b4.lua_append_str),
+    .Null,
+};
+
+export fn luaopen_banana_libbanana(state: *lua.State) c_int {
+    luaL.register(state, "libbanana", &regs);
     std.debug.print("yoo", .{});
-    return 0;
+    return 1;
 }
 
 export fn addToString(str: [*:0]u8) void {
