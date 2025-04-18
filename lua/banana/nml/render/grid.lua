@@ -12,6 +12,8 @@
 
 ---@module 'banana.utils.debug_flame'
 local flame = require("banana.lazyRequire")("banana.utils.debug_flame")
+---@module 'banana.ncss.unit'
+local unit = require("banana.lazyRequire")("banana.ncss.unit")
 ---@module 'banana.utils.log'
 local log = require("banana.lazyRequire")("banana.utils.log")
 local M = {}
@@ -95,55 +97,6 @@ end
 ---@field startRow number
 ---@field startCol number
 
-local gridSo = nil
-
-function M.getGridSo()
-    if gridSo == nil then
-        local path = require("banana").getInstallDir() ..
-            "/zig/zig-out/lib/libbanana.so"
-        if not vim.fn.filereadable(path) then
-            vim.notify("libbanana does not exist, installing now...")
-            require("banana").installLibbanana()
-        end
-        ffi.cdef([[
-
-typedef struct {
-} BitSetSection;
-
- bool toggle(struct BitSetSection* s, uint32_t row, uint32_t column);
-
- bool turnOn(struct BitSetSection*, uint32_t row, uint32_t column);
-
- bool turnOnRange(struct BitSetSection*, uint32_t rowStart, uint32_t colStart, uint32_t rowEnd, uint32_t colEnd);
-
- uint32_t isEnabled(struct BitSetSection*, uint32_t row, uint32_t column);
-
- struct BitSetSection* getNew();
-
- void freeSection(struct BitSetSection*);
-
- void initExisting(struct BitSetSection*);
-
-
-        ]])
-        local loadSo = function ()
-            gridSo = ffi.load(require("banana").getInstallDir() ..
-                "/zig/zig-out/lib/libbanana.so")
-        end
-        local ok, _ = pcall(loadSo)
-        if not ok or gridSo == nil then
-            vim.notify("libbanana does not exist, attempting reinstall...")
-            require("banana").installLibbanana()
-            ok, _ = pcall(loadSo)
-            if not ok or gridSo == nil then
-                log.throw(
-                    "Could not find libbanana, do you have zig installed on your system?")
-                error("")
-            end
-        end
-    end
-    return gridSo
-end
 
 ---@param values Banana.Ncss.StyleValue[]
 ---@param sizeInDirection number
@@ -247,12 +200,6 @@ local function getTemplates(values, sizeInDirection, start, min, isCol, ast, gap
     end
     return ret
 end
-local function actualRender(ast, parentHl, parentWidth, parentHeight, startX,
-                            startY, inherit, extra)
-
-end
-
---- renders an element with display:grid
 ---@param ast Banana.Ast
 ---@param parentHl Banana.Highlight?
 ---@param parentWidth number
@@ -262,13 +209,11 @@ end
 ---@param inherit Banana.Renderer.InheritedProperties
 ---@param extra Banana.Renderer.ExtraInfo
 ---@return Banana.Box, integer
-function M.render(ast, parentHl, parentWidth, parentHeight, startX,
-                  startY, inherit, extra)
-    flame.new("TagInfo:renderGridBlock")
+local function actualRender(thing, ast, parentHl, parentWidth, parentHeight,
+                            startX,
+                            startY, inherit, extra)
     local insert = table.insert
     local hl = ast:_mixHl(parentHl)
-    local thing = so.grid_getNew()
-
     -- the plan is basically to arrange the grid elements in the places that
     -- they absolutely have to be (eg grid-row or grid-column specified)
     -- ("necessary elements") and determine number of needed implicit columns then render all the elements
@@ -561,7 +506,6 @@ function M.render(ast, parentHl, parentWidth, parentHeight, startX,
     local rows = ast:_allStylesFor("grid-template-rows")
     rowTemplates = getTemplates(rows, parentHeight, 0, maxRow, false, ast,
         rowGap)
-    so.grid_freeSection(thing)
     local columnLimit = 300
     local rowLimit = 300
     if #columnTemplates > columnLimit then
@@ -737,7 +681,7 @@ function M.render(ast, parentHl, parentWidth, parentHeight, startX,
         -- height, but if you add margin pct, it's computed with respect to page
         -- height. In a word, that's all too much complexity when people SHOULD
         -- NOT be setting height/width on grid elements
-        if newHeight > render:getHeight() and v.ast:_firstStyleValue("height", { unit = "", value = 0 }).unit ~= "ch" then
+        if newHeight > render:getHeight() and v.ast:_firstStyleValue("height", unit.newUnit("", 0)).unit ~= "ch" then
             v.ast:_increaseHeightBoundBy(newHeight - v.render:getHeight())
             v.render:expandHeightTo(newHeight)
         end
@@ -745,9 +689,33 @@ function M.render(ast, parentHl, parentWidth, parentHeight, startX,
             columnTemplates[v.colStart].start - startX,
             start)
     end
-
-    flame.pop()
     return ret, #ast.nodes + 1
+end
+
+--- renders an element with display:grid
+---@param ast Banana.Ast
+---@param parentHl Banana.Highlight?
+---@param parentWidth number
+---@param parentHeight number
+---@param startX number
+---@param startY number
+---@param inherit Banana.Renderer.InheritedProperties
+---@param extra Banana.Renderer.ExtraInfo
+---@return Banana.Box, integer
+function M.render(ast, parentHl, parentWidth, parentHeight, startX,
+                  startY, inherit, extra)
+    flame.new("TagInfo:renderGridBlock")
+    local thing = so.grid_getNew()
+    -- have to be able to free the zig memory, hence the pcall
+    local ok, errOrRet, i = pcall(actualRender, thing, ast, parentHl, parentWidth,
+        parentHeight,
+        startX,
+        startY,
+        inherit, extra)
+    so.grid_freeSection(thing)
+    flame.pop()
+    if not ok then error(errOrRet) end
+    return errOrRet, i
 end
 
 return M
