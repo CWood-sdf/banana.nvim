@@ -518,7 +518,7 @@ pub fn box_set_width(ctx: u32, box: u32, width: u32) bool {
 }
 pub fn box_get_width(ctx: u32, box: u32) i32 {
     const self = get_box(ctx, box) orelse return -1;
-    return self.width;
+    return @intCast(self.width);
 }
 pub fn box_expand_width_to(ctx: u32, box: u32, width: u32) bool {
     const self = get_box(ctx, box) orelse return false;
