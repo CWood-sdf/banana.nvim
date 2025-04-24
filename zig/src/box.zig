@@ -516,6 +516,10 @@ pub fn box_set_width(ctx: u32, box: u32, width: u32) bool {
     self.setWidth(width) catch return false;
     return true;
 }
+pub fn box_get_width(ctx: u32, box: u32) i32 {
+    const self = get_box(ctx, box) orelse return -1;
+    return self.width;
+}
 pub fn box_expand_width_to(ctx: u32, box: u32, width: u32) bool {
     const self = get_box(ctx, box) orelse return false;
     self.expandWidthTo(width) catch return false;
@@ -537,6 +541,11 @@ pub fn box_set_height(ctx: u32, box: u32, height: u32) bool {
     const self = get_box(ctx, box) orelse return false;
     self.setHeight(height) catch return false;
     return true;
+}
+
+pub fn box_get_height(ctx: u32, box: u32) i32 {
+    const self = get_box(ctx, box) orelse return -1;
+    return @intCast(self.height);
 }
 
 pub fn box_clean(ctx: u32, box: u32) bool {
@@ -590,9 +599,9 @@ pub fn box_strip_right_space(ctx: u32, expected_bg: Highlight) bool {
 
 // NOTE: Rendering over should *only* happen from prepared box contexts
 
-// pub fn box_render_over(ctx: u32, box: u32, otherCtx: u32, left: u32, top: u32) bool {
-//     const self = get_box(ctx, box);
-//     const ctx = &contexts.items[other].?;
-//     self.renderOver(ctx, left, top) catch return false;
-//     return true;
-// }
+pub fn box_render_over(ctx: u32, box: u32, otherCtx: u32, left: u32, top: u32) bool {
+    const self = get_box(ctx, box) orelse return false;
+    const context = &contexts.items[otherCtx].?;
+    self.renderOver(context, left, top) catch return false;
+    return true;
+}

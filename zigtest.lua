@@ -7,7 +7,7 @@
 --     "minimal" })
 --
 -- gridSo.doThing(buf)
----@module "banana.libbanana"
+---@module "banana.libbanana2"
 local thing = require("banana.libbanana")
 
 -- thing.box_context_delete(1)
