@@ -4,6 +4,10 @@ local flame = require("banana.lazyRequire")("banana.utils.debug_flame")
 local log = require("banana.lazyRequire")("banana.utils.log")
 ---@module 'banana.utils.string'
 local _str = require("banana.lazyRequire")("banana.utils.string")
+---@module 'banana.libbanana'
+local lb = require("banana.lazyRequire")("banana.libbanana")
+-- ---@module 'banana.utils.string'
+-- local _str = require("banana.lazyRequire")("banana.utils.string")
 
 local M = {}
 

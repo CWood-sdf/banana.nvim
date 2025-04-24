@@ -1,11 +1,9 @@
 const std = @import("std");
+const box = @import("box.zig");
+const gen = @import("genlua.zig");
 const hl = @import("hl.zig");
 
-pub fn main() !void {
-    var grp: hl.HlAttrs = .{};
-    hl.setHlValue(&grp, "force", true);
-}
-
+pub fn main() !void {}
 test "simple test" {
     var list = std.ArrayList(i32).init(std.testing.allocator);
     defer list.deinit(); // try commenting this out and see if zig detects the memory leak!
