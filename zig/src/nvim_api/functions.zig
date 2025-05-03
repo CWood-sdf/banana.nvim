@@ -32,12 +32,12 @@ pub fn codepointLen(byte: u8) u8 {
     }
 }
 
-pub fn sliceToWidth(str: []const u8, maxWidth: u8) tp.NvimError!tp.Integer {
-    var width = 0;
-    var i = 0;
+pub fn sliceToWidth(str: []const u8, maxWidth: u32) tp.NvimError![]const u8 {
+    var width: u32 = 0;
+    var i: u32 = 0;
     while (width <= maxWidth) {
         if (i >= str.len) {
-            i = str.len;
+            i = @intCast(str.len);
         }
         const byteWidth = codepointLen(str[i]);
         const slice = str[i .. i + byteWidth];
@@ -45,7 +45,7 @@ pub fn sliceToWidth(str: []const u8, maxWidth: u8) tp.NvimError!tp.Integer {
         if (charWidth + width > maxWidth) {
             break;
         }
-        width += charWidth;
+        width += @intCast(charWidth);
         i += 1;
     }
     return str[0..i];

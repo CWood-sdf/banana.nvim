@@ -253,6 +253,8 @@ pub const Box = extern struct {
             .maxWidth = std.math.maxInt(@FieldType(Box, "width")),
             .dirty = false,
             .hlgroup = self.hlgroup,
+            .cursorX = 0,
+            .cursorY = 0,
         };
     }
 
@@ -375,9 +377,9 @@ pub const Box = extern struct {
 
     // *kinda* one of the most needed low level apis
     pub fn appendStr(self: *Box, str: []const u8) !void {
-        var pushedBytes = 0;
+        var pushedBytes: u32 = 0;
 
-        var isFirst = true;
+        var isFirst: bool = true;
         while (pushedBytes < str.len) {
             if (!isFirst) {
                 self.cursorY += 1;
@@ -392,8 +394,8 @@ pub const Box = extern struct {
             }
             // TODO: Bounds checking and wrapping
             try line.?.appendWord(self.context, slice, self.hlgroup);
-            pushedBytes += slice.len;
-            self.cursorX += strWidth;
+            pushedBytes += @intCast(slice.len);
+            self.cursorX += @intCast(strWidth);
             isFirst = false;
         }
     }
@@ -557,7 +559,7 @@ pub fn box_shrink_width_to(ctx: u32, box: u32, width: u32) bool {
 pub fn box_update_cursor_from(ctx: u32, box: u32, other: u32) bool {
     const self = get_box(ctx, box) orelse return false;
     const otherBox = get_box(ctx, other) orelse return false;
-    self.updateCursorFrom(&otherBox);
+    self.updateCursorFrom(otherBox);
     return true;
 }
 pub fn box_set_width(ctx: u32, box: u32, width: u32) bool {
