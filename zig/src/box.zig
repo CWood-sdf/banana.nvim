@@ -218,8 +218,9 @@ pub const Box = extern struct {
     maxWidth: u32,
     height: u32,
     dirty: bool,
-    currentLine: u32,
     hlgroup: Highlight,
+    cursorX: u32,
+    cursorY: u32,
     // TODO: Need to work on this
     // pub fn insertGradientMarker(){}
     // pub fn setGradientSize(){}
@@ -237,13 +238,13 @@ pub const Box = extern struct {
             .width = 0,
             .maxWidth = std.math.maxInt(@FieldType(Box, "width")),
             .dirty = false,
-            .currentLine = 0,
             .hlgroup = hlgroup,
+            .cursorX = 0,
+            .cursorY = 0,
         };
     }
     pub fn newBoxFromOffset(self: *Box, x: u32, y: u32) Box {
         return .{
-            .currentLine = 0,
             .height = 0,
             .context = self.context,
             .offsetX = self.offsetX + x,
@@ -255,9 +256,23 @@ pub const Box = extern struct {
         };
     }
 
+    pub fn newBoxCursored(self: *Box) Box {
+        return .{
+            .height = 0,
+            .context = self.context,
+            .offsetX = self.offsetX,
+            .offsetY = self.offsetY,
+            .cursorX = self.cursorX,
+            .cursorY = self.cursorY,
+            .width = 0,
+            .maxWidth = std.math.maxInt(@FieldType(Box, "width")),
+            .dirty = false,
+            .hlgroup = self.hlgroup,
+        };
+    }
+
     pub fn newBoxRightOf(self: *Box) Box {
         return .{
-            .currentLine = 0,
             .height = 0,
             .context = self.context,
             .offsetX = self.offsetX + self.width,
@@ -266,6 +281,8 @@ pub const Box = extern struct {
             .maxWidth = std.math.maxInt(@FieldType(Box, "width")),
             .dirty = false,
             .hlgroup = self.hlgroup,
+            .cursorX = 0,
+            .cursorY = 0,
         };
     }
 
@@ -358,23 +375,42 @@ pub const Box = extern struct {
 
     // *kinda* one of the most needed low level apis
     pub fn appendStr(self: *Box, str: []const u8) !void {
-        const line = self.context.getLine(self.currentLine + self.offsetY);
-        if (line == null) {
-            return error.LineIsNull;
+        var pushedBytes = 0;
+
+        var isFirst = true;
+        while (pushedBytes < str.len) {
+            if (!isFirst) {
+                self.cursorY += 1;
+                self.cursorX = 0;
+            }
+            const maxWidth = self.maxWidth - self.cursorX;
+            const slice = try fns.sliceToWidth(str, maxWidth);
+            const strWidth = try fns.z_nvim_strwidth(slice);
+            const line = self.context.getLine(self.cursorY + self.offsetY);
+            if (line == null) {
+                return error.LineIsNull;
+            }
+            // TODO: Bounds checking and wrapping
+            try line.?.appendWord(self.context, slice, self.hlgroup);
+            pushedBytes += slice.len;
+            self.cursorX += strWidth;
+            isFirst = false;
         }
-        // TODO: Bounds checking and wrapping
-        try line.?.appendWord(self.context, str, self.hlgroup);
+    }
+
+    pub fn updateCursorFrom(self: *Box, other: *Box) void {
+        self.cursorX = other.cursorX;
+        self.cursorY = other.cursorY;
     }
     // pub fn appendStr(self: *Box, str: [*]const u8, len: u32) bool {
     //     self.appendStr_internal(str[0..len]) catch return false;
     //     return true;
     // }
     pub fn appendWord(self: *Box, str: []const u8, style: Highlight) !void {
-        const line = self.context.getLine(self.currentLine + self.offsetY);
-        if (line == null) {
-            return error.LineIsNull;
-        }
-        try line.?.appendWord(self.context, str, style);
+        const currentHl = self.hlgroup;
+        self.hlgroup = style;
+        defer self.hlgroup = currentHl;
+        try self.appendStr(str);
     }
     // TODO: Remove in favor of managed splitting
     // pub fn getLine(i){}
@@ -503,6 +539,13 @@ pub fn box_new_right_from(ctx: u32, box: u32) i32 {
     if (ret) |r| return @intCast(r);
     return -1;
 }
+
+pub fn box_new_cursored(ctx: u32, box: u32) i32 {
+    const self = get_box(ctx, box) orelse return -1;
+    const ret = self.context.newBox(self.newBoxCursored());
+    if (ret) |r| return @intCast(r);
+    return -1;
+}
 // }
 
 // prettry sure this is only used for canvas
@@ -511,9 +554,21 @@ pub fn box_shrink_width_to(ctx: u32, box: u32, width: u32) bool {
     self.shrinkWidthTo(width) catch return false;
     return true;
 }
+pub fn box_update_cursor_from(ctx: u32, box: u32, other: u32) bool {
+    const self = get_box(ctx, box) orelse return false;
+    const otherBox = get_box(ctx, other) orelse return false;
+    self.updateCursorFrom(&otherBox);
+    return true;
+}
 pub fn box_set_width(ctx: u32, box: u32, width: u32) bool {
     const self = get_box(ctx, box) orelse return false;
     self.setWidth(width) catch return false;
+    return true;
+}
+
+pub fn box_set_max_width(ctx: u32, box: u32, width: i32) bool {
+    const self = get_box(ctx, box) orelse return false;
+    self.maxWidth = @max(width, 0);
     return true;
 }
 pub fn box_get_width(ctx: u32, box: u32) i32 {

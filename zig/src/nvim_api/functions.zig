@@ -20,6 +20,37 @@ pub fn z_nvim_strwidth(str: []const u8) tp.NvimError!tp.Integer {
     return ret;
 }
 
+pub fn codepointLen(byte: u8) u8 {
+    if (byte < 128) {
+        return 1;
+    } else if (byte < 224) {
+        return 2;
+    } else if (byte < 240) {
+        return 3;
+    } else {
+        return 4;
+    }
+}
+
+pub fn sliceToWidth(str: []const u8, maxWidth: u8) tp.NvimError!tp.Integer {
+    var width = 0;
+    var i = 0;
+    while (width <= maxWidth) {
+        if (i >= str.len) {
+            i = str.len;
+        }
+        const byteWidth = codepointLen(str[i]);
+        const slice = str[i .. i + byteWidth];
+        const charWidth = try z_nvim_strwidth(slice);
+        if (charWidth + width > maxWidth) {
+            break;
+        }
+        width += charWidth;
+        i += 1;
+    }
+    return str[0..i];
+}
+
 pub extern fn nvim_buf_set_lines(
     channel_id: u64,
     buf: tp.Buffer,

@@ -41,6 +41,11 @@ function M.box_new_from_offset(ctx, box, x, y) end
 ---@param ctx number
 ---@param box number
 ---@return number
+function M.box_new_cursored(ctx, box) end
+
+---@param ctx number
+---@param box number
+---@return number
 function M.box_new_right_from(ctx, box) end
 
 -- prettry sure this is only used for canvas
@@ -52,7 +57,17 @@ function M.box_shrink_width_to(ctx, box, width) end
 ---@param ctx number
 ---@param box number
 ---@param width number
+function M.box_set_max_width(ctx, box, width) end
+
+---@param ctx number
+---@param box number
+---@param width number
 function M.box_set_width(ctx, box, width) end
+
+---@param ctx number
+---@param box number
+---@param other number
+function M.box_update_cursor_from(ctx, box, other) end
 
 ---@param ctx number
 ---@param box number

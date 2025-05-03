@@ -74,6 +74,19 @@ function Box:newAtOffset(x, y)
     return ret
 end
 
+function Box:newCursored()
+    local boxid = lb.box_new_cursored(self.ctx, self.boxid)
+    ---@type Banana.Box2
+    ---@diagnostic disable-next-line: missing-fields
+    local ret = {
+        ctx = self.ctx,
+        boxid = boxid,
+        hlgroupid = self.hlgroupid,
+    }
+    setmetatable(ret, { __index = Box })
+    return ret
+end
+
 ---@return Banana.Box2
 function Box:newToRight()
     local boxid = lb.box_new_right_from(self.ctx, self.boxid)
@@ -94,6 +107,16 @@ end
 -- function Box:getLines()
 --     return self.lines
 -- end
+
+---@param other Banana.Box2
+function Box:updateCursorFrom(other)
+    lb.box_update_cursor_from(self.ctx, self.boxid, other.boxid)
+end
+
+---@param width number
+function Box:setMaxWidth(width)
+    lb.box_set_max_width(self.ctx, self.boxid, width)
+end
 
 function Box:insertGradientMarker()
     -- TODO: Need this later
