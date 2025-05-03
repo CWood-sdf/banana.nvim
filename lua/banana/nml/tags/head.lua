@@ -1,10 +1,10 @@
 ---@module 'banana.utils.debug_flame'
-local flame = require("banana.lazyRequire")("banana.utils.debug_flame")
+local flame = require("banana.utils.debug_flame")
 ---@module 'banana.nml.tag'
-local t = require("banana.lazyRequire")("banana.nml.tag")
+local t = require("banana.nml.tag")
 
 ---@type Banana.Renderer
-local function renderer(_, ast, hl, parentWidth, parentHeight, _, _, inherit,
+local function renderer(_, ast, box, hl, parentWidth, parentHeight, _, _, inherit,
                         extra)
     -- flame.new("tag:head")
     local b = require("banana.box")
@@ -16,7 +16,8 @@ local function renderer(_, ast, hl, parentWidth, parentHeight, _, _, inherit,
     local ret = b.Box:new()
     -- not actually rendering anything bc its all metadata tags
     for v in ast:childIter() do
-        v.actualTag:renderRoot(v, hl, parentWidth, parentHeight, inherit, extra)
+        v.actualTag:renderRoot(v, hl, box, parentWidth, parentHeight, inherit,
+            extra)
     end
     -- flame.expect("tag:head")
     -- flame.pop()

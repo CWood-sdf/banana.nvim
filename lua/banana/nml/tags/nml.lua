@@ -4,7 +4,7 @@ local flame = require("banana.lazyRequire")("banana.utils.debug_flame")
 local t = require("banana.lazyRequire")("banana.nml.tag")
 
 ---@type Banana.Renderer
-local function renderer(_, ast, parentHl, parentWidth, parentHeight, startX,
+local function renderer(_, ast, box, parentHl, parentWidth, parentHeight, startX,
                         startY, inherit, extra)
     local b = require("banana.box")
     parentHl = ast:_mixHl(parentHl)
@@ -14,11 +14,12 @@ local function renderer(_, ast, parentHl, parentWidth, parentHeight, startX,
     for node in ast:childIter() do
         ---@cast node Banana.Ast
         if node.tag == "head" then
-            node.actualTag:renderRoot(node, parentHl, parentWidth, parentHeight,
+            node.actualTag:renderRoot(node, box, parentHl, parentWidth,
+                parentHeight,
                 inherit, extra)
         elseif node.tag == "body" then
             node:_resolveUnits(parentWidth, parentHeight)
-            ret = node.actualTag:getRendered(node, parentHl, parentWidth,
+            ret = node.actualTag:getRendered(node, box, parentHl, parentWidth,
                     parentHeight, startX, startY, inherit, extra)
                       :render()
         elseif node.tag ~= "script" and node.tag ~= "style" then

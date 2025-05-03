@@ -2,6 +2,8 @@
 local log = require("banana.lazyRequire")("banana.utils.log")
 ---@module 'banana.utils.string'
 local _str = require("banana.lazyRequire")("banana.utils.string")
+---@module 'banana.libbanana2'
+local lb = require("banana.lazyRequire")("banana.libbanana")
 ---@module 'banana.utils.debug_flame'
 local flame = require("banana.lazyRequire")("banana.utils.debug_flame")
 
@@ -97,10 +99,11 @@ local Instance = {}
 ---@field style? Banana.Highlight
 
 ---@param ast Banana.Ast
+---@param ctx number
 ---@param width number
 ---@param height number
 ---@return Banana.Line[]
-function Instance:_virtualRender(ast, width, height)
+function Instance:_virtualRender(ast, ctx, width, height)
     flame.new("virtualRender")
     -- setmetatable(ret, { __mode = "kv" })
     local tag = ast.actualTag
@@ -108,13 +111,14 @@ function Instance:_virtualRender(ast, width, height)
     local extra = {
         componentStack = {},
         useAllHeight = false,
-        trace = require("banana.box").Box:new(),
+        -- trace = require("banana.box").Box:new(),
         debug = self.DEBUG_showBuild,
         isRealRender = true,
         screenHeight = height,
     }
+    local box = require("banana.box2").boxFromCtx(ctx)
     -- setmetatable(extra, { __mode = "kv" })
-    local rendered = tag:renderRoot(ast, nil, width, height, {
+    local rendered = tag:renderRoot(ast, box, nil, width, height, {
         text_align = "left",
         position = "static",
         min_size = false,
@@ -133,11 +137,11 @@ function Instance:_virtualRender(ast, width, height)
         rendered:stripRightSpace(bg)
     end
     if extra.debug then
-        self:_writeBoxToDebugWin(extra.trace)
+        -- self:_writeBoxToDebugWin(extra.trace)
         -- rendered:appendBoxBelow(extra.trace)
     end
     flame.pop()
-    return rendered:getLines()
+    -- return rendered:getLines()
 end
 
 function Instance:_openDebugWin()
@@ -722,8 +726,9 @@ function Instance:_createWinAndBuf()
     flame.new("winAndBuf")
     local headQuery = require("banana.ncss.query").selectors.oneTag("head")
     local headTag = headQuery:getMatches(self.ast)
+    local ctx = lb.box_context_create()
     if #headTag ~= 0 then
-        headTag[1].actualTag:renderRoot(headTag[1], nil, 0, 0, {
+        headTag[1].actualTag:renderRoot(headTag[1], ctx, nil, 0, 0, {
             list_style_type = "*",
             position = "static",
             text_align = "left",
@@ -736,6 +741,7 @@ function Instance:_createWinAndBuf()
             isRealRender = false,
         })
     end
+    lb.box_context_delete(ctx)
     flame.expect("winAndBuf")
     flame.pop()
 
@@ -922,7 +928,8 @@ function Instance:_render()
     -- self:body():resolveUnits(width, height, {})
     flame.new("renderAll")
     self.urlAsts = {}
-    local stuffToRender = self:_virtualRender(self.ast, width, height)
+    local ctx = require("banana.box2").createContext()
+    local _ = self:_virtualRender(self.ast, ctx, width, height)
     flame.pop()
     -- vim.defer_fn(function ()
     --     self:_render()
@@ -952,13 +959,13 @@ function Instance:_render()
     end
 
     local lines = {}
-    for _, line in ipairs(stuffToRender) do
-        local lineStr = ""
-        for _, word in ipairs(line) do
-            lineStr = lineStr .. word.word
-        end
-        table.insert(lines, lineStr)
-    end
+    -- for _, line in ipairs(stuffToRender) do
+    --     local lineStr = ""
+    --     for _, word in ipairs(line) do
+    --         lineStr = lineStr .. word.word
+    --     end
+    --     table.insert(lines, lineStr)
+    -- end
 
 
     local reductionTime = vim.loop.hrtime() - startTime
@@ -970,8 +977,8 @@ function Instance:_render()
     vim.api.nvim_set_option_value("buftype", "nofile", {
         buf = self.bufnr
     })
-    log.trace("Flushing " ..
-        #lines .. " lines to buffer " .. self.bufnr .. " on win " .. self.winid)
+    -- log.trace("Flushing " ..
+    --     #lines .. " lines to buffer " .. self.bufnr .. " on win " .. self.winid)
     vim.api.nvim_buf_set_lines(self.bufnr, 0, -1, false, lines)
     vim.api.nvim_set_option_value("modifiable", self.bufOpts.modifiable or false,
         {
@@ -980,7 +987,10 @@ function Instance:_render()
 
     local bufTime = vim.loop.hrtime() - startTime
     startTime = vim.loop.hrtime()
-    self:_highlight(stuffToRender, 0)
+    lb.box_context_render(ctx, self.bufnr)
+    lb.box_context_delete(ctx)
+
+    -- self:_highlight(stuffToRender, 0)
     self:_dumpUrls(self.bufnr, self.highlightNs)
 
     local hlTime = vim.loop.hrtime() - startTime

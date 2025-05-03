@@ -4,7 +4,7 @@ local t = require("banana.lazyRequire")("banana.nml.tag")
 local canvas = require("banana.lazyRequire")("banana.nml.canvas")
 
 ---@type Banana.Renderer
-local function renderer(_, ast, _, parentWidth, parentHeight)
+local function renderer(_, ast, box, _, parentWidth, parentHeight)
     ---@type Banana.Nml.CanvasContext
     local ctx
     ast.data = ast.data or {}

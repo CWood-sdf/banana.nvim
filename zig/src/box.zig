@@ -210,7 +210,7 @@ pub const BoxContext = struct {
     }
 };
 
-pub const Box = extern struct {
+pub const Box = struct {
     context: *BoxContext,
     offsetX: u32,
     offsetY: u32,
@@ -320,9 +320,28 @@ pub const Box = extern struct {
     pub fn clone(self: *Box) BoxContext {
         _ = self; // autofix
     }
-    // TODO: Unused?
-    // pub fn cloneHeightTo(height){}
 
+    pub fn setHl(self: *Box, hl: Highlight) void {
+        self.hlgroup = hl;
+    }
+
+    pub fn shiftRightwardsBy(self: *Box, extra: u32) !void {
+        for (self.context.lines.items[self.offsetY..self.height]) |*line| {
+            const bytes = try fns.sliceToWidth(line.chars.items, self.offsetX);
+            try line.chars.ensureTotalCapacity(
+                self.context.alloc,
+                extra + line.chars.items.len,
+            );
+            try line.hls.ensureTotalCapacity(
+                self.context.alloc,
+                extra + line.hls.items.len,
+            );
+            for (0..extra) |_| {
+                line.chars.insertAssumeCapacity(bytes.len, ' ');
+                line.hls.insertAssumeCapacity(bytes.len, self.hlgroup);
+            }
+        }
+    }
     pub fn expandHeightTo(self: *Box, height: u32) !void {
         if (height < self.height) {
             return error.HeightTooSmall;
@@ -383,6 +402,7 @@ pub const Box = extern struct {
         while (pushedBytes < str.len) {
             if (!isFirst) {
                 self.cursorY += 1;
+                self.height += 1;
                 self.cursorX = 0;
             }
             const maxWidth = self.maxWidth - self.cursorX;
@@ -430,6 +450,39 @@ pub const Box = extern struct {
         }
         _ = left; // autofix
         _ = top; // autofix
+    }
+};
+
+pub const PartialRendered = struct {
+    margin: Pad,
+    padding: Pad,
+    widthExpansion: u32,
+    heightExpansion: u32,
+    box: *Box,
+    marginColor: Highlight,
+    mainColor: Highlight,
+    renderAlign: RenderAlign,
+    maxWidth: u32,
+    pub const RenderAlign = enum(u8) {
+        left = 0,
+        center = 1,
+        right = 2,
+    };
+    pub const Pad = struct {
+        left: u32,
+        right: u32,
+        top: u32,
+        bottom: u32,
+    };
+
+    pub fn render(self: *PartialRendered) void {
+        _ = self; // autofix
+    }
+    pub fn renderWithMove(self: *PartialRendered, maxWidth: u32, toX: u32, toY: u32) void {
+        _ = self; // autofix
+        _ = maxWidth; // autofix
+        _ = toX; // autofix
+        _ = toY; // autofix
     }
 };
 
@@ -513,6 +566,12 @@ const HlExpect = Expect(fn (line: i32, startCol: i32, endCol: i32, hl: i32) void
 pub fn box_context_highlight(ctx: u32, L: HlExpect) bool {
     const context = get_context(ctx) orelse return false;
     context.highlight(L.L, 2);
+    return true;
+}
+
+pub fn box_shift_right_by(ctx: u32, boxid: u32, extra: u32) bool {
+    const box = get_box(ctx, boxid) orelse return false;
+    box.shiftRightwardsBy(extra) catch return false;
     return true;
 }
 

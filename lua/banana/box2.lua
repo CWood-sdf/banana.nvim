@@ -159,6 +159,11 @@ function Box:setWidth(width)
 end
 
 ---@param width number
+function Box:shiftRightBy(width)
+    lb.box_shift_right_by(self.ctx, self.boxid, width)
+end
+
+---@param width number
 function Box:expandWidthTo(width)
     lb.box_expand_width_to(self.ctx, self.boxid, width)
 end
@@ -196,6 +201,11 @@ end
 ---@param height number
 function Box:setHeight(height)
     lb.box_set_height(self.ctx, self.boxid, height)
+end
+
+---@param hl Banana.Highlight
+function Box:setHl(hl)
+    lb.box_set_hl(self.ctx, self.boxid, M.addHighlight(self.ctx, hl))
 end
 
 function Box:clean()

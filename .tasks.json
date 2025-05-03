@@ -27,7 +27,7 @@
 		},
 		{
 			"name": "debug",
-			"cmd": "nvim -c \"lua vim.defer_fn(function()require('osv').launch({ port = 8086 }) end, 200)\"",
+			"cmd": "nvim -c \"lua vim.defer_fn(function()require('osv').launch({ port = 8086 }) end, 200)\" test.nml",
 			"window": {
 				"name": "ookd",
 				"close": true
@@ -35,7 +35,7 @@
 		},
 		{
 			"name": "zig debug",
-			"cmd": "nvim -c 'so zigtestpre.lua' zigtest.lua",
+			"cmd": "nvim -c 'so zigtestpre.lua' test.nml",
 			"window": {
 				"name": "ookzd",
 				"close": true

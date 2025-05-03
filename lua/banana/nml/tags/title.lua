@@ -4,7 +4,8 @@ local flame = require("banana.lazyRequire")("banana.utils.debug_flame")
 local t = require("banana.lazyRequire")("banana.nml.tag")
 
 ---@type Banana.Renderer
-local function renderer(self, ast, _, parentWidth, parentHeight, startX, startY,
+local function renderer(self, ast, box, _, parentWidth, parentHeight, startX,
+                        startY,
                         inherit, extra)
     -- flame.new("tag:title")
     local inst = require("banana.instance").getInstance(ast.instance)

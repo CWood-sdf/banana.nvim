@@ -11,7 +11,8 @@ local dbg = require("banana.lazyRequire")("banana.utils.debug")
 local b = require("banana.lazyRequire")("banana.box")
 
 ---@type Banana.Renderer
-local function renderer(self, ast, parentHl, parentWidth, parentHeight, startX,
+local function renderer(self, ast, box, parentHl, parentWidth, parentHeight,
+                        startX,
                         startY, inherit, extra)
     -- flame.new("tag:li")
     local widthAlloted = nil
@@ -24,7 +25,8 @@ local function renderer(self, ast, parentHl, parentWidth, parentHeight, startX,
     parentWidth = parentWidth - widthAlloted
     startX = startX + widthAlloted
 
-    local render = self:renderInlineEl(ast, parentHl, parentWidth, parentHeight,
+    local render = self:renderInlineEl(ast, box, parentHl, parentWidth,
+        parentHeight,
         startX, startY, inherit, extra)
 
     -- because expandHeightTo will fail later down

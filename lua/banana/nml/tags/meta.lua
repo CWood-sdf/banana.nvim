@@ -1,9 +1,9 @@
 ---@module 'banana.utils.debug_flame'
-local flame = require("banana.lazyRequire")("banana.utils.debug_flame")
+local flame = require("banana.utils.debug_flame")
 ---@module 'banana.utils.log'
-local log = require("banana.lazyRequire")("banana.utils.log")
+local log = require("banana.utils.log")
 ---@module 'banana.nml.tag'
-local t = require("banana.lazyRequire")("banana.nml.tag")
+local t = require("banana.nml.tag")
 ---@param str string
 ---@param other string
 ---@return boolean

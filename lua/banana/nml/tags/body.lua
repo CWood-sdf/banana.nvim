@@ -4,17 +4,17 @@ local flame = require("banana.lazyRequire")("banana.utils.debug_flame")
 local t = require("banana.lazyRequire")("banana.nml.tag")
 
 ---@type Banana.Renderer
-local function renderer(self, ast, parentHl, parentWidth, parentHeight, startX,
+local function renderer(self, ast, box, parentHl, parentWidth, parentHeight,
+                        startX,
                         startY, inherit, extra)
     -- flame.new("tag:body")
-    local b = require("banana.box")
     if not extra.isRealRender then
-        return b.Box:new()
+        return box:newToRight()
     end
-    ---@type Banana.Box
-    local ret = b.Box:new(ast:_mixHl(parentHl))
-    for _, box, _ in self:blockIter(ast, ret.hlgroup, parentWidth, parentHeight, startX, startY, inherit, extra) do
-        ret:appendBoxBelow(box)
+    local hl = ast:_mixHl(parentHl)
+    local ret = box:newAtOffset(0, 0)
+    ret:setHl(hl)
+    for _, _, _ in self:blockIter(ast, ret, hl, parentWidth, parentHeight, startX, startY, inherit, extra) do
     end
     if ret:height() < parentHeight then
         ret:expandHeightTo(parentHeight)

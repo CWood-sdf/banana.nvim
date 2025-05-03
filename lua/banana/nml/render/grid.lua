@@ -201,6 +201,7 @@ local function getTemplates(values, sizeInDirection, start, min, isCol, ast, gap
     return ret
 end
 ---@param ast Banana.Ast
+---@param box Banana.Box2
 ---@param parentHl Banana.Highlight?
 ---@param parentWidth number
 ---@param parentHeight number
@@ -209,7 +210,7 @@ end
 ---@param inherit Banana.Renderer.InheritedProperties
 ---@param extra Banana.Renderer.ExtraInfo
 ---@return Banana.Box, integer
-local function actualRender(thing, ast, parentHl, parentWidth, parentHeight,
+local function actualRender(thing, ast, box, parentHl, parentWidth, parentHeight,
                             startX,
                             startY, inherit, extra)
     local insert = table.insert
@@ -681,7 +682,10 @@ local function actualRender(thing, ast, parentHl, parentWidth, parentHeight,
         -- height, but if you add margin pct, it's computed with respect to page
         -- height. In a word, that's all too much complexity when people SHOULD
         -- NOT be setting height/width on grid elements
-        if newHeight > render:getHeight() and v.ast:_firstStyleValue("height", unit.newUnit("", 0)).unit ~= "ch" then
+        if
+            newHeight > render:getHeight()
+            and v.ast:_firstStyleValue("height", unit.newUnit("", 0)).unit ~= "ch"
+        then
             v.ast:_increaseHeightBoundBy(newHeight - v.render:getHeight())
             v.render:expandHeightTo(newHeight)
         end
@@ -694,6 +698,7 @@ end
 
 --- renders an element with display:grid
 ---@param ast Banana.Ast
+---@param box Banana.Box2
 ---@param parentHl Banana.Highlight?
 ---@param parentWidth number
 ---@param parentHeight number
@@ -702,12 +707,13 @@ end
 ---@param inherit Banana.Renderer.InheritedProperties
 ---@param extra Banana.Renderer.ExtraInfo
 ---@return Banana.Box, integer
-function M.render(ast, parentHl, parentWidth, parentHeight, startX,
+function M.render(ast, box, parentHl, parentWidth, parentHeight, startX,
                   startY, inherit, extra)
     flame.new("TagInfo:renderGridBlock")
     local thing = so.grid_getNew()
     -- have to be able to free the zig memory, hence the pcall
-    local ok, errOrRet, i = pcall(actualRender, thing, ast, parentHl, parentWidth,
+    local ok, errOrRet, i = pcall(actualRender, thing, ast, box, parentHl,
+        parentWidth,
         parentHeight,
         startX,
         startY,

@@ -1,16 +1,9 @@
 ---@module 'banana.nml.render.partialRendered'
 local p     = require("banana.lazyRequire")("banana.nml.render.partialRendered")
----@module 'banana.box'
-local b     = require("banana.lazyRequire")("banana.box")
 ---@module 'banana.utils.case'
 local case  = require("banana.lazyRequire")("banana.utils.case")
 ---@module 'banana.utils.debug_flame'
 local flame = require("banana.lazyRequire")("banana.utils.debug_flame")
----@module 'banana.box'
-local box   = require("banana.lazyRequire")("banana.box")
-
----@module 'banana.utils.debug'
-local dbg   = require("banana.lazyRequire")("banana.utils.debug")
 
 ---@module 'banana.nml.tag'
 local _tag  = require("banana.lazyRequire")("banana.nml.tag")
@@ -33,6 +26,7 @@ local function isExpandable(ast, extraWidth)
 end
 ---@param self Banana.TagInfo
 ---@param ast Banana.Ast
+---@param box Banana.Box2
 ---@param parentHl Banana.Highlight?
 ---@param parentWidth number
 ---@param parentHeight number
@@ -40,8 +34,8 @@ end
 ---@param startY number
 ---@param inherit Banana.Renderer.InheritedProperties
 ---@param extra Banana.Renderer.ExtraInfo
----@return Banana.Renderer.PartialRendered
-return function (self, ast, parentHl, parentWidth, parentHeight, startX, startY,
+return function (self, ast, box, parentHl, parentWidth, parentHeight, startX,
+                 startY,
                  inherit, extra)
     flame.new("getRendered_start")
     ast.relativeBoxId = nil
@@ -73,7 +67,8 @@ return function (self, ast, parentHl, parentWidth, parentHeight, startX, startY,
             inherit[k] = inheritOld[k]
         end
         flame.pop()
-        return p.emptyPartialRendered()
+        return
+        -- return p.emptyPartialRendered()
     end
     local disp = ast:_firstStyleValue("display")
     if disp == "none" then
@@ -82,7 +77,7 @@ return function (self, ast, parentHl, parentWidth, parentHeight, startX, startY,
         end
         ast.hidden = true
         flame.pop()
-        return p.emptyPartialRendered()
+        return
     end
     ast.hidden = false
     if ast:_firstStyleValue("width") == "fit-content" then
@@ -118,8 +113,12 @@ return function (self, ast, parentHl, parentWidth, parentHeight, startX, startY,
             startY = startY + ast:_firstStyleValue("bottom").computed
         end
     end
-    startX = startX + ast:marginLeft()
-    startY = startY + ast:marginTop()
+    local marginLeftBox = box:newAtOffset(0, ast:marginTop())
+    local marginTopBox = box:newAtOffset(0, 0)
+    marginLeftBox:expandWidthTo(ast:marginLeft())
+    marginTopBox:expandHeightTo(ast:marginTop())
+    -- startX = startX + ast:marginLeft()
+    -- startY = startY + ast:marginTop()
     ---@type Banana.Ast.BoundingBox
     local boundBox = {
         leftX   = startX,
@@ -127,6 +126,13 @@ return function (self, ast, parentHl, parentWidth, parentHeight, startX, startY,
         rightX  = 0,
         bottomY = 0,
     }
+    local paddingTopBox = box:newAtOffset(marginLeftBox:width(),
+        marginTopBox:height())
+    local paddingLeftBox = box:newAtOffset(marginLeftBox:width(),
+        marginTopBox:height() + ast:paddingTop())
+    paddingTopBox:expandHeightTo(ast:paddingTop())
+    paddingLeftBox:expandWidthTo(ast:paddingLeft())
+
     startX = startX + ast:paddingLeft()
     startY = startY + ast:paddingTop()
     local contentWidth = parentWidth - ast:_extraLr()
@@ -137,7 +143,10 @@ return function (self, ast, parentHl, parentWidth, parentHeight, startX, startY,
     local useMaxHeight = extra.useAllHeight
     extra.useAllHeight = false
     -- flame.new("other render")
-    local centerBox = self:render(ast, parentHl, contentWidth, parentHeight,
+    local contentBox = paddingLeftBox:newToRight()
+    contentBox:setMaxWidth(parentWidth)
+    local centerBox = self:render(ast, contentBox, parentHl, contentWidth,
+        parentHeight,
         startX, startY, inherit, extra)
     -- flame.pop()
     -- flame.pop()
@@ -156,11 +165,11 @@ return function (self, ast, parentHl, parentWidth, parentHeight, startX, startY,
         top = 0,
         bottom = 0,
     }
-    if extra.debug then
-        extra.trace:appendBoxBelow(dbg.traceBreak("Raw render"), false)
-        extra.trace:appendBoxBelow(ast:_testDumpBox(), false)
-        extra.trace:appendBoxBelow(centerBox:clone(), false)
-    end
+    -- if extra.debug then
+    --     extra.trace:appendBoxBelow(dbg.traceBreak("Raw render"), false)
+    --     extra.trace:appendBoxBelow(ast:_testDumpBox(), false)
+    --     extra.trace:appendBoxBelow(centerBox:clone(), false)
+    -- end
     ---@type Banana.Renderer.PartialRendered
     local ret = p.emptyPartialRendered()
     ret.margin = margin
@@ -175,15 +184,18 @@ return function (self, ast, parentHl, parentWidth, parentHeight, startX, startY,
         ret.widthExpansion = extraWidth
         if inherit.text_align == "left" then
         elseif inherit.text_align == "right" then
+            ret.center:shiftRightBy(extraWidth)
             ret.renderAlign = "right"
         elseif inherit.text_align == "center" then
+            ret.center:shiftRightBy(math.floor(extraWidth / 2))
+            ret.center:expandWidthTo(ret:getWidth() + math.ceil(extraWidth / 2))
             ret.renderAlign = "center"
         end
-        if extra.debug then
-            extra.trace:appendBoxBelow(dbg.traceBreak("Expansion w"), false)
-            extra.trace:appendBoxBelow(ast:_testDumpBox(), false)
-            extra.trace:appendBoxBelow(ret:render(true), false)
-        end
+        -- if extra.debug then
+        --     extra.trace:appendBoxBelow(dbg.traceBreak("Expansion w"), false)
+        --     extra.trace:appendBoxBelow(ast:_testDumpBox(), false)
+        --     extra.trace:appendBoxBelow(ret:render(true), false)
+        -- end
     end
     if ast:hasStyle("height") and (not ast:parent():isNil() or ast.tag == "template") then
         ret.center:clean()
@@ -191,31 +203,33 @@ return function (self, ast, parentHl, parentWidth, parentHeight, startX, startY,
             - ast:paddingTop() - ast:paddingBottom()
         -- height = math.min(height, parentHeight)
         ret.heightExpansion = height - ret.center:height()
-        if extra.debug then
-            extra.trace:appendBoxBelow(dbg.traceBreak("Expansion h"), false)
-            extra.trace:appendBoxBelow(ast:_testDumpBox(), false)
-            extra.trace:appendBoxBelow(ret:render(true), false)
-        end
+        ret.center:expandHeightTo(height)
+        -- if extra.debug then
+        --     extra.trace:appendBoxBelow(dbg.traceBreak("Expansion h"), false)
+        --     extra.trace:appendBoxBelow(ast:_testDumpBox(), false)
+        --     extra.trace:appendBoxBelow(ret:render(true), false)
+        -- end
     elseif useMaxHeight then
         local height = parentHeight - ast:paddingTop() - ast:paddingBottom()
         ret.heightExpansion = height - ret.center:height()
-        if extra.debug then
-            extra.trace:appendBoxBelow(dbg.traceBreak("used max height"), false)
-            extra.trace:appendBoxBelow(ast:_testDumpBox(), false)
-            extra.trace:appendBoxBelow(ret:render(true), false)
-        end
+        ret.center:expandHeightTo(height)
+        -- if extra.debug then
+        --     extra.trace:appendBoxBelow(dbg.traceBreak("used max height"), false)
+        --     extra.trace:appendBoxBelow(ast:_testDumpBox(), false)
+        --     extra.trace:appendBoxBelow(ret:render(true), false)
+        -- end
     end
     -- flame.pop()
     -- flame.new("getRendered_pad")
     local changed = false
     changed = ret:applyPad("padding", ast)
-    if changed then
-        if extra.debug then
-            extra.trace:appendBoxBelow(dbg.traceBreak("pad"), false)
-            extra.trace:appendBoxBelow(ast:_testDumpBox(), false)
-            extra.trace:appendBoxBelow(ret:render(true), false)
-        end
-    end
+    -- if changed then
+    --     if extra.debug then
+    --         extra.trace:appendBoxBelow(dbg.traceBreak("pad"), false)
+    --         extra.trace:appendBoxBelow(ast:_testDumpBox(), false)
+    --         extra.trace:appendBoxBelow(ret:render(true), false)
+    --     end
+    -- end
     boundBox.rightX = boundBox.leftX + ret:getWidth()
     boundBox.bottomY = boundBox.topY + ret:getHeight()
     ast.boundBox = boundBox
@@ -229,15 +243,15 @@ return function (self, ast, parentHl, parentWidth, parentHeight, startX, startY,
             newBox:appendStr(string.rep(" ", render:width()))
             newRet:appendBoxBelow(newBox)
         end
-        if extra.debug then
-            extra.trace:appendBoxBelow(dbg.traceBreak("float render"), false)
-            extra.trace:appendBoxBelow(ast:_testDumpBox(), false)
-            extra.trace:appendBoxBelow(render:clone(), false)
-            extra.trace:appendBoxBelow(dbg.traceBreak("extraRender render"),
-                false)
-            extra.trace:appendBoxBelow(ast:_testDumpBox(), false)
-            extra.trace:appendBoxBelow(newRet:clone(), false)
-        end
+        -- if extra.debug then
+        --     extra.trace:appendBoxBelow(dbg.traceBreak("float render"), false)
+        --     extra.trace:appendBoxBelow(ast:_testDumpBox(), false)
+        --     extra.trace:appendBoxBelow(render:clone(), false)
+        --     extra.trace:appendBoxBelow(dbg.traceBreak("extraRender render"),
+        --         false)
+        --     extra.trace:appendBoxBelow(ast:_testDumpBox(), false)
+        --     extra.trace:appendBoxBelow(newRet:clone(), false)
+        -- end
         ---@type Banana.Ast
         local root = ast
         while root.relativeBoxes == nil do
@@ -268,22 +282,22 @@ return function (self, ast, parentHl, parentWidth, parentHeight, startX, startY,
         elseif ast:hasStyle("bottom") then
             startY = startY + ast:_firstStyleComputedValue("bottom", 0)
         end
-        if extra.debug then
-            extra.trace:appendBoxBelow(dbg.traceBreak("new render"), false)
-            extra.trace:appendBoxBelow(ast:_testDumpBox(), false)
-            extra.trace:appendBoxBelow(ret:render(true), false)
-        end
+        -- if extra.debug then
+        --     extra.trace:appendBoxBelow(dbg.traceBreak("new render"), false)
+        --     extra.trace:appendBoxBelow(ast:_testDumpBox(), false)
+        --     extra.trace:appendBoxBelow(ret:render(true), false)
+        -- end
     end
     -- flame.pop()
     -- flame.new("getRendered_margin")
     changed = ret:applyPad("margin", ast)
-    if changed then
-        if extra.debug then
-            extra.trace:appendBoxBelow(dbg.traceBreak("margin"), false)
-            extra.trace:appendBoxBelow(ast:_testDumpBox(), false)
-            extra.trace:appendBoxBelow(ret:render(true), false)
-        end
-    end
+    -- if changed then
+    --     if extra.debug then
+    --         extra.trace:appendBoxBelow(dbg.traceBreak("margin"), false)
+    --         extra.trace:appendBoxBelow(ast:_testDumpBox(), false)
+    --         extra.trace:appendBoxBelow(ret:render(true), false)
+    --     end
+    -- end
     if ast.absoluteAsts ~= nil then
         -- flame.pop()
         -- flame.new("getRendered_abs")

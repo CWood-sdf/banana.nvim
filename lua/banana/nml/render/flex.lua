@@ -54,6 +54,7 @@ local function flexGrowSection(parentWidth, takenWidth, renders, start, e)
 end
 ---Renders everything in a flex block
 ---@param ast Banana.Ast
+---@param box Banana.Box2
 ---@param parentHl Banana.Highlight?
 ---@param parentWidth number
 ---@param parentHeight number
@@ -62,7 +63,7 @@ end
 ---@param inherit Banana.Renderer.InheritedProperties
 ---@param extra Banana.Renderer.ExtraInfo
 ---@return Banana.Box, integer
-return function (ast, parentHl, parentWidth, parentHeight, startX,
+return function (ast, box, parentHl, parentWidth, parentHeight, startX,
                  startY, inherit, extra)
     log.trace("TagInfo:renderFlexBlock " .. ast.tag)
     flame.new("renderFlexBlock")

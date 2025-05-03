@@ -61,6 +61,11 @@ function M.box_set_max_width(ctx, box, width) end
 
 ---@param ctx number
 ---@param box number
+---@param extra number
+function M.box_shift_right_by(ctx, box, extra) end
+
+---@param ctx number
+---@param box number
 ---@param width number
 function M.box_set_width(ctx, box, width) end
 

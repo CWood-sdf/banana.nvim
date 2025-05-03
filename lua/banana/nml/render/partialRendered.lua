@@ -1,7 +1,7 @@
 ---@module 'banana.utils.debug_flame'
 local flame = require("banana.lazyRequire")("banana.utils.debug_flame")
----@module 'banana.box'
-local b = require("banana.lazyRequire")("banana.box")
+-- ---@module 'banana.box'
+-- local b = require("banana.lazyRequire")("banana.box")
 ---@module 'banana.nml.ast'
 local _ast = require("banana.lazyRequire")("banana.nml.ast")
 local M = {}
@@ -17,7 +17,7 @@ local M = {}
 ---@field padding Banana.Renderer.Surround
 ---@field widthExpansion number
 ---@field heightExpansion number
----@field center Banana.Box
+---@field center Banana.Box2
 ---@field marginColor? Banana.Highlight
 ---@field mainColor? Banana.Highlight
 ---@field renderAlign "left"|"center"|"right"
@@ -27,17 +27,15 @@ local meta = {
     __index = flame.wrapClass(PartialRendered, "PartialRendered", false),
     -- __mode = "kv"
 }
-local weak = {}
-
 ---@return Banana.Renderer.PartialRendered
-function M.emptyPartialRendered()
+function M.emptyPartialRendered(container)
     ---@type Banana.Renderer.PartialRendered
     local ret = {
         maxWidth = 0,
         renderAlign = "left",
         mainColor = {},
         marginColor = {},
-        center = b.Box:new(),
+        center = container,
         heightExpansion = 0,
         widthExpansion = 0,
         margin = {
@@ -54,12 +52,7 @@ function M.emptyPartialRendered()
         },
 
     }
-    for k, v in pairs(ret) do
-        if type(v) == "table" then
-            ---@diagnostic disable-next-line: param-type-mismatch
-            -- setmetatable(ret[k], weak)
-        end
-    end
+
     setmetatable(ret, meta)
     return ret
 end
@@ -89,10 +82,10 @@ function PartialRendered:expandHeightTo(num)
 end
 
 ---comment
----@param box Banana.Box
+---@param box Banana.Box2
 ---@param pad Banana.Renderer.Surround
 ---@param color Banana.Highlight
----@return Banana.Box
+---@return Banana.Box2
 function PartialRendered:padWith(box, pad, color)
     if pad.top ~= 0 then
         local topBox = b.Box:new(color)
@@ -127,7 +120,7 @@ function PartialRendered:padWith(box, pad, color)
 end
 
 ---@param clone boolean?
----@return Banana.Box
+---@return Banana.Box2
 function PartialRendered:render(clone)
     -- if clone == true then
     --     print("has clone, ignoring")
