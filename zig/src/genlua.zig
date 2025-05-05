@@ -236,10 +236,18 @@ pub fn luaTemplate(
     //     @compileError("Expected an int field after a [*]const u8 field");
     // }
     const ret = @call(.auto, fToCall, tuple);
-    if (@TypeOf(ret) == void) {
+    const retInfo = @typeInfo(@TypeOf(ret));
+    const actualRet = switch (retInfo) {
+        .error_union => ret catch |e| {
+            lua.push_stringslice(L, @errorName(e));
+            return lua.lua_error(L);
+        },
+        else => ret,
+    };
+    if (@TypeOf(actualRet) == void) {
         return 0;
     }
-    pushValue(L, ret);
+    pushValue(L, actualRet);
     // lua.push_bool(L, ret);
     return 1;
 }
@@ -275,8 +283,13 @@ pub fn genLuaDecls(
     inline for (methods) |method| {
         if (method.name.len > prefix.len and comptime std.mem.eql(u8, method.name[0..prefix.len], prefix)) {
             const fnInfo = @typeInfo(@TypeOf(@field(scope, method.name))).@"fn";
+            const fnRetInfo = @typeInfo(fnInfo.return_type.?);
+            const mainReturn = switch (fnRetInfo) {
+                .error_union => |v| v.payload,
+                else => fnInfo.return_type.?,
+            };
 
-            if (fnInfo.return_type == bool or comptime isInt(fnInfo.return_type.?) or isZeroPointer(fnInfo.return_type.?) or fnInfo.return_type == void) {
+            if (mainReturn == bool or comptime isInt(mainReturn) or isZeroPointer(mainReturn) or mainReturn == void) {
                 const newThing = struct {
                     // pub const fInfo = fnInfo;
 
@@ -293,7 +306,7 @@ pub fn genLuaDecls(
                 ret[i] = .{
                     .f = newThing.actualFn,
                     .name = method.name,
-                    .ret = fnInfo.return_type.?,
+                    .ret = mainReturn,
                     .params = fnInfo.params,
                 };
                 i += 1;

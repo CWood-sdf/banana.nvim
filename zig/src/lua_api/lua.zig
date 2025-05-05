@@ -149,7 +149,7 @@ pub const StackWriter = struct {
     }
 };
 
-extern fn lua_error(L: *State) callconv(.C) c_int;
+pub extern fn lua_error(L: *State) callconv(.C) c_int;
 pub const senderror = lua_error;
 
 extern fn lua_type(L: *State, index: c_int) callconv(.C) c_int;

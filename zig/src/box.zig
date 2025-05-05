@@ -25,8 +25,83 @@ fn codepointLen(char: u8) u8 {
     return 4;
 }
 
+const Char = packed struct {
+    // the actual number
+    bytes: u3,
+    // the width
+    width: u2,
+    char: u21,
+
+    // should be placed after double width characters so that they can act like their width
+    pub const dummy: Char = .{
+        .bytes = 0,
+        .width = 0,
+        .char = 0,
+    };
+
+    pub const space: Char = .{
+        .bytes = 1,
+        .width = 1,
+        .char = ' ',
+    };
+
+    /// writes the utf8 representation to the byte array
+    /// then returns the number of bytes written
+    pub fn toBytes(self: *const Char, byteArr: []u8) !u8 {
+        if (self.bytes == 0) {
+            return 0;
+        }
+        if (byteArr.len < self.bytes) {
+            return error.ArrayTooSmall;
+        }
+
+        const bytes = try std.unicode.utf8Encode(self.char, byteArr);
+        return bytes;
+    }
+    pub fn fromAscii(byte: u8) Char {
+        return .{
+            .bytes = 1,
+            .char = byte,
+            .width = 1,
+        };
+    }
+
+    pub fn fromUtf8(bytes: []const u8) !Char {
+        if (bytes.len == 0) {
+            return error.ArrayTooSmall;
+        }
+        const byteSize = try std.unicode.utf8ByteSequenceLength(bytes[0]);
+        if (bytes.len < byteSize) {
+            return error.ArrayTooSmall;
+        }
+        const codepoint: u21 = try std.unicode.utf8Decode(bytes[0..byteSize]);
+        // BUG: FIX WHEN NVIM FIXES nvim_strwidth
+        const width = 1; //try fns.z_nvim_strwidth(bytes[0..byteSize]);
+        if (width > 2) {
+            return error.NvimStrWidthTooBig;
+        }
+        return .{
+            .bytes = byteSize,
+            .char = codepoint,
+            .width = @intCast(width),
+        };
+    }
+
+    pub fn isDummy(char: Char) bool {
+        return char.width == 0;
+    }
+
+    pub fn sliceWidth(slice: []const Char) u32 {
+        var ret: u32 = 0;
+        for (slice) |char| {
+            ret += char.width;
+        }
+        return ret;
+    }
+};
+
 const Line = struct {
-    chars: std.ArrayListUnmanaged(u8),
+    chars: std.ArrayListUnmanaged(Char),
     hls: std.ArrayListUnmanaged(Highlight),
     width: u32,
 
@@ -39,41 +114,69 @@ const Line = struct {
     }
 
     pub fn popLastChar(self: *Line) void {
-        var i = @min(self.chars.items.len, 4);
-        var popCount: u32 = 1;
-        while (i > 0) {
-            if (codepointLen(self.chars.items[self.chars.items.len - i]) == i) {
-                popCount = i;
-                break;
-            }
-            i -= 1;
-        }
-        const str = self.chars.items[self.chars.items.len - popCount .. self.chars.items.len];
-        const widthDelta = fns.z_nvim_strwidth(str) catch 1;
-        for (0..i) |_| {
-            _ = self.chars.pop();
-            _ = self.hls.pop();
-        }
-        if (widthDelta > self.width) {
-            self.width = 0;
-        } else {
-            self.width -= @intCast(widthDelta);
-        }
+        _ = self.chars.pop();
+        _ = self.hls.pop();
+        self.width -= 1;
     }
     pub fn deinit(self: *Line, alloc: std.mem.Allocator) void {
         self.chars.deinit(alloc);
         self.hls.deinit(alloc);
     }
+    pub fn appendWordToLen(
+        self: *Line,
+        ctx: *BoxContext,
+        str: []const u8,
+        hl: Highlight,
+        len: u32,
+        addNoMatterWhat: bool,
+    ) !u32 {
+        var i: u32 = 0;
+        if (self.width == len and !addNoMatterWhat) {
+            return 0;
+        }
+        while (i < str.len) {
+            const char = try Char.fromUtf8(str[i..]);
+            if (char.width + self.width > len and !addNoMatterWhat) {
+                return i;
+            }
+            i += char.bytes;
+            try self.chars.append(ctx.alloc, char);
+            self.hls.append(ctx.alloc, hl) catch |e| {
+                self.chars.shrinkRetainingCapacity(self.chars.items.len - 1);
+                return e;
+            };
+            if (char.width == 2) {
+                try self.chars.append(ctx.alloc, .dummy);
+                self.hls.append(ctx.alloc, hl) catch |e| {
+                    self.chars.shrinkRetainingCapacity(self.chars.items.len - 1);
+                    return e;
+                };
+            } else if (char.width > 2) {
+                return error.TripleWidthCharacter;
+            }
+            self.width += char.width;
+            if (self.width >= len) {
+                return i;
+            }
+        }
+        return i;
+    }
     pub fn appendWord(self: *Line, ctx: *BoxContext, str: []const u8, hl: Highlight) !void {
-        const width = try fns.z_nvim_strwidth(str);
-        try self.chars.appendSlice(ctx.alloc, str);
-        self.hls.appendNTimes(ctx.alloc, hl, str.len) catch |e| {
-            self.chars.shrinkRetainingCapacity(self.chars.items.len - str.len);
-            return e;
-        };
-        self.width += @intCast(width);
+        _ = try self.appendWordToLen(ctx, str, hl, str.len + self.width, true);
     }
 
+    pub fn ensureAppendableAt(self: *Line, ctx: *BoxContext, spot: u32) !void {
+        if (self.width < spot) {
+            try self.chars.appendNTimes(ctx.alloc, .space, spot - self.width);
+            self.hls.appendNTimes(ctx.alloc, 0, spot - self.width) catch |e| {
+                self.chars.shrinkRetainingCapacity(self.width);
+                return e;
+            };
+            self.width = spot;
+        }
+    }
+
+    /// Appends an ascii char n times
     pub fn appendCharNTimes(
         self: *Line,
         ctx: *BoxContext,
@@ -81,7 +184,7 @@ const Line = struct {
         hl: Highlight,
         n: u32,
     ) !void {
-        try self.chars.appendNTimes(ctx.alloc, char, n);
+        try self.chars.appendNTimes(ctx.alloc, Char.fromAscii(char), n);
         self.hls.appendNTimes(ctx.alloc, hl, n) catch |e| {
             self.chars.shrinkRetainingCapacity(self.chars.items.len - n);
             return e;
@@ -100,6 +203,7 @@ pub const BoxContext = struct {
     lines: std.ArrayListUnmanaged(Line) = .empty,
     alloc: std.mem.Allocator = std.heap.page_allocator,
     boxes: std.ArrayListUnmanaged(Box) = .empty,
+    partials: std.ArrayListUnmanaged(PartialRendered) = .empty,
 
     // ctor/dtor
     pub fn init(alloc: std.mem.Allocator) BoxContext {
@@ -107,10 +211,19 @@ pub const BoxContext = struct {
             .lines = .empty,
             .boxes = .empty,
             .alloc = alloc,
+            .partials = .empty,
         };
     }
-    pub fn newBox(self: *BoxContext, box: Box) ?u32 {
-        self.boxes.append(self.alloc, box) catch return null;
+    pub fn deinit(self: *BoxContext) void {
+        for (self.lines.items) |*line| {
+            line.deinit(self.alloc);
+        }
+        self.lines.deinit(self.alloc);
+        self.boxes.deinit(self.alloc);
+        self.partials.deinit(self.alloc);
+    }
+    pub fn newBox(self: *BoxContext, box: Box) !u32 {
+        try self.boxes.append(self.alloc, box);
         return @intCast(self.boxes.items.len - 1);
     }
     pub fn getBox(self: *const BoxContext, box: u32) ?*Box {
@@ -119,21 +232,24 @@ pub const BoxContext = struct {
         }
         return &self.boxes.items[box];
     }
-    pub fn deinit(self: *BoxContext) void {
-        for (self.lines.items) |*line| {
-            line.deinit(self.alloc);
+    pub fn newPartial(self: *BoxContext, partial: PartialRendered) !u32 {
+        try self.partials.append(self.alloc, partial);
+        return @intCast(self.partials.items.len - 1);
+    }
+    pub fn getPartial(self: *const BoxContext, ptl: u32) ?*PartialRendered {
+        if (ptl >= self.partials.items.len) {
+            return null;
         }
-        self.lines.deinit(self.alloc);
-        self.boxes.deinit(self.alloc);
+        return &self.partials.items[ptl];
     }
     pub fn stripRightSpace(self: *BoxContext, expectedBg: Highlight) !void {
         _ = self; // autofix
         _ = expectedBg; // autofix
     }
 
-    pub fn getLine(self: *BoxContext, line: u32) ?*Line {
+    pub fn getLine(self: *BoxContext, line: u32) !*Line {
         while (self.lines.items.len <= line) {
-            self.lines.append(self.alloc, Line.init()) catch return null;
+            try self.lines.append(self.alloc, Line.init());
         }
         return &self.lines.items[line];
     }
@@ -147,8 +263,29 @@ pub const BoxContext = struct {
         const arr = try self.alloc.alloc(tps.Object, self.lines.items.len);
         defer self.alloc.free(arr);
 
-        for (self.lines.items, 0..) |line, i| {
-            arr[i] = tps.stringObject(line.chars.items);
+        var lines: std.ArrayListUnmanaged(std.ArrayListUnmanaged(u8)) = .empty;
+        defer {
+            for (lines.items) |*line| {
+                line.deinit(self.alloc);
+            }
+            lines.deinit(self.alloc);
+        }
+        for (self.lines.items) |*line| {
+            try lines.append(self.alloc, .empty);
+            for (line.chars.items) |char| {
+                var chars = [_]u8{0} ** 4;
+                const bytes = try char.toBytes(&chars);
+                if (bytes != 0) {
+                    try lines.items[lines.items.len - 1].appendSlice(
+                        self.alloc,
+                        chars[0..bytes],
+                    );
+                }
+            }
+        }
+
+        for (lines.items, 0..) |line, i| {
+            arr[i] = tps.stringObject(line.items);
         }
         const replacement: tps.Array = .{
             .size = self.lines.items.len,
@@ -184,25 +321,27 @@ pub const BoxContext = struct {
             }
             var startCol: u32 = 0;
             var currentHl: Highlight = line.hls.items[0];
+            var byte: u32 = 0;
             for (line.hls.items, 0..) |hl, col| {
                 if (currentHl != hl) {
                     if (currentHl != 0) {
                         lua.push_value(L, pos);
                         lua.push_int(L, @intCast(row));
                         lua.push_int(L, @intCast(startCol));
-                        lua.push_int(L, @intCast(col));
+                        lua.push_int(L, @intCast(byte));
                         lua.push_int(L, @intCast(currentHl));
                         lua.call(L, 4, 0);
                     }
                     currentHl = hl;
-                    startCol = @intCast(col);
+                    startCol = byte;
                 }
+                byte += line.chars.items[col].bytes;
             }
-            if (startCol != line.hls.items.len - 1 and currentHl != 0) {
+            if (startCol != byte) {
                 lua.push_value(L, pos);
                 lua.push_int(L, @intCast(row));
                 lua.push_int(L, @intCast(startCol));
-                lua.push_int(L, @intCast(line.hls.items.len));
+                lua.push_int(L, @intCast(byte));
                 lua.push_int(L, @intCast(currentHl));
                 lua.call(L, 4, 0);
             }
@@ -326,8 +465,7 @@ pub const Box = struct {
     }
 
     pub fn shiftRightwardsBy(self: *Box, extra: u32) !void {
-        for (self.context.lines.items[self.offsetY..self.height]) |*line| {
-            const bytes = try fns.sliceToWidth(line.chars.items, self.offsetX);
+        for (self.context.lines.items[self.offsetY .. self.offsetY + self.height]) |*line| {
             try line.chars.ensureTotalCapacity(
                 self.context.alloc,
                 extra + line.chars.items.len,
@@ -337,8 +475,8 @@ pub const Box = struct {
                 extra + line.hls.items.len,
             );
             for (0..extra) |_| {
-                line.chars.insertAssumeCapacity(bytes.len, ' ');
-                line.hls.insertAssumeCapacity(bytes.len, self.hlgroup);
+                line.chars.insertAssumeCapacity(self.offsetX, .space);
+                line.hls.insertAssumeCapacity(self.offsetX, self.hlgroup);
             }
         }
     }
@@ -396,26 +534,38 @@ pub const Box = struct {
 
     // *kinda* one of the most needed low level apis
     pub fn appendStr(self: *Box, str: []const u8) !void {
-        var pushedBytes: u32 = 0;
-
         var isFirst: bool = true;
-        while (pushedBytes < str.len) {
-            if (!isFirst) {
-                self.cursorY += 1;
-                self.height += 1;
-                self.cursorX = 0;
-            }
+        var newStr = str;
+        if (self.height == 0) {
+            self.height = 1;
+        }
+        while (newStr.len != 0) {
             const maxWidth = self.maxWidth - self.cursorX;
-            const slice = try fns.sliceToWidth(str, maxWidth);
-            const strWidth = try fns.z_nvim_strwidth(slice);
-            const line = self.context.getLine(self.cursorY + self.offsetY);
-            if (line == null) {
-                return error.LineIsNull;
+            const line = try self.context.getLine(self.cursorY + self.offsetY);
+
+            if (self.cursorX == 0) {
+                try line.ensureAppendableAt(self.context, self.offsetX);
             }
-            // TODO: Bounds checking and wrapping
-            try line.?.appendWord(self.context, slice, self.hlgroup);
-            pushedBytes += @intCast(slice.len);
-            self.cursorX += @intCast(strWidth);
+            const startWidth = line.width;
+
+            const index = try line.appendWordToLen(
+                self.context,
+                str,
+                self.hlgroup,
+                maxWidth,
+                self.cursorX == 0,
+            );
+            self.cursorX += line.width - startWidth;
+            if (self.cursorX >= self.maxWidth) {
+                self.cursorX = 0;
+                self.height += 1;
+                self.cursorY += 1;
+            }
+            self.width = @max(self.width, self.cursorX);
+            if (index >= newStr.len) {
+                break;
+            }
+            newStr = newStr[index..];
             isFirst = false;
         }
     }
@@ -458,7 +608,8 @@ pub const PartialRendered = struct {
     padding: Pad,
     widthExpansion: u32,
     heightExpansion: u32,
-    box: *Box,
+    containerBox: *Box,
+    box: ?*Box,
     marginColor: Highlight,
     mainColor: Highlight,
     renderAlign: RenderAlign,
@@ -473,42 +624,274 @@ pub const PartialRendered = struct {
         right: u32,
         top: u32,
         bottom: u32,
+        pub const zero: Pad = .init(0, 0, 0, 0);
+        pub fn init(l: u32, r: u32, t: u32, b: u32) Pad {
+            return .{
+                .left = l,
+                .right = r,
+                .top = t,
+                .bottom = b,
+            };
+        }
+        pub fn equals(left: Pad, right: Pad) bool {
+            return left.left == right.right and left.right == right.right and left.top == right.top and left.bottom == right.bottom;
+        }
     };
 
-    pub fn render(self: *PartialRendered) void {
-        _ = self; // autofix
+    pub fn init(containerBox: *Box) PartialRendered {
+        return .{
+            .margin = .zero,
+            .padding = .zero,
+            .widthExpansion = 0,
+            .heightExpansion = 0,
+            .containerBox = containerBox,
+            .box = null,
+            .marginColor = containerBox.hlgroup,
+            .mainColor = 0,
+            .renderAlign = .left,
+            .maxWidth = containerBox.maxWidth,
+        };
     }
-    pub fn renderWithMove(self: *PartialRendered, maxWidth: u32, toX: u32, toY: u32) void {
-        _ = self; // autofix
-        _ = maxWidth; // autofix
-        _ = toX; // autofix
-        _ = toY; // autofix
+
+    pub fn setMargin(self: *PartialRendered, margin: Pad) void {
+        self.margin = margin;
+    }
+    pub fn setPadding(self: *PartialRendered, padding: Pad) void {
+        self.padding = padding;
+    }
+    pub fn setMainColor(self: *PartialRendered, main: Highlight) void {
+        self.mainColor = main;
+    }
+    pub fn setMaxWidth(self: *PartialRendered, width: u32) void {
+        self.maxWidth = width;
+    }
+    pub fn createBoxTryCursored(self: *PartialRendered) !u32 {
+        if (!self.padding.equals(.zero) or !self.margin.equals(.zero)) {
+            return try self.createBox(self.containerBox.cursorX, self.containerBox.cursorY);
+        }
+        const box = self.containerBox.newBoxCursored();
+        const id = try self.containerBox.context.newBox(box);
+
+        self.box = self.containerBox.context.getBox(id);
+        if (self.box == null) {
+            return error.CantCreateBox;
+        }
+        // dont need to set maxWidth bc its inherited from containerBox
+        // self.box.?.maxWidth = self.maxWidth - self.margin.left - self.padding.left - self.margin.right - self.padding.right;
+        self.box.?.hlgroup = self.mainColor;
+        return id;
+    }
+    pub fn createBox(self: *PartialRendered, offX: u32, offY: u32) !u32 {
+        const box = self.containerBox.newBoxFromOffset(
+            self.margin.left + self.padding.left + offX,
+            self.margin.top + self.padding.top + offY,
+        );
+        const id = try self.containerBox.context.newBox(box);
+
+        self.box = self.containerBox.context.getBox(id);
+        if (self.box == null) {
+            return error.CantCreateBox;
+        }
+        self.box.?.maxWidth = self.maxWidth - self.margin.left - self.padding.left - self.margin.right - self.padding.right;
+        self.box.?.hlgroup = self.mainColor;
+        return id;
+    }
+    pub fn setAlign(self: *PartialRendered, al: RenderAlign) void {
+        self.renderAlign = al;
+    }
+    pub fn render(self: *PartialRendered) !void {
+        const box = self.box orelse return error.BoxNotExist;
+        const alloc = box.context.alloc;
+        const mainWidth = box.width + self.widthExpansion;
+        const mainHeight = box.height + self.heightExpansion;
+        const offX = self.containerBox.offsetX;
+        const offY = self.containerBox.offsetY;
+        switch (self.renderAlign) {
+            .center => {
+                const leftSide = @divFloor(self.widthExpansion, 2);
+                try box.shiftRightwardsBy(leftSide);
+                const rightSide = self.widthExpansion - leftSide;
+                for (box.offsetY..box.offsetY + box.height) |i| {
+                    const line = try box.context.getLine(@intCast(i));
+                    try line.chars.appendNTimes(alloc, .space, rightSide);
+                    try line.hls.appendNTimes(alloc, self.mainColor, rightSide);
+                }
+            },
+            .right => {
+                try box.shiftRightwardsBy(self.widthExpansion);
+            },
+            .left => {
+                for (box.offsetY..box.offsetY + box.height) |i| {
+                    const line = try box.context.getLine(@intCast(i));
+                    try line.chars.appendNTimes(alloc, .space, self.widthExpansion);
+                    try line.hls.appendNTimes(
+                        alloc,
+                        self.mainColor,
+                        self.widthExpansion,
+                    );
+                }
+            },
+        }
+        for (0..self.heightExpansion) |i| {
+            const lineNr = offY + self.padding.top + self.margin.top + box.height + i;
+            const line = try box.context.getLine(@intCast(lineNr));
+            const startX = offX + self.margin.left + self.padding.left;
+            try line.chars.ensureTotalCapacity(
+                alloc,
+                startX + mainWidth,
+            );
+            try line.hls.ensureTotalCapacity(
+                alloc,
+                startX + mainWidth,
+            );
+            @memset(line.chars.items[startX .. startX + mainWidth], .space);
+            @memset(line.hls.items[startX .. startX + mainWidth], self.mainColor);
+        }
+        const height = mainHeight + self.padding.top + self.padding.bottom + self.margin.top + self.margin.bottom;
+        const width = mainWidth + self.padding.left + self.padding.right + self.margin.left + self.margin.right;
+
+        // set margin and padding
+        for (0..height) |i| {
+            const line = try box.context.getLine(offY + @as(u32, @intCast(i)));
+            if (i < self.margin.top or i >= height - self.margin.bottom) {
+                // all margin
+                try line.chars.ensureTotalCapacity(alloc, offX + width);
+                const currentStrLen = line.chars.items.len;
+                if (currentStrLen < offX + width) {
+                    line.chars.appendNTimesAssumeCapacity(.space, offX + width - currentStrLen);
+                }
+                if (currentStrLen > offX) {
+                    @memset(line.chars.items[offX..currentStrLen], .space);
+                }
+                try line.hls.ensureTotalCapacity(alloc, offX + width);
+                if (currentStrLen < offX + width) {
+                    line.hls.appendNTimesAssumeCapacity(self.marginColor, offX + width - currentStrLen);
+                }
+                if (currentStrLen > offX) {
+                    @memset(line.hls.items[offX .. offX + width], self.marginColor);
+                }
+            } else if (i < self.margin.top + self.padding.top or i >= height - self.margin.bottom - self.padding.bottom) {
+                // margin l r, middle padding
+                try line.chars.ensureTotalCapacity(alloc, offX + width);
+                const currentStrLen = line.chars.items.len;
+                if (currentStrLen < offX + width) {
+                    line.chars.appendNTimesAssumeCapacity(.space, offX + width - currentStrLen);
+                }
+                if (currentStrLen > offX) {
+                    @memset(line.chars.items[offX..currentStrLen], .space);
+                }
+                try line.hls.ensureTotalCapacity(alloc, offX + width);
+                // just set any unused area to margin color, it will be changed later
+                // do this bc i REALLY dont want to do complicated logic
+                if (currentStrLen < offX + width) {
+                    line.hls.appendNTimesAssumeCapacity(self.marginColor, offX + width - currentStrLen);
+                }
+
+                @memset(line.hls.items[offX .. offX + self.margin.left], self.marginColor);
+                @memset(
+                    line.hls.items[offX + self.margin.left .. offX + width - self.margin.right],
+                    self.mainColor,
+                );
+                @memset(
+                    line.hls.items[offX + width - self.margin.right .. offX + width],
+                    self.marginColor,
+                );
+            } else {
+                // margin + pad l r, middle content{
+                const currentStrLen = line.chars.items.len;
+                try line.chars.ensureTotalCapacity(alloc, offX + width);
+                if (currentStrLen < offX + width) {
+                    line.chars.appendNTimesAssumeCapacity(.space, offX + width - currentStrLen);
+                }
+
+                const spaceArea = self.margin.left + self.padding.left;
+                @memset(line.chars.items[offX .. offX + spaceArea], .space);
+                const spaceCont = spaceArea + mainWidth;
+                @memset(line.chars.items[offX + spaceCont .. offX + width], .space);
+                try line.hls.ensureTotalCapacity(alloc, offX + width);
+                if (currentStrLen < offX + width) {
+                    line.hls.appendNTimesAssumeCapacity(self.marginColor, offX + width - currentStrLen);
+                }
+                @memset(line.hls.items[offX .. offX + self.margin.left], self.marginColor);
+                @memset(
+                    line.hls.items[offX + self.margin.left .. offX + self.margin.left + self.padding.left],
+                    self.mainColor,
+                );
+                @memset(
+                    line.hls.items[offX + self.margin.left + self.padding.left + mainWidth .. offX + width - self.margin.right],
+                    self.mainColor,
+                );
+                @memset(
+                    line.hls.items[offX + width - self.margin.right .. offX + width],
+                    self.marginColor,
+                );
+            }
+        }
+    }
+    pub fn renderWithMove(self: *PartialRendered, maxWidth: u32, toX: u32, toY: u32) !bool {
+        try self.render();
+        const box = self.box orelse return error.BoxNotExist;
+        const alloc = box.context.alloc;
+        const mainWidth = box.width + self.widthExpansion;
+        const width = mainWidth + self.padding.left + self.padding.right + self.margin.left + self.margin.right;
+        const height = box.height + self.heightExpansion + self.padding.top + self.padding.bottom + self.margin.top + self.margin.bottom;
+        // yo we gucci
+        if (width <= maxWidth) {
+            return false;
+        }
+        const offX = self.containerBox.offsetX;
+        const offY = self.containerBox.offsetY;
+        for (0..height) |i| {
+            const line = try box.context.getLine(offY + @as(u32, @intCast(i)));
+            const count = @min(line.chars.items.len - offX, width);
+            const slice = line.chars.items[offX .. offX + count];
+            const otherLine = try box.context.getLine(toY + @as(u32, @intCast(i)));
+
+            if (otherLine.chars.items.len < toX + count) {
+                try otherLine.chars.appendNTimes(box.context.alloc, .space, toX + count - otherLine.chars.items.len);
+                try otherLine.hls.appendNTimes(box.context.alloc, self.marginColor, toX + count - otherLine.hls.items.len);
+            }
+            try otherLine.chars.replaceRange(alloc, toX, count, slice);
+            try otherLine.hls.replaceRange(
+                alloc,
+                toX,
+                count,
+                line.hls.items[offX .. offX + count],
+            );
+            @memset(line.chars.items[offX .. offX + count], .space);
+            @memset(line.hls.items[offX .. offX + count], self.marginColor);
+        }
+        return true;
     }
 };
 
-pub fn get_context(ctx: u32) ?*BoxContext {
+pub fn get_context(ctx: u32) !*BoxContext {
     if (ctx >= contexts.items.len) {
-        return null;
+        return error.NotFound;
     }
     if (contexts.items[ctx]) |*c| return c;
-    return null;
+    return error.NotFound;
 }
 
-pub fn get_box(ctx: u32, box: u32) ?*Box {
-    const context = get_context(ctx) orelse return null;
-    return context.getBox(box);
+pub fn get_box(ctx: u32, box: u32) !*Box {
+    const context = try get_context(ctx);
+    return context.getBox(box) orelse return error.NotFound;
+}
+pub fn get_partial(ctx: u32, partial: u32) !*PartialRendered {
+    const context = try get_context(ctx);
+    return context.getPartial(partial) orelse return error.NotFound;
 }
 
 // new context {
 /// Returns -1 on failure
 /// @return i32 the id of a new box context
-pub fn box_context_create() i32 {
+pub fn box_context_create() !u32 {
     for (contexts.items, 0..) |item, i| {
         if (item) |_| continue;
         contexts.items[i] = BoxContext.init(std.heap.page_allocator);
         return @intCast(i);
     }
-    contexts.append(std.heap.page_allocator, null) catch return -1;
+    try contexts.append(std.heap.page_allocator, null);
     const i = contexts.items.len - 1;
     contexts.items[i] = BoxContext.init(std.heap.page_allocator);
     return @intCast(i);
@@ -544,11 +927,56 @@ pub fn box_context_exists(ctx: u32) bool {
 }
 // }
 
+// partial rendereds {
+pub fn box_pr_new(ctx: u32, boxid: u32) !u32 {
+    const context = try get_context(ctx);
+    const box = try get_box(ctx, boxid);
+    const partial = PartialRendered.init(box);
+    return try context.newPartial(partial);
+}
+pub fn box_pr_set_margin(ctx: u32, partialid: u32, left: u32, top: u32, right: u32, bottom: u32) !void {
+    const partial = try get_partial(ctx, partialid);
+    partial.setMargin(.init(left, right, top, bottom));
+}
+pub fn box_pr_set_pad(ctx: u32, partialid: u32, left: u32, top: u32, right: u32, bottom: u32) !void {
+    const partial = try get_partial(ctx, partialid);
+    partial.setPadding(.init(left, right, top, bottom));
+}
+pub fn box_pr_set_main_hl(ctx: u32, partialid: u32, hl: Highlight) !void {
+    const partial = try get_partial(ctx, partialid);
+    partial.setMainColor(hl);
+}
+pub fn box_pr_set_max_width(ctx: u32, partialid: u32, width: u32) !void {
+    const partial = try get_partial(ctx, partialid);
+    partial.setMaxWidth(width);
+}
+pub fn box_pr_cursored_box(ctx: u32, partialid: u32) !u32 {
+    const partial = try get_partial(ctx, partialid);
+    return try partial.createBoxTryCursored();
+}
+pub fn box_pr_box(ctx: u32, partialid: u32, offX: u32, offY: u32) !u32 {
+    const partial = try get_partial(ctx, partialid);
+    return try partial.createBox(offX, offY);
+}
+pub fn box_pr_set_align(ctx: u32, partialid: u32, al: u32) !void {
+    const partial = try get_partial(ctx, partialid);
+    partial.setAlign(@enumFromInt(al));
+}
+pub fn box_pr_render(ctx: u32, partialid: u32) !void {
+    const partial = try get_partial(ctx, partialid);
+    try partial.render();
+}
+pub fn box_pr_render_with_move(ctx: u32, partialid: u32, maxWidth: u32, toX: u32, toY: u32) !bool {
+    const partial = try get_partial(ctx, partialid);
+    return try partial.renderWithMove(maxWidth, toX, toY);
+}
+// }
+
 // context render {
 ///
-pub fn box_context_render(ctx: u32, buf: u32) bool {
-    const context = get_context(ctx) orelse return false;
-    context.render(buf) catch return false;
+pub fn box_context_render(ctx: u32, buf: u32) !bool {
+    const context = try get_context(ctx);
+    try context.render(buf);
     return true;
 }
 
@@ -563,119 +991,103 @@ pub fn Expect(tp: type) type {
 }
 
 const HlExpect = Expect(fn (line: i32, startCol: i32, endCol: i32, hl: i32) void);
-pub fn box_context_highlight(ctx: u32, L: HlExpect) bool {
-    const context = get_context(ctx) orelse return false;
+pub fn box_context_highlight(ctx: u32, L: HlExpect) !void {
+    const context = try get_context(ctx);
     context.highlight(L.L, 2);
-    return true;
 }
 
-pub fn box_shift_right_by(ctx: u32, boxid: u32, extra: u32) bool {
-    const box = get_box(ctx, boxid) orelse return false;
-    box.shiftRightwardsBy(extra) catch return false;
-    return true;
+pub fn box_shift_right_by(ctx: u32, boxid: u32, extra: u32) !void {
+    const box = try get_box(ctx, boxid);
+    try box.shiftRightwardsBy(extra);
 }
 
 // new box from ctx {
-pub fn box_new_from_context(ctx: u32, hlgroup: Highlight) i32 {
-    const context = &(contexts.items[ctx] orelse return -1);
-    const ret = context.newBox(Box.newBoxFromContext(context, hlgroup));
-    if (ret) |r| return @intCast(r);
-    return -1;
+pub fn box_new_from_context(ctx: u32, hlgroup: Highlight) !u32 {
+    const context = try get_context(ctx);
+    const ret = try context.newBox(Box.newBoxFromContext(context, hlgroup));
+    return @intCast(ret);
 }
 // }
 
 // new box from offset {
-pub fn box_new_from_offset(ctx: u32, box: u32, x: u32, y: u32) i32 {
-    const self = get_box(ctx, box) orelse return -1;
-    const ret = self.context.newBox(self.newBoxFromOffset(x, y));
-    if (ret) |r| return @intCast(r);
-    return -1;
+pub fn box_new_from_offset(ctx: u32, box: u32, x: u32, y: u32) !u32 {
+    const self = try get_box(ctx, box);
+    const ret = try self.context.newBox(self.newBoxFromOffset(x, y));
+    return @intCast(ret);
 }
 // }
 
 // new box right {
-pub fn box_new_right_from(ctx: u32, box: u32) i32 {
-    const self = get_box(ctx, box) orelse return -1;
-    const ret = self.context.newBox(self.newBoxRightOf());
-    if (ret) |r| return @intCast(r);
-    return -1;
+pub fn box_new_right_from(ctx: u32, box: u32) !u32 {
+    const self = try get_box(ctx, box);
+    const ret = try self.context.newBox(self.newBoxRightOf());
+    return @intCast(ret);
 }
 
-pub fn box_new_cursored(ctx: u32, box: u32) i32 {
-    const self = get_box(ctx, box) orelse return -1;
-    const ret = self.context.newBox(self.newBoxCursored());
-    if (ret) |r| return @intCast(r);
-    return -1;
+pub fn box_new_cursored(ctx: u32, box: u32) !u32 {
+    const self = try get_box(ctx, box);
+    const ret = try self.context.newBox(self.newBoxCursored());
+    return @intCast(ret);
 }
 // }
 
 // prettry sure this is only used for canvas
-pub fn box_shrink_width_to(ctx: u32, box: u32, width: u32) bool {
-    const self = get_box(ctx, box) orelse return false;
-    self.shrinkWidthTo(width) catch return false;
-    return true;
+pub fn box_shrink_width_to(ctx: u32, box: u32, width: u32) !void {
+    const self = try get_box(ctx, box);
+    try self.shrinkWidthTo(width);
 }
-pub fn box_update_cursor_from(ctx: u32, box: u32, other: u32) bool {
-    const self = get_box(ctx, box) orelse return false;
-    const otherBox = get_box(ctx, other) orelse return false;
+pub fn box_update_cursor_from(ctx: u32, box: u32, other: u32) !void {
+    const self = try get_box(ctx, box);
+    const otherBox = try get_box(ctx, other);
     self.updateCursorFrom(otherBox);
-    return true;
 }
-pub fn box_set_width(ctx: u32, box: u32, width: u32) bool {
-    const self = get_box(ctx, box) orelse return false;
-    self.setWidth(width) catch return false;
-    return true;
+pub fn box_set_width(ctx: u32, box: u32, width: u32) !void {
+    const self = try get_box(ctx, box);
+    try self.setWidth(width);
 }
 
-pub fn box_set_max_width(ctx: u32, box: u32, width: i32) bool {
-    const self = get_box(ctx, box) orelse return false;
+pub fn box_set_max_width(ctx: u32, box: u32, width: i32) !void {
+    const self = try get_box(ctx, box);
     self.maxWidth = @max(width, 0);
-    return true;
 }
-pub fn box_get_width(ctx: u32, box: u32) i32 {
-    const self = get_box(ctx, box) orelse return -1;
+pub fn box_get_width(ctx: u32, box: u32) !u32 {
+    const self = try get_box(ctx, box);
     return @intCast(self.width);
 }
-pub fn box_expand_width_to(ctx: u32, box: u32, width: u32) bool {
-    const self = get_box(ctx, box) orelse return false;
-    self.expandWidthTo(width) catch return false;
-    return true;
+pub fn box_expand_width_to(ctx: u32, box: u32, width: u32) !void {
+    const self = try get_box(ctx, box);
+    try self.expandWidthTo(width);
 }
 
-pub fn box_expand_height_to(ctx: u32, box: u32, height: u32) bool {
-    const self = get_box(ctx, box) orelse return false;
-    self.expandHeightTo(height) catch return false;
-    return true;
+pub fn box_expand_height_to(ctx: u32, box: u32, height: u32) !void {
+    const self = try get_box(ctx, box);
+    try self.expandHeightTo(height);
 }
-pub fn box_shrink_height_to(ctx: u32, box: u32, height: u32) bool {
-    const self = get_box(ctx, box) orelse return false;
-    self.shrinkHeightTo(height) catch return false;
-    return true;
+pub fn box_shrink_height_to(ctx: u32, box: u32, height: u32) !void {
+    const self = try get_box(ctx, box);
+    try self.shrinkHeightTo(height);
 }
 
-pub fn box_set_height(ctx: u32, box: u32, height: u32) bool {
-    const self = get_box(ctx, box) orelse return false;
-    self.setHeight(height) catch return false;
-    return true;
+pub fn box_set_height(ctx: u32, box: u32, height: u32) !void {
+    const self = try get_box(ctx, box);
+    try self.setHeight(height);
 }
 
-pub fn box_get_height(ctx: u32, box: u32) i32 {
-    const self = get_box(ctx, box) orelse return -1;
+pub fn box_get_height(ctx: u32, box: u32) !u32 {
+    const self = try get_box(ctx, box);
     return @intCast(self.height);
 }
 
-pub fn box_clean(ctx: u32, box: u32) bool {
-    const self = get_box(ctx, box) orelse return false;
-    self.clean() catch return false;
-    return true;
+pub fn box_clean(ctx: u32, box: u32) !void {
+    const self = try get_box(ctx, box);
+    try self.clean();
 }
 
 // *kinda* one of the most needed low level apis
 // append str {
-pub fn box_append_str(ctx: u32, box: u32, str: []const u8) bool {
-    const self = get_box(ctx, box) orelse return false;
-    self.appendStr(str) catch return false;
-    return true;
+pub fn box_append_str(ctx: u32, box: u32, str: []const u8) !void {
+    const self = try get_box(ctx, box);
+    try self.appendStr(str);
 }
 // }
 
@@ -685,17 +1097,15 @@ pub fn box_append_str(ctx: u32, box: u32, str: []const u8) bool {
 // }
 
 // set hl {
-pub fn box_set_hl(ctx: u32, box: u32, style: u32) bool {
-    const self = get_box(ctx, box) orelse return false;
+pub fn box_set_hl(ctx: u32, box: u32, style: u32) !void {
+    const self = try get_box(ctx, box);
     self.hlgroup = style;
-    return true;
 }
 // }
 
-pub fn box_append_word(ctx: u32, box: u32, str: []const u8, style: Highlight) bool {
-    const self = get_box(ctx, box) orelse return false;
-    self.appendWord(str, style) catch return false;
-    return true;
+pub fn box_append_word(ctx: u32, box: u32, str: []const u8, style: Highlight) !void {
+    const self = try get_box(ctx, box);
+    try self.appendWord(str, style);
 }
 // TODO: Remove in favor of managed splitting
 // pb fn getLine(i){}
@@ -704,10 +1114,9 @@ pub fn box_append_word(ctx: u32, box: u32, str: []const u8, style: Highlight) bo
 
 // pub fn appendBoxBelow(box, expand){}
 
-pub fn box_strip_right_space(ctx: u32, expected_bg: Highlight) bool {
-    const context = &(contexts.items[ctx] orelse return false);
-    context.stripRightSpace(expected_bg) catch return false;
-    return true;
+pub fn box_strip_right_space(ctx: u32, expected_bg: Highlight) !void {
+    const context = try get_context(ctx);
+    try context.stripRightSpace(expected_bg);
 }
 // TODO: Unused
 
@@ -715,9 +1124,8 @@ pub fn box_strip_right_space(ctx: u32, expected_bg: Highlight) bool {
 
 // NOTE: Rendering over should *only* happen from prepared box contexts
 
-pub fn box_render_over(ctx: u32, box: u32, otherCtx: u32, left: u32, top: u32) bool {
-    const self = get_box(ctx, box) orelse return false;
-    const context = &contexts.items[otherCtx].?;
-    self.renderOver(context, left, top) catch return false;
-    return true;
+pub fn box_render_over(ctx: u32, box: u32, otherCtx: u32, left: u32, top: u32) !void {
+    const self = try get_box(ctx, box);
+    const context = try get_context(otherCtx);
+    try self.renderOver(context, left, top);
 }
