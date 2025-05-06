@@ -19,8 +19,7 @@ local log = require("banana.lazyRequire")("banana.utils.log")
 local M = {}
 ---@module 'banana.box'
 local b = require("banana.lazyRequire")("banana.box")
----@module 'ffi'
-local ffi = require("banana.lazyRequire")("ffi")
+---@module 'banana.libbananagrid'
 local so = require("banana.lazyRequire")("banana.libbanana")
 -- ---@module 'banana.ncss.unit'
 -- local unit = require("banana.lazyRequire")("banana.ncss.unit")
@@ -333,6 +332,7 @@ local function actualRender(thing, ast, box, parentHl, parentWidth, parentHeight
         renderOrder[i] = preRender
         maxRow = math.max(maxRow, endRow - 1)
         maxCol = math.max(maxCol, endCol - 1)
+        ---@diagnostic disable-next-line: param-type-mismatch
         so.grid_turnOnRange(thing, row, col, endRow, endCol)
         ::continue::
     end

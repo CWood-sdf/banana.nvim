@@ -4,7 +4,7 @@ local flame = require("banana.lazyRequire")("banana.utils.debug_flame")
 local log = require("banana.lazyRequire")("banana.utils.log")
 ---@module 'banana.utils.string'
 local _str = require("banana.lazyRequire")("banana.utils.string")
----@module 'banana.libbanana2'
+---@module 'banana.libbananabox'
 local lb = require("banana.lazyRequire")("banana.libbanana")
 -- ---@module 'banana.utils.string'
 -- local _str = require("banana.lazyRequire")("banana.utils.string")
@@ -33,16 +33,14 @@ function M.addHighlight(ctx, hl)
     return #hls
 end
 
----@class Banana.Box2
----@field private ctx integer
----@field private boxid integer
----@field hlgroup Banana.Highlight?
----@field hlgroupid integer
+---@class (exact) Banana.Box2
+---@field ctx integer
+---@field boxid integer
+---@field hlgroup integer
 local Box = {
-    hlgroup = nil,
     ctx = 0,
     boxid = 0,
-    hlgroupid = 0,
+    hlgroup = 0,
 }
 
 ---@param ctx number
@@ -54,10 +52,24 @@ function M.boxFromCtx(ctx)
     local ret = {
         ctx = ctx,
         boxid = boxid,
-        hlgroupid = 0,
+        hlgroup = 0,
     }
     setmetatable(ret, { __index = Box })
     return ret
+end
+
+---@param ctx number
+---@param id number
+---@return Banana.Box2
+function M.boxFromId(ctx, id)
+    ---@type Banana.Box2
+    local box = {
+        ctx = ctx,
+        boxid = id,
+        hlgroup = lb.box_get_hl(ctx, id)
+    }
+    setmetatable(box, Box)
+    return box
 end
 
 ---@return Banana.Box2

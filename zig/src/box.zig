@@ -75,8 +75,7 @@ const Char = packed struct {
             return error.ArrayTooSmall;
         }
         const codepoint: u21 = try std.unicode.utf8Decode(bytes[0..byteSize]);
-        // BUG: FIX WHEN NVIM FIXES nvim_strwidth
-        const width = 1; //try fns.z_nvim_strwidth(bytes[0..byteSize]);
+        const width = try fns.z_nvim_strwidth(bytes[0..byteSize]);
         if (width > 2) {
             return error.NvimStrWidthTooBig;
         }
@@ -201,26 +200,30 @@ var contexts: std.ArrayListUnmanaged(?BoxContext) = .empty;
 /// This is just supposed to be a structureless buffer for boxes to render to
 pub const BoxContext = struct {
     lines: std.ArrayListUnmanaged(Line) = .empty,
-    alloc: std.mem.Allocator = std.heap.page_allocator,
+    arena: std.heap.ArenaAllocator,
+    alloc: std.mem.Allocator,
     boxes: std.ArrayListUnmanaged(Box) = .empty,
     partials: std.ArrayListUnmanaged(PartialRendered) = .empty,
 
     // ctor/dtor
-    pub fn init(alloc: std.mem.Allocator) BoxContext {
+    pub fn init(allocator: std.mem.Allocator) BoxContext {
+        var arena = std.heap.ArenaAllocator.init(allocator);
         return .{
             .lines = .empty,
             .boxes = .empty,
-            .alloc = alloc,
+            .arena = arena,
+            .alloc = arena.allocator(),
             .partials = .empty,
         };
     }
     pub fn deinit(self: *BoxContext) void {
-        for (self.lines.items) |*line| {
-            line.deinit(self.alloc);
-        }
-        self.lines.deinit(self.alloc);
-        self.boxes.deinit(self.alloc);
-        self.partials.deinit(self.alloc);
+        self.arena.deinit();
+        // for (self.lines.items) |*line| {
+        //     line.deinit(self.alloc);
+        // }
+        // self.lines.deinit(self.alloc);
+        // self.boxes.deinit(self.alloc);
+        // self.partials.deinit(self.alloc);
     }
     pub fn newBox(self: *BoxContext, box: Box) !u32 {
         try self.boxes.append(self.alloc, box);
@@ -667,7 +670,7 @@ pub const PartialRendered = struct {
     }
     pub fn createBoxTryCursored(self: *PartialRendered) !u32 {
         if (!self.padding.equals(.zero) or !self.margin.equals(.zero)) {
-            return try self.createBox(self.containerBox.cursorX, self.containerBox.cursorY);
+            return try self.createBox(self.containerBox.cursorX, 0);
         }
         const box = self.containerBox.newBoxCursored();
         const id = try self.containerBox.context.newBox(box);
@@ -684,7 +687,7 @@ pub const PartialRendered = struct {
     pub fn createBox(self: *PartialRendered, offX: u32, offY: u32) !u32 {
         const box = self.containerBox.newBoxFromOffset(
             self.margin.left + self.padding.left + offX,
-            self.margin.top + self.padding.top + offY,
+            self.margin.top + self.padding.top + self.containerBox.cursorY + offY,
         );
         const id = try self.containerBox.context.newBox(box);
 
@@ -706,6 +709,12 @@ pub const PartialRendered = struct {
         const mainHeight = box.height + self.heightExpansion;
         const offX = self.containerBox.offsetX;
         const offY = self.containerBox.offsetY;
+        const height = mainHeight + self.padding.top + self.padding.bottom + self.margin.top + self.margin.bottom;
+        const width = mainWidth + self.padding.left + self.padding.right + self.margin.left + self.margin.right;
+
+        self.containerBox.width = @max(self.containerBox.width, width);
+        // NOTE: If changing, change the offset line in renderWithMove
+        self.containerBox.cursorY += height;
         switch (self.renderAlign) {
             .center => {
                 const leftSide = @divFloor(self.widthExpansion, 2);
@@ -747,8 +756,6 @@ pub const PartialRendered = struct {
             @memset(line.chars.items[startX .. startX + mainWidth], .space);
             @memset(line.hls.items[startX .. startX + mainWidth], self.mainColor);
         }
-        const height = mainHeight + self.padding.top + self.padding.bottom + self.margin.top + self.margin.bottom;
-        const width = mainWidth + self.padding.left + self.padding.right + self.margin.left + self.margin.right;
 
         // set margin and padding
         for (0..height) |i| {
@@ -837,8 +844,21 @@ pub const PartialRendered = struct {
         const height = box.height + self.heightExpansion + self.padding.top + self.padding.bottom + self.margin.top + self.margin.bottom;
         // yo we gucci
         if (width <= maxWidth) {
+            // dont need to save the width before render() bc if
+            // - A: the width doesnt increase, that means width is currently bigger
+            // than box size, so we just need to recompute if its bigger than boxSize AND cursor
+            // - B: The width already increased from width, now it will increase
+            // even more with cursor + width
+            self.containerBox.width = @max(
+                self.containerBox.width,
+                self.containerBox.cursorX + width,
+            );
+            self.containerBox.cursorX += width;
+            // NOTE: to offset the increase at the end of render()
+            self.containerBox.cursorY -= height;
             return false;
         }
+        self.containerBox.cursorX = 0;
         const offX = self.containerBox.offsetX;
         const offY = self.containerBox.offsetY;
         for (0..height) |i| {
@@ -934,11 +954,11 @@ pub fn box_pr_new(ctx: u32, boxid: u32) !u32 {
     const partial = PartialRendered.init(box);
     return try context.newPartial(partial);
 }
-pub fn box_pr_set_margin(ctx: u32, partialid: u32, left: u32, top: u32, right: u32, bottom: u32) !void {
+pub fn box_pr_set_margin(ctx: u32, partialid: u32, left: u32, right: u32, top: u32, bottom: u32) !void {
     const partial = try get_partial(ctx, partialid);
     partial.setMargin(.init(left, right, top, bottom));
 }
-pub fn box_pr_set_pad(ctx: u32, partialid: u32, left: u32, top: u32, right: u32, bottom: u32) !void {
+pub fn box_pr_set_pad(ctx: u32, partialid: u32, left: u32, right: u32, top: u32, bottom: u32) !void {
     const partial = try get_partial(ctx, partialid);
     partial.setPadding(.init(left, right, top, bottom));
 }
@@ -954,9 +974,9 @@ pub fn box_pr_cursored_box(ctx: u32, partialid: u32) !u32 {
     const partial = try get_partial(ctx, partialid);
     return try partial.createBoxTryCursored();
 }
-pub fn box_pr_box(ctx: u32, partialid: u32, offX: u32, offY: u32) !u32 {
+pub fn box_pr_box(ctx: u32, partialid: u32) !u32 {
     const partial = try get_partial(ctx, partialid);
-    return try partial.createBox(offX, offY);
+    return try partial.createBox(0, 0);
 }
 pub fn box_pr_set_align(ctx: u32, partialid: u32, al: u32) !void {
     const partial = try get_partial(ctx, partialid);
@@ -1036,6 +1056,7 @@ pub fn box_shrink_width_to(ctx: u32, box: u32, width: u32) !void {
     const self = try get_box(ctx, box);
     try self.shrinkWidthTo(width);
 }
+
 pub fn box_update_cursor_from(ctx: u32, box: u32, other: u32) !void {
     const self = try get_box(ctx, box);
     const otherBox = try get_box(ctx, other);
@@ -1044,6 +1065,11 @@ pub fn box_update_cursor_from(ctx: u32, box: u32, other: u32) !void {
 pub fn box_set_width(ctx: u32, box: u32, width: u32) !void {
     const self = try get_box(ctx, box);
     try self.setWidth(width);
+}
+
+pub fn box_get_hl(ctx: u32, box: u32) !u32 {
+    const self = try get_box(ctx, box);
+    return self.hlgroup;
 }
 
 pub fn box_set_max_width(ctx: u32, box: u32, width: i32) !void {
