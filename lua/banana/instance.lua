@@ -1,3 +1,5 @@
+---@module 'banana.box2'
+local box = require("banana.lazyRequire")("banana.box2")
 ---@module 'banana.utils.log'
 local log = require("banana.lazyRequire")("banana.utils.log")
 ---@module 'banana.utils.string'
@@ -118,25 +120,37 @@ function Instance:_virtualRender(ast, ctx, width, height)
         screenHeight = height,
         min_size = false,
     }
-    local box = require("banana.box2").boxFromCtx(ctx)
+    local b = require("banana.box2").boxFromCtx(ctx)
     -- setmetatable(extra, { __mode = "kv" })
-    local rendered = tag:renderRoot(ast, box, nil, width, height, {
+    local rendered = tag:renderRoot(ast, b, nil, width, height, {
         text_align = "left",
         position = "static",
         min_size = false,
         min_size_direction = "horizontal",
         list_style_type = "star",
     }, extra)
+
     if self.stripRight then
         local bgNum = vim.api.nvim_get_hl(0, {
             name = M.defaultWinHighlight,
             -- name = self.
         }).bg
-        local bg = nil
+        local expectedBg = nil
         if bgNum ~= nil then
-            bg = string.format("#%06x", bgNum)
+            expectedBg = string.format("#%06x", bgNum)
         end
-        -- rendered:stripRightSpace(bg)
+        lb.box_context_strip_right_space(self.ctx, function (hl)
+            local style = box.getHl(self.ctx, hl)
+            if style ~= nil then
+                if style.link ~= nil then
+                    return 0
+                end
+                if style.bg ~= expectedBg and style.bg ~= nil then
+                    return 0
+                end
+            end
+            return 1
+        end)
     end
     if extra.debug then
         -- self:_writeBoxToDebugWin(extra.trace)

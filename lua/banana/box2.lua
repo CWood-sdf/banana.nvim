@@ -29,8 +29,13 @@ end
 ---@param hl Banana.Highlight
 ---@return number
 function M.addHighlight(ctx, hl)
-    hls[ctx + 1] = hl
-    return #hls
+    table.insert(hls[ctx + 1], hl)
+    return #hls[ctx + 1]
+end
+
+---@return Banana.Highlight?
+function M.getHl(ctx, hl)
+    return hls[ctx + 1][hl]
 end
 
 ---@class (exact) Banana.Box2

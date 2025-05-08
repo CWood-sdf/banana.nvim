@@ -104,6 +104,10 @@ const Char = packed struct {
 
     const isSized = std.testing.assert(@sizeOf(@This()) == @sizeOf(u32));
 
+    pub fn equals(self: *const Char, other: Char) bool {
+        return self.bytes == other.bytes and self.width == other.width and self.char == other.char;
+    }
+
     /// writes the utf8 representation to the byte array
     /// then returns the number of bytes written
     pub fn toBytes(self: *const Char, byteArr: []u8) !u8 {
@@ -287,6 +291,12 @@ pub const BoxContext = struct {
         // self.boxes.deinit(self.alloc);
         // self.partials.deinit(self.alloc);
     }
+    pub fn wipe(self: *BoxContext) bool {
+        self.lines = .empty;
+        self.boxes = .empty;
+        self.partials = .empty;
+        return self.arena.reset(.retain_capacity);
+    }
     pub fn newBox(self: *BoxContext, box: Box) !u32 {
         try self.boxes.append(self.arena.allocator(), box);
         self.boxes.items[self.boxes.items.len - 1] = box;
@@ -309,9 +319,81 @@ pub const BoxContext = struct {
         }
         return &self.partials.items[ptl];
     }
-    pub fn stripRightSpace(self: *BoxContext, expectedBg: Highlight) !void {
-        _ = self; // autofix
-        _ = expectedBg; // autofix
+    pub fn stripRightSpace(self: *BoxContext, L: *lua.State, pos: c_int) !void {
+        var bannedItems: std.ArrayListUnmanaged(Highlight) = .empty;
+        defer bannedItems.deinit(self.alloc());
+        var passingItems: std.ArrayListUnmanaged(Highlight) = .empty;
+        defer passingItems.deinit(self.alloc());
+
+        try bannedItems.append(self.alloc(), 0);
+        try passingItems.append(self.alloc(), 0);
+        for (self.lines.items) |*line| {
+            if (line.hls.items.len == 0) {
+                continue;
+            }
+            var i: i32 = @intCast(line.chars.items.len - 1);
+            while (i >= 0) : (i -= 1) {
+                if (i < 0) {
+                    break;
+                }
+                if (line.chars.items[@intCast(i)].isDummy()) {
+                    break;
+                }
+                if (!line.chars.items[@intCast(i)].equals(.space)) {
+                    break;
+                }
+                const currentHl: Highlight = line.hls.items[@intCast(i)];
+                var isBanned: ?bool = null;
+                if (currentHl == 0) {
+                    isBanned = true;
+                }
+                if (isBanned == null) {
+                    for (bannedItems.items) |p| {
+                        if (p == currentHl) {
+                            isBanned = true;
+                            break;
+                        }
+                    }
+                }
+                if (isBanned == null) {
+                    for (passingItems.items) |p| {
+                        if (p == currentHl) {
+                            isBanned = false;
+                            break;
+                        }
+                    }
+                }
+                if (isBanned == null) {
+                    lua.push_value(L, pos);
+                    lua.push_int(L, @intCast(currentHl));
+                    lua.call(L, 2, 1);
+                    const top = lua.get_top(L);
+                    if (!lua.is_number(L, top)) {
+                        return error.BadReturn;
+                    }
+                    isBanned = lua.to_cast_int(L, top, u8) != 0;
+                    if (isBanned.?) {
+                        try bannedItems.append(self.alloc(), currentHl);
+                    } else {
+                        try passingItems.append(self.alloc(), currentHl);
+                    }
+                }
+                if (isBanned.?) {
+                    _ = line.hls.pop();
+                    _ = line.chars.pop();
+                }
+            }
+        }
+        var i: u32 = @intCast(self.lines.items.len);
+        while (i > 0) {
+            i -= 1;
+            const line = self.lines.items[i];
+            if (line.chars.items.len == 0) {
+                _ = self.lines.pop();
+            } else {
+                break;
+            }
+        }
     }
 
     pub fn getLine(self: *BoxContext, line: u32) !*Line {
@@ -1179,7 +1261,7 @@ pub fn box_context_delete(ctx: u32) bool {
 
 pub fn box_context_wipe(ctx: u32) bool {
     const context = get_context(ctx) catch return false;
-    return context.arena.reset(.retain_capacity);
+    return context.wipe();
 }
 
 // }
@@ -1404,9 +1486,10 @@ pub fn box_append_word(ctx: u32, box: u32, str: []const u8, style: Highlight) !v
 
 // pub fn appendBoxBelow(box, expand){}
 
-pub fn box_strip_right_space(ctx: u32, expected_bg: Highlight) !void {
+const StripRightExpect = Expect(fn (hl: Highlight) bool);
+pub fn box_context_strip_right_space(ctx: u32, expected_bg: StripRightExpect) !void {
     const context = try get_context(ctx);
-    try context.stripRightSpace(expected_bg);
+    try context.stripRightSpace(expected_bg.L, 2);
 }
 // TODO: Unused
 
