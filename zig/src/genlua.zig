@@ -1,4 +1,5 @@
 const std = @import("std");
+const log = @import("log.zig");
 const lua = @import("lua_api/lua.zig");
 const luaL = @import("lua_api/luaL.zig");
 
@@ -154,6 +155,7 @@ pub fn luaTemplate(
     comptime name: []const u8,
     // failReturn: anytype,
 ) c_int {
+    log.write("Calling function {s}\n", .{name}) catch {};
     const f = @typeInfo(@TypeOf(fToCall)).@"fn";
     comptime var paramLen = 0;
     comptime var i = 0;
@@ -226,10 +228,13 @@ pub fn luaTemplate(
         if (field.type == []const u8) {
             const slice = parseParam(L, j, []const u8, null) catch return 1;
             @field(tuple, field.name) = slice;
+            log.write("With param {s}\n", .{name}) catch {};
         } else if (comptime isStruct(field.type) and @hasField(field.type, "L")) {
             @field(tuple, field.name) = .{ .L = L };
+            log.write("With lua state param\n", .{}) catch {};
         } else {
             @field(tuple, field.name) = parseParam(L, j, field.type, null) catch return 1;
+            log.write("With generic param {any}\n", .{@field(tuple, field.name)}) catch {};
         }
     }
     // if (nextLen != null) {
@@ -247,6 +252,7 @@ pub fn luaTemplate(
     if (@TypeOf(actualRet) == void) {
         return 0;
     }
+    log.write("Returning {any}\n", .{actualRet}) catch {};
     pushValue(L, actualRet);
     // lua.push_bool(L, ret);
     return 1;

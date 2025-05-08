@@ -34,6 +34,16 @@ pub fn KVec(T: type) type {
         size: u64,
         capacity: u64,
         items: [*]allowzero T,
+
+        const Self = @This();
+
+        pub fn fromSlice(slice: []T) Self {
+            return .{
+                .size = slice.len,
+                .capacity = slice.len,
+                .items = slice.ptr,
+            };
+        }
     };
 }
 pub const KeyValuePair = extern struct {
@@ -101,7 +111,7 @@ pub const Error = extern struct {
 pub const NvimError = error{ Exception, Validation };
 
 pub const Arena = extern struct {
-    current_block: [*] allowzero const u8,
+    current_block: [*]allowzero const u8,
     pos: usize,
     size: usize,
     pub const empty: Arena = .{

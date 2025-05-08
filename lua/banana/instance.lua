@@ -2,7 +2,7 @@
 local log = require("banana.lazyRequire")("banana.utils.log")
 ---@module 'banana.utils.string'
 local _str = require("banana.lazyRequire")("banana.utils.string")
----@module 'banana.libbanana2'
+---@module 'banana.libbananabox'
 local lb = require("banana.lazyRequire")("banana.libbanana")
 ---@module 'banana.utils.debug_flame'
 local flame = require("banana.lazyRequire")("banana.utils.debug_flame")
@@ -61,6 +61,7 @@ local instances = {}
 ---@field DEBUG_stressTest boolean
 ---@field DEBUG_dumpTree boolean
 ---@field DEBUG boolean
+---@field ctx? number
 ---@field winid? number
 ---@field bufnr? number
 ---@field bufname string
@@ -115,6 +116,7 @@ function Instance:_virtualRender(ast, ctx, width, height)
         debug = self.DEBUG_showBuild,
         isRealRender = true,
         screenHeight = height,
+        min_size = false,
     }
     local box = require("banana.box2").boxFromCtx(ctx)
     -- setmetatable(extra, { __mode = "kv" })
@@ -134,7 +136,7 @@ function Instance:_virtualRender(ast, ctx, width, height)
         if bgNum ~= nil then
             bg = string.format("#%06x", bgNum)
         end
-        rendered:stripRightSpace(bg)
+        -- rendered:stripRightSpace(bg)
     end
     if extra.debug then
         -- self:_writeBoxToDebugWin(extra.trace)
@@ -741,7 +743,6 @@ function Instance:_createWinAndBuf()
             isRealRender = false,
         })
     end
-    lb.box_context_delete(ctx)
     flame.expect("winAndBuf")
     flame.pop()
 
@@ -835,6 +836,7 @@ function Instance:_createWinAndBuf()
         end
         vim.api.nvim_win_set_buf(self.winid, self.bufnr)
     end
+    lb.box_context_delete(ctx)
 
     return width, height
 end
@@ -923,17 +925,16 @@ function Instance:_render()
     end
 
     local winTime = vim.loop.hrtime() - startTime
+    if self.ctx == nil then
+        self.ctx = require("banana.box2").createContext()
+    end
     startTime = vim.loop.hrtime()
 
     -- self:body():resolveUnits(width, height, {})
     flame.new("renderAll")
     self.urlAsts = {}
-    local ctx = require("banana.box2").createContext()
-    local _ = self:_virtualRender(self.ast, ctx, width, height)
+    local _ = self:_virtualRender(self.ast, self.ctx, width, height)
     flame.pop()
-    -- vim.defer_fn(function ()
-    --     self:_render()
-    -- end, 30)
     local renderTime = vim.loop.hrtime() - startTime
     local skip = false
     for i, script in ipairs(self.scripts) do
@@ -971,24 +972,22 @@ function Instance:_render()
     local reductionTime = vim.loop.hrtime() - startTime
     startTime = vim.loop.hrtime()
 
+    -- log.trace("Flushing " ..
+    --     #lines .. " lines to buffer " .. self.bufnr .. " on win " .. self.winid)
+
+    local bufTime = vim.loop.hrtime() - startTime
+    startTime = vim.loop.hrtime()
     vim.api.nvim_set_option_value("modifiable", true, {
         buf = self.bufnr
     })
     vim.api.nvim_set_option_value("buftype", "nofile", {
         buf = self.bufnr
     })
-    -- log.trace("Flushing " ..
-    --     #lines .. " lines to buffer " .. self.bufnr .. " on win " .. self.winid)
-    vim.api.nvim_buf_set_lines(self.bufnr, 0, -1, false, lines)
+    lb.box_context_render(self.ctx, self.bufnr)
     vim.api.nvim_set_option_value("modifiable", self.bufOpts.modifiable or false,
         {
             buf = self.bufnr
         })
-
-    local bufTime = vim.loop.hrtime() - startTime
-    startTime = vim.loop.hrtime()
-    lb.box_context_render(ctx, self.bufnr)
-    lb.box_context_delete(ctx)
 
     -- self:_highlight(stuffToRender, 0)
     self:_dumpUrls(self.bufnr, self.highlightNs)
@@ -1080,6 +1079,7 @@ function Instance:_render()
         -- })
         self:_writeLinesToDebugWin(extraLines)
     end
+    lb.box_context_wipe(self.ctx)
     self.rendering = false
     self.renderRequested = false
     -- collectgarbage("restart")

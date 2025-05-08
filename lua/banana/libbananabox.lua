@@ -44,6 +44,22 @@ function M.box_pr_set_main_hl(ctx, partialid, hl) end
 
 ---@param ctx number
 ---@param partialid number
+---@return number
+function M.box_pr_get_width(ctx, partialid) end
+
+---@param ctx number
+---@param partialid number
+---@return number
+function M.box_pr_get_height(ctx, partialid) end
+
+---@param ctx number
+---@param partialid number
+---@param height number
+---@return nil
+function M.box_pr_set_max_height(ctx, partialid, height) end
+
+---@param ctx number
+---@param partialid number
 ---@param width number
 ---@return nil
 function M.box_pr_set_max_width(ctx, partialid, width) end
@@ -215,6 +231,5 @@ function M.box_strip_right_space(ctx, expected_bg) end
 ---@return nil
 function M.box_render_over(ctx, box, otherCtx, left, top) end
 
-
-
 return M
+

@@ -68,7 +68,7 @@ function M.boxFromId(ctx, id)
         boxid = id,
         hlgroup = lb.box_get_hl(ctx, id)
     }
-    setmetatable(box, Box)
+    setmetatable(box, { __index = Box })
     return box
 end
 

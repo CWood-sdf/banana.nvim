@@ -12,66 +12,6 @@ local _tag = require("banana.lazyRequire")("banana.nml.tag")
 ---@module 'banana.nml.entity'
 local entity = require("banana.lazyRequire")("banana.nml.entity")
 
----@param targetWidth number
----@param box Banana.Box2
----@param hl Banana.Highlight?
----@return Banana.Box2, Banana.Box2
-local function splitLineBoxOnce(targetWidth, box, hl)
-    -- flame.new("splitLineBoxOnce")
-    if targetWidth < 1 then
-        targetWidth = 1
-    end
-    if box:width() <= targetWidth then
-        -- flame.pop()
-        return box, b.Box:new(hl)
-    end
-    -- if targetWidth == 0 then
-    --     targetWidth = 1
-    -- end
-    local left = b.Box:new(hl)
-    left:appendStr("", nil)
-    local right = b.Box:new(hl)
-    right:appendStr("", nil)
-    local i = 1
-    while left:width() + _str.charWidth(box:getLine(1)[i].word) < targetWidth do
-        local w = box:getLine(1)[i]
-        left:appendWord(w.word, w.style)
-        i = i + 1
-    end
-    local word = box:getLine(1)[i]
-    local leftIns = _str.sub(word.word, 1, targetWidth - left:width())
-    --Allow unsafe #word.word, bc #word.word is always >= str.charWidth(word.word)
-    --so since we are just reading to end of string
-    local rightIns = _str.sub(word.word, targetWidth - left:width() + 1,
-        #word.word)
-    left:appendWord(
-        leftIns,
-        word.style,
-        nil)
-    right:appendWord(
-        rightIns,
-        word.style,
-        nil)
-    i = i + 1
-    while i <= #box:getLine(1) do
-        local w = box:getLine(1)[i]
-        right:appendWord(w.word, w.style)
-        i = i + 1
-    end
-    -- flame.pop()
-    return left, right
-end
----@param ast Banana.Ast|string
----@return boolean
-local function breakable(ast)
-    if type(ast) == "string" then
-        return true
-    end
-    return ast:paddingRight() == 0 and ast:paddingLeft() == 0 and
-        not ast:hasStyle("width")
-end
-
-
 ---@param ast Banana.Ast
 ---@param i number
 ---@param currentLine Banana.Box2
@@ -112,6 +52,7 @@ local function handleOverflow(ast, i, currentLine, append, maxWidth, hl)
     -- flame.pop()
     return preStuff, extra
 end
+
 ---Renders everything in a block
 ---@param ast Banana.Ast
 ---@param box Banana.Box2
@@ -191,10 +132,11 @@ return function (ast, box, parentHl, i, parentWidth, parentHeight, startX, start
             local newBox = box:newCursored()
             local rendered = tag:getRendered(v, newBox, parentHl, width, height,
                 startX,
-                startY, inherit, extra_):render()
+                startY, inherit, extra_)
+            rendered:render()
 
             box:updateCursorFrom(newBox)
-            startX = startX + rendered:width()
+            startX = startX + rendered:getWidth()
             local overflow = nil
             -- local orgLines = currentLine:height()
             -- currentLine, overflow = handleOverflow(ast, i, currentLine, rendered,
@@ -236,5 +178,5 @@ return function (ast, box, parentHl, i, parentWidth, parentHeight, startX, start
     --     currentLine = extra
     -- end
     flame.pop()
-    -- return currentLine, i
+    return box, i
 end

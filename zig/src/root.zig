@@ -1,10 +1,47 @@
 const std = @import("std");
+const log = @import("log.zig");
 const lua = @import("lua_api/lua.zig");
 const luaL = @import("lua_api/luaL.zig");
 const Box = @import("box.zig");
 const grid = @import("grid.zig");
 const gen = @import("genlua.zig");
 const testing = std.testing;
+
+// pub const panic: type = std.debug.FullPanic(
+//     struct {
+//         pub fn panic(
+//             msg: []const u8,
+//             first_trace_addr: ?usize,
+//         ) noreturn {
+//             defer std.process.exit(1);
+//             const logfile = try std.fs.cwd().createFile("panic.txt", .{});
+//             defer logfile.close();
+//             _ = try logfile.write(msg);
+//             _ = try logfile.write("\r\n");
+//             _ = first_trace_addr;
+//         }
+//     }.panic,
+// );
+
+pub fn panic(msg: []const u8, trace: ?*std.builtin.StackTrace, third: anytype) noreturn {
+    defer std.process.exit(1);
+    const logfile = try std.fs.cwd().createFile("panic.txt", .{});
+    defer logfile.close();
+    _ = try logfile.write("AUGGGGHHGG");
+    _ = try logfile.write("\r\n");
+    _ = try logfile.write(msg);
+    _ = try logfile.write("\r\n");
+
+    if (trace) |stack_trace| {
+        _ = try logfile.write("EVERYONE STOP WE HAVE A TRACE!!!");
+        _ = try logfile.write("\r\n");
+        std.debug.dumpStackTrace(stack_trace.*);
+    }
+    _ = third;
+    // if(trace) |t| {
+    //
+    // }
+}
 
 // pub export const decls = gen.genLuaDecls(Box, "box_");
 
@@ -65,6 +102,11 @@ export fn luaopen_banana_libbanana(state: *lua.State) c_int {
     // var arr: std.ArrayListUnmanaged(lua.CFunction) = .empty;
     // gen.genLuaDecls(Box, "box_", &arr, alloc) catch return 0;
     luaL.register(state, "libbanana", list.items.ptr);
+
+    Box.init_boxes();
+
+    log.init() catch return 1;
+
     // luaL.register(state, "libbanana", &regs);
     return 1;
 }
@@ -77,14 +119,6 @@ export fn addToString(str: [*:0]u8) void {
         }
         i += 1;
     }
-}
-
-export fn contextThing() void {
-    var ctx = Box.BoxContext.init(std.heap.page_allocator);
-    defer ctx.deinit();
-
-    var box = Box.Box.newBoxFromContext(&ctx, 0);
-    box.appendStr(@as([]const u8, "asdf")) catch return;
 }
 
 test "basic add functionality" {

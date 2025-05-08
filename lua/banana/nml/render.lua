@@ -72,6 +72,7 @@ end
 ---@param startY number
 ---@param inherit Banana.Renderer.InheritedProperties
 ---@param extra Banana.Renderer.ExtraInfo
+---@return Banana.Renderer.PartialRendered2
 function TagInfo:getRendered(ast, box, parentHl, parentWidth, parentHeight,
                              startX,
                              startY, inherit, extra)

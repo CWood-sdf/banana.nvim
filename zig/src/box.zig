@@ -4,10 +4,64 @@ const lua = @import("lua_api/lua.zig");
 
 const Hl = @import("hl.zig");
 const consts = @import("nvim_api/constants.zig");
+const log = @import("log.zig");
 const fns = @import("nvim_api/functions.zig");
 const tps = @import("nvim_api/types.zig");
 
 const Highlight = u32;
+
+const Id = u32;
+
+const NullableId = struct {
+    const Self = @This();
+    value: i32,
+
+    pub const nil: Self = .{ .value = -1 };
+
+    pub fn isNull(self: *Self) bool {
+        return self.value < 0;
+    }
+
+    pub fn asOptional(self: *Self) ?u31 {
+        if (self.value > 0) {
+            return @intCast(self.value);
+        }
+        return null;
+    }
+
+    pub fn set(self: *Self, value: ?u32) void {
+        if (value) |val| {
+            self.value = @intCast(val);
+        } else {
+            self.value = -1;
+        }
+    }
+
+    pub fn init(value: ?u32) Self {
+        if (value) |v| {
+            return .{
+                .value = @intCast(v),
+            };
+        } else {
+            return .{
+                .value = -1,
+            };
+        }
+    }
+};
+
+const RealNum = i32;
+
+pub fn charwidth(chars: []const u8) !u8 {
+    if (chars.len > 4) {
+        return error.StrTooBig;
+    }
+    var byteArr = [_]u8{0} ** 5;
+    for (chars, 0..) |c, i| {
+        byteArr[i] = c;
+    }
+    return @intCast(try fns.z_nvim_strwidth(byteArr[0..chars.len]));
+}
 
 fn codepointLen(char: u8) u8 {
     if (char < 128) {
@@ -25,6 +79,9 @@ fn codepointLen(char: u8) u8 {
     return 4;
 }
 
+// TODO: Can prolly do some data oriented stuff here: a char is one byte
+// and the first bit is 0 if ascii, 1 if an index into a large char array.
+// tho this only allows up to 128 independent multibyte chars per line
 const Char = packed struct {
     // the actual number
     bytes: u3,
@@ -44,6 +101,8 @@ const Char = packed struct {
         .width = 1,
         .char = ' ',
     };
+
+    const isSized = std.testing.assert(@sizeOf(@This()) == @sizeOf(u32));
 
     /// writes the utf8 representation to the byte array
     /// then returns the number of bytes written
@@ -75,7 +134,7 @@ const Char = packed struct {
             return error.ArrayTooSmall;
         }
         const codepoint: u21 = try std.unicode.utf8Decode(bytes[0..byteSize]);
-        const width = try fns.z_nvim_strwidth(bytes[0..byteSize]);
+        const width = try charwidth(bytes[0..byteSize]);
         if (width > 2) {
             return error.NvimStrWidthTooBig;
         }
@@ -139,14 +198,14 @@ const Line = struct {
                 return i;
             }
             i += char.bytes;
-            try self.chars.append(ctx.alloc, char);
-            self.hls.append(ctx.alloc, hl) catch |e| {
+            try self.chars.append(ctx.alloc(), char);
+            self.hls.append(ctx.alloc(), hl) catch |e| {
                 self.chars.shrinkRetainingCapacity(self.chars.items.len - 1);
                 return e;
             };
             if (char.width == 2) {
-                try self.chars.append(ctx.alloc, .dummy);
-                self.hls.append(ctx.alloc, hl) catch |e| {
+                try self.chars.append(ctx.alloc(), .dummy);
+                self.hls.append(ctx.alloc(), hl) catch |e| {
                     self.chars.shrinkRetainingCapacity(self.chars.items.len - 1);
                     return e;
                 };
@@ -166,8 +225,8 @@ const Line = struct {
 
     pub fn ensureAppendableAt(self: *Line, ctx: *BoxContext, spot: u32) !void {
         if (self.width < spot) {
-            try self.chars.appendNTimes(ctx.alloc, .space, spot - self.width);
-            self.hls.appendNTimes(ctx.alloc, 0, spot - self.width) catch |e| {
+            try self.chars.appendNTimes(ctx.alloc(), .space, spot - self.width);
+            self.hls.appendNTimes(ctx.alloc(), 0, spot - self.width) catch |e| {
                 self.chars.shrinkRetainingCapacity(self.width);
                 return e;
             };
@@ -183,8 +242,8 @@ const Line = struct {
         hl: Highlight,
         n: u32,
     ) !void {
-        try self.chars.appendNTimes(ctx.alloc, Char.fromAscii(char), n);
-        self.hls.appendNTimes(ctx.alloc, hl, n) catch |e| {
+        try self.chars.appendNTimes(ctx.alloc(), Char.fromAscii(char), n);
+        self.hls.appendNTimes(ctx.alloc(), hl, n) catch |e| {
             self.chars.shrinkRetainingCapacity(self.chars.items.len - n);
             return e;
         };
@@ -201,20 +260,23 @@ var contexts: std.ArrayListUnmanaged(?BoxContext) = .empty;
 pub const BoxContext = struct {
     lines: std.ArrayListUnmanaged(Line) = .empty,
     arena: std.heap.ArenaAllocator,
-    alloc: std.mem.Allocator,
+    _alloc: std.mem.Allocator,
     boxes: std.ArrayListUnmanaged(Box) = .empty,
     partials: std.ArrayListUnmanaged(PartialRendered) = .empty,
 
     // ctor/dtor
     pub fn init(allocator: std.mem.Allocator) BoxContext {
-        var arena = std.heap.ArenaAllocator.init(allocator);
+        const arena = std.heap.ArenaAllocator.init(allocator);
         return .{
             .lines = .empty,
             .boxes = .empty,
             .arena = arena,
-            .alloc = arena.allocator(),
+            ._alloc = allocator,
             .partials = .empty,
         };
+    }
+    pub fn alloc(self: *BoxContext) std.mem.Allocator {
+        return self._alloc;
     }
     pub fn deinit(self: *BoxContext) void {
         self.arena.deinit();
@@ -226,7 +288,8 @@ pub const BoxContext = struct {
         // self.partials.deinit(self.alloc);
     }
     pub fn newBox(self: *BoxContext, box: Box) !u32 {
-        try self.boxes.append(self.alloc, box);
+        try self.boxes.append(self.arena.allocator(), box);
+        self.boxes.items[self.boxes.items.len - 1] = box;
         return @intCast(self.boxes.items.len - 1);
     }
     pub fn getBox(self: *const BoxContext, box: u32) ?*Box {
@@ -236,7 +299,8 @@ pub const BoxContext = struct {
         return &self.boxes.items[box];
     }
     pub fn newPartial(self: *BoxContext, partial: PartialRendered) !u32 {
-        try self.partials.append(self.alloc, partial);
+        try self.partials.append(self.alloc(), partial);
+        self.partials.items[self.partials.items.len - 1] = partial;
         return @intCast(self.partials.items.len - 1);
     }
     pub fn getPartial(self: *const BoxContext, ptl: u32) ?*PartialRendered {
@@ -252,64 +316,97 @@ pub const BoxContext = struct {
 
     pub fn getLine(self: *BoxContext, line: u32) !*Line {
         while (self.lines.items.len <= line) {
-            try self.lines.append(self.alloc, Line.init());
+            try self.lines.append(self.alloc(), Line.init());
         }
         return &self.lines.items[line];
     }
     pub fn render(self: *BoxContext, buf: tps.Integer) !void {
+        log.write("yuhh rendering buf {}\n", .{buf}) catch {};
         var err = tps.Error{ .type = .None, .msg = @ptrFromInt(0) };
         var arena: tps.Arena = .{
             .current_block = "",
             .size = 0,
             .pos = 0,
         };
-        const arr = try self.alloc.alloc(tps.Object, self.lines.items.len);
-        defer self.alloc.free(arr);
+        log.write("yuhh creating string table\n", .{}) catch {};
+        var arr: std.ArrayListUnmanaged(tps.Object) = .empty;
+        defer arr.deinit(self.alloc());
 
-        var lines: std.ArrayListUnmanaged(std.ArrayListUnmanaged(u8)) = .empty;
+        try arr.ensureTotalCapacity(self.alloc(), self.lines.items.len);
+
+        var lines: std.ArrayListUnmanaged(u8) = .empty;
         defer {
-            for (lines.items) |*line| {
-                line.deinit(self.alloc);
-            }
-            lines.deinit(self.alloc);
+            lines.deinit(self.alloc());
         }
+        log.write("Creating string table\n", .{}) catch {};
+        const emptyStr = "";
         for (self.lines.items) |*line| {
-            try lines.append(self.alloc, .empty);
+            const startIndex = lines.items.len;
             for (line.chars.items) |char| {
                 var chars = [_]u8{0} ** 4;
                 const bytes = try char.toBytes(&chars);
                 if (bytes != 0) {
-                    try lines.items[lines.items.len - 1].appendSlice(
-                        self.alloc,
+                    try lines.appendSlice(
+                        self.alloc(),
                         chars[0..bytes],
                     );
                 }
             }
+            // TODO: Assumes added characters
+            const str = if (lines.items.len != startIndex)
+                lines.items[startIndex..]
+            else
+                emptyStr[0..0];
+            log.write(
+                "  Created line '{s}'\n",
+                .{str},
+            ) catch {};
+            try lines.append(self.alloc(), 0);
+        }
+        var startIndex: usize = 0;
+        for (lines.items, 0..) |c, i| {
+            if (c == 0) {
+                const str = lines.items[startIndex..i];
+                arr.appendAssumeCapacity(tps.stringObject(str));
+                startIndex = i + 1;
+            }
         }
 
-        for (lines.items, 0..) |line, i| {
-            arr[i] = tps.stringObject(line.items);
-        }
-        const replacement: tps.Array = .{
-            .size = self.lines.items.len,
-            .items = arr.ptr,
-            .capacity = self.lines.items.len,
-        };
+        log.write("Buf: {}\n", .{buf}) catch {};
+
+        const replacement: tps.Array = tps.Array.fromSlice(arr.items);
+        log.write("yo yo: {}\n", .{buf}) catch {};
         fns.nvim_buf_set_lines(
             consts.LUA_INTERNAL_CALL,
             @enumFromInt(buf),
             0,
             -1,
-            false,
+            true,
             replacement,
             &arena,
             &err,
         );
+        log.write("Lines written: {}\n", .{arr.items.len}) catch {};
 
         if (err.type != .None) {
             switch (err.type) {
-                .Exception => return tps.NvimError.Exception,
-                .Validation => return tps.NvimError.Validation,
+                .Exception => {
+                    if (err.msg != @as([*]allowzero u8, @ptrFromInt(0))) {
+                        var end: u32 = 0;
+                        for (err.msg, 0..1000) |c, i| {
+                            if (c == 0) {
+                                end = @intCast(i);
+                                break;
+                            }
+                        }
+                        const msg: [*]const u8 = @ptrCast(err.msg);
+                        log.write("Err msg: {s}\n", .{msg[0..end]}) catch {};
+                    }
+                    return tps.NvimError.Exception;
+                },
+                .Validation => {
+                    return tps.NvimError.Validation;
+                },
                 else => {},
             }
         }
@@ -353,16 +450,17 @@ pub const BoxContext = struct {
 };
 
 pub const Box = struct {
-    context: *BoxContext,
+    context: Id,
     offsetX: u32,
     offsetY: u32,
     width: u32,
     maxWidth: u32,
+    maxHeight: u32,
     height: u32,
-    dirty: bool,
-    hlgroup: Highlight,
     cursorX: u32,
     cursorY: u32,
+    hlgroup: Highlight,
+    dirty: bool,
     // TODO: Need to work on this
     // pub fn insertGradientMarker(){}
     // pub fn setGradientSize(){}
@@ -370,7 +468,7 @@ pub const Box = struct {
     // TODO: Internal behavior
     // pub fn fillString(width){}
 
-    pub fn newBoxFromContext(ctx: *BoxContext, hlgroup: Highlight) Box {
+    pub fn newBoxFromContext(ctx: Id, hlgroup: Highlight) Box {
         // @compileLog(std.fmt.comptimePrint("{}\n", .{@sizeOf(Highlight)}));
         return .{
             .height = 0,
@@ -379,6 +477,7 @@ pub const Box = struct {
             .offsetY = 0,
             .width = 0,
             .maxWidth = std.math.maxInt(@FieldType(Box, "width")),
+            .maxHeight = std.math.maxInt(@FieldType(Box, "height")),
             .dirty = false,
             .hlgroup = hlgroup,
             .cursorX = 0,
@@ -392,7 +491,8 @@ pub const Box = struct {
             .offsetX = self.offsetX + x,
             .offsetY = self.offsetY + y,
             .width = 0,
-            .maxWidth = std.math.maxInt(@FieldType(Box, "width")),
+            .maxWidth = self.maxWidth - x,
+            .maxHeight = self.maxHeight - y,
             .dirty = false,
             .hlgroup = self.hlgroup,
             .cursorX = 0,
@@ -409,7 +509,8 @@ pub const Box = struct {
             .cursorX = self.cursorX,
             .cursorY = self.cursorY,
             .width = 0,
-            .maxWidth = std.math.maxInt(@FieldType(Box, "width")),
+            .maxWidth = self.maxWidth,
+            .maxHeight = self.maxHeight,
             .dirty = false,
             .hlgroup = self.hlgroup,
         };
@@ -423,6 +524,7 @@ pub const Box = struct {
             .offsetY = self.offsetY,
             .width = 0,
             .maxWidth = std.math.maxInt(@FieldType(Box, "width")),
+            .maxHeight = self.maxHeight,
             .dirty = false,
             .hlgroup = self.hlgroup,
             .cursorX = 0,
@@ -430,14 +532,20 @@ pub const Box = struct {
         };
     }
 
+    pub fn getContext(self: *Box) !*BoxContext {
+        return try get_context(self.context);
+    }
+
     // prettry sure this is only used for canvas
     pub fn shrinkWidthTo(self: *Box, width: u32) !void {
+        const context = try self.getContext();
         for (self.offsetY..self.offsetY + self.height) |i| {
-            const line: *Line = &self.context.lines.items[i];
+            const line: *Line = &context.lines.items[i];
             while (line.width > width) {
                 line.popLastChar();
             }
         }
+        self.width = width;
     }
     pub fn setWidth(self: *Box, width: u32) !void {
         if (self.width == width) {
@@ -468,13 +576,14 @@ pub const Box = struct {
     }
 
     pub fn shiftRightwardsBy(self: *Box, extra: u32) !void {
-        for (self.context.lines.items[self.offsetY .. self.offsetY + self.height]) |*line| {
+        const context = try self.getContext();
+        for (context.lines.items[self.offsetY .. self.offsetY + self.height]) |*line| {
             try line.chars.ensureTotalCapacity(
-                self.context.alloc,
+                context.alloc(),
                 extra + line.chars.items.len,
             );
             try line.hls.ensureTotalCapacity(
-                self.context.alloc,
+                context.alloc(),
                 extra + line.hls.items.len,
             );
             for (0..extra) |_| {
@@ -487,24 +596,28 @@ pub const Box = struct {
         if (height < self.height) {
             return error.HeightTooSmall;
         }
-        for (0..self.height - height) |_| {
-            try self.context.lines.append(self.context.alloc, Line.init());
-            try self.context.lines.items[self.context.lines.items.len - 1].appendCharNTimes(
-                self.context,
+        const context = try self.getContext();
+        for (0..height - self.height) |_| {
+            try context.lines.append(context.alloc(), Line.init());
+            try context.lines.items[context.lines.items.len - 1].appendCharNTimes(
+                context,
                 ' ',
                 self.hlgroup,
                 self.width,
             );
         }
+        self.height = height;
     }
     pub fn shrinkHeightTo(self: *Box, height: u32) !void {
         if (height > self.height) {
             return error.HeightTooBig;
         }
+        const context = try self.getContext();
         for (0..(self.height - height)) |_| {
-            self.context.lines.items[self.context.lines.items.len - 1].deinit(self.context.alloc);
-            _ = self.context.lines.pop();
+            context.lines.items[context.lines.items.len - 1].deinit(context.alloc());
+            _ = context.lines.pop();
         }
+        self.height = height;
     }
     pub fn setHeight(self: *Box, height: u32) !void {
         if (self.height == height) {
@@ -521,12 +634,13 @@ pub const Box = struct {
         if (!self.dirty) {
             return;
         }
-        for (self.context.lines.items[self.offsetY .. self.offsetY + self.height]) |*line| {
+        const context = try self.getContext();
+        for (context.lines.items[self.offsetY .. self.offsetY + self.height]) |*line| {
             if (line.widthFrom(self.offsetX) > self.width) {
                 return error.LineTooBig;
             }
             if (line.widthFrom(self.offsetX) < self.width) {
-                try line.appendCharNTimes(self.context, ' ', self.hlgroup, self.width - line.widthFrom(self.offsetX));
+                try line.appendCharNTimes(context, ' ', self.hlgroup, self.width - line.widthFrom(self.offsetX));
             }
         }
         self.dirty = false;
@@ -542,17 +656,18 @@ pub const Box = struct {
         if (self.height == 0) {
             self.height = 1;
         }
+        const context = try self.getContext();
         while (newStr.len != 0) {
             const maxWidth = self.maxWidth - self.cursorX;
-            const line = try self.context.getLine(self.cursorY + self.offsetY);
+            const line = try context.getLine(self.cursorY + self.offsetY);
 
             if (self.cursorX == 0) {
-                try line.ensureAppendableAt(self.context, self.offsetX);
+                try line.ensureAppendableAt(context, self.offsetX);
             }
             const startWidth = line.width;
 
             const index = try line.appendWordToLen(
-                self.context,
+                context,
                 str,
                 self.hlgroup,
                 maxWidth,
@@ -598,7 +713,8 @@ pub const Box = struct {
 
     // NOTE: Rendering over should *only* happen from prepared box contexts
     pub fn renderOver(self: *Box, other: *BoxContext, left: u32, top: u32) !void {
-        if (self.context == other) {
+        const context = try self.getContext();
+        if (context == other) {
             return error.SameContext;
         }
         _ = left; // autofix
@@ -607,20 +723,22 @@ pub const Box = struct {
 };
 
 pub const PartialRendered = struct {
+    ctx: Id,
+    containerBox: Id,
+    box: NullableId,
     margin: Pad,
     padding: Pad,
-    widthExpansion: u32,
-    heightExpansion: u32,
-    containerBox: *Box,
-    box: ?*Box,
     marginColor: Highlight,
     mainColor: Highlight,
-    renderAlign: RenderAlign,
     maxWidth: u32,
-    pub const RenderAlign = enum(u8) {
+    maxHeight: u32,
+    sideAlign: RenderAlign,
+    verticalAlign: RenderAlign,
+    pub const RenderAlign = enum(u2) {
         left = 0,
         center = 1,
         right = 2,
+        noexpand = 3,
     };
     pub const Pad = struct {
         left: u32,
@@ -639,19 +757,26 @@ pub const PartialRendered = struct {
         pub fn equals(left: Pad, right: Pad) bool {
             return left.left == right.right and left.right == right.right and left.top == right.top and left.bottom == right.bottom;
         }
+        pub fn side(self: *Pad) u32 {
+            return self.left + self.right;
+        }
+        pub fn vert(self: *Pad) u32 {
+            return self.top + self.bottom;
+        }
     };
 
-    pub fn init(containerBox: *Box) PartialRendered {
+    pub fn init(containerBox: *Box, containerId: Id) PartialRendered {
         return .{
+            .ctx = containerBox.context,
+            .maxHeight = containerBox.maxHeight,
             .margin = .zero,
             .padding = .zero,
-            .widthExpansion = 0,
-            .heightExpansion = 0,
-            .containerBox = containerBox,
-            .box = null,
+            .containerBox = containerId,
+            .box = .nil,
             .marginColor = containerBox.hlgroup,
             .mainColor = 0,
-            .renderAlign = .left,
+            .sideAlign = .noexpand,
+            .verticalAlign = .noexpand,
             .maxWidth = containerBox.maxWidth,
         };
     }
@@ -668,82 +793,138 @@ pub const PartialRendered = struct {
     pub fn setMaxWidth(self: *PartialRendered, width: u32) void {
         self.maxWidth = width;
     }
+    pub fn setMaxHeight(self: *PartialRendered, height: u32) void {
+        self.maxHeight = height;
+        self.verticalAlign = .left;
+    }
+    pub fn getContainer(self: *PartialRendered) !*Box {
+        return try get_box(self.ctx, self.containerBox);
+    }
+    pub fn getContext(self: *PartialRendered) !*BoxContext {
+        return try get_context(self.ctx);
+    }
+    pub fn getBox(self: *PartialRendered) !*Box {
+        if (self.box.asOptional()) |id| {
+            return try get_box(self.ctx, id);
+        }
+        return error.BoxNotExist;
+    }
     pub fn createBoxTryCursored(self: *PartialRendered) !u32 {
+        const containerBox = try self.getContainer();
         if (!self.padding.equals(.zero) or !self.margin.equals(.zero)) {
-            return try self.createBox(self.containerBox.cursorX, 0);
+            return try self.createBox(containerBox.cursorX, 0);
         }
-        const box = self.containerBox.newBoxCursored();
-        const id = try self.containerBox.context.newBox(box);
-
-        self.box = self.containerBox.context.getBox(id);
-        if (self.box == null) {
-            return error.CantCreateBox;
-        }
+        const context = try self.getContext();
+        var box = containerBox.newBoxCursored();
         // dont need to set maxWidth bc its inherited from containerBox
         // self.box.?.maxWidth = self.maxWidth - self.margin.left - self.padding.left - self.margin.right - self.padding.right;
-        self.box.?.hlgroup = self.mainColor;
+        box.hlgroup = self.mainColor;
+        const id = try context.newBox(box);
+
+        self.box.set(id);
+
         return id;
     }
     pub fn createBox(self: *PartialRendered, offX: u32, offY: u32) !u32 {
-        const box = self.containerBox.newBoxFromOffset(
+        const containerBox = try self.getContainer();
+        const context = try self.getContext();
+        var box = containerBox.newBoxFromOffset(
             self.margin.left + self.padding.left + offX,
-            self.margin.top + self.padding.top + self.containerBox.cursorY + offY,
+            self.margin.top + self.padding.top + containerBox.cursorY + offY,
         );
-        const id = try self.containerBox.context.newBox(box);
+        box.maxWidth = self.maxWidth - self.margin.left - self.padding.left - self.margin.right - self.padding.right;
+        box.hlgroup = self.mainColor;
 
-        self.box = self.containerBox.context.getBox(id);
-        if (self.box == null) {
-            return error.CantCreateBox;
-        }
-        self.box.?.maxWidth = self.maxWidth - self.margin.left - self.padding.left - self.margin.right - self.padding.right;
-        self.box.?.hlgroup = self.mainColor;
+        const id = try context.newBox(box);
+
+        self.box.set(id);
+
         return id;
     }
+
     pub fn setAlign(self: *PartialRendered, al: RenderAlign) void {
-        self.renderAlign = al;
+        self.sideAlign = al;
     }
+
+    pub fn setVerticalAlign(self: *PartialRendered, al: RenderAlign) void {
+        self.verticalAlign = al;
+    }
+
+    pub fn getWidth(self: *PartialRendered) !u32 {
+        const box = try self.getBox();
+        const width = switch (self.sideAlign) {
+            .left, .center, .right => self.maxWidth,
+            .noexpand => self.padding.side() + self.margin.side() + box.width,
+        };
+        return width;
+    }
+    pub fn getHeight(self: *PartialRendered) !u32 {
+        const box = try self.getBox();
+        const height = switch (self.verticalAlign) {
+            .left, .center, .right => self.maxHeight,
+            .noexpand => self.padding.vert() + self.margin.vert() + box.height,
+        };
+        return height;
+    }
+
     pub fn render(self: *PartialRendered) !void {
-        const box = self.box orelse return error.BoxNotExist;
-        const alloc = box.context.alloc;
-        const mainWidth = box.width + self.widthExpansion;
-        const mainHeight = box.height + self.heightExpansion;
-        const offX = self.containerBox.offsetX;
-        const offY = self.containerBox.offsetY;
+        const box = try self.getBox();
+        const containerBox = try self.getContainer();
+        const context = try self.getContext();
+        const alloc = context.alloc();
+        const widthExpansion = switch (self.sideAlign) {
+            .left, .center, .right => self.maxWidth - self.padding.side() - self.margin.side() - box.width,
+            .noexpand => 0,
+        };
+        const heightExpansion = switch (self.verticalAlign) {
+            .left, .center, .right => self.maxHeight - self.padding.vert() - self.margin.vert() - box.height,
+            .noexpand => 0,
+        };
+        const mainWidth = box.width + widthExpansion;
+        const mainHeight = box.height + heightExpansion;
+        const offX = containerBox.offsetX;
+        const offY = containerBox.offsetY;
         const height = mainHeight + self.padding.top + self.padding.bottom + self.margin.top + self.margin.bottom;
         const width = mainWidth + self.padding.left + self.padding.right + self.margin.left + self.margin.right;
 
-        self.containerBox.width = @max(self.containerBox.width, width);
+        try box.clean();
+
+        if (width != containerBox.width) {
+            containerBox.width = @max(containerBox.width, width);
+            containerBox.dirty = true;
+        }
         // NOTE: If changing, change the offset line in renderWithMove
-        self.containerBox.cursorY += height;
-        switch (self.renderAlign) {
+        containerBox.cursorY += height;
+        switch (self.sideAlign) {
             .center => {
-                const leftSide = @divFloor(self.widthExpansion, 2);
+                const leftSide = @divFloor(widthExpansion, 2);
                 try box.shiftRightwardsBy(leftSide);
-                const rightSide = self.widthExpansion - leftSide;
+                const rightSide = widthExpansion - leftSide;
                 for (box.offsetY..box.offsetY + box.height) |i| {
-                    const line = try box.context.getLine(@intCast(i));
+                    const line = try context.getLine(@intCast(i));
                     try line.chars.appendNTimes(alloc, .space, rightSide);
                     try line.hls.appendNTimes(alloc, self.mainColor, rightSide);
                 }
             },
             .right => {
-                try box.shiftRightwardsBy(self.widthExpansion);
+                try box.shiftRightwardsBy(widthExpansion);
             },
             .left => {
                 for (box.offsetY..box.offsetY + box.height) |i| {
-                    const line = try box.context.getLine(@intCast(i));
-                    try line.chars.appendNTimes(alloc, .space, self.widthExpansion);
+                    const line = try context.getLine(@intCast(i));
+                    try line.chars.appendNTimes(alloc, .space, widthExpansion);
                     try line.hls.appendNTimes(
                         alloc,
                         self.mainColor,
-                        self.widthExpansion,
+                        widthExpansion,
                     );
                 }
             },
+            .noexpand => {},
         }
-        for (0..self.heightExpansion) |i| {
+        for (0..heightExpansion) |i| {
             const lineNr = offY + self.padding.top + self.margin.top + box.height + i;
-            const line = try box.context.getLine(@intCast(lineNr));
+            const line = try context.getLine(@intCast(lineNr));
             const startX = offX + self.margin.left + self.padding.left;
             try line.chars.ensureTotalCapacity(
                 alloc,
@@ -759,7 +940,7 @@ pub const PartialRendered = struct {
 
         // set margin and padding
         for (0..height) |i| {
-            const line = try box.context.getLine(offY + @as(u32, @intCast(i)));
+            const line = try context.getLine(offY + @as(u32, @intCast(i)));
             if (i < self.margin.top or i >= height - self.margin.bottom) {
                 // all margin
                 try line.chars.ensureTotalCapacity(alloc, offX + width);
@@ -837,11 +1018,21 @@ pub const PartialRendered = struct {
     }
     pub fn renderWithMove(self: *PartialRendered, maxWidth: u32, toX: u32, toY: u32) !bool {
         try self.render();
-        const box = self.box orelse return error.BoxNotExist;
-        const alloc = box.context.alloc;
-        const mainWidth = box.width + self.widthExpansion;
+        const box = try self.getBox();
+        const context = try self.getContext();
+        const containerBox = try self.getContainer();
+        const alloc = context.alloc();
+        const widthExpansion = switch (self.sideAlign) {
+            .left, .center, .right => self.maxWidth - self.padding.side() - self.margin.side() - box.width,
+            .noexpand => 0,
+        };
+        const heightExpansion = switch (self.verticalAlign) {
+            .left, .center, .right => self.maxHeight - self.padding.vert() - self.margin.vert() - box.height,
+            .noexpand => 0,
+        };
+        const mainWidth = box.width + widthExpansion;
         const width = mainWidth + self.padding.left + self.padding.right + self.margin.left + self.margin.right;
-        const height = box.height + self.heightExpansion + self.padding.top + self.padding.bottom + self.margin.top + self.margin.bottom;
+        const height = box.height + heightExpansion + self.padding.top + self.padding.bottom + self.margin.top + self.margin.bottom;
         // yo we gucci
         if (width <= maxWidth) {
             // dont need to save the width before render() bc if
@@ -849,27 +1040,27 @@ pub const PartialRendered = struct {
             // than box size, so we just need to recompute if its bigger than boxSize AND cursor
             // - B: The width already increased from width, now it will increase
             // even more with cursor + width
-            self.containerBox.width = @max(
-                self.containerBox.width,
-                self.containerBox.cursorX + width,
+            containerBox.width = @max(
+                containerBox.width,
+                containerBox.cursorX + width,
             );
-            self.containerBox.cursorX += width;
+            containerBox.cursorX += width;
             // NOTE: to offset the increase at the end of render()
-            self.containerBox.cursorY -= height;
+            containerBox.cursorY -= height;
             return false;
         }
-        self.containerBox.cursorX = 0;
-        const offX = self.containerBox.offsetX;
-        const offY = self.containerBox.offsetY;
+        containerBox.cursorX = 0;
+        const offX = containerBox.offsetX;
+        const offY = containerBox.offsetY;
         for (0..height) |i| {
-            const line = try box.context.getLine(offY + @as(u32, @intCast(i)));
+            const line = try context.getLine(offY + @as(u32, @intCast(i)));
             const count = @min(line.chars.items.len - offX, width);
             const slice = line.chars.items[offX .. offX + count];
-            const otherLine = try box.context.getLine(toY + @as(u32, @intCast(i)));
+            const otherLine = try context.getLine(toY + @as(u32, @intCast(i)));
 
             if (otherLine.chars.items.len < toX + count) {
-                try otherLine.chars.appendNTimes(box.context.alloc, .space, toX + count - otherLine.chars.items.len);
-                try otherLine.hls.appendNTimes(box.context.alloc, self.marginColor, toX + count - otherLine.hls.items.len);
+                try otherLine.chars.appendNTimes(context.alloc(), .space, toX + count - otherLine.chars.items.len);
+                try otherLine.hls.appendNTimes(context.alloc(), self.marginColor, toX + count - otherLine.hls.items.len);
             }
             try otherLine.chars.replaceRange(alloc, toX, count, slice);
             try otherLine.hls.replaceRange(
@@ -885,7 +1076,51 @@ pub const PartialRendered = struct {
     }
 };
 
+pub fn init_boxes() void {
+    contexts = .empty;
+}
+
+pub fn dumpStruct(obj: anytype, indent: []const u8) void {
+    const st = @typeInfo(@TypeOf(obj)).@"struct";
+    inline for (st.fields) |field| {
+        switch (@typeInfo(@FieldType(@TypeOf(obj), field.name))) {
+            .@"struct" => {},
+            else => {
+                log.write("{s}.{s} = {any}\n", .{ indent, field.name, @field(obj, field.name) }) catch {};
+            },
+        }
+    }
+}
+
+fn dumpContexts() void {
+    log.write("  ctx ptr: {*}\n", .{contexts.items.ptr}) catch {};
+    for (contexts.items, 0..) |ctxn, i| {
+        if (ctxn) |ctx| {
+            log.write("    ctx {} is not null\n", .{i}) catch {};
+            log.write("      .boxes = {*}\n", .{ctx.boxes.items.ptr}) catch {};
+            const indent = "          ";
+            for (ctx.boxes.items, 0..) |box, j| {
+                log.write("      .boxes[{}] = \n", .{j}) catch {};
+                dumpStruct(box, indent[0..]);
+            }
+            log.write("      .partials = {*}\n", .{ctx.partials.items.ptr}) catch {};
+            for (ctx.partials.items, 0..) |partial, j| {
+                log.write("        .partials[{}] = \n", .{j}) catch {};
+                dumpStruct(partial, indent[0..]);
+            }
+            log.write("    .lines = {*}\n", .{ctx.lines.items.ptr}) catch {};
+            for (ctx.lines.items, 0..) |line, j| {
+                log.write("      .lines[{}] = \n", .{j}) catch {};
+                dumpStruct(line, indent[0..]);
+            }
+        } else {
+            log.write("    ctx {} is null\n", .{i}) catch {};
+        }
+    }
+}
+
 pub fn get_context(ctx: u32) !*BoxContext {
+    dumpContexts();
     if (ctx >= contexts.items.len) {
         return error.NotFound;
     }
@@ -895,11 +1130,19 @@ pub fn get_context(ctx: u32) !*BoxContext {
 
 pub fn get_box(ctx: u32, box: u32) !*Box {
     const context = try get_context(ctx);
-    return context.getBox(box) orelse return error.NotFound;
+    const b = context.getBox(box) orelse return error.NotFound;
+    const indent = "  ";
+    log.write("  Getting box {}:{}\n", .{ ctx, box }) catch {};
+    dumpStruct(b.*, indent[0..]);
+    return b;
 }
 pub fn get_partial(ctx: u32, partial: u32) !*PartialRendered {
     const context = try get_context(ctx);
-    return context.getPartial(partial) orelse return error.NotFound;
+    const ret = context.getPartial(partial) orelse return error.NotFound;
+    const indent = "  ";
+    log.write("  Getting partial {}:{}\n", .{ ctx, partial }) catch {};
+    dumpStruct(ret.*, indent[0..]);
+    return ret;
 }
 
 // new context {
@@ -934,6 +1177,11 @@ pub fn box_context_delete(ctx: u32) bool {
     return true;
 }
 
+pub fn box_context_wipe(ctx: u32) bool {
+    const context = get_context(ctx) catch return false;
+    return context.arena.reset(.retain_capacity);
+}
+
 // }
 
 // context exists {
@@ -951,7 +1199,7 @@ pub fn box_context_exists(ctx: u32) bool {
 pub fn box_pr_new(ctx: u32, boxid: u32) !u32 {
     const context = try get_context(ctx);
     const box = try get_box(ctx, boxid);
-    const partial = PartialRendered.init(box);
+    const partial = PartialRendered.init(box, boxid);
     return try context.newPartial(partial);
 }
 pub fn box_pr_set_margin(ctx: u32, partialid: u32, left: u32, right: u32, top: u32, bottom: u32) !void {
@@ -965,6 +1213,19 @@ pub fn box_pr_set_pad(ctx: u32, partialid: u32, left: u32, right: u32, top: u32,
 pub fn box_pr_set_main_hl(ctx: u32, partialid: u32, hl: Highlight) !void {
     const partial = try get_partial(ctx, partialid);
     partial.setMainColor(hl);
+}
+
+pub fn box_pr_get_width(ctx: u32, partialid: u32) !u32 {
+    const partial = try get_partial(ctx, partialid);
+    return try partial.getWidth();
+}
+pub fn box_pr_get_height(ctx: u32, partialid: u32) !u32 {
+    const partial = try get_partial(ctx, partialid);
+    return try partial.getHeight();
+}
+pub fn box_pr_set_max_height(ctx: u32, partialid: u32, height: u32) !void {
+    const partial = try get_partial(ctx, partialid);
+    partial.setMaxHeight(height);
 }
 pub fn box_pr_set_max_width(ctx: u32, partialid: u32, width: u32) !void {
     const partial = try get_partial(ctx, partialid);
@@ -1024,7 +1285,7 @@ pub fn box_shift_right_by(ctx: u32, boxid: u32, extra: u32) !void {
 // new box from ctx {
 pub fn box_new_from_context(ctx: u32, hlgroup: Highlight) !u32 {
     const context = try get_context(ctx);
-    const ret = try context.newBox(Box.newBoxFromContext(context, hlgroup));
+    const ret = try context.newBox(Box.newBoxFromContext(ctx, hlgroup));
     return @intCast(ret);
 }
 // }
@@ -1032,7 +1293,8 @@ pub fn box_new_from_context(ctx: u32, hlgroup: Highlight) !u32 {
 // new box from offset {
 pub fn box_new_from_offset(ctx: u32, box: u32, x: u32, y: u32) !u32 {
     const self = try get_box(ctx, box);
-    const ret = try self.context.newBox(self.newBoxFromOffset(x, y));
+    const context = try get_context(self.context);
+    const ret = try context.newBox(self.newBoxFromOffset(x, y));
     return @intCast(ret);
 }
 // }
@@ -1040,13 +1302,15 @@ pub fn box_new_from_offset(ctx: u32, box: u32, x: u32, y: u32) !u32 {
 // new box right {
 pub fn box_new_right_from(ctx: u32, box: u32) !u32 {
     const self = try get_box(ctx, box);
-    const ret = try self.context.newBox(self.newBoxRightOf());
+    const context = try get_context(self.context);
+    const ret = try context.newBox(self.newBoxRightOf());
     return @intCast(ret);
 }
 
 pub fn box_new_cursored(ctx: u32, box: u32) !u32 {
     const self = try get_box(ctx, box);
-    const ret = try self.context.newBox(self.newBoxCursored());
+    const context = try get_context(self.context);
+    const ret = try context.newBox(self.newBoxCursored());
     return @intCast(ret);
 }
 // }

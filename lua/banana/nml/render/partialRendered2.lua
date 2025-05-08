@@ -31,7 +31,7 @@ function M.emptyPartialRendered(container)
         center = nil,
     }
 
-    setmetatable(ret, PartialRendered)
+    setmetatable(ret, { __index = PartialRendered })
     return ret
 end
 
@@ -61,6 +61,11 @@ function PartialRendered:setMaxWidth(w)
     lb.box_pr_set_max_width(self.ctx, self.pr, w)
 end
 
+---@param w number
+function PartialRendered:setMaxHeight(w)
+    lb.box_pr_set_max_height(self.ctx, self.pr, w)
+end
+
 ---@return Banana.Box2
 function PartialRendered:getCursoredBox()
     local id = lb.box_pr_cursored_box(self.ctx, self.pr)
@@ -73,12 +78,23 @@ function PartialRendered:getBox()
     return box.boxFromId(self.ctx, id)
 end
 
+---@return number
+function PartialRendered:getWidth()
+    return lb.box_pr_get_width(self.ctx, self.pr)
+end
+
+---@return number
+function PartialRendered:getHeight()
+    return lb.box_pr_get_height(self.ctx, self.pr)
+end
+
 ---@param align Banana.Renderer.Align
 function PartialRendered:setAlign(align)
     lb.box_pr_set_align(self.ctx, self.pr, align)
 end
 
 function PartialRendered:render()
+    if self.center == nil then return end
     lb.box_pr_render(self.ctx, self.pr)
 end
 
