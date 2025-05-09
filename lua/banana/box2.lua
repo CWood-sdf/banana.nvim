@@ -47,7 +47,7 @@ local Box = {
     boxid = 0,
     hlgroup = 0,
 }
-
+local Box__index = flame.wrapClass(Box, "Box", true)
 ---@param ctx number
 ---@return Banana.Box2
 function M.boxFromCtx(ctx)
@@ -59,7 +59,7 @@ function M.boxFromCtx(ctx)
         boxid = boxid,
         hlgroup = 0,
     }
-    setmetatable(ret, { __index = Box })
+    setmetatable(ret, { __index = Box__index })
     return ret
 end
 
@@ -73,7 +73,7 @@ function M.boxFromId(ctx, id)
         boxid = id,
         hlgroup = lb.box_get_hl(ctx, id)
     }
-    setmetatable(box, { __index = Box })
+    setmetatable(box, { __index = Box__index })
     return box
 end
 
@@ -85,9 +85,9 @@ function Box:newAtOffset(x, y)
     local ret = {
         ctx = self.ctx,
         boxid = boxid,
-        hlgroupid = self.hlgroupid,
+        hlgroup = self.hlgroup,
     }
-    setmetatable(ret, { __index = Box })
+    setmetatable(ret, { __index = Box__index })
     return ret
 end
 
@@ -98,9 +98,9 @@ function Box:newCursored()
     local ret = {
         ctx = self.ctx,
         boxid = boxid,
-        hlgroupid = self.hlgroupid,
+        hlgroup = self.hlgroup,
     }
-    setmetatable(ret, { __index = Box })
+    setmetatable(ret, { __index = Box__index })
     return ret
 end
 
@@ -112,9 +112,9 @@ function Box:newToRight()
     local ret = {
         ctx = self.ctx,
         boxid = boxid,
-        hlgroupid = self.hlgroupid,
+        hlgroup = self.hlgroup,
     }
-    setmetatable(ret, { __index = Box })
+    setmetatable(ret, { __index = Box__index })
     return ret
 end
 

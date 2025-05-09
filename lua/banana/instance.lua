@@ -161,16 +161,20 @@ function Instance:_virtualRender(ast, ctx, width, height)
 end
 
 function Instance:_openDebugWin()
+    flame.new("debugwin")
     if self.DEBUG_bufNr == nil or not vim.api.nvim_buf_is_valid(self.DEBUG_bufNr) then
         self.DEBUG_bufNr = vim.api.nvim_create_buf(false, true)
-        vim.api.nvim_set_option_value("filetype", "markdown", {
-            buf = self.DEBUG_bufNr
-        })
+        -- vim.api.nvim_set_option_value("filetype", "markdown", {
+        --     buf = self.DEBUG_bufNr
+        -- })
     else
         -- vim.api.nvim_buf_clear_namespace(self.DEBUG_bufNr, self.highlightNs, 0,
         --     -1)
         -- vim.api.nvim_buf_clear_namespace(self.DEBUG_bufNr, 0, 0, -1)
     end
+
+    flame.pop()
+    flame.new("debugwin2")
     if self.DEBUG_winId == nil or not vim.api.nvim_win_is_valid(self.DEBUG_winId) then
         local w = math.floor(self.DEBUG_winWidth or vim.o.columns / 2.5)
         self.DEBUG_winId = vim.api.nvim_open_win(self.DEBUG_bufNr, false, {
@@ -190,6 +194,7 @@ function Instance:_openDebugWin()
     else
         -- vim.api.nvim_set_current_win(self.DEBUG_winId)
     end
+    flame.pop()
 end
 
 function Instance:_clearDebugWinBuf()
@@ -757,8 +762,6 @@ function Instance:_createWinAndBuf()
             isRealRender = false,
         })
     end
-    flame.expect("winAndBuf")
-    flame.pop()
 
 
     local containerWidth = vim.o.columns
@@ -851,6 +854,8 @@ function Instance:_createWinAndBuf()
         vim.api.nvim_win_set_buf(self.winid, self.bufnr)
     end
     lb.box_context_delete(ctx)
+    flame.expect("winAndBuf")
+    flame.pop()
 
     return width, height
 end
@@ -902,6 +907,7 @@ function Instance:getFps()
     return count / (time / 1000000000)
 end
 
+local stressStartTime = 0
 function Instance:_render()
     if self.DEBUG_showPerf or self.DEBUG then
         flame.overrideIsDev()
@@ -930,13 +936,13 @@ function Instance:_render()
     self:body().absoluteAsts = {}
 
     styleTime = vim.loop.hrtime() - startTime
-    startTime = vim.loop.hrtime()
-
-    local width, height = self:_createWinAndBuf()
     if self.DEBUG then
         self:_openDebugWin()
         self:_clearDebugWinBuf()
     end
+    startTime = vim.loop.hrtime()
+
+    local width, height = self:_createWinAndBuf()
 
     local winTime = vim.loop.hrtime() - startTime
     if self.ctx == nil then
@@ -1004,6 +1010,7 @@ function Instance:_render()
         })
 
     -- self:_highlight(stuffToRender, 0)
+    lb.box_context_wipe(self.ctx)
     self:_dumpUrls(self.bufnr, self.highlightNs)
 
     local hlTime = vim.loop.hrtime() - startTime
@@ -1022,8 +1029,16 @@ function Instance:_render()
     end
 
     if self.DEBUG_stressTest then
-        if n < 200 then
+        if n == 1 then
+            stressStartTime = vim.loop.hrtime()
+        end
+        if n < 500 then
             self:_deferRender()
+        else
+            local time = ((vim.loop.hrtime() - stressStartTime) / 1e6)
+            local iterTime = time / 500 - 10
+            print("Stress test took " ..
+                time .. "ms (~" .. iterTime .. "ms/cycle)")
         end
     end
     if self.DEBUG_showPerf then
@@ -1093,7 +1108,6 @@ function Instance:_render()
         -- })
         self:_writeLinesToDebugWin(extraLines)
     end
-    lb.box_context_wipe(self.ctx)
     self.rendering = false
     self.renderRequested = false
     -- collectgarbage("restart")

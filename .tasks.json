@@ -40,6 +40,14 @@
 				"name": "ookzd",
 				"close": true
 			}
+		},
+		{
+			"name": "benchmark",
+			"cmd": "perf record -F 999 -a --call-graph dwarf -g nvim -c 'so zigtestpre.lua' test.nml",
+			"window": {
+				"name": "bench",
+				"close": false
+			}
 		}
 	]
 }

@@ -280,7 +280,7 @@ pub const BoxContext = struct {
         };
     }
     pub fn alloc(self: *BoxContext) std.mem.Allocator {
-        return self._alloc;
+        return self.arena.allocator();
     }
     pub fn deinit(self: *BoxContext) void {
         self.arena.deinit();
@@ -295,7 +295,7 @@ pub const BoxContext = struct {
         self.lines = .empty;
         self.boxes = .empty;
         self.partials = .empty;
-        return self.arena.reset(.retain_capacity);
+        return self.arena.reset(.free_all);
     }
     pub fn newBox(self: *BoxContext, box: Box) !u32 {
         try self.boxes.append(self.arena.allocator(), box);
@@ -1190,6 +1190,7 @@ fn dumpContexts() void {
     for (contexts.items, 0..) |ctxn, i| {
         if (ctxn) |ctx| {
             log.write("    ctx {} is not null\n", .{i}) catch {};
+            log.write("      .memusage = {}\n", .{ctx.arena.queryCapacity()}) catch {};
             log.write("      .boxes = {*}\n", .{ctx.boxes.items.ptr}) catch {};
             const indent = "          ";
             for (ctx.boxes.items, 0..) |box, j| {

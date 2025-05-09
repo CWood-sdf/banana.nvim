@@ -103,7 +103,7 @@ function M.box_pr_render_with_move(ctx, partialid, maxWidth, toX, toY) end
 function M.box_context_render(ctx, buf) end
 
 ---@param ctx number
----@param L fun (line: number, startCol: number, endCol: number, hl: number)
+---@param L HlExpect
 ---@return nil
 function M.box_context_highlight(ctx, L) end
 
@@ -223,7 +223,7 @@ function M.box_set_hl(ctx, box, style) end
 function M.box_append_word(ctx, box, str, style) end
 
 ---@param ctx number
----@param expected_bg fun(hl: number)
+---@param expected_bg StripRightExpect
 ---@return nil
 function M.box_context_strip_right_space(ctx, expected_bg) end
 
@@ -234,5 +234,7 @@ function M.box_context_strip_right_space(ctx, expected_bg) end
 ---@param top number
 ---@return nil
 function M.box_render_over(ctx, box, otherCtx, left, top) end
+
+
 
 return M

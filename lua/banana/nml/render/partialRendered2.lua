@@ -19,6 +19,8 @@ M.Align = {
 ---@field center Banana.Box2?
 local PartialRendered = {}
 
+local PrIndex = flame.wrapClass(PartialRendered, "Partial", true)
+
 ---@param container Banana.Box2
 ---@return Banana.Renderer.PartialRendered2
 function M.emptyPartialRendered(container)
@@ -31,7 +33,7 @@ function M.emptyPartialRendered(container)
         center = nil,
     }
 
-    setmetatable(ret, { __index = PartialRendered })
+    setmetatable(ret, { __index = PrIndex })
     return ret
 end
 
