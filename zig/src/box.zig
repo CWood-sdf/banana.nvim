@@ -679,7 +679,7 @@ pub const Box = struct {
             return error.HeightTooSmall;
         }
         const context = try self.getContext();
-        for (0..height - self.height) |_| {
+        while (context.lines.items.len < self.offsetY + height) {
             try context.lines.append(context.alloc(), Line.init());
             try context.lines.items[context.lines.items.len - 1].appendCharNTimes(
                 context,
@@ -717,6 +717,17 @@ pub const Box = struct {
             return;
         }
         const context = try self.getContext();
+        while (context.lines.items.len < self.offsetY + self.height) {
+            try context.lines.append(context.alloc(), Line.init());
+            try context.lines.items[context.lines.items.len - 1].appendCharNTimes(
+                context,
+                ' ',
+                self.hlgroup,
+                self.width,
+            );
+        }
+        log.write("lens: {}, off: {}, height: {}\n", .{ context.lines.items.len, self.offsetY, self.offsetY + self.height }) catch {};
+        defer log.write("function done :)\n", .{}) catch {};
         for (context.lines.items[self.offsetY .. self.offsetY + self.height]) |*line| {
             if (line.widthFrom(self.offsetX) > self.width) {
                 return error.LineTooBig;
