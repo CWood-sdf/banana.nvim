@@ -23,12 +23,21 @@ end
 ---@param ctx number
 function M.deleteContext(ctx)
     lb.box_context_delete(ctx)
+    hls[ctx + 1] = {}
+end
+
+function M.wipeContext(ctx)
+    lb.box_context_wipe(ctx)
+    hls[ctx + 1] = {}
 end
 
 ---@param ctx number
----@param hl Banana.Highlight
+---@param hl Banana.Highlight?
 ---@return number
 function M.addHighlight(ctx, hl)
+    if hl == nil then
+        return 0
+    end
     table.insert(hls[ctx + 1], hl)
     return #hls[ctx + 1]
 end

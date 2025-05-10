@@ -2,6 +2,10 @@
 
 local M = {}
 
+---@alias HlExpect fun (line: number, startCol: number, endCol: number, hl: number): nil
+---@alias StripRightExpect fun (hl: number): number
+
+
 ---@return number
 function M.box_context_create() end
 
@@ -96,6 +100,12 @@ function M.box_pr_render(ctx, partialid) end
 ---@param toY number
 ---@return boolean
 function M.box_pr_render_with_move(ctx, partialid, maxWidth, toX, toY) end
+
+---@param ctx number
+---@param partialid number
+---@param lineHeight number
+---@return boolean
+function M.box_pr_render_cursored(ctx, partialid, lineHeight) end
 
 ---@param ctx number
 ---@param buf number
@@ -235,6 +245,5 @@ function M.box_context_strip_right_space(ctx, expected_bg) end
 ---@return nil
 function M.box_render_over(ctx, box, otherCtx, left, top) end
 
-
-
 return M
+

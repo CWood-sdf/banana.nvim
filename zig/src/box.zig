@@ -532,16 +532,32 @@ pub const BoxContext = struct {
 };
 
 pub const Box = struct {
+    /// the context that this box renders to
     context: Id,
+    /// x of top left corner of the box from the base of the context
     offsetX: u32,
+    /// y of top left corner of the box from the base of the context
     offsetY: u32,
+    /// the current width of the box
     width: u32,
+    /// the max width of the box (used for wrapping computations)
     maxWidth: u32,
+    /// the current max height of the box, not really used for anything aside from height computes in PartialRendered
     maxHeight: u32,
+    /// the current height of the box
     height: u32,
+    /// the cursor x pos relative to the offset pos
     cursorX: u32,
+    /// the cursor y pos relative to the offset pos
     cursorY: u32,
+    /// the hlgroup
     hlgroup: Highlight,
+    /// is true when the box could potentially have variable sized lines and needs to be "cleaned", eg:
+    /// ###
+    /// #####
+    ///  to
+    /// #####
+    /// #####
     dirty: bool,
     // TODO: Need to work on this
     // pub fn insertGradientMarker(){}
@@ -1109,6 +1125,11 @@ pub const PartialRendered = struct {
             }
         }
     }
+    pub fn renderCursoredOverflow(self: *PartialRendered, lineHeight: u32) !bool {
+        const containerBox = try self.getContainer();
+        const maxWidth = containerBox.maxWidth - containerBox.cursorX;
+        return try self.renderWithMove(maxWidth, 0, containerBox.cursorY + lineHeight);
+    }
     pub fn renderWithMove(self: *PartialRendered, maxWidth: u32, toX: u32, toY: u32) !bool {
         try self.render();
         const box = try self.getBox();
@@ -1345,6 +1366,10 @@ pub fn box_pr_render_with_move(ctx: u32, partialid: u32, maxWidth: u32, toX: u32
     const partial = try get_partial(ctx, partialid);
     return try partial.renderWithMove(maxWidth, toX, toY);
 }
+pub fn box_pr_render_cursored(ctx: u32, partialid: u32, lineHeight: u32) !bool {
+    const partial = try get_partial(ctx, partialid);
+    return try partial.renderCursoredOverflow(lineHeight);
+}
 // }
 
 // context render {
@@ -1498,7 +1523,7 @@ pub fn box_append_word(ctx: u32, box: u32, str: []const u8, style: Highlight) !v
 
 // pub fn appendBoxBelow(box, expand){}
 
-const StripRightExpect = Expect(fn (hl: Highlight) bool);
+const StripRightExpect = Expect(fn (hl: Highlight) u32);
 pub fn box_context_strip_right_space(ctx: u32, expected_bg: StripRightExpect) !void {
     const context = try get_context(ctx);
     try context.stripRightSpace(expected_bg.L, 2);

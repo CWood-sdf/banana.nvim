@@ -1,5 +1,7 @@
 ---@module 'banana.nml.render.partialRendered2'
 local p     = require("banana.lazyRequire")("banana.nml.render.partialRendered2")
+---@module 'banana.box2'
+local b     = require("banana.lazyRequire")("banana.box2")
 ---@module 'banana.utils.case'
 local case  = require("banana.lazyRequire")("banana.utils.case")
 ---@module 'banana.utils.debug_flame'
@@ -169,6 +171,7 @@ return function (self, ast, box, parentHl, parentWidth, parentHeight, startX,
     -- flame.pop()
     -- flame.new("element render")
     extra.useAllHeight = false
+    pr:setMainHl(b.addHighlight(extra.ctx, parentHl))
     -- flame.new("other render")
     local contentBox = pr:getBox()
     -- TODO: If inline, make cursored

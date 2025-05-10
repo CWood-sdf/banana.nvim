@@ -12,47 +12,6 @@ local _tag = require("banana.lazyRequire")("banana.nml.tag")
 ---@module 'banana.nml.entity'
 local entity = require("banana.lazyRequire")("banana.nml.entity")
 
----@param ast Banana.Ast
----@param i number
----@param currentLine Banana.Box2
----@param append Banana.Box2
----@param maxWidth number
----@param hl Banana.Highlight?
----@return Banana.Box2, Banana.Box2?
-local function handleOverflow(ast, i, currentLine, append, maxWidth, hl)
-    maxWidth = math.max(1, maxWidth)
-    -- flame.new("handleOverflow")
-    -- if currentLine:height() == 0 then
-    --     currentLine:appendStr("", nil)
-    -- end
-    if currentLine:width() + append:width() <= maxWidth then
-        currentLine:append(append, nil)
-        -- flame.pop()
-        return currentLine, nil
-    end
-    if append:height() ~= 1 or not breakable(ast.nodes[i]) then
-        -- flame.pop()
-        return currentLine, append
-    end
-    if currentLine:height() > 1 then
-        local ap, extra = splitLineBoxOnce(maxWidth - currentLine:width(), append,
-            hl)
-        currentLine:append(ap, nil)
-        -- flame.pop()
-        return currentLine, extra
-    end
-    currentLine:append(append, nil)
-    local preStuff = b.Box:new(hl)
-    local extra = nil
-    repeat
-        currentLine, extra = splitLineBoxOnce(maxWidth, currentLine, hl)
-        preStuff:appendBoxBelow(currentLine, false)
-        currentLine = extra
-    until extra:width() <= maxWidth
-    -- flame.pop()
-    return preStuff, extra
-end
-
 ---Renders everything in a block
 ---@param ast Banana.Ast
 ---@param box Banana.Box2
@@ -73,9 +32,7 @@ return function (ast, box, parentHl, i, parentWidth, parentHeight, startX, start
     local hasElements = false
     local width = parentWidth
     local height = parentHeight
-    ---@type Banana.Box2?
-    local extra = nil
-    local startI = i
+    local lineHeight = 1
     while i <= #ast.nodes do
         log.trace("TagInfo: renderBlock loop " .. i)
         local v = ast.nodes[i]
@@ -104,23 +61,6 @@ return function (ast, box, parentHl, i, parentWidth, parentHeight, startX, start
             local count = _str.charWidth(v)
             -- local box = b.Box:new(parentHl)
             box:appendStr(v)
-            -- local overflow = nil
-            -- currentLine, overflow = handleOverflow(ast, i, currentLine, box,
-            --     width, parentHl)
-            -- if overflow ~= nil then
-            --     if extra == nil then
-            --         extra = currentLine
-            --     else
-            --         if extra:width() < currentLine:width() then
-            --             extra:expandWidthTo(currentLine:width())
-            --         end
-            --         if currentLine:width() < extra:width() then
-            --             currentLine:expandWidthTo(extra:width())
-            --         end
-            --         extra:appendBoxBelow(currentLine, false)
-            --     end
-            --     currentLine = overflow
-            -- end
             startX = startX + count
             hasElements = true
         else
@@ -129,40 +69,18 @@ return function (ast, box, parentHl, i, parentWidth, parentHeight, startX, start
                 break
             end
             v:_resolveUnits(width, height)
-            local newBox = box:newCursored()
-            local rendered = tag:getRendered(v, newBox, parentHl, width, height,
+            local rendered = tag:getRendered(v, box, parentHl, width, height,
                 startX,
                 startY, inherit, extra_)
-            rendered:render()
+            local moved = rendered:renderCursored(lineHeight)
 
-            box:updateCursorFrom(newBox)
-            startX = startX + rendered:getWidth()
-            local overflow = nil
-            -- local orgLines = currentLine:height()
-            -- currentLine, overflow = handleOverflow(ast, i, currentLine, rendered,
-            --     width, parentHl)
-            -- TODO: Fix
-            -- if rendered:height() > orgLines and overflow == nil then
-            --     local yInc = rendered:height() - orgLines
-            --     local currentI = startI
-            --     while currentI < i do
-            --         local node = ast.nodes[currentI]
-            --         if type(node) == "string" then
-            --             goto continue
-            --         end
-            --         node:_increaseTopBound(yInc)
-            --         ::continue::
-            --         currentI = currentI + 1
-            --     end
-            -- end
-            -- if overflow ~= nil then
-            --     if extra == nil then
-            --         extra = currentLine
-            --     else
-            --         extra:appendBoxBelow(currentLine, false)
-            --     end
-            --     currentLine = overflow
-            -- end
+            if moved then
+                startX = 0
+                startY = startY + lineHeight
+            else
+                startX = startX + rendered:getWidth()
+                lineHeight = math.max(lineHeight, rendered:getHeight())
+            end
 
             if tag.formatType == _tag.FormatType.Block or tag.formatType == _tag.FormatType.BlockInline then
                 i = i + 1

@@ -100,4 +100,11 @@ function PartialRendered:render()
     lb.box_pr_render(self.ctx, self.pr)
 end
 
+---@param lineHeight number
+---@return boolean
+function PartialRendered:renderCursored(lineHeight)
+    if self.center == nil then return false end
+    return lb.box_pr_render_cursored(self.ctx, self.pr, lineHeight)
+end
+
 return M

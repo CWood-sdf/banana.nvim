@@ -105,11 +105,11 @@ local Instance = {}
 ---@param ctx number
 ---@param width number
 ---@param height number
----@return Banana.Line[]
 function Instance:_virtualRender(ast, ctx, width, height)
     flame.new("virtualRender")
     -- setmetatable(ret, { __mode = "kv" })
     local tag = ast.actualTag
+    -- local traceCtx = lb.box_context_create()
     ---@type Banana.Renderer.ExtraInfo
     local extra = {
         componentStack = {},
@@ -119,10 +119,11 @@ function Instance:_virtualRender(ast, ctx, width, height)
         isRealRender = true,
         screenHeight = height,
         min_size = false,
+        ctx = ctx,
     }
     local b = require("banana.box2").boxFromCtx(ctx)
     -- setmetatable(extra, { __mode = "kv" })
-    local rendered = tag:renderRoot(ast, b, nil, width, height, {
+    tag:renderRoot(ast, b, nil, width, height, {
         text_align = "left",
         position = "static",
         min_size = false,
@@ -944,6 +945,7 @@ function Instance:_render()
 
     local width, height = self:_createWinAndBuf()
 
+
     local winTime = vim.loop.hrtime() - startTime
     if self.ctx == nil then
         self.ctx = require("banana.box2").createContext()
@@ -1008,7 +1010,29 @@ function Instance:_render()
         {
             buf = self.bufnr
         })
+    local hls = {}
 
+    vim.api.nvim_win_set_hl_ns(self.winid, self.highlightNs)
+    vim.api.nvim_buf_clear_namespace(self.bufnr, self.highlightNs, 0, -1)
+    vim.api.nvim_buf_clear_namespace(self.bufnr, 0, 0, -1)
+    lb.box_context_highlight(self.ctx, function (line, startCol, endCol, hl)
+        if hls[hl] == nil then
+            local hlvalue = box.getHl(self.ctx, hl)
+            if hlvalue == nil then
+                return
+            end
+            local group = "banana_hl_" .. hl
+            vim.api.nvim_set_hl(self.highlightNs, group,
+                hlvalue)
+            hls[hl] = group
+        end
+        local group = hls[hl]
+        vim.api.nvim_buf_set_extmark(self.bufnr, self.highlightNs, line, startCol,
+            {
+                end_col = endCol,
+                hl_group = group,
+            })
+    end)
     -- self:_highlight(stuffToRender, 0)
     lb.box_context_wipe(self.ctx)
     self:_dumpUrls(self.bufnr, self.highlightNs)
