@@ -614,6 +614,22 @@ pub const Box = struct {
         };
     }
 
+    pub fn newBoxBelow(self: *Box) Box {
+        return .{
+            .height = 0,
+            .context = self.context,
+            .offsetX = self.offsetX,
+            .offsetY = self.offsetY + self.height,
+            .width = 0,
+            .maxWidth = std.math.maxInt(@FieldType(Box, "width")),
+            .maxHeight = self.maxHeight,
+            .dirty = false,
+            .hlgroup = self.hlgroup,
+            .cursorX = 0,
+            .cursorY = 0,
+        };
+    }
+
     pub fn newBoxRightOf(self: *Box) Box {
         return .{
             .height = 0,
@@ -632,6 +648,15 @@ pub const Box = struct {
 
     pub fn getContext(self: *Box) !*BoxContext {
         return try get_context(self.context);
+    }
+
+    pub fn putCursorBelow(self: *Box, other: *Box) void {
+        const target = other.offsetY + other.cursorY;
+        if (target < self.offsetY) {
+            return;
+        }
+        self.cursorY = @max(self.cursorY, target - self.offsetY);
+        self.height = self.cursorY + 1;
     }
 
     // prettry sure this is only used for canvas
@@ -1380,6 +1405,12 @@ pub fn box_context_render(ctx: u32, buf: u32) !bool {
     return true;
 }
 
+pub fn box_put_cursor_below(ctx: u32, boxOne: u32, boxOther: u32) !void {
+    const box1 = try get_box(ctx, boxOne);
+    const box2 = try get_box(ctx, boxOther);
+    box1.putCursorBelow(box2);
+}
+
 /// Here so that functions can get lua functions/tables and document
 /// what they want from the type
 pub fn Expect(tp: type) type {
@@ -1423,6 +1454,13 @@ pub fn box_new_right_from(ctx: u32, box: u32) !u32 {
     const self = try get_box(ctx, box);
     const context = try get_context(self.context);
     const ret = try context.newBox(self.newBoxRightOf());
+    return @intCast(ret);
+}
+
+pub fn box_new_below_from(ctx: u32, box: u32) !u32 {
+    const self = try get_box(ctx, box);
+    const context = try get_context(self.context);
+    const ret = try context.newBox(self.newBoxBelow());
     return @intCast(ret);
 }
 

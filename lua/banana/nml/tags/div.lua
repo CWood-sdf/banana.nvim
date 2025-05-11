@@ -8,16 +8,14 @@ local function renderer(self, ast, box, parentHl, parentWidth, parentHeight,
                         startX,
                         startY, inherit, extra)
     -- flame.new("tag:div")
-    local b = require("banana.box")
-    ---@type Banana.Box
-    local ret = b.Box:new()
-    ret.hlgroup = ast:_mixHl(parentHl)
-    for _, box, _ in self:blockIter(ast, ret.hlgroup, parentWidth, parentHeight, startX, startY, inherit, extra) do
-        ret:appendBoxBelow(box)
+    local hl = ast:_mixHl(parentHl)
+    box:setHl(hl)
+    for _, box, _ in self:blockIter(ast, box, hl, parentWidth, parentHeight, startX, startY, inherit, extra) do
+        -- ret:appendBoxBelow(box)
     end
     -- flame.expect("tag:div")
     -- flame.pop()
-    return ret
+    return box
 end
 ---@type Banana.TagInfo
 local M = t.newTag(

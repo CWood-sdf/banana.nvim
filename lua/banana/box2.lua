@@ -50,7 +50,7 @@ end
 ---@class (exact) Banana.Box2
 ---@field ctx integer
 ---@field boxid integer
----@field hlgroup integer
+---@field private hlgroup integer
 local Box = {
     ctx = 0,
     boxid = 0,
@@ -114,6 +114,20 @@ function Box:newCursored()
 end
 
 ---@return Banana.Box2
+function Box:newBelow()
+    local boxid = lb.box_new_below_from(self.ctx, self.boxid)
+    ---@type Banana.Box2
+    ---@diagnostic disable-next-line: missing-fields
+    local ret = {
+        ctx = self.ctx,
+        boxid = boxid,
+        hlgroup = self.hlgroup,
+    }
+    setmetatable(ret, { __index = Box__index })
+    return ret
+end
+
+---@return Banana.Box2
 function Box:newToRight()
     local boxid = lb.box_new_right_from(self.ctx, self.boxid)
     ---@type Banana.Box2
@@ -137,6 +151,11 @@ end
 ---@param other Banana.Box2
 function Box:updateCursorFrom(other)
     lb.box_update_cursor_from(self.ctx, self.boxid, other.boxid)
+end
+
+---@param other Banana.Box2
+function Box:putCursorBelow(other)
+    lb.box_put_cursor_below(self.ctx, self.boxid, other.boxid)
 end
 
 ---@param width number
@@ -231,7 +250,14 @@ end
 
 ---@param hl Banana.Highlight
 function Box:setHl(hl)
-    lb.box_set_hl(self.ctx, self.boxid, M.addHighlight(self.ctx, hl))
+    local hlg = M.addHighlight(self.ctx, hl)
+    lb.box_set_hl(self.ctx, self.boxid, hlg)
+    self.hlgroup = hlg
+end
+
+---@return number
+function Box:getHl()
+    return self.hlgroup
 end
 
 function Box:clean()
@@ -248,11 +274,6 @@ end
 ---@param style number
 function Box:appendWord(str, style)
     lb.box_append_word(self.ctx, self.boxid, str, style)
-end
-
----@param expectedBg string?
-function Box:stripRightSpace(expectedBg)
-    lb.box_strip_right_space(self.ctx, 0)
 end
 
 ---Renders a box over another box (essentially position:absolute)

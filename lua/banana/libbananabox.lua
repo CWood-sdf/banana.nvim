@@ -113,6 +113,12 @@ function M.box_pr_render_cursored(ctx, partialid, lineHeight) end
 function M.box_context_render(ctx, buf) end
 
 ---@param ctx number
+---@param boxOne number
+---@param boxOther number
+---@return nil
+function M.box_put_cursor_below(ctx, boxOne, boxOther) end
+
+---@param ctx number
 ---@param L HlExpect
 ---@return nil
 function M.box_context_highlight(ctx, L) end
@@ -139,6 +145,11 @@ function M.box_new_from_offset(ctx, box, x, y) end
 ---@param box number
 ---@return number
 function M.box_new_right_from(ctx, box) end
+
+---@param ctx number
+---@param box number
+---@return number
+function M.box_new_below_from(ctx, box) end
 
 ---@param ctx number
 ---@param box number

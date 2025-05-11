@@ -1,6 +1,8 @@
 const std = @import("std");
 pub const State = extern struct {};
 
+pub const GLOBALSINDEX = -@as(c_int, 10002);
+
 pub const CFunction = *allowzero const fn (L: *State) callconv(.C) c_int;
 
 pub const Number = f64;
@@ -38,7 +40,6 @@ pub const to_userdata = lua_touserdata;
 // }
 
 // stack checking functions {
-extern fn lua_isboolean(L: *State, index: c_int) callconv(.C) c_int;
 pub fn is_bool(L: *State, index: c_int) bool {
     return lua_isboolean(L, index) != 0;
 }
@@ -154,6 +155,7 @@ pub const senderror = lua_error;
 
 extern fn lua_type(L: *State, index: c_int) callconv(.C) c_int;
 pub const Type = enum(c_int) {
+    none = -1,
     nil = 0,
     boolean = 1,
     lightuserdata = 2,
@@ -172,4 +174,43 @@ extern fn lua_typename(L: *State, tp: c_int) callconv(.C) [*:0]const u8;
 pub fn typename(L: *State, tp: Type) []const u8 {
     const tpname = lua_typename(L, @intFromEnum(tp));
     return std.mem.span(tpname);
+}
+
+inline fn lua_isboolean(L: *State, n: c_int) bool {
+    return lua_type(L, n) == Type.boolean;
+}
+extern fn lua_getfield(L: *State, idx: c_int, k: [*c]const u8) void;
+pub fn get_global(L: *State, s: [*c]const u8) void {
+    lua_getfield(L, GLOBALSINDEX, s);
+}
+
+pub const PcallRet = enum(c_int) {
+    ok = 0,
+    runtime = 2,
+    memAlloc = 4,
+    errHandler = 5,
+};
+pub const PcallErr = error{
+    runtime,
+    memAlloc,
+    errHandler,
+};
+extern fn lua_pcall(L: *State, nargs: c_int, nresults: c_int, errfunc: c_int) PcallRet;
+
+pub const pcall = lua_pcall;
+extern fn lua_settop(L: *State, idx: c_int) void;
+pub const set_top = lua_settop;
+inline fn lua_pop(L: *State, n: c_int) void {
+    return lua_settop(L, -n - 1);
+}
+pub const pop = lua_pop;
+
+pub fn print(L: *State, alloc: std.mem.Allocator, comptime fmt: []const u8, args: anytype) !void {
+    const buf = try std.fmt.allocPrint(alloc, fmt, args);
+    defer alloc.free(buf);
+
+    get_global(L, "print");
+    push_stringslice(L, buf);
+    _ = pcall(L, 1, 0, 0);
+    lua_pop(L, 1);
 }

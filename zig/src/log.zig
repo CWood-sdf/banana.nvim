@@ -5,13 +5,13 @@ pub fn init() !void {
 }
 
 pub inline fn write(comptime fmt: []const u8, extra: anytype) !void {
-    _ = fmt;
-    _ = extra;
-    // const file = try std.fs.cwd().createFile("log.txt", .{
-    //     .truncate = false,
-    // });
-    // defer file.close();
-    //
-    // try file.seekFromEnd(0);
-    // _ = try std.fmt.format(file.writer(), fmt, extra);
+    // _ = fmt;
+    // _ = extra;
+    const file = try std.fs.cwd().createFile("log.txt", .{
+        .truncate = false,
+    });
+    defer file.close();
+
+    try file.seekFromEnd(0);
+    _ = try std.fmt.format(file.writer(), fmt, extra);
 }
