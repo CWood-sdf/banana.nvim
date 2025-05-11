@@ -171,11 +171,12 @@ return function (self, ast, box, parentHl, parentWidth, parentHeight, startX,
     -- flame.pop()
     -- flame.new("element render")
     extra.useAllHeight = false
-    pr:setMainHl(b.addHighlight(extra.ctx, parentHl))
+    local hl = ast:_mixHl(parentHl)
+    pr:setMainHl(b.addHighlight(extra.ctx, hl))
     -- flame.new("other render")
     local contentBox = pr:getBox()
     -- TODO: If inline, make cursored
-    local centerBox = self:render(ast, contentBox, parentHl, contentWidth,
+    local centerBox = self:render(ast, contentBox, hl, contentWidth,
         parentHeight,
         startX, startY, inherit, extra)
     -- flame.pop()

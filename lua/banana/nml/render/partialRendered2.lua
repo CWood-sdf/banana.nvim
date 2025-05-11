@@ -71,13 +71,15 @@ end
 ---@return Banana.Box2
 function PartialRendered:getCursoredBox()
     local id = lb.box_pr_cursored_box(self.ctx, self.pr)
-    return box.boxFromId(self.ctx, id)
+    self.center = box.boxFromId(self.ctx, id)
+    return self.center
 end
 
 ---@return Banana.Box2
 function PartialRendered:getBox()
     local id = lb.box_pr_box(self.ctx, self.pr)
-    return box.boxFromId(self.ctx, id)
+    self.center = box.boxFromId(self.ctx, id)
+    return self.center
 end
 
 ---@return number

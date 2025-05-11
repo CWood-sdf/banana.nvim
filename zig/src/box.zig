@@ -651,12 +651,12 @@ pub const Box = struct {
     }
 
     pub fn putCursorBelow(self: *Box, other: *Box) void {
-        const target = other.offsetY + other.cursorY;
+        const target = other.offsetY + other.height;
         if (target < self.offsetY) {
             return;
         }
-        self.cursorY = @max(self.cursorY, target - self.offsetY);
-        self.height = self.cursorY + 1;
+        self.cursorY += other.height;
+        self.height += other.height;
     }
 
     // prettry sure this is only used for canvas
@@ -1029,6 +1029,7 @@ pub const PartialRendered = struct {
         }
         // NOTE: If changing, change the offset line in renderWithMove
         containerBox.cursorY += height;
+        containerBox.height += height;
         switch (self.sideAlign) {
             .center => {
                 const leftSide = @divFloor(widthExpansion, 2);
@@ -1260,7 +1261,7 @@ fn dumpContexts() void {
 }
 
 pub fn get_context(ctx: u32) !*BoxContext {
-    dumpContexts();
+    // dumpContexts();
     if (ctx >= contexts.items.len) {
         return error.NotFound;
     }

@@ -8,11 +8,11 @@ local function renderer(_, ast, box, parentHl, _, _)
     -- flame.new("tag:br")
     local b = require("banana.box")
     ---@type Banana.Box
-    local ret = b.Box:new()
-    ret.hlgroup = ast:_mixHl(parentHl)
-    ret:appendStr("")
+    -- local ret = b.Box:new()
+    -- ret.hlgroup = ast:_mixHl(parentHl)
+    box:appendStr("")
     -- flame.pop()
-    return ret
+    return box
 end
 ---@type Banana.TagInfo
 local M = t.newTag(

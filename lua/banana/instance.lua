@@ -140,18 +140,18 @@ function Instance:_virtualRender(ast, ctx, width, height)
         if bgNum ~= nil then
             expectedBg = string.format("#%06x", bgNum)
         end
-        lb.box_context_strip_right_space(self.ctx, function (hl)
-            local style = box.getHl(self.ctx, hl)
-            if style ~= nil then
-                if style.link ~= nil then
-                    return 0
-                end
-                if style.bg ~= expectedBg and style.bg ~= nil then
-                    return 0
-                end
-            end
-            return 1
-        end)
+        -- lb.box_context_strip_right_space(self.ctx, function (hl)
+        --     local style = box.getHl(self.ctx, hl)
+        --     if style ~= nil then
+        --         if style.link ~= nil then
+        --             return 0
+        --         end
+        --         if style.bg ~= expectedBg and style.bg ~= nil then
+        --             return 0
+        --         end
+        --     end
+        --     return 1
+        -- end)
     end
     if extra.debug then
         -- self:_writeBoxToDebugWin(extra.trace)

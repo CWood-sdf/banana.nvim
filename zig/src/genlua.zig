@@ -228,7 +228,7 @@ pub fn luaTemplate(
         if (field.type == []const u8) {
             const slice = parseParam(L, j, []const u8, null) catch return 1;
             @field(tuple, field.name) = slice;
-            log.write("With param {s}\n", .{name}) catch {};
+            log.write("With string param '{s}'\n", .{slice}) catch {};
         } else if (comptime isStruct(field.type) and @hasField(field.type, "L")) {
             @field(tuple, field.name) = .{ .L = L };
             log.write("With lua state param\n", .{}) catch {};
