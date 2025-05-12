@@ -97,6 +97,12 @@ pub fn push_int(L: *State, n: c_int) void {
     push_number(L, @floatFromInt(n));
 }
 
+extern fn lua_createtable(L: *State, narr: c_int, nrec: c_int) void;
+pub const create_table = lua_createtable;
+
+pub extern fn lua_pushnil(L: *State) void;
+pub const push_nil = lua_pushnil;
+
 extern fn lua_pushboolean(L: *State, n: c_int) callconv(.C) void;
 pub const push_boolean = lua_pushboolean;
 pub fn push_bool(L: *State, n: bool) void {
@@ -214,3 +220,7 @@ pub fn print(L: *State, alloc: std.mem.Allocator, comptime fmt: []const u8, args
     _ = pcall(L, 1, 0, 0);
     lua_pop(L, 1);
 }
+
+extern fn lua_setfield(L: *State, idx: c_int, k: [*c]const u8) void;
+
+pub const set_field = lua_setfield;

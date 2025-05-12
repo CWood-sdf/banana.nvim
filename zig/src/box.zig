@@ -18,11 +18,11 @@ const NullableId = struct {
 
     pub const nil: Self = .{ .value = -1 };
 
-    pub fn isNull(self: *Self) bool {
+    pub fn isNull(self: *const Self) bool {
         return self.value < 0;
     }
 
-    pub fn asOptional(self: *Self) ?u31 {
+    pub fn asOptional(self: *const Self) ?u31 {
         if (self.value > 0) {
             return @intCast(self.value);
         }
@@ -224,7 +224,7 @@ const Line = struct {
         return i;
     }
     pub fn appendWord(self: *Line, ctx: *BoxContext, str: []const u8, hl: Highlight) !void {
-        _ = try self.appendWordToLen(ctx, str, hl, str.len + self.width, true);
+        _ = try self.appendWordToLen(ctx, str, hl, @as(u32, @intCast(str.len)) + self.width, true);
     }
 
     pub fn ensureAppendableAt(self: *Line, ctx: *BoxContext, spot: u32) !void {
@@ -402,7 +402,7 @@ pub const BoxContext = struct {
         }
         return &self.lines.items[line];
     }
-    pub fn render(self: *BoxContext, buf: tps.Integer) !void {
+    pub fn render(self: *BoxContext, buf: tps.Integer, lineStart: i64, lineEnd: i64) !void {
         log.write("yuhh rendering buf {}\n", .{buf}) catch {};
         var err = tps.Error{ .type = .None, .msg = @ptrFromInt(0) };
         var arena: tps.Arena = .{
@@ -461,8 +461,8 @@ pub const BoxContext = struct {
         fns.nvim_buf_set_lines(
             consts.LUA_INTERNAL_CALL,
             @enumFromInt(buf),
-            0,
-            -1,
+            lineStart,
+            lineEnd,
             true,
             replacement,
             &arena,
@@ -493,7 +493,7 @@ pub const BoxContext = struct {
             }
         }
     }
-    pub fn highlight(self: *BoxContext, L: *lua.State, pos: c_int) void {
+    pub fn highlight(self: *BoxContext, L: *lua.State, pos: c_int, startLine: u64) void {
         // if (!lua.is_function(L, 1)) {
         //     return error.NotAFunction;
         // }
@@ -508,7 +508,7 @@ pub const BoxContext = struct {
                 if (currentHl != hl) {
                     if (currentHl != 0) {
                         lua.push_value(L, pos);
-                        lua.push_int(L, @intCast(row));
+                        lua.push_int(L, @intCast(row + startLine));
                         lua.push_int(L, @intCast(startCol));
                         lua.push_int(L, @intCast(byte));
                         lua.push_int(L, @intCast(currentHl));
@@ -521,13 +521,35 @@ pub const BoxContext = struct {
             }
             if (startCol != byte) {
                 lua.push_value(L, pos);
-                lua.push_int(L, @intCast(row));
+                lua.push_int(L, @intCast(row + startLine));
                 lua.push_int(L, @intCast(startCol));
                 lua.push_int(L, @intCast(byte));
                 lua.push_int(L, @intCast(currentHl));
                 lua.call(L, 4, 0);
             }
         }
+    }
+    pub fn dumpTo(self: *BoxContext, other: *BoxContext, reason: []const u8) !void {
+        var breakLine = Line.init();
+        try breakLine.chars.append(other.alloc(), Char.fromAscii('-'));
+        try breakLine.hls.append(other.alloc(), 0);
+        try breakLine.chars.append(other.alloc(), .space);
+        try breakLine.hls.append(other.alloc(), 0);
+        breakLine.width = 2;
+        try breakLine.appendWord(other, reason, 0);
+        try other.lines.append(other.alloc(), breakLine);
+        for (self.lines.items) |line| {
+            var newLine = Line.init();
+            try newLine.chars.appendSlice(other.alloc(), line.chars.items);
+            try newLine.hls.appendSlice(other.alloc(), line.hls.items);
+            newLine.width = line.width;
+            try other.lines.append(other.alloc(), newLine);
+        }
+    }
+    pub fn dumpComment(self: *BoxContext, comment: []const u8) !void {
+        var line = Line.init();
+        try line.appendWord(self, comment, 0);
+        try self.lines.append(self.alloc(), line);
     }
 };
 
@@ -1158,6 +1180,9 @@ pub const PartialRendered = struct {
     }
     pub fn renderWithMove(self: *PartialRendered, maxWidth: u32, toX: u32, toY: u32) !bool {
         try self.render();
+        if (self.padding.equals(.zero) and self.margin.equals(.zero)) {
+            return false;
+        }
         const box = try self.getBox();
         const context = try self.getContext();
         const containerBox = try self.getContainer();
@@ -1260,6 +1285,70 @@ fn dumpContexts() void {
     }
 }
 
+fn dumpObjectToLua(T: type, obj: *const T, L: *lua.State) !void {
+    const info = @typeInfo(T).@"struct";
+    inline for (info.fields) |field| {
+        const name = field.name;
+        const luaName = std.fmt.comptimePrint("_debug_{s}", .{name});
+        log.write("Pushing debug field {s} for type {}\n", .{ name, T }) catch {};
+        const top = lua.get_top(L);
+        switch (@typeInfo(field.type)) {
+            .int => {
+                lua.push_int(L, std.math.lossyCast(c_int, @field(obj.*, name)));
+            },
+            .bool => {
+                lua.push_bool(L, @field(obj.*, name));
+            },
+            .float => {
+                lua.push_number(L, @field(obj.*, name));
+            },
+            .@"struct" => {
+                switch (field.type) {
+                    NullableId => {
+                        const val: NullableId = @field(obj.*, name);
+                        if (val.isNull()) {
+                            lua.push_nil(L);
+                        } else {
+                            lua.push_int(L, @intCast(val.value));
+                        }
+                    },
+                    PartialRendered.Pad => {
+                        const ptr = &@field(obj.*, name);
+                        lua.create_table(L, 0, 4);
+                        try dumpObjectToLua(PartialRendered.Pad, ptr, L);
+                    },
+                    else => {
+                        @compileError(
+                            std.fmt.comptimePrint("omg bad type {}", .{field.type}),
+                        );
+                    },
+                }
+            },
+            .@"enum" => {
+                const value = @field(obj.*, name);
+                const str = @tagName(value);
+                lua.push_stringslice(L, str);
+            },
+            else => @compileError(std.fmt.comptimePrint("omg errr {}", .{field.type})),
+        }
+        lua.set_field(L, top, luaName);
+    }
+}
+
+const BoxExpect = ExpectStr("Banana.Box2");
+
+pub fn box_dump_box_data(ctx: u32, box: u32, value: BoxExpect) !void {
+    const b = try get_box(ctx, box);
+    try dumpObjectToLua(Box, b, value.L);
+}
+
+const PartialExpect = ExpectStr("Banana.Renderer.PartialRendered2");
+
+pub fn box_dump_pr_data(ctx: u32, pr: u32, value: PartialExpect) !void {
+    const p = try get_partial(ctx, pr);
+    try dumpObjectToLua(PartialRendered, p, value.L);
+}
+
 pub fn get_context(ctx: u32) !*BoxContext {
     // dumpContexts();
     if (ctx >= contexts.items.len) {
@@ -1299,6 +1388,17 @@ pub fn box_context_create() !u32 {
     const i = contexts.items.len - 1;
     contexts.items[i] = BoxContext.init(std.heap.page_allocator);
     return @intCast(i);
+}
+
+pub fn box_context_dump_to(ctx: u32, other: u32, reason: []const u8) !void {
+    const self = try get_context(ctx);
+    const o = try get_context(other);
+    try self.dumpTo(o, reason);
+}
+
+pub fn box_context_dump_comment(ctx: u32, comment: []const u8) !void {
+    const self = try get_context(ctx);
+    try self.dumpComment(comment);
 }
 
 // }
@@ -1402,8 +1502,18 @@ pub fn box_pr_render_cursored(ctx: u32, partialid: u32, lineHeight: u32) !bool {
 ///
 pub fn box_context_render(ctx: u32, buf: u32) !bool {
     const context = try get_context(ctx);
-    try context.render(buf);
+    try context.render(buf, 0, -1);
     return true;
+}
+
+pub fn box_context_render_at(ctx: u32, buf: u32, start: i64, _end: i64) !bool {
+    const context = try get_context(ctx);
+    try context.render(buf, start, _end);
+    return true;
+}
+pub fn box_context_highlight_at(ctx: u32, L: HlExpect, start: u64) !void {
+    const context = try get_context(ctx);
+    context.highlight(L.L, 2, start);
 }
 
 pub fn box_put_cursor_below(ctx: u32, boxOne: u32, boxOther: u32) !void {
@@ -1422,10 +1532,20 @@ pub fn Expect(tp: type) type {
     };
 }
 
+/// Here so that functions can get lua functions/tables and document
+/// what they want from the type
+pub fn ExpectStr(comptime str: []const u8) type {
+    return struct {
+        L: *lua.State,
+        pub const isLua = true;
+        pub const T = str;
+    };
+}
+
 const HlExpect = Expect(fn (line: i32, startCol: i32, endCol: i32, hl: i32) void);
 pub fn box_context_highlight(ctx: u32, L: HlExpect) !void {
     const context = try get_context(ctx);
-    context.highlight(L.L, 2);
+    context.highlight(L.L, 2, 0);
 }
 
 pub fn box_shift_right_by(ctx: u32, boxid: u32, extra: u32) !void {

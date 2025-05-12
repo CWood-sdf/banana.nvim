@@ -22,6 +22,6 @@ exe "normal ggVG\<esc>"
 
 '<,'>!jq
 
-%s/\(u\|i\)\d\d/number/g
-%s/bool/boolean/g
-%s/void/nil/g
+%s/\(u\|i\)\d\d/number/ge
+%s/bool/boolean/ge
+%s/void/nil/ge

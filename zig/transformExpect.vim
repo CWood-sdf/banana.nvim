@@ -1,13 +1,15 @@
 v/= Expect/d
 
 %s/^const /---@alias 
-%s/= Expect(/
+%s/= Expect(//e
+%s/= ExpectStr("//e
+%s/");/
 %s/);/
 %s/)/):/
 %s/fn/fun/
 
 %s/Highlight/u32/g
 
-%s/\(u\|i\)\d\d/number/g
-" %s/bool/boolean/g
-%s/void/nil/g
+%s/\(u\|i\)\d\d/number/ge
+%s/bool/boolean/ge
+%s/void/nil/ge

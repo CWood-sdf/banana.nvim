@@ -109,19 +109,20 @@ function Instance:_virtualRender(ast, ctx, width, height)
     flame.new("virtualRender")
     -- setmetatable(ret, { __mode = "kv" })
     local tag = ast.actualTag
-    -- local traceCtx = lb.box_context_create()
+    local traceCtx = lb.box_context_create()
+    -- local traceInst = box.createContext()
     ---@type Banana.Renderer.ExtraInfo
     local extra = {
         componentStack = {},
         useAllHeight = false,
-        -- trace = require("banana.box").Box:new(),
+        trace = traceCtx,
         debug = self.DEBUG_showBuild,
         isRealRender = true,
         screenHeight = height,
         min_size = false,
         ctx = ctx,
     }
-    local b = require("banana.box2").boxFromCtx(ctx)
+    local b = require("banana.box2").boxFromCtx(ctx, extra.trace)
     -- setmetatable(extra, { __mode = "kv" })
     tag:renderRoot(ast, b, nil, width, height, {
         text_align = "left",
@@ -153,7 +154,33 @@ function Instance:_virtualRender(ast, ctx, width, height)
         --     return 1
         -- end)
     end
-    if extra.debug then
+    if extra.debug and self.DEBUG_bufNr ~= nil then
+        lb.box_context_render(traceCtx, self.DEBUG_bufNr)
+        local hls = {}
+        local ns = vim.api.nvim_create_namespace("BANANA_DEBUG_" ..
+            self.instanceId)
+        vim.api.nvim_win_set_hl_ns(self.DEBUG_winId, ns)
+        vim.api.nvim_buf_clear_namespace(self.DEBUG_bufNr, ns, 0, -1)
+        lb.box_context_highlight(traceCtx, function (line, startCol, endCol, hl)
+            if hls[hl] == nil then
+                local hlvalue = box.getHl(self.ctx, hl)
+                if hlvalue == nil then
+                    return
+                end
+                local group = "banana_hl_" .. hl
+                vim.api.nvim_set_hl(ns, group,
+                    hlvalue)
+                hls[hl] = group
+            end
+            local group = hls[hl]
+            vim.api.nvim_buf_set_extmark(self.DEBUG_bufNr, ns, line,
+                startCol,
+                {
+                    end_col = endCol,
+                    hl_group = group,
+                })
+        end)
+        lb.box_context_delete(traceCtx)
         -- self:_writeBoxToDebugWin(extra.trace)
         -- rendered:appendBoxBelow(extra.trace)
     end
@@ -211,10 +238,8 @@ function Instance:_writeLinesToDebugWin(lines)
         return
     end
     local l = vim.api.nvim_buf_get_lines(self.DEBUG_bufNr, 0, -1, false)
-    for _, v in ipairs(lines) do
-        table.insert(l, v)
-    end
-    vim.api.nvim_buf_set_lines(self.DEBUG_bufNr, 0, -1, false, l)
+
+    vim.api.nvim_buf_set_lines(self.DEBUG_bufNr, #l, -1, false, lines)
 end
 
 ---@param box Banana.Box
@@ -1123,14 +1148,7 @@ function Instance:_render()
         table.insert(extraLines, "Total: " .. total .. "ms")
     end
     if #extraLines ~= 0 then
-        -- vim.api.nvim_set_option_value("modifiable", true, {
-        --     buf = self.bufnr
-        -- })
-        -- vim.api.nvim_buf_set_lines(self.bufnr, #lines, -1, false, extraLines)
-        -- vim.api.nvim_set_option_value("modifiable", false, {
-        --     buf = self.bufnr
-        -- })
-        self:_writeLinesToDebugWin(extraLines)
+        -- self:_writeLinesToDebugWin(extraLines)
     end
     self.rendering = false
     self.renderRequested = false

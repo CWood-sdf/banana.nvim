@@ -1,5 +1,7 @@
 ---@module 'banana.nml.render.partialRendered2'
 local p     = require("banana.lazyRequire")("banana.nml.render.partialRendered2")
+---@module 'banana.libbananabox'
+local lb    = require("banana.lazyRequire")("banana.libbanana")
 ---@module 'banana.box2'
 local b     = require("banana.lazyRequire")("banana.box2")
 ---@module 'banana.utils.case'
@@ -90,6 +92,7 @@ return function (self, ast, box, parentHl, parentWidth, parentHeight, startX,
     end
     ast.hidden = false
     local pr = p.emptyPartialRendered(box)
+    pr.trace = extra.trace
     local useMaxHeight = extra.useAllHeight
     if ast:_firstStyleValue("width") == "fit-content" then
         -- TODO: Should this also include padding?
@@ -174,8 +177,17 @@ return function (self, ast, box, parentHl, parentWidth, parentHeight, startX,
     local hl = ast:_mixHl(parentHl)
     pr:setMainHl(b.addHighlight(extra.ctx, hl))
     -- flame.new("other render")
-    local contentBox = pr:getBox()
+    local contentBox = nil
+
+    if ast.actualTag.formatType == _tag.FormatType.Inline then
+        contentBox = pr:getCursoredBox()
+    else
+        contentBox = pr:getBox()
+    end
     -- TODO: If inline, make cursored
+    if extra.trace ~= nil then
+        lb.box_context_dump_comment(extra.trace, "Rendering " .. ast.tag)
+    end
     local centerBox = self:render(ast, contentBox, hl, contentWidth,
         parentHeight,
         startX, startY, inherit, extra)

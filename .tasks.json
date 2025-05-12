@@ -42,6 +42,14 @@
 			}
 		},
 		{
+			"name": "all debug",
+			"cmd": "/usr/local/bin/nvim -c 'so zigtestpre.lua' test.nml -c \"lua vim.defer_fn(function() require('osv').launch({ port = 8086 }) end, 200)\"",
+			"window": {
+				"name": "ookzd",
+				"close": true
+			}
+		},
+		{
 			"name": "benchmark",
 			"cmd": "perf record -F 999 -a --call-graph dwarf -g nvim -c 'so zigtestpre.lua' test.nml",
 			"window": {

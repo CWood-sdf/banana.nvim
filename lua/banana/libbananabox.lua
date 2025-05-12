@@ -2,12 +2,37 @@
 
 local M = {}
 
+---@alias BoxExpect Banana.Box2
+---@alias PartialExpect Banana.Renderer.PartialRendered2
 ---@alias HlExpect fun (line: number, startCol: number, endCol: number, hl: number): nil
 ---@alias StripRightExpect fun (hl: number): number
 
 
+---@param ctx number
+---@param box number
+---@param value BoxExpect
+---@return nil
+function M.box_dump_box_data(ctx, box, value) end
+
+---@param ctx number
+---@param pr number
+---@param value PartialExpect
+---@return nil
+function M.box_dump_pr_data(ctx, pr, value) end
+
 ---@return number
 function M.box_context_create() end
+
+---@param ctx number
+---@param other number
+---@param reason string
+---@return nil
+function M.box_context_dump_to(ctx, other, reason) end
+
+---@param ctx number
+---@param comment string
+---@return nil
+function M.box_context_dump_comment(ctx, comment) end
 
 ---@param ctx number
 ---@return boolean
@@ -111,6 +136,19 @@ function M.box_pr_render_cursored(ctx, partialid, lineHeight) end
 ---@param buf number
 ---@return boolean
 function M.box_context_render(ctx, buf) end
+
+---@param ctx number
+---@param buf number
+---@param start number
+---@param _end number
+---@return boolean
+function M.box_context_render_at(ctx, buf, start, _end) end
+
+---@param ctx number
+---@param L HlExpect
+---@param start number
+---@return nil
+function M.box_context_highlight_at(ctx, L, start) end
 
 ---@param ctx number
 ---@param boxOne number
@@ -256,5 +294,6 @@ function M.box_context_strip_right_space(ctx, expected_bg) end
 ---@return nil
 function M.box_render_over(ctx, box, otherCtx, left, top) end
 
-return M
 
+
+return M

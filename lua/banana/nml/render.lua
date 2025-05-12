@@ -79,8 +79,9 @@ function TagInfo:getRendered(ast, box, parentHl, parentWidth, parentHeight,
                              startY, inherit, extra)
     log.trace("TagInfo:getRendered " ..
         ast.tag .. "#" .. (ast:getAttribute("id") or ""))
+    local main = require("banana.nml.render.main")
 
-    local ret = require("banana.nml.render.main")(
+    local ret = main(
         self, ast, box, parentHl, parentWidth, parentHeight, startX, startY,
         inherit,
         extra)
