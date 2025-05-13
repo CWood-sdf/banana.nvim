@@ -12,18 +12,18 @@ local function renderer(self, ast, box, parentHl, parentWidth, parentHeight,
         return box:newToRight()
     end
     local hl = ast:_mixHl(parentHl)
-    local ret = box:newAtOffset(0, 0)
-    ret:setHl(hl)
-    for _, _, _ in self:blockIter(ast, ret, hl, parentWidth, parentHeight, startX, startY, inherit, extra) do
+    -- local ret = box:newAtOffset(0, 0)
+    -- ret:setHl(hl)
+    for _, _, _ in self:blockIter(ast, box, hl, parentWidth, parentHeight, startX, startY, inherit, extra) do
     end
-    if ret:height() < parentHeight then
-        ret:expandHeightTo(parentHeight)
+    if box:height() < parentHeight then
+        box:expandHeightTo(parentHeight)
     end
-    if ret:width() < parentWidth then
-        ret:expandWidthTo(parentWidth)
-    end
+    -- if box:width() < parentWidth then
+    --     box:expandWidthTo(parentWidth)
+    -- end
     -- flame.pop()
-    return ret
+    return box
 end
 ---@type Banana.TagInfo
 local M = t.newTag(

@@ -123,6 +123,7 @@ function Instance:_virtualRender(ast, ctx, width, height)
         ctx = ctx,
     }
     local b = require("banana.box2").boxFromCtx(ctx, extra.trace)
+    b:setMaxWidth(width)
     -- setmetatable(extra, { __mode = "kv" })
     tag:renderRoot(ast, b, nil, width, height, {
         text_align = "left",
@@ -974,6 +975,8 @@ function Instance:_render()
     local winTime = vim.loop.hrtime() - startTime
     if self.ctx == nil then
         self.ctx = require("banana.box2").createContext()
+    else
+        lb.box_context_wipe(self.ctx)
     end
     startTime = vim.loop.hrtime()
 

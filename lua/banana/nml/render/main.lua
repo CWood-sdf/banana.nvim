@@ -138,10 +138,10 @@ return function (self, ast, box, parentHl, parentWidth, parentHeight, startX,
             parentHeight)
 
         if (not ast:parent():isNil() or ast.tag == "template") then
-            pr:setMaxHeight(parentHeight)
+            pr:setMaxHeight(parentHeight + ast:marginTop() + ast:marginBottom())
         end
     elseif useMaxHeight then
-        pr:setMaxHeight(parentHeight)
+        pr:setMaxHeight(parentHeight + ast:marginTop() + ast:marginBottom())
     end
     -- TODO: Handle later
     if position ~= "static" then
@@ -175,15 +175,19 @@ return function (self, ast, box, parentHl, parentWidth, parentHeight, startX,
     -- flame.new("element render")
     extra.useAllHeight = false
     local hl = ast:_mixHl(parentHl)
+    pr:setPad(ast:paddingLeft(), ast:paddingRight(), ast:paddingTop(),
+        ast:paddingBottom())
+    pr:setMargin(ast:marginLeft(), ast:marginRight(), ast:marginTop(),
+        ast:marginBottom())
     pr:setMainHl(b.addHighlight(extra.ctx, hl))
     -- flame.new("other render")
-    local contentBox = nil
+    local contentBox = pr:getBox()
 
-    if ast.actualTag.formatType == _tag.FormatType.Inline then
-        contentBox = pr:getCursoredBox()
-    else
-        contentBox = pr:getBox()
-    end
+    -- if ast.actualTag.formatType == _tag.FormatType.Inline then
+    --     contentBox = pr:getCursoredBox()
+    -- else
+    --     contentBox = pr:getBox()
+    -- end
     -- TODO: If inline, make cursored
     if extra.trace ~= nil then
         lb.box_context_dump_comment(extra.trace, "Rendering " .. ast.tag)

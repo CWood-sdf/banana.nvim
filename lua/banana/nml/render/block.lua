@@ -65,14 +65,22 @@ return function (ast, box, parentHl, i, parentWidth, parentHeight, startX, start
             hasElements = true
         else
             local tag = v.actualTag
-            if (tag.formatType == _tag.FormatType.Block or tag.formatType == _tag.FormatType.BlockInline) and hasElements then
+            local isBlock = tag.formatType == _tag.FormatType.Block or
+                tag.formatType == _tag.FormatType.BlockInline
+            if isBlock and hasElements then
                 break
             end
             v:_resolveUnits(width, height)
             local rendered = tag:getRendered(v, box, parentHl, width, height,
                 startX,
                 startY, inherit, extra_)
-            local moved = rendered:renderCursored(lineHeight)
+            local moved = false
+
+            if isBlock then
+                rendered:render()
+            else
+                moved = rendered:renderCursored(lineHeight)
+            end
 
             if moved then
                 startX = 0
