@@ -113,6 +113,13 @@ pub fn parseParam(L: *lua.State, index: c_int, tp: type, failReturn: anytype) !t
                 return @ptrCast(@alignCast(lua.to_userdata(L, index)));
             }
         },
+        .optional => |o| {
+            if (lua.is_noneornil(L, index)) {
+                return null;
+            } else {
+                return try parseParam(L, index, o.child, failReturn);
+            }
+        },
         else => {
             @compileError(std.fmt.comptimePrint("Cant parse parameter type {}\n", .{tp}));
         },
@@ -206,7 +213,11 @@ pub fn luaTemplate(
                 // paramLen += 1;
             },
             .optional => |o| {
-                comptime std.debug.assert(isPointer(o.child));
+                if (comptime isPointer(o.child)) {} else {
+                    tupleFields[i] = tp;
+                    i += 1;
+                    paramLen += 1;
+                }
             },
             else => {
                 @compileError(std.fmt.comptimePrint("Something something {}, {s}\n", .{ tp, name }));

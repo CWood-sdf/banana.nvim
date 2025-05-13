@@ -125,13 +125,18 @@ function Instance:_virtualRender(ast, ctx, width, height)
     local b = require("banana.box2").boxFromCtx(ctx, extra.trace)
     b:setMaxWidth(width)
     -- setmetatable(extra, { __mode = "kv" })
-    tag:renderRoot(ast, b, nil, width, height, {
-        text_align = "left",
-        position = "static",
-        min_size = false,
-        min_size_direction = "horizontal",
-        list_style_type = "star",
-    }, extra)
+    local ok, err = pcall(function ()
+        tag:renderRoot(ast, b, nil, width, height, {
+            text_align = "left",
+            position = "static",
+            min_size = false,
+            min_size_direction = "horizontal",
+            list_style_type = "star",
+        }, extra)
+    end)
+    if not ok then
+        vim.notify("Error during render: " .. err .. "\n")
+    end
 
     if self.stripRight then
         local bgNum = vim.api.nvim_get_hl(0, {

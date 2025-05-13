@@ -45,7 +45,7 @@
 			"name": "all debug",
 			"cmd": "/usr/local/bin/nvim -c 'so zigtestpre.lua' test.nml -c \"lua vim.defer_fn(function() require('osv').launch({ port = 8086 }) end, 200)\"",
 			"window": {
-				"name": "ookzd",
+				"name": "ookad",
 				"close": true
 			}
 		},

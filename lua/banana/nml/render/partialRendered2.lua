@@ -43,6 +43,11 @@ function PartialRendered:_dump()
     lb.box_dump_pr_data(self.ctx, self.pr, self)
 end
 
+---@param ctx number?
+function PartialRendered:setDbgCtx(ctx)
+    lb.box_pr_set_dbg_ctx(self.ctx, self.pr, ctx)
+end
+
 ---@param left number
 ---@param right number
 ---@param top number

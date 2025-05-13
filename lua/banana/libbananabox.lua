@@ -52,6 +52,12 @@ function M.box_context_exists(ctx) end
 function M.box_pr_new(ctx, boxid) end
 
 ---@param ctx number
+---@param pr number
+---@param dbg ?number
+---@return nil
+function M.box_pr_set_dbg_ctx(ctx, pr, dbg) end
+
+---@param ctx number
 ---@param partialid number
 ---@param left number
 ---@param right number
@@ -294,6 +300,5 @@ function M.box_context_strip_right_space(ctx, expected_bg) end
 ---@return nil
 function M.box_render_over(ctx, box, otherCtx, left, top) end
 
-
-
 return M
+

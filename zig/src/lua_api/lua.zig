@@ -71,9 +71,11 @@ extern fn lua_isuserdata(L: *State, index: c_int) callconv(.C) c_int;
 pub fn is_userdata(L: *State, index: c_int) bool {
     return lua_isuserdata(L, index) != 0;
 }
-extern fn lua_isnoneornil(L: *State, index: c_int) callconv(.C) c_int;
+inline fn lua_isnoneornil(L: *State, n: c_int) bool {
+    return lua_type(L, n) <= 0;
+}
 pub fn is_noneornil(L: *State, index: c_int) bool {
-    return lua_isnoneornil(L, index) != 0;
+    return lua_isnoneornil(L, index);
 }
 extern fn lua_istable(L: *State, index: c_int) callconv(.C) c_int;
 pub fn is_table(L: *State, index: c_int) bool {

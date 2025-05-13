@@ -175,6 +175,7 @@ return function (self, ast, box, parentHl, parentWidth, parentHeight, startX,
     -- flame.new("element render")
     extra.useAllHeight = false
     local hl = ast:_mixHl(parentHl)
+    pr:setDbgCtx(extra.trace)
     pr:setPad(ast:paddingLeft(), ast:paddingRight(), ast:paddingTop(),
         ast:paddingBottom())
     pr:setMargin(ast:marginLeft(), ast:marginRight(), ast:marginTop(),
