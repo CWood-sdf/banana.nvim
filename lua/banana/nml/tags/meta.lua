@@ -55,6 +55,8 @@ local function renderer(_, ast)
     elseif startsWith(name, "win-") then
         local newName = name:sub(#"win-" + 1, #name)
         inst.winOpts[newName] = tonumber(value) or value
+    elseif startsWith(name, "DEBUG") then
+        inst[name] = value
     else
         log.warn("Unknown option meta tag option '" .. name .. "'")
     end
