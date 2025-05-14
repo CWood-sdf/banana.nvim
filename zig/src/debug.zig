@@ -1,1 +1,2 @@
-pub const debug = false;
+const builtin = @import("builtin");
+pub const debug = builtin.mode == .Debug;
