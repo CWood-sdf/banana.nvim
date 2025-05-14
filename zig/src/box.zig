@@ -1,4 +1,4 @@
-// TODO: Box.destroy()
+const debug = @import("debug.zig").debug;
 const std = @import("std");
 const lua = @import("lua_api/lua.zig");
 
@@ -82,12 +82,17 @@ fn codepointLen(char: u8) u8 {
 // TODO: Can prolly do some data oriented stuff here: a char is one byte
 // and the first bit is 0 if ascii, 1 if an index into a large char array.
 // tho this only allows up to 128 independent multibyte chars per line
-const Char = packed struct {
+pub const Char = packed struct(u32) {
     // the actual number
     bytes: u3,
     // the width
     width: u2,
+    pad1: u3 = 0,
     char: u21,
+    pad2: u3 = 0,
+
+    pub const ordering = getByteOrdering();
+    pub const simdLen = std.simd.suggestVectorLength(u32) orelse 1;
 
     // should be placed after double width characters so that they can act like their width
     pub const dummy: Char = .{
@@ -102,7 +107,41 @@ const Char = packed struct {
         .char = ' ',
     };
 
-    const isSized = std.testing.assert(@sizeOf(@This()) == @sizeOf(u16));
+    pub const ByteOrdering = enum {
+        left,
+        right,
+    };
+
+    pub fn getByteOrdering() ByteOrdering {
+        const bytes: u3 = 1;
+        const width: u2 = 1;
+        const char: u21 = 'a';
+        const c: Char = Char.fromAscii(char);
+        const cu32: u32 = @bitCast(c);
+        // byte 1: bbbw_wppp
+        const byte1: u8 = (@as(u8, bytes) << 5) | (@as(u8, width) << 3);
+        // byte 2: pppc_cccc
+        const byte2: u8 = (char & 0b1_1111_0000_0000_0000_0000) >> 16;
+        // byte 3: cccc_cccc
+        const byte3: u8 = (char & 0b0_0000_1111_1111_0000_0000) >> 8;
+        // byte 4: cccc_cccc
+        const byte4: u8 = (char & 0b0_0000_0000_0000_1111_1111);
+
+        comptime std.debug.assert('a' == byte4);
+
+        const ascii: @Vector(1, u8) = @splat('a');
+        const b1vec: @Vector(1, u8) = @splat(byte1);
+        const b2vec: @Vector(1, u8) = @splat(byte2);
+        const b3vec: @Vector(1, u8) = @splat(byte3);
+
+        const interlaced: @Vector(1, u32) = @bitCast(std.simd.interlace(
+            .{ ascii, b1vec, b2vec, b3vec },
+        ));
+        if (@reduce(.Or, interlaced) == cu32) {
+            return .left;
+        }
+        return .right;
+    }
 
     pub fn equals(self: *const Char, other: Char) bool {
         return self.bytes == other.bytes and self.width == other.width and self.char == other.char;
@@ -160,6 +199,39 @@ const Char = packed struct {
         }
         return ret;
     }
+
+    pub fn simdToChars(chars: @Vector(simdLen, u8)) @Vector(simdLen, u32) {
+        const bytes: u3 = @bitReverse(@as(u3, 1));
+        const width: u2 = @bitReverse(@as(u2, 1));
+        // byte 1: bbbw_wppp
+        const byte1: u8 = (@as(u8, bytes) << 5) | (@as(u8, width) << 3);
+        // byte 2: aaaa_aaaa
+        const byte2: u8 = 0;
+        // byte 3: cccc_cccc
+        const byte3: u8 = 0;
+        // byte 4: cccc_cppp
+        // where a = bits of ascii char
+
+        const b1vec: @Vector(simdLen, u8) = @splat(byte1);
+        const b2vec: @Vector(simdLen, u8) = @bitReverse(chars);
+        const b3vec: @Vector(simdLen, u8) = @splat(byte3);
+        // const actualChars = @bitReverse(chars);
+        const actualChars: @Vector(simdLen, u8) = @splat(byte2);
+        const ret = if (ordering == .left)
+            std.simd.interlace(.{ b1vec, b2vec, b3vec, actualChars })
+        else
+            std.simd.interlace(.{ actualChars, b3vec, b2vec, b1vec });
+        const actualRet: @Vector(simdLen, u32) = @bitCast(ret);
+        return @bitReverse(actualRet);
+    }
+    pub fn canSimd(chars: []const u8) bool {
+        if (chars.len < simdLen) {
+            return false;
+        }
+        const charsVec: @Vector(simdLen, u8) = chars[0..simdLen].*;
+        const reduction = @reduce(.Or, charsVec);
+        return reduction & 0b1000_0000 == 0;
+    }
 };
 
 const Line = struct {
@@ -209,27 +281,45 @@ const Line = struct {
             return 0;
         }
         while (i < str.len) {
-            const char = try Char.fromUtf8(str[i..]);
-            if (char.width + self.width() > len and !addNoMatterWhat) {
-                return i;
-            }
-            i += char.bytes;
-            try self._chars.append(ctx.alloc(), char);
-            self._hls.append(ctx.alloc(), hl) catch |e| {
-                self._chars.shrinkRetainingCapacity(self._chars.items.len - 1);
-                return e;
-            };
-            if (char.width == 2) {
-                try self._chars.append(ctx.alloc(), .dummy);
+            const availChars = str.len - i;
+            const availWidth = len - self.width();
+            const charsToUse = @min(availChars, availWidth);
+            const rest = str[i..];
+            if (Char.canSimd(str[i .. i + charsToUse])) {
+                const vec: @Vector(Char.simdLen, u8) = rest[0..Char.simdLen].*;
+                const chars = Char.simdToChars(vec);
+                const arr: [Char.simdLen]Char = @bitCast(chars);
+                try self._chars.appendSlice(ctx.alloc(), &arr);
+                self._hls.appendNTimes(ctx.alloc(), hl, arr.len) catch |e| {
+                    self._chars.shrinkRetainingCapacity(
+                        self._chars.items.len - arr.len,
+                    );
+                    return e;
+                };
+                i += Char.simdLen;
+            } else {
+                const char = try Char.fromUtf8(rest);
+                if (char.width + self.width() > len and !addNoMatterWhat) {
+                    return i;
+                }
+                i += char.bytes;
+                try self._chars.append(ctx.alloc(), char);
                 self._hls.append(ctx.alloc(), hl) catch |e| {
                     self._chars.shrinkRetainingCapacity(self._chars.items.len - 1);
                     return e;
                 };
-            } else if (char.width > 2) {
-                return error.TripleWidthCharacter;
-            }
-            if (self.width() >= len) {
-                return i;
+                if (char.width == 2) {
+                    try self._chars.append(ctx.alloc(), .dummy);
+                    self._hls.append(ctx.alloc(), hl) catch |e| {
+                        self._chars.shrinkRetainingCapacity(self._chars.items.len - 1);
+                        return e;
+                    };
+                } else if (char.width > 2) {
+                    return error.TripleWidthCharacter;
+                }
+                if (self.width() >= len) {
+                    return i;
+                }
             }
         }
         return i;
