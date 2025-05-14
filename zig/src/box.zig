@@ -699,22 +699,26 @@ pub const BoxContext = struct {
         }
     }
     pub fn dumpTo(self: *BoxContext, other: *BoxContext, reason: []const u8) !void {
-        var breakLine = Line.init();
-        try breakLine.appendAscii(other, '-', 0);
-        try breakLine.appendAscii(other, ' ', 0);
-        try breakLine.appendWord(other, reason, 0);
-        try other.lines.append(other.alloc(), breakLine);
-        for (self.lines.items) |line| {
-            var newLine = Line.init();
-            try newLine._chars.appendSlice(other.alloc(), line._chars.items);
-            try newLine._hls.appendSlice(other.alloc(), line._hls.items);
-            try other.lines.append(other.alloc(), newLine);
+        if (comptime debug) {
+            var breakLine = Line.init();
+            try breakLine.appendAscii(other, '-', 0);
+            try breakLine.appendAscii(other, ' ', 0);
+            try breakLine.appendWord(other, reason, 0);
+            try other.lines.append(other.alloc(), breakLine);
+            for (self.lines.items) |line| {
+                var newLine = Line.init();
+                try newLine._chars.appendSlice(other.alloc(), line._chars.items);
+                try newLine._hls.appendSlice(other.alloc(), line._hls.items);
+                try other.lines.append(other.alloc(), newLine);
+            }
         }
     }
     pub fn dumpComment(self: *BoxContext, comment: []const u8) !void {
-        var line = Line.init();
-        try line.appendWord(self, comment, 0);
-        try self.lines.append(self.alloc(), line);
+        if (comptime debug) {
+            var line = Line.init();
+            try line.appendWord(self, comment, 0);
+            try self.lines.append(self.alloc(), line);
+        }
     }
 };
 
