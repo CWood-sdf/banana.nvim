@@ -109,7 +109,10 @@ function Instance:_virtualRender(ast, ctx, width, height)
     flame.new("virtualRender")
     -- setmetatable(ret, { __mode = "kv" })
     local tag = ast.actualTag
-    local traceCtx = lb.box_context_create()
+    local traceCtx = nil
+    if self.DEBUG_showBuild then
+        traceCtx = lb.box_context_create()
+    end
     -- local traceInst = box.createContext()
     ---@type Banana.Renderer.ExtraInfo
     local extra = {
@@ -160,7 +163,7 @@ function Instance:_virtualRender(ast, ctx, width, height)
         --     return 1
         -- end)
     end
-    if extra.debug and self.DEBUG_bufNr ~= nil then
+    if extra.debug and self.DEBUG_bufNr ~= nil and traceCtx ~= nil then
         lb.box_context_render(traceCtx, self.DEBUG_bufNr)
         local hls = {}
         local ns = vim.api.nvim_create_namespace("BANANA_DEBUG_" ..
@@ -968,13 +971,13 @@ function Instance:_render()
     self:body().absoluteAsts = {}
 
     styleTime = vim.loop.hrtime() - startTime
+    startTime = vim.loop.hrtime()
+
+    local width, height = self:_createWinAndBuf()
     if self.DEBUG then
         self:_openDebugWin()
         self:_clearDebugWinBuf()
     end
-    startTime = vim.loop.hrtime()
-
-    local width, height = self:_createWinAndBuf()
 
 
     local winTime = vim.loop.hrtime() - startTime
@@ -1089,7 +1092,7 @@ function Instance:_render()
         if n == 1 then
             stressStartTime = vim.loop.hrtime()
         end
-        if n < 500 then
+        if n < 20000 then
             self:_deferRender()
         else
             local time = ((vim.loop.hrtime() - stressStartTime) / 1e6)
@@ -1156,7 +1159,7 @@ function Instance:_render()
         table.insert(extraLines, "Total: " .. total .. "ms")
     end
     if #extraLines ~= 0 then
-        -- self:_writeLinesToDebugWin(extraLines)
+        self:_writeLinesToDebugWin(extraLines)
     end
     self.rendering = false
     self.renderRequested = false
