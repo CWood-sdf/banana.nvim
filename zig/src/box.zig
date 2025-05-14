@@ -1049,22 +1049,57 @@ pub const Box = struct {
 };
 
 pub const PartialRendered = struct {
+    // Shared data up here
     ctx: Id,
     containerBox: Id,
     box: NullableId,
     dbgCtx: NullableId,
+    // TODO: Unnecessary lowkey, just grab container color
     marginColor: Highlight,
     mainColor: Highlight,
 
     // TODO: Merge these fields together
+    // TODO: only used to detect inline behavior
+    // Will be needed to determine inline bound box
     startCursorX: u16,
     startCursorY: u16,
+    // TODO: only used in inlineBlock, block
     margin: Pad,
     padding: Pad,
+    // TODO: unnecessary for inline.
+    // Also can be determined from container.maxWidth
     maxWidth: u16,
     maxHeight: u16,
+    // TODO: currently used to detect inline. needed tho for width:fit-content and flex
+    // Unnecessary for inline
     sideAlign: RenderAlign,
     verticalAlign: RenderAlign,
+
+    /// Shared data struct for inline render mode
+    pub const InlineData = struct {
+        startCursorX: u16,
+        startCursorY: u16,
+    };
+
+    /// Shared data struct for inlineBlock and block render modes
+    pub const BlockData = struct {
+        margin: Pad,
+        padding: Pad,
+        maxWidth: u16,
+        maxHeight: u16,
+        sideAlign: RenderAlign,
+        verticalAlign: RenderAlign,
+    };
+
+    pub const RenderType = enum {
+        // Won't be moved; cursored; no margin, padding, or max width
+        @"inline",
+        // rendered as a block, can be moved if too big
+        inlineBlock,
+        // rendered as a block, will not be moved
+        block,
+    };
+
     pub const RenderAlign = enum(u2) {
         left = 0,
         center = 1,
