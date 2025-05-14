@@ -592,14 +592,47 @@ pub const BoxContext = struct {
 
         log.write("Buf: {}\n", .{buf}) catch {};
 
-        const replacement: tps.Array = tps.Array.fromSlice(arr.items);
         log.write("yo yo: {}\n", .{buf}) catch {};
+        log.write("yo yo: {} with line count {}\n", .{ buf, arr.items.len }) catch {};
+        // if (arr.items.len >= 256) {
+        //     return;
+        // }
+        const clear: tps.Array = tps.Array.fromSlice(arr.items[0..0]);
         fns.nvim_buf_set_lines(
             consts.LUA_INTERNAL_CALL,
             @enumFromInt(buf),
             lineStart,
             lineEnd,
             true,
+            clear,
+            &arena,
+            &err,
+        );
+        var endIndex = arr.items.len;
+        while (endIndex >= 256) : (endIndex -= 255) {
+            const replacement: tps.Array = tps.Array.fromSlice(
+                arr.items[endIndex - 255 .. endIndex],
+            );
+            fns.nvim_buf_set_lines(
+                consts.LUA_INTERNAL_CALL,
+                @enumFromInt(buf),
+                lineStart,
+                lineStart,
+                true,
+                replacement,
+                &arena,
+                &err,
+            );
+        }
+
+        const replacement: tps.Array = tps.Array.fromSlice(arr.items[0..endIndex]);
+
+        fns.nvim_buf_set_lines(
+            consts.LUA_INTERNAL_CALL,
+            @enumFromInt(buf),
+            lineStart,
+            lineStart,
+            false,
             replacement,
             &arena,
             &err,
