@@ -245,6 +245,10 @@ const Line = struct {
         };
     }
 
+    pub fn getMemoryUsage(self: *const Line) usize {
+        return self._chars.capacity * @sizeOf(Char) + self._hls.capacity * @sizeOf(Highlight);
+    }
+
     pub fn width(self: *const Line) u16 {
         return @intCast(self._chars.items.len);
     }
@@ -433,7 +437,8 @@ pub const BoxContext = struct {
         self.lines = .empty;
         self.boxes = .empty;
         self.partials = .empty;
-        return self.arena.reset(.free_all);
+        self.partialData = .empty;
+        return self.arena.reset(.retain_capacity);
     }
     pub fn newBox(self: *BoxContext, box: Box) !u16 {
         try self.boxes.append(self.arena.allocator(), box);
@@ -1127,15 +1132,10 @@ fn dumpObjectToLua(T: type, obj: *const T, L: *lua.State) !void {
                             lua.push_int(L, @intCast(val.value));
                         }
                     },
-                    PartialRendered.Pad => {
+                    else => {
                         const ptr = &@field(obj.*, name);
                         lua.create_table(L, 0, 4);
-                        try dumpObjectToLua(PartialRendered.Pad, ptr, L);
-                    },
-                    else => {
-                        @compileError(
-                            std.fmt.comptimePrint("omg bad type {}", .{field.type}),
-                        );
+                        try dumpObjectToLua(@TypeOf(ptr.*), ptr, L);
                     },
                 }
             },
@@ -1144,6 +1144,7 @@ fn dumpObjectToLua(T: type, obj: *const T, L: *lua.State) !void {
                 const str = @tagName(value);
                 lua.push_stringslice(L, str);
             },
+            .void => {},
             else => @compileError(std.fmt.comptimePrint("omg errr {}", .{field.type})),
         }
         lua.set_field(L, top, luaName);
@@ -1151,6 +1152,41 @@ fn dumpObjectToLua(T: type, obj: *const T, L: *lua.State) !void {
 }
 
 const BoxExpect = ExpectStr("Banana.Box2");
+
+pub fn box_context_get_memory_usage(ctx: u16) !usize {
+    const context = try get_context(ctx);
+    // _ = context;
+    // return 0;
+    return context.arena.queryCapacity();
+}
+pub fn box_context_data_memory_usage(ctx: u16) !usize {
+    const context = try get_context(ctx);
+    // _ = context;
+    // return 0;
+    return context.partialData.getMemoryUsage();
+}
+pub fn box_context_line_memory_usage(ctx: u16) !usize {
+    const context = try get_context(ctx);
+    // _ = context;
+    // return 0;
+    var usage: usize = context.lines.capacity * @sizeOf(Line);
+    for (context.lines.items) |line| {
+        usage += line.getMemoryUsage();
+    }
+    return usage;
+}
+pub fn box_context_pr_memory_usage(ctx: u16) !usize {
+    const context = try get_context(ctx);
+    // _ = context;
+    // return 0;
+    return context.partials.capacity * @sizeOf(Box);
+}
+pub fn box_context_box_memory_usage(ctx: u16) !usize {
+    const context = try get_context(ctx);
+    // _ = context;
+    // return 0;
+    return context.boxes.capacity * @sizeOf(Box);
+}
 
 pub fn box_dump_box_data(ctx: u16, box: u16, value: BoxExpect) !void {
     const b = try get_box(ctx, box);
@@ -1196,12 +1232,12 @@ pub fn get_partial(ctx: u16, partial: u16) !*PartialRendered {
 pub fn box_context_create() !u16 {
     for (contexts.items, 0..) |item, i| {
         if (item) |_| continue;
-        contexts.items[i] = BoxContext.init(std.heap.page_allocator);
+        contexts.items[i] = BoxContext.init(std.heap.smp_allocator);
         return @intCast(i);
     }
-    try contexts.append(std.heap.page_allocator, null);
+    try contexts.append(std.heap.smp_allocator, null);
     const i = contexts.items.len - 1;
-    contexts.items[i] = BoxContext.init(std.heap.page_allocator);
+    contexts.items[i] = BoxContext.init(std.heap.smp_allocator);
     return @intCast(i);
 }
 
@@ -1249,6 +1285,14 @@ pub fn box_context_exists(ctx: u16) bool {
     }
     return contexts.items[ctx] != null;
 }
+
+pub fn box_destroy(ctx: u16, boxid: u16) !void {
+    const context = try get_context(ctx);
+
+    while (context.boxes.items.len > boxid) {
+        _ = context.boxes.pop();
+    }
+}
 // }
 
 // partial rendereds {
@@ -1264,15 +1308,15 @@ pub fn box_pr_set_dbg_ctx(ctx: u16, pr: u16, dbg: ?u16) !void {
 }
 pub fn box_pr_set_margin(ctx: u16, partialid: u16, left: u16, right: u16, top: u16, bottom: u16) !void {
     const partial = try get_partial(ctx, partialid);
-    partial.setMargin(.init(left, right, top, bottom));
+    try partial.setMargin(.init(left, right, top, bottom));
 }
 pub fn box_pr_set_pad(ctx: u16, partialid: u16, left: u16, right: u16, top: u16, bottom: u16) !void {
     const partial = try get_partial(ctx, partialid);
-    partial.setPadding(.init(left, right, top, bottom));
+    try partial.setPadding(.init(left, right, top, bottom));
 }
 pub fn box_pr_set_main_hl(ctx: u16, partialid: u16, hl: Highlight) !void {
     const partial = try get_partial(ctx, partialid);
-    partial.setMainColor(hl);
+    try partial.setMainColor(hl);
 }
 
 pub fn box_pr_get_width(ctx: u16, partialid: u16) !u16 {
@@ -1291,13 +1335,9 @@ pub fn box_pr_set_max_width(ctx: u16, partialid: u16, width: u16) !void {
     const partial = try get_partial(ctx, partialid);
     try partial.setMaxWidth(width);
 }
-pub fn box_pr_cursored_box(ctx: u16, partialid: u16) !u16 {
-    const partial = try get_partial(ctx, partialid);
-    return try partial.createBoxTryCursored();
-}
 pub fn box_pr_box(ctx: u16, partialid: u16) !u16 {
     const partial = try get_partial(ctx, partialid);
-    return try partial.createBox(0, 0);
+    return try partial.createBox();
 }
 pub fn box_pr_set_align(ctx: u16, partialid: u16, al: u16) !void {
     const partial = try get_partial(ctx, partialid);
@@ -1307,13 +1347,25 @@ pub fn box_pr_render(ctx: u16, partialid: u16) !void {
     const partial = try get_partial(ctx, partialid);
     try partial.render();
 }
+
+pub fn box_pr_deinit(ctx: u16, partialid: u16) !void {
+    const partial = try get_partial(ctx, partialid);
+    partial.deinit();
+}
+
+pub fn box_pr_set_render_type(ctx: u16, partialid: u16, renderType: u8) !void {
+    const partial = try get_partial(ctx, partialid);
+    partial.setRenderType(@enumFromInt(renderType));
+}
+
+pub fn box_pr_render_cursored(ctx: u16, partialid: u16, lineHeight: u16) !void {
+    const partial = try get_partial(ctx, partialid);
+    _ = lineHeight;
+    try partial.render();
+}
 pub fn box_pr_render_with_move(ctx: u16, partialid: u16, maxWidth: u16, toX: u16, toY: u16) !bool {
     const partial = try get_partial(ctx, partialid);
     return try partial.renderWithMove(maxWidth, toX, toY);
-}
-pub fn box_pr_render_cursored(ctx: u16, partialid: u16, lineHeight: u16) !bool {
-    const partial = try get_partial(ctx, partialid);
-    return try partial.renderCursoredOverflow(lineHeight);
 }
 // }
 

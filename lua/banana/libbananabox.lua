@@ -3,7 +3,7 @@
 local M = {}
 
 ---@alias BoxExpect Banana.Box2
----@alias PartialExpect Banana.Renderer.PartialRendered2
+---@alias PartialExpect Banana.Renderer.PartialRendered
 ---@alias HlExpect fun (line: number, startCol: number, endCol: number, hl: number): nil
 ---@alias StripRightExpect fun (hl: number): number
 
@@ -106,11 +106,6 @@ function M.box_pr_set_max_width(ctx, partialid, width) end
 ---@param ctx number
 ---@param partialid number
 ---@return number
-function M.box_pr_cursored_box(ctx, partialid) end
-
----@param ctx number
----@param partialid number
----@return number
 function M.box_pr_box(ctx, partialid) end
 
 ---@param ctx number
@@ -126,17 +121,17 @@ function M.box_pr_render(ctx, partialid) end
 
 ---@param ctx number
 ---@param partialid number
+---@param renderType u8
+---@return nil
+function M.box_pr_set_render_type(ctx, partialid, renderType) end
+
+---@param ctx number
+---@param partialid number
 ---@param maxWidth number
 ---@param toX number
 ---@param toY number
 ---@return boolean
 function M.box_pr_render_with_move(ctx, partialid, maxWidth, toX, toY) end
-
----@param ctx number
----@param partialid number
----@param lineHeight number
----@return boolean
-function M.box_pr_render_cursored(ctx, partialid, lineHeight) end
 
 ---@param ctx number
 ---@param buf number
@@ -300,5 +295,6 @@ function M.box_context_strip_right_space(ctx, expected_bg) end
 ---@return nil
 function M.box_render_over(ctx, box, otherCtx, left, top) end
 
-return M
 
+
+return M

@@ -86,8 +86,8 @@ return function (ast, box, parentHl, i, parentWidth, parentHeight, startX, start
                 startX = 0
                 startY = startY + lineHeight
             else
-                startX = startX + rendered:getWidth()
-                lineHeight = math.max(lineHeight, rendered:getHeight())
+                -- startX = startX + rendered:getWidth()
+                -- lineHeight = math.max(lineHeight, rendered:getHeight())
             end
 
             if tag.formatType == _tag.FormatType.Block or tag.formatType == _tag.FormatType.BlockInline then

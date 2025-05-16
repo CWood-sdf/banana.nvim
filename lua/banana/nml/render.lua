@@ -129,6 +129,7 @@ function TagInfo:blockIter(ast, box, parentHl, parentWidth, parentHeight, startX
         end
         box:putCursorBelow(renderBox)
         startY = startY + render:height()
+        renderBox:destroy()
         flame.pop()
         return oldI, render, i - oldI
     end

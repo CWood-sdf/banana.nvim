@@ -128,18 +128,18 @@ function Instance:_virtualRender(ast, ctx, width, height)
     local b = require("banana.box2").boxFromCtx(ctx, extra.trace)
     b:setMaxWidth(width)
     -- setmetatable(extra, { __mode = "kv" })
-    local ok, err = pcall(function ()
-        tag:renderRoot(ast, b, nil, width, height, {
-            text_align = "left",
-            position = "static",
-            min_size = false,
-            min_size_direction = "horizontal",
-            list_style_type = "star",
-        }, extra)
-    end)
-    if not ok then
-        vim.notify("Error during render: " .. err .. "\n")
-    end
+    -- local ok, err = pcall(function ()
+    tag:renderRoot(ast, b, nil, width, height, {
+        text_align = "left",
+        position = "static",
+        min_size = false,
+        min_size_direction = "horizontal",
+        list_style_type = "star",
+    }, extra)
+    -- end)
+    -- if not ok then
+    --     vim.notify("Error during render: " .. err .. "\n")
+    -- end
 
     if self.stripRight then
         local bgNum = vim.api.nvim_get_hl(0, {
@@ -910,7 +910,7 @@ function Instance:_deferRender(post)
         if post ~= nil then
             post()
         end
-    end, 10)
+    end, 50)
 end
 
 function Instance:_requestRender()
@@ -983,8 +983,6 @@ function Instance:_render()
     local winTime = vim.loop.hrtime() - startTime
     if self.ctx == nil then
         self.ctx = require("banana.box2").createContext()
-    else
-        lb.box_context_wipe(self.ctx)
     end
     startTime = vim.loop.hrtime()
 
@@ -1070,13 +1068,26 @@ function Instance:_render()
             })
     end)
     -- self:_highlight(stuffToRender, 0)
+    local extraLines = {}
+    if self.DEBUG then
+        table.insert(extraLines,
+            "Memory usage total: " .. lb.box_context_get_memory_usage(self.ctx))
+        table.insert(extraLines,
+            "  box usage: " .. lb.box_context_box_memory_usage(self.ctx))
+        table.insert(extraLines,
+            "  data usage: " .. lb.box_context_data_memory_usage(self.ctx))
+        table.insert(extraLines,
+            "  line usage: " .. lb.box_context_line_memory_usage(self.ctx))
+        table.insert(extraLines,
+            "  pr usage: " .. lb.box_context_pr_memory_usage(self.ctx))
+    end
     lb.box_context_wipe(self.ctx)
+    box.wipeContext(self.ctx)
     self:_dumpUrls(self.bufnr, self.highlightNs)
 
     local hlTime = vim.loop.hrtime() - startTime
     totalTime = totalTime + vim.loop.hrtime() - actualStart
 
-    local extraLines = {}
 
     if self.DEBUG_dumpTree then
         local dump = self.ast:_dumpTree()

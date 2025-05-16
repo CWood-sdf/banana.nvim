@@ -15,15 +15,10 @@ pub const PartialRendered = struct {
     containerBox: Id,
     box: NullableId,
     // TODO: remove this if not in debug
-    dbgCtx: if (debug) NullableId else void,
+    dbgCtx: NullableId,
     mainColor: Highlight,
     // TODO: Can just have a bunch of stacks and the tag determines which stack has data
     //
-    pub fn deinit(self: *PartialRendered) void {
-        const context: *BoxContext = get_context(self.ctx) orelse return;
-        context.partialData.cleanup(self);
-        _ = context.partials.pop();
-    }
 
     pub const RenderType = enum(u2) {
         // Won't be moved; cursored; no margin, padding, or max width
@@ -64,10 +59,11 @@ pub const PartialRendered = struct {
             return self.top + self.bottom;
         }
     };
+
     pub fn init(containerBox: *Box, containerId: Id) PartialRendered {
         return .{
             .tag = .{
-                .tag = .@"inline",
+                .tag = .block,
             },
             .dbgCtx = .nil,
             .ctx = containerBox.context,
@@ -77,18 +73,33 @@ pub const PartialRendered = struct {
         };
     }
 
+    pub fn deinit(self: *PartialRendered) void {
+        const context: *BoxContext = get_context(self.ctx) catch return;
+        context.partialData.cleanup(self);
+        _ = context.partials.pop();
+    }
+
     // value setters {
+
+    fn setAsBlockType(self: *PartialRendered) void {
+        if (self.tag.tag == .@"inline") {
+            log.write("Promoting element to inlineBlock\n", .{}) catch {};
+            self.tag.tag = .inlineBlock;
+        }
+    }
     pub fn setRenderType(self: *PartialRendered, renderType: RenderType) void {
-        self.tag.renderType = renderType;
+        self.tag.tag = renderType;
     }
 
     pub fn setAlign(self: *PartialRendered, al: RenderAlign) !void {
         const context = try self.getContext();
+        self.setAsBlockType();
         try self.getPartialData(context).setSideAlign(self, al);
     }
 
     pub fn setVerticalAlign(self: *PartialRendered, al: RenderAlign) !void {
         const context = try self.getContext();
+        self.setAsBlockType();
         try self.getPartialData(context).setVerticalAlign(self, al);
     }
 
@@ -102,6 +113,7 @@ pub const PartialRendered = struct {
         if (margin.equals(.zero)) {
             return;
         }
+        self.setAsBlockType();
         const context = try get_context(self.ctx);
         try context.partialData.setMargin(self, margin);
     }
@@ -110,6 +122,7 @@ pub const PartialRendered = struct {
         if (padding.equals(.zero)) {
             return;
         }
+        self.setAsBlockType();
         const context = try get_context(self.ctx);
         try context.partialData.setPadding(self, padding);
     }
@@ -184,8 +197,13 @@ pub const PartialRendered = struct {
     ) !u16 {
         return try self.getPartialData(context).getHeight(self) orelse container.maxHeight;
     }
+    pub fn getWidth(self: *PartialRendered) !u16 {
+        const context = try self.getContext();
+        const container = try self.getContainer();
+        return try self._getWidth(context, container);
+    }
 
-    pub fn getWidth(self: *PartialRendered, context: *BoxContext, container: *Box) !u16 {
+    pub fn _getWidth(self: *PartialRendered, context: *BoxContext, container: *Box) !u16 {
         const box = try self.getBox();
         if (self.tag.tag == .@"inline") {
             return box.width;
@@ -199,7 +217,12 @@ pub const PartialRendered = struct {
         return width;
     }
 
-    pub fn getHeight(self: *PartialRendered, context: *BoxContext, container: *Box) !u16 {
+    pub fn getHeight(self: *PartialRendered) !u16 {
+        const context = try self.getContext();
+        const container = try self.getContainer();
+        return try self._getHeight(context, container);
+    }
+    pub fn _getHeight(self: *PartialRendered, context: *BoxContext, container: *Box) !u16 {
         const box = try self.getBox();
         const padding = try self.getPadding(context);
         const margin = try self.getMargin(context);
@@ -242,10 +265,12 @@ pub const PartialRendered = struct {
         return box;
     }
     fn createBoxBlock(self: *PartialRendered, context: *BoxContext, containerBox: *Box) !Box {
+        const margin = try self.getMargin(context);
+        const padding = try self.getPadding(context);
         // if we have an inline el, then we need to make it cursored
         var box = containerBox.newBoxFromOffset(
-            self.margin.left + self.padding.left,
-            self.margin.top + self.padding.top + containerBox.cursorY,
+            margin.left + padding.left,
+            margin.top + padding.top + containerBox.cursorY,
         );
         box.maxWidth = try self.getMaxWidth(context, containerBox);
 
@@ -260,7 +285,20 @@ pub const PartialRendered = struct {
     // }
 
     pub fn render(self: *PartialRendered) !void {
-        _ = self;
+        const startTime = std.time.microTimestamp();
+
+        defer {
+            const time = std.time.microTimestamp() - startTime;
+            log.write("Time taken: {}us\n", .{time}) catch {};
+        }
+        const containerBox = try self.getContainer();
+        const box = try self.getBox();
+        const context = try self.getContext();
+        switch (self.tag.tag) {
+            .@"inline" => try self.renderInline(box, containerBox),
+            .block => try self.renderBlock(context, box, containerBox),
+            .inlineBlock => return error.CantRenderInlineBlockFromRender,
+        }
     }
 
     fn renderInline(self: *PartialRendered, box: *Box, containerBox: *Box) !void {
@@ -276,7 +314,7 @@ pub const PartialRendered = struct {
     ) !void {
         var buffer = [_]u8{0} ** 300;
         const dbg: ?*BoxContext =
-            comptime if (debug)
+            if (comptime debug)
                 if (self.dbgCtx.asOptional()) |id|
                     try get_context(id)
                 else
@@ -284,12 +322,12 @@ pub const PartialRendered = struct {
             else
                 null;
 
-        const padding = try self.getPadding();
-        const margin = try self.getMargin();
+        const padding = try self.getPadding(context);
+        const margin = try self.getMargin(context);
 
         const widthExpansion = try self.getMaxWidth(context, containerBox) - padding.side() - margin.side() - box.width;
 
-        switch (self.getSideAlign()) {
+        switch (try self.getSideAlign(context)) {
             .center => {
                 const r = @divFloor(widthExpansion, 2);
                 const l = widthExpansion - r;
@@ -329,12 +367,12 @@ pub const PartialRendered = struct {
         box: *Box,
         containerBox: *Box,
     ) !void {
-        const padding = try self.getPadding();
-        const margin = try self.getMargin();
+        const padding = try self.getPadding(context);
+        const margin = try self.getMargin(context);
 
         const heightExpansion = try self.getMaxHeight(context, containerBox) - padding.vert() - margin.vert() - box.height;
 
-        switch (self.getVerticalAlign()) {
+        switch (try self.getVerticalAlign(context)) {
             .center => {
                 return error.CenterVerticalAlignUnimplemented;
             },
@@ -359,8 +397,8 @@ pub const PartialRendered = struct {
         const offX = containerBox.offsetX;
         const offY = containerBox.offsetY;
         const alloc = context.alloc();
-        const width = try self.getWidth();
-        const margin = try self.getMargin();
+        const width = try self._getWidth(context, containerBox);
+        const margin = try self.getMargin(context);
         const mainWidth = width - margin.side();
         // const mainHeight = height - padding.vert() - margin.vert();
         // set margin and padding
@@ -376,7 +414,7 @@ pub const PartialRendered = struct {
                     try line.appendAsciiNTimes(
                         context,
                         ' ',
-                        self.marginColor,
+                        containerBox.hlgroup,
                         offX + width - currentStrLen,
                     );
                 }
@@ -384,7 +422,7 @@ pub const PartialRendered = struct {
                     // only need to set the stuff before currentStrLen
                     // (because everything after was already set to space)
                     @memset(line._chars.items[offX..currentStrLen], .space);
-                    @memset(line._hls.items[offX .. offX + width], self.marginColor);
+                    @memset(line._hls.items[offX .. offX + width], containerBox.hlgroup);
                 }
             } else {
                 // margin + pad l r, middle content{
@@ -394,7 +432,7 @@ pub const PartialRendered = struct {
                     try line.appendAsciiNTimes(
                         context,
                         ' ',
-                        self.marginColor,
+                        containerBox.hlgroup,
                         offX + width - currentStrLen,
                     );
                 }
@@ -404,11 +442,11 @@ pub const PartialRendered = struct {
                 const spaceCont = spaceArea + mainWidth;
                 @memset(line._chars.items[offX + spaceCont .. offX + width], .space);
 
-                @memset(line._hls.items[offX .. offX + margin.left], self.marginColor);
+                @memset(line._hls.items[offX .. offX + margin.left], containerBox.hlgroup);
                 log.write("memsetting {} .. {}\n", .{ offX + width - margin.right, offX + width }) catch {};
                 @memset(
                     line._hls.items[offX + width - margin.right .. offX + width],
-                    self.marginColor,
+                    containerBox.hlgroup,
                 );
             }
         }
@@ -422,7 +460,7 @@ pub const PartialRendered = struct {
         _ = box;
         var buffer = [_]u8{0} ** 300;
         const dbg: ?*BoxContext =
-            comptime if (debug)
+            if (comptime debug)
                 if (self.dbgCtx.asOptional()) |id|
                     try get_context(id)
                 else
@@ -433,9 +471,9 @@ pub const PartialRendered = struct {
         const height = try self.getHeight();
         const offX = containerBox.offsetX;
         const offY = containerBox.offsetY;
-        const width = try self.getWidth();
-        const padding = try self.getPadding();
-        const margin = try self.getMargin();
+        const width = try self._getWidth(context, containerBox);
+        const padding = try self.getPadding(context);
+        const margin = try self.getMargin(context);
         const mainWidth = width - padding.side() - margin.side();
         // const mainHeight = height - padding.vert() - margin.vert();
         // set margin and padding
@@ -453,7 +491,7 @@ pub const PartialRendered = struct {
                     try line.appendAsciiNTimes(
                         context,
                         ' ',
-                        self.marginColor,
+                        containerBox.hlgroup,
                         offX + width - currentStrLen,
                     );
                 }
@@ -462,14 +500,14 @@ pub const PartialRendered = struct {
                     @memset(line._chars.items[offX..currentStrLen], .space);
                 }
 
-                @memset(line._hls.items[offX .. offX + self.margin.left], self.marginColor);
+                @memset(line._hls.items[offX .. offX + margin.left], containerBox.hlgroup);
                 @memset(
-                    line._hls.items[offX + self.margin.left .. offX + width - self.margin.right],
+                    line._hls.items[offX + margin.left .. offX + width - margin.right],
                     self.mainColor,
                 );
                 @memset(
-                    line._hls.items[offX + width - self.margin.right .. offX + width],
-                    self.marginColor,
+                    line._hls.items[offX + width - margin.right .. offX + width],
+                    containerBox.hlgroup,
                 );
             } else {
                 // margin + pad l r, middle content{
@@ -479,7 +517,7 @@ pub const PartialRendered = struct {
                     try line.appendAsciiNTimes(
                         context,
                         ' ',
-                        self.marginColor,
+                        containerBox.hlgroup,
                         offX + width - currentStrLen,
                     );
                 }
@@ -494,7 +532,7 @@ pub const PartialRendered = struct {
                     self.mainColor,
                 );
                 @memset(
-                    line._hls.items[offX + padding.left + mainWidth .. offX + width - self.margin.right],
+                    line._hls.items[offX + padding.left + mainWidth .. offX + width - margin.right],
                     self.mainColor,
                 );
             }
@@ -505,11 +543,11 @@ pub const PartialRendered = struct {
         self: *PartialRendered,
         context: *BoxContext,
         box: *Box,
-        // containerBox: *Box,
+        containerBox: *Box,
     ) !void {
         var buffer = [_]u8{0} ** 300;
         const dbg: ?*BoxContext =
-            comptime if (debug)
+            if (comptime debug)
                 if (self.dbgCtx.asOptional()) |id|
                     try get_context(id)
                 else
@@ -521,9 +559,9 @@ pub const PartialRendered = struct {
         const offX = box.offsetX;
         const offY = box.offsetY;
         const alloc = context.alloc();
-        const width = try self.getWidth();
-        const padding = try self.getPadding();
-        const margin = try self.getMargin();
+        const width = try self._getWidth(context, containerBox);
+        const padding = try self.getPadding(context);
+        const margin = try self.getMargin(context);
         const mainWidth = width - padding.side() - margin.side();
         // const mainHeight = height - padding.vert() - margin.vert();
         // set margin and padding
@@ -544,7 +582,7 @@ pub const PartialRendered = struct {
                     try line.appendAsciiNTimes(
                         context,
                         ' ',
-                        self.marginColor,
+                        containerBox.hlgroup,
                         offX + width - currentStrLen,
                     );
                 }
@@ -552,7 +590,7 @@ pub const PartialRendered = struct {
                     // only need to set the stuff before currentStrLen
                     // (because everything after was already set to space)
                     @memset(line._chars.items[offX..currentStrLen], .space);
-                    @memset(line._hls.items[offX .. offX + width], self.marginColor);
+                    @memset(line._hls.items[offX .. offX + width], containerBox.hlgroup);
                 }
             } else if (i < margin.top + padding.top or i >= height - margin.bottom - padding.bottom) {
                 // margin l r, middle padding
@@ -561,7 +599,7 @@ pub const PartialRendered = struct {
                     try line.appendAsciiNTimes(
                         context,
                         ' ',
-                        self.marginColor,
+                        containerBox.hlgroup,
                         offX + width - currentStrLen,
                     );
                 }
@@ -570,14 +608,14 @@ pub const PartialRendered = struct {
                     @memset(line._chars.items[offX..currentStrLen], .space);
                 }
 
-                @memset(line._hls.items[offX .. offX + margin.left], self.marginColor);
+                @memset(line._hls.items[offX .. offX + margin.left], containerBox.hlgroup);
                 @memset(
                     line._hls.items[offX + margin.left .. offX + width - margin.right],
                     self.mainColor,
                 );
                 @memset(
                     line._hls.items[offX + width - margin.right .. offX + width],
-                    self.marginColor,
+                    containerBox.hlgroup,
                 );
             } else {
                 // margin + pad l r, middle content{
@@ -587,7 +625,7 @@ pub const PartialRendered = struct {
                     try line.appendAsciiNTimes(
                         context,
                         ' ',
-                        self.marginColor,
+                        containerBox.hlgroup,
                         offX + width - currentStrLen,
                     );
                 }
@@ -596,7 +634,7 @@ pub const PartialRendered = struct {
                 @memset(line._chars.items[offX .. offX + spaceArea], .space);
                 const spaceCont = spaceArea + mainWidth;
                 @memset(line._chars.items[offX + spaceCont .. offX + width], .space);
-                @memset(line._hls.items[offX .. offX + margin.left], self.marginColor);
+                @memset(line._hls.items[offX .. offX + margin.left], containerBox.hlgroup);
                 @memset(
                     line._hls.items[offX + margin.left .. offX + margin.left + padding.left],
                     self.mainColor,
@@ -607,7 +645,7 @@ pub const PartialRendered = struct {
                 );
                 @memset(
                     line._hls.items[offX + width - margin.right .. offX + width],
-                    self.marginColor,
+                    containerBox.hlgroup,
                 );
             }
         }
@@ -629,18 +667,24 @@ pub const PartialRendered = struct {
             else
                 null;
 
-        const widthExpansion = switch (self.sideAlign) {
-            .left, .center, .right => self.maxWidth - self.padding.side() - self.margin.side() - box.width,
+        const sideAlign = try self.getSideAlign(context);
+        const verticalAlign = try self.getVerticalAlign(context);
+        const margin = try self.getMargin(context);
+        const padding = try self.getPadding(context);
+        const maxWidth = try self.getMaxWidth(context, containerBox);
+        const maxHeight = try self.getMaxHeight(context, containerBox);
+        const widthExpansion = switch (sideAlign) {
+            .left, .center, .right => maxWidth - padding.side() - margin.side() - box.width,
             .noexpand => 0,
         };
-        const heightExpansion = switch (self.verticalAlign) {
-            .left, .center, .right => self.maxHeight - self.padding.vert() - self.margin.vert() - box.height,
+        const heightExpansion = switch (verticalAlign) {
+            .left, .center, .right => maxHeight - padding.vert() - margin.vert() - box.height,
             .noexpand => 0,
         };
         const mainWidth = box.width + widthExpansion;
         const mainHeight = box.height + heightExpansion;
-        const height = mainHeight + self.padding.top + self.padding.bottom + self.margin.top + self.margin.bottom;
-        const width = mainWidth + self.padding.left + self.padding.right + self.margin.left + self.margin.right;
+        const height = mainHeight + padding.vert() + margin.vert();
+        const width = mainWidth + padding.side() + margin.side();
 
         if (dbg) |d| {
             context.dumpTo(d, "Pre height expand") catch {};
@@ -665,7 +709,7 @@ pub const PartialRendered = struct {
         containerBox.height += height;
         if (dbg) |d| {
             context.dumpTo(d, "Pre side align") catch {};
-            const comment = try std.fmt.bufPrint(&buffer, "side align: {s}", .{@tagName(self.sideAlign)});
+            const comment = try std.fmt.bufPrint(&buffer, "side align: {s}", .{@tagName(sideAlign)});
             d.dumpComment(comment) catch {};
         }
 
@@ -676,11 +720,11 @@ pub const PartialRendered = struct {
         }
 
         if (self.tag.margin == 1 and self.tag.padding == 1) {
-            try self.renderMarginAndPadding();
+            try self.renderMarginAndPadding(context, box, containerBox);
         } else if (self.tag.margin == 1) {
-            try self.renderMargin();
+            try self.renderMargin(context, box, containerBox);
         } else if (self.tag.padding == 1) {
-            try self.renderPadding();
+            try self.renderPadding(context, box, containerBox);
         }
     }
 
@@ -754,7 +798,7 @@ pub const PartialRendered = struct {
         //         try otherLine.appendAsciiNTimes(
         //             context,
         //             ' ',
-        //             self.marginColor,
+        //             containerBox.hlgroup,
         //             toX + count - @as(u16, @intCast(otherLine._chars.items.len)),
         //         );
         //     }
@@ -766,7 +810,7 @@ pub const PartialRendered = struct {
         //         line._hls.items[offX .. offX + count],
         //     );
         //     @memset(line._chars.items[offX .. offX + count], .space);
-        //     @memset(line._hls.items[offX .. offX + count], self.marginColor);
+        //     @memset(line._hls.items[offX .. offX + count], containerBox.hlgroup);
         // }
         // return true;
     }
@@ -786,6 +830,9 @@ pub const PrDataStack = struct {
     pub const PadList = std.ArrayListUnmanaged(PartialRendered.Pad);
     pub const AlignList = std.ArrayListUnmanaged(PartialRendered.RenderAlign);
 
+    pub fn getMemoryUsage(self: *const PrDataStack) usize {
+        return (self.padding.capacity + self.margin.capacity) * @sizeOf(PartialRendered.Pad) + (self.sideAlign.capacity + self.verticalAlign.capacity) * @sizeOf(PartialRendered.RenderAlign) + (self.width.capacity + self.height.capacity) * @sizeOf(u16);
+    }
     pub fn cleanup(self: *PrDataStack, pr: *PartialRendered) void {
         if (pr.tag.padding == 1) {
             _ = self.padding.pop();
@@ -931,8 +978,8 @@ pub const PrDataStack = struct {
     pub fn getSideAlign(
         self: *PrDataStack,
         pr: *PartialRendered,
-    ) !PartialRendered.RenderAlign {
-        if (pr.tag.tag == .@"inline" or pr.tag.differentSideAlign == 0) {
+    ) !?PartialRendered.RenderAlign {
+        if (pr.tag.tag == .@"inline" or pr.tag.sideAlign == 0) {
             return null;
         }
         return self.sideAlign.getLastOrNull() orelse return error.BadStackSize;

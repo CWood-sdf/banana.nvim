@@ -13,6 +13,14 @@ M.Align = {
     right = 2,
 }
 
+---@enum Banana.Renderer.RenderType
+M.RenderType = {
+    inline = 0,
+    inlineBlock = 1,
+    block = 2,
+
+}
+
 ---@class (exact) Banana.Renderer.PartialRendered2
 ---@field ctx number
 ---@field pr number
@@ -20,7 +28,7 @@ M.Align = {
 ---@field center Banana.Box2?
 local PartialRendered = {}
 
-local PrIndex = flame.wrapClass(PartialRendered, "Partial", true)
+local PrIndex = flame.wrapClass(PartialRendered, "Partial", false)
 
 ---@param container Banana.Box2
 ---@return Banana.Renderer.PartialRendered2
@@ -40,7 +48,7 @@ function M.emptyPartialRendered(container)
 end
 
 function PartialRendered:_dump()
-    lb.box_dump_pr_data(self.ctx, self.pr, self)
+    -- lb.box_dump_pr_data(self.ctx, self.pr, self)
 end
 
 ---@param ctx number?
@@ -85,14 +93,6 @@ function PartialRendered:setMaxHeight(w)
 end
 
 ---@return Banana.Box2
-function PartialRendered:getCursoredBox()
-    local id = lb.box_pr_cursored_box(self.ctx, self.pr)
-    self.center = box.boxFromId(self.ctx, id, self.trace)
-    self:_dump()
-    return self.center
-end
-
----@return Banana.Box2
 function PartialRendered:getBox()
     local id = lb.box_pr_box(self.ctx, self.pr)
     self.center = box.boxFromId(self.ctx, id, self.trace)
@@ -116,16 +116,29 @@ function PartialRendered:setAlign(align)
     self:_dump()
 end
 
+function PartialRendered:setRenderType(renderType)
+    lb.box_pr_set_render_type(self.ctx, self.pr, renderType)
+    self:_dump()
+end
+
 function PartialRendered:render()
     if self.center == nil then return end
     if self.trace ~= nil then
         lb.box_context_dump_to(self.ctx, self.trace, "render pre")
     end
+    flame.new("box_pr_render")
     lb.box_pr_render(self.ctx, self.pr)
+    flame.pop()
     if self.trace ~= nil then
         lb.box_context_dump_to(self.ctx, self.trace, "render post")
     end
     self:_dump()
+    self:destroy()
+    self.center:destroy()
+end
+
+function PartialRendered:destroy()
+    lb.box_pr_deinit(self.ctx, self.pr)
 end
 
 ---@param lineHeight number

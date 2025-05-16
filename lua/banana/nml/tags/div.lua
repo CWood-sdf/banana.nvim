@@ -10,7 +10,7 @@ local function renderer(self, ast, box, parentHl, parentWidth, parentHeight,
     -- flame.new("tag:div")
     local hl = ast:_mixHl(parentHl)
     box:setHl(hl)
-    for _, box, _ in self:blockIter(ast, box, hl, parentWidth, parentHeight, startX, startY, inherit, extra) do
+    for _, _, _ in self:blockIter(ast, box, hl, parentWidth, parentHeight, startX, startY, inherit, extra) do
         -- ret:appendBoxBelow(box)
     end
     -- flame.expect("tag:div")

@@ -92,6 +92,10 @@ return function (self, ast, box, parentHl, parentWidth, parentHeight, startX,
     end
     ast.hidden = false
     local pr = p.emptyPartialRendered(box)
+
+    if ast.actualTag.formatType == _tag.FormatType.Inline then
+        pr:setRenderType(p.RenderType.inline)
+    end
     pr.trace = extra.trace
     local useMaxHeight = extra.useAllHeight
     if ast:_firstStyleValue("width") == "fit-content" then
@@ -193,7 +197,7 @@ return function (self, ast, box, parentHl, parentWidth, parentHeight, startX,
     if extra.trace ~= nil then
         lb.box_context_dump_comment(extra.trace, "Rendering " .. ast.tag)
     end
-    local centerBox = self:render(ast, contentBox, hl, contentWidth,
+    self:render(ast, contentBox, hl, contentWidth,
         parentHeight,
         startX, startY, inherit, extra)
     -- flame.pop()
