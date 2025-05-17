@@ -1191,8 +1191,8 @@ function M.Ast:_applyStyleDeclarations(declarations, basePrec)
             goto continue
         end
         self.precedences[v.name] = prec
-        if v.name:sub(1, 3) == "hl-" then
-            local name = v.name:sub(4, _str.charWidth(v.name))
+        if v.namespace == "hl" then
+            local name = v.actualName
 
             local value = v.values[1]
             if value.type == "plain" and value.value == "inherit" then
@@ -1205,8 +1205,8 @@ function M.Ast:_applyStyleDeclarations(declarations, basePrec)
             end
             self.hl[name] = value.value
             self:_lockGradients()
-        elseif v.name:sub(1, 8) == "padding-" then
-            local side = v.name:sub(9, #v.name)
+        elseif v.namespace == "padding" then
+            local side = v.actualName
 
             local value = v.values[1]
             local index = M[side]
@@ -1218,8 +1218,8 @@ function M.Ast:_applyStyleDeclarations(declarations, basePrec)
             local val = value.value
             ---@cast val Banana.Ncss.UnitValue
             self.padding[index] = val
-        elseif v.name:sub(1, 7) == "margin-" then
-            local side = v.name:sub(8, #v.name)
+        elseif v.namespace == "margin" then
+            local side = v.actualName
 
             local value = v.values[1]
             local index = M[side]
