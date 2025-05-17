@@ -61,6 +61,7 @@ local astId = 0
 ---@field componentCache? { [string]: Banana.Component } Cache of components
 ---@field componentTree? Banana.Ast If is component, will contain <template> to render
 ---@field componentParent? Banana.Ast If is <template>, will contain component
+---@field _isComponentCache boolean
 M.Ast = {
     nodes = {},
     tag = "",
@@ -83,8 +84,10 @@ function M.Ast:new(tag, parent, source)
     if zeroUnit == nil then
         zeroUnit = unit.newUnit("ch", 0, 0)
     end
+    local isComponent = false
     if require("banana.nml.parser").isValidComponentName(tag) then
         actualTag = _tag.newComponentTag(tag)
+        isComponent = true
     end
     actualTag = actualTag or require("banana.nml.tag").makeTag(tag)
     local path
@@ -104,6 +107,7 @@ function M.Ast:new(tag, parent, source)
         hidden = false,
         boundBox = nil,
         precedences = {},
+        _isComponentCache = isComponent,
         nodes = {},
         tag = tag,
         _parent = parent,
@@ -288,8 +292,9 @@ end
 
 ---@return boolean
 function M.Ast:_isComponent()
-    local ret, _ = require("banana.nml.parser").isValidComponentName(self.tag)
-    return ret
+    return self._isComponentCache
+    -- local ret, _ = require("banana.nml.parser").isValidComponentName(self.tag)
+    -- return ret
 end
 
 ---@param pad number?
