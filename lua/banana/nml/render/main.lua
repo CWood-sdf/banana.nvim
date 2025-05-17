@@ -36,27 +36,22 @@ local function isExpandable(ast)
 end
 ---@param self Banana.TagInfo
 ---@param ast Banana.Ast
----@param box Banana.Box2
+---@param box Banana.Box
 ---@param parentHl Banana.Highlight?
----@param parentWidth number
----@param parentHeight number
----@param startX number
----@param startY number
 ---@param inherit Banana.Renderer.InheritedProperties
 ---@param extra Banana.Renderer.ExtraInfo
----@return Banana.Renderer.PartialRendered2
-return function (self, ast, box, parentHl, parentWidth, parentHeight, startX,
-                 startY,
+---@return Banana.Renderer.PartialRendered
+return function (self, ast, box, parentHl,
                  inherit, extra)
     flame.new("getRendered_start")
     ast.relativeBoxId = nil
     local inheritOld = {}
     -- setmetatable(inherit, { __mode = "kv" })
     for k, _ in pairs(inherit) do
-        local style = case.snakeToKebab(k)
-        if ast:hasStyle(style) then
+        -- local style = case.snakeToKebab(k)
+        if ast:hasStyle(k) then
             inheritOld[k] = inherit[k]
-            inherit[k] = ast:_firstStyleValue(style)
+            inherit[k] = ast:_firstStyleValue(k)
             if inherit[k] == "initial" then
                 inherit[k] = ast:_getInitialStyles()[k]
             end
@@ -100,81 +95,64 @@ return function (self, ast, box, parentHl, parentWidth, parentHeight, startX,
     local useMaxHeight = extra.useAllHeight
     if ast:_firstStyleValue("width") == "fit-content" then
         -- TODO: Should this also include padding?
-        parentWidth = parentWidth - ast:marginLeft() - ast:marginRight()
-        inherit.min_size = true
+        inherit["min-size"] = true
     elseif ast:hasStyle("width") then
         -- add margins bc width only sets content-width + padding
         ---@diagnostic disable-next-line: cast-local-type
-        parentWidth = math.min(
-            ast:_firstStyleValue("width").computed + ast:marginLeft() +
-            ast:marginRight(),
-            parentWidth)
-        pr:setMaxWidth(parentWidth)
-        if inherit.text_align == "left" then
+        local width = ast:_firstStyleValue("width").computed + ast:marginLeft() +
+            ast:marginRight()
+        pr:setMaxWidth(width)
+        if inherit["text-align"] == "left" then
             pr:setAlign(p.Align.left)
-        elseif inherit.text_align == "right" then
+        elseif inherit["text-align"] == "right" then
             pr:setAlign(p.Align.right)
-        elseif inherit.text_align == "center" then
+        elseif inherit["text-align"] == "center" then
             pr:setAlign(p.Align.center)
         else
-            log.throw("Undefined text align type " .. inherit.text_align)
+            log.throw("Undefined text align type " .. inherit["text-align"])
         end
-        if inherit.min_size then
-            inherit.min_size = false
+        if inherit["min-size"] then
+            inherit["min-size"] = false
         end
     elseif isExpandable(ast) then
-        pr:setMaxWidth(parentWidth)
-        if inherit.text_align == "left" then
+        -- pr:setMaxWidth(parentWidth)
+        if inherit["text-align"] == "left" then
             pr:setAlign(p.Align.left)
-        elseif inherit.text_align == "right" then
+        elseif inherit["text-align"] == "right" then
             pr:setAlign(p.Align.right)
-        elseif inherit.text_align == "center" then
+        elseif inherit["text-align"] == "center" then
             pr:setAlign(p.Align.center)
         else
-            log.throw("Undefined text align type " .. inherit.text_align)
+            log.throw("Undefined text align type " .. inherit["text-align"])
         end
     end
     if ast:hasStyle("height") then
         ---@diagnostic disable-next-line: cast-local-type
-        parentHeight = math.min(
+        local height =
             ast:_firstStyleValue("height").computed + ast:marginTop() +
-            ast:marginBottom(),
-            parentHeight)
+            ast:marginBottom()
 
         if (not ast:parent():isNil() or ast.tag == "template") then
-            pr:setMaxHeight(parentHeight + ast:marginTop() + ast:marginBottom())
+            pr:setMaxHeight(height + ast:marginTop() + ast:marginBottom())
         end
     elseif useMaxHeight then
-        pr:setMaxHeight(parentHeight + ast:marginTop() + ast:marginBottom())
+        pr:setVerticalAlign(p.Align.left)
+        -- pr:setMaxHeight(parentHeight + ast:marginTop() + ast:marginBottom())
     end
     -- TODO: Handle later
-    if position ~= "static" then
-        if ast:hasStyle("left") then
-            startX = startX + ast:_firstStyleValue("left").computed
-        elseif ast:hasStyle("right") then
-            startX = startX - ast:_firstStyleValue("right").computed
-        end
-        if ast:hasStyle("top") then
-            startY = startY + ast:_firstStyleValue("top").computed
-        elseif ast:hasStyle("bottom") then
-            startY = startY + ast:_firstStyleValue("bottom").computed
-        end
-    end
-    -- startX = startX + ast:marginLeft()
-    -- startY = startY + ast:marginTop()
-    ---@type Banana.Ast.BoundingBox
-    local boundBox = {
-        leftX   = startX,
-        topY    = startY,
-        rightX  = 0,
-        bottomY = 0,
-    }
+    --
+    -- if position ~= "static" then
+    -- if ast:hasStyle("left") then
+    --     startX = startX + ast:_firstStyleValue("left").computed
+    -- elseif ast:hasStyle("right") then
+    --     startX = startX - ast:_firstStyleValue("right").computed
+    -- end
+    -- if ast:hasStyle("top") then
+    --     startY = startY + ast:_firstStyleValue("top").computed
+    -- elseif ast:hasStyle("bottom") then
+    --     startY = startY + ast:_firstStyleValue("bottom").computed
+    -- end
 
-    startX = startX + ast:paddingLeft()
-    startY = startY + ast:paddingTop()
-    local contentWidth = parentWidth - ast:_extraLr()
-    ---@cast parentWidth number
-    ---@cast parentHeight number
     -- flame.pop()
     -- flame.new("element render")
     extra.useAllHeight = false

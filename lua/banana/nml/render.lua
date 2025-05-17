@@ -7,19 +7,19 @@ local M = {}
 local _tag = require("banana.lazyRequire")("banana.nml.tag")
 
 ---@class (exact) Banana.Renderer.InheritedProperties
----@field text_align string
+---@field ["text-align"] string
 ---@field position "static"|"absolute"|"sticky"|"relative"
----@field min_size boolean
----@field list_style_type string
+---@field ["min-size"] boolean
+---@field ["list-style-type"] string
 
 ---@class (exact) Banana.Renderer.InitialProperties: Banana.Renderer.InheritedProperties
 ---@field flex_shrink number
 ---@field flex_wrap "nowrap"|"wrap"
 
----@alias Banana.RenderRet Banana.Box2
+---@alias Banana.RenderRet Banana.Box
 
 ---@class (exact) Banana.Renderer.ExtraInfo
----@field box Banana.Box2?
+---@field box Banana.Box?
 ---@field ctx number
 ---@field trace number?
 ---@field debug boolean
