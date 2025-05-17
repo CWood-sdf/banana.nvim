@@ -4,13 +4,13 @@ local t = require("banana.lazyRequire")("banana.nml.tag")
 local canvas = require("banana.lazyRequire")("banana.nml.canvas")
 
 ---@type Banana.Renderer
-local function renderer(_, ast, box, _, parentWidth, parentHeight)
+local function renderer(_, ast, box, _, parentHeight)
     ---@type Banana.Nml.CanvasContext
     local ctx
     ast.data = ast.data or {}
     if ast.data.__ctx == nil then
         ast.data.__ctx = canvas.newContext(ast)
-        ast.data.__ctx:resize(parentWidth, parentHeight)
+        ast.data.__ctx:resize(parentHeight)
     end
     ctx = ast.data.__ctx
     return ctx.box:clone()

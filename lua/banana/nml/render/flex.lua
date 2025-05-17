@@ -54,25 +54,21 @@ local function flexGrowSection(parentWidth, takenWidth, renders, start, e)
 end
 ---Renders everything in a flex block
 ---@param ast Banana.Ast
----@param box Banana.Box2
+---@param box Banana.Box
 ---@param parentHl Banana.Highlight?
----@param parentWidth number
----@param parentHeight number
----@param startX number
----@param startY number
 ---@param inherit Banana.Renderer.InheritedProperties
 ---@param extra Banana.Renderer.ExtraInfo
 ---@return Banana.Box, integer
-return function (ast, box, parentHl, parentWidth, parentHeight, startX,
-                 startY, inherit, extra)
+return function (ast, box, parentHl,
+                 inherit, extra)
     log.trace("TagInfo:renderFlexBlock " .. ast.tag)
     flame.new("renderFlexBlock")
     -- possible todos:
     --   abstract out base rendering into a function
     --   inline the current height / line calculation
     --   maybe some other stuff
-    local oldMinSize = inherit.min_size
-    inherit.min_size = true
+    local oldMinSize = inherit["min-size"]
+    inherit["min-size"] = true
     local takenWidth = 0
     local hl = ast:_mixHl(parentHl)
     ---@type ([Banana.Renderer.PartialRendered, Banana.Ast]?)[]
@@ -84,21 +80,21 @@ return function (ast, box, parentHl, parentWidth, parentHeight, startX,
             goto continue
         end
 
-        v:_resolveUnits(parentWidth, parentHeight)
+        v:_resolveUnits(box:getMaxWidth(), box:getMaxWidth())
         local basis = v:_firstStyleValue("flex-basis", {
-            computed = parentWidth,
+            computed = box:getMaxWidth(),
             unit = "ch",
-            value = parentWidth,
+            value = box:getMaxWidth(),
         })
         ---@cast basis Banana.Ncss.UnitValue
         local basisVal = math.min(basis.computed or parentWidth, parentWidth)
         if v:_firstStyleValue("flex-shrink") == 0 or v:hasStyle("flex-basis") then
-            inherit.min_size = false
+            inherit["min-size"] = false
         end
         local rendered = v.actualTag:getRendered(v, hl, basisVal, parentHeight,
             startX, startY, inherit, extra)
 
-        inherit.min_size = true
+        inherit["min-size"] = true
 
         renders[rendersLen + 1] = { rendered, v }
         rendersLen = rendersLen + 1
@@ -242,7 +238,7 @@ return function (ast, box, parentHl, parentWidth, parentHeight, startX,
     --         ret:append(v[1]:render(), nil)
     --     end
     -- end
-    inherit.min_size = oldMinSize
+    inherit["min-size"] = oldMinSize
 
     flame.pop()
     return ret, #ast.nodes + 1

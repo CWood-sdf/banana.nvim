@@ -16,9 +16,6 @@ local function renderer(_, ast)
     -- flame.new("tag:meta")
     local inst = require("banana.instance").getInstance(ast.instance)
     local name, value = nil, nil
-    local b = require("banana.box")
-    ---@type Banana.Box
-    local ret = b.Box:new()
     for k, val in pairs(ast.attributes) do
         if name ~= nil then
             name = nil
@@ -32,12 +29,12 @@ local function renderer(_, ast)
         name = ast:getAttribute("name")
         if name == nil then
             log.warn("Expected a name attribute on a meta tag")
-            return ret
+            return
         end
         value = ast:getAttribute("value")
         if value == nil then
             log.warn("Expected a value attribute on a meta tag")
-            return ret
+            return
         end
     end
     if value == "true" or value == "false" then
@@ -48,7 +45,7 @@ local function renderer(_, ast)
     end
     if inst == nil then
         log.warn("Instance is undefined in meta tag")
-        return ret
+        return
     end
     if startsWith(name, "buf-") then
         inst.bufOpts[name:sub(#"buf-" + 1, #name)] = tonumber(value) or value
@@ -61,7 +58,6 @@ local function renderer(_, ast)
         log.warn("Unknown option meta tag option '" .. name .. "'")
     end
     -- flame.pop()
-    return ret
 end
 ---@type Banana.TagInfo
 local M = t.newTag(

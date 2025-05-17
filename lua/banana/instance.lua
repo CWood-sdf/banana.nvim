@@ -1,5 +1,5 @@
----@module 'banana.box2'
-local box = require("banana.lazyRequire")("banana.box2")
+---@module 'banana.box'
+local box = require("banana.lazyRequire")("banana.box")
 ---@module 'banana.utils.log'
 local log = require("banana.lazyRequire")("banana.utils.log")
 ---@module 'banana.utils.string'
@@ -125,16 +125,17 @@ function Instance:_virtualRender(ast, ctx, width, height)
         min_size = false,
         ctx = ctx,
     }
-    local b = require("banana.box2").boxFromCtx(ctx, extra.trace)
+    local b = require("banana.box".boxFromCtx(ctx, extra.trace)
     b:setMaxWidth(width)
+    b:setMaxHeight(height)
     -- setmetatable(extra, { __mode = "kv" })
     -- local ok, err = pcall(function ()
-    tag:renderRoot(ast, b, nil, width, height, {
-        text_align = "left",
-        position = "static",
-        min_size = false,
-        min_size_direction = "horizontal",
-        list_style_type = "star",
+    tag:renderRoot(ast, b, nil, {
+        ["text-align"] = "left",
+        ["position"] = "static",
+        ["min-size"] = false,
+        ["min-size-direction"] = "horizontal",
+        ["list-style-type"] = "star",
     }, extra)
     -- end)
     -- if not ok then
@@ -784,15 +785,17 @@ function Instance:_createWinAndBuf()
     local headTag = headQuery:getMatches(self.ast)
     local ctx = lb.box_context_create()
     if #headTag ~= 0 then
-        headTag[1].actualTag:renderRoot(headTag[1], ctx, nil, 0, 0, {
+        local b = box.boxFromCtx(ctx)
+        headTag[1].actualTag:renderRoot(headTag[1], b, nil, {
             list_style_type = "*",
             position = "static",
             text_align = "left",
             min_size = false,
         }, {
+            ctx = ctx,
             componentStack = {},
             useAllHeight = false,
-            trace = require("banana.box").Box:new(),
+            -- trace = require("banana.box").Box:new(),
             debug = self.DEBUG_showBuild,
             isRealRender = false,
         })
@@ -910,7 +913,7 @@ function Instance:_deferRender(post)
         if post ~= nil then
             post()
         end
-    end, 50)
+    end, 20)
 end
 
 function Instance:_requestRender()
@@ -944,9 +947,6 @@ end
 
 local stressStartTime = 0
 function Instance:_render()
-    if self.DEBUG_showPerf or self.DEBUG then
-        flame.overrideIsDev()
-    end
     if not self.isVisible then
         return
     end
@@ -957,32 +957,37 @@ function Instance:_render()
     -- collectgarbage("stop")
     log.clearCtx()
     log.trace("Instance:render with " .. #self.scripts .. " scripts")
-    flame.newIter()
     local startTime = vim.loop.hrtime()
     local actualStart = startTime
     local astTime = 0
     local styleTime = 0
+    if self.DEBUG_showPerf or self.DEBUG then
+        -- flame.overrideIsDev()
+        -- flame.newIter()
+    end
+    flame.new("style")
     self.ast:_clearStyles()
     self:_applyStyleDeclarations(self.ast, self.styleRules)
     for ast, rules in pairs(self.foreignStyles) do
         self:_applyStyleDeclarations(ast, rules)
     end
+    flame.pop()
     self:body().relativeBoxes = {}
     self:body().absoluteAsts = {}
 
-    styleTime = vim.loop.hrtime() - startTime
+    styleTime = (vim.loop.hrtime() - startTime) * 10
     startTime = vim.loop.hrtime()
 
     local width, height = self:_createWinAndBuf()
     if self.DEBUG then
         self:_openDebugWin()
         self:_clearDebugWinBuf()
-    end
+    end"banana.box"
 
 
     local winTime = vim.loop.hrtime() - startTime
     if self.ctx == nil then
-        self.ctx = require("banana.box2").createContext()
+        self.ctx = require("banana.box").createContext()
     end
     startTime = vim.loop.hrtime()
 

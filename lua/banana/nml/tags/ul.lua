@@ -5,9 +5,9 @@ local flame = require("banana.lazyRequire")("banana.utils.debug_flame")
 local t = require("banana.lazyRequire")("banana.nml.tag")
 
 ---@type Banana.Renderer
-local function renderer(self, ast, box, parentHl, parentWidth, parentHeight,
-                        startX,
-                        startY, inherit, extra)
+local function renderer(self, ast, box, parentHl,
+
+                        inherit, extra)
     -- flame.new("tag:ul")
     local b = require("banana.box")
     ---@type Banana.Box
@@ -15,7 +15,7 @@ local function renderer(self, ast, box, parentHl, parentWidth, parentHeight,
     ret.hlgroup = ast:_mixHl(parentHl)
 
     local currentBox = box
-    for _, newBox, _ in self:blockIter(ast, currentBox, ret.hlgroup, parentWidth, parentHeight, startX, startY, inherit, extra) do
+    for _, newBox, _ in self:blockIter(ast, currentBox, ret.hlgroup, inherit, extra) do
         -- local v = ast.nodes[i]
         -- local currentLine = b.Box:new(ret.hlgroup)
         -- if type(v) ~= "string" and v.actualTag.name == 'li' then

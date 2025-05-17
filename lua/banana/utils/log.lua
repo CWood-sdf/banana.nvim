@@ -66,7 +66,7 @@ local log = {}
 local unpack = unpack or table.unpack
 
 ---@diagnostic disable-next-line: inject-field
-log.new = function (config, standalone)
+log.new = function(config, standalone)
     if require("banana.utils.debug").isdev() then
         default_config.level = "trace"
     end
@@ -89,13 +89,13 @@ log.new = function (config, standalone)
         levels[v.name] = i
     end
 
-    local round = function (x, increment)
+    local round = function(x, increment)
         increment = increment or 1
         x = x / increment
         return (x > 0 and math.floor(x + .5) or math.ceil(x - .5)) * increment
     end
 
-    local make_string = function (...)
+    local make_string = function(...)
         local t = {}
         for i = 1, select("#", ...) do
             local x = select(i, ...)
@@ -108,15 +108,15 @@ log.new = function (config, standalone)
                 x = tostring(x)
             end
 
-            t[#t+1] = x
+            t[#t + 1] = x
         end
         return table.concat(t, " ")
     end
 
 
-    local log_at_level = function (level, level_config, message_maker, ...)
+    local log_at_level = function(level, level_config, message_maker, ...)
         -- Return early if we're below the config.level
-        if level < levels[config.level] then
+        if level < levels[config.level] or true then
             return
         end
         -- flame.new("log", true)
@@ -166,12 +166,12 @@ log.new = function (config, standalone)
     end
 
     for i, x in ipairs(config.modes) do
-        obj[x.name] = function (...)
+        obj[x.name] = function(...)
             return log_at_level(i, x, make_string, ...)
         end
 
-        obj[("fmt_%s"):format(x.name)] = function ()
-            return log_at_level(i, x, function (...)
+        obj[("fmt_%s"):format(x.name)] = function()
+            return log_at_level(i, x, function(...)
                 local passed = { ... }
                 local fmt = table.remove(passed, 1)
                 local inspected = {}
@@ -183,7 +183,7 @@ log.new = function (config, standalone)
         end
     end
     local ctxStack = {}
-    obj.assert = function (cond, msg, ...)
+    obj.assert = function(cond, msg, ...)
         msg = msg .. "\n" .. vim.iter(ctxStack):rev():join("\n")
         ctxStack = {}
         if not cond then
@@ -191,27 +191,27 @@ log.new = function (config, standalone)
             error(msg)
         end
     end
-    obj.throw = function (msg, ...)
+    obj.throw = function(msg, ...)
         msg = msg .. "\n" .. vim.iter(ctxStack):rev():join("\n")
         ctxStack = {}
         obj.fatal(msg, ...)
         error(msg)
     end
-    obj.fmt_throw = function (msg, ...)
+    obj.fmt_throw = function(msg, ...)
         msg = msg .. "\n" .. vim.iter(ctxStack):rev():join("\n")
         ctxStack = {}
         obj.fmt_fatal(msg, ...)
         error(string.format(msg, ...))
     end
 
-    obj.addCtx = function (msg)
+    obj.addCtx = function(msg)
         -- table.insert(ctxStack, msg)
     end
-    obj.popCtx = function ()
+    obj.popCtx = function()
         -- table.remove(ctxStack, #ctxStack)
     end
 
-    obj.clearCtx = function ()
+    obj.clearCtx = function()
         ctxStack = {}
     end
 end

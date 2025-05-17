@@ -1,11 +1,11 @@
 ---@module 'banana.utils.debug_flame'
 local flame = require("banana.lazyRequire")("banana.utils.debug_flame")
----@module 'banana.utils.string'
-local _str = require("banana.lazyRequire")("banana.utils.string")
+-- ---@module 'banana.utils.string'
+-- local _str = require("banana.lazyRequire")("banana.utils.string")
 ---@module 'banana.utils.log'
 local log = require("banana.lazyRequire")("banana.utils.log")
----@module 'banana.box2'
-local b = require("banana.lazyRequire")("banana.box2")
+-- ---@module 'banana.box'
+-- local b = require("banana.lazyRequire")("banana.box")
 ---@module 'banana.nml.tag'
 local _tag = require("banana.lazyRequire")("banana.nml.tag")
 
@@ -14,25 +14,20 @@ local entity = require("banana.lazyRequire")("banana.nml.entity")
 
 ---Renders everything in a block
 ---@param ast Banana.Ast
----@param box Banana.Box2
+---@param box Banana.Box
 ---@param parentHl Banana.Highlight?
 ---@param i integer
----@param parentWidth number
----@param parentHeight number
----@param startX number
----@param startY number
 ---@param inherit Banana.Renderer.InheritedProperties
 ---@param extra_ Banana.Renderer.ExtraInfo
----@return Banana.Box2, integer
-return function (ast, box, parentHl, i, parentWidth, parentHeight, startX, startY,
-                 inherit, extra_)
+---@return integer
+return function (ast, box, parentHl, i, inherit, extra_)
     log.trace("TagInfo:renderBlock " .. ast.tag)
     flame.new("renderBlock")
     -- local currentLine = b.Box:new(parentHl)
     local hasElements = false
-    local width = parentWidth
-    local height = parentHeight
     local lineHeight = 1
+    local width = box:getMaxWidth()
+    local height = box:getMaxHeight()
     while i <= #ast.nodes do
         log.trace("TagInfo: renderBlock loop " .. i)
         local v = ast.nodes[i]
@@ -58,10 +53,9 @@ return function (ast, box, parentHl, i, parentWidth, parentHeight, startX, start
                     v = ast:getAttributeSubstitution(v:sub(2, #v)) or ""
                 end
             end
-            local count = _str.charWidth(v)
+            -- local count = _str.charWidth(v)
             -- local box = b.Box:new(parentHl)
             box:appendStr(v)
-            startX = startX + count
             hasElements = true
         else
             local tag = v.actualTag
@@ -71,23 +65,12 @@ return function (ast, box, parentHl, i, parentWidth, parentHeight, startX, start
                 break
             end
             v:_resolveUnits(width, height)
-            local rendered = tag:getRendered(v, box, parentHl, width, height,
-                startX,
-                startY, inherit, extra_)
-            local moved = false
+            local rendered = tag:getRendered(v, box, parentHl, inherit, extra_)
 
             if isBlock then
                 rendered:render()
             else
-                moved = rendered:renderCursored(lineHeight)
-            end
-
-            if moved then
-                startX = 0
-                startY = startY + lineHeight
-            else
-                -- startX = startX + rendered:getWidth()
-                -- lineHeight = math.max(lineHeight, rendered:getHeight())
+                rendered:renderCursored(lineHeight)
             end
 
             if tag.formatType == _tag.FormatType.Block or tag.formatType == _tag.FormatType.BlockInline then
@@ -104,5 +87,5 @@ return function (ast, box, parentHl, i, parentWidth, parentHeight, startX, start
     --     currentLine = extra
     -- end
     flame.pop()
-    return box, i
+    return i
 end

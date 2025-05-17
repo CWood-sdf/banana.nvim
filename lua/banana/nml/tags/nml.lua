@@ -4,24 +4,22 @@ local flame = require("banana.lazyRequire")("banana.utils.debug_flame")
 local t = require("banana.lazyRequire")("banana.nml.tag")
 
 ---@type Banana.Renderer
-local function renderer(_, ast, box, parentHl, parentWidth, parentHeight, startX,
-                        startY, inherit, extra)
-    local b = require("banana.box")
+local function renderer(_, ast, box, parentHl,
+                        inherit, extra)
     parentHl = ast:_mixHl(parentHl)
     -- flame.new("tag:nml")
     -- -@type Banana.Box
-    local ret = b.Box:new(parentHl)
     for node in ast:childIter() do
         ---@cast node Banana.Ast
         if node.tag == "head" then
-            node.actualTag:renderRoot(node, box, parentHl, parentWidth,
-                parentHeight,
+            node.actualTag:renderRoot(node, box, parentHl,
+
                 inherit, extra)
         elseif node.tag == "body" then
-            node:_resolveUnits(parentWidth, parentHeight)
-            ret = node.actualTag:getRendered(node, box, parentHl, parentWidth,
-                    parentHeight, startX, startY, inherit, extra)
-                      :render()
+            node:_resolveUnits(box:getMaxWidth(), box:getMaxHeight())
+            local pr = node.actualTag:getRendered(node, box, parentHl,
+                inherit, extra)
+            pr:render()
         elseif node.tag ~= "script" and node.tag ~= "style" then
             -- flame.pop()
             error("Only <head> and <body> tags allowed in <nml>, instead got <" ..
@@ -30,7 +28,6 @@ local function renderer(_, ast, box, parentHl, parentWidth, parentHeight, startX
     end
     -- flame.expect("tag:nml")
     -- flame.pop()
-    return ret
 end
 ---@type Banana.TagInfo
 local M = t.newTag(

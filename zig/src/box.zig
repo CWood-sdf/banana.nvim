@@ -1151,7 +1151,7 @@ fn dumpObjectToLua(T: type, obj: *const T, L: *lua.State) !void {
     }
 }
 
-const BoxExpect = ExpectStr("Banana.Box2");
+const BoxExpect = ExpectStr("Banana.Box");
 
 pub fn box_context_get_memory_usage(ctx: u16) !usize {
     const context = try get_context(ctx);
@@ -1339,6 +1339,10 @@ pub fn box_pr_box(ctx: u16, partialid: u16) !u16 {
     const partial = try get_partial(ctx, partialid);
     return try partial.createBox();
 }
+pub fn box_pr_set_vertical_align(ctx: u16, partialid: u16, al: u16) !void {
+    const partial = try get_partial(ctx, partialid);
+    try partial.setAlign(@enumFromInt(al));
+}
 pub fn box_pr_set_align(ctx: u16, partialid: u16, al: u16) !void {
     const partial = try get_partial(ctx, partialid);
     try partial.setAlign(@enumFromInt(al));
@@ -1484,10 +1488,22 @@ pub fn box_get_hl(ctx: u16, box: u16) !u16 {
     const self = try get_box(ctx, box);
     return self.hlgroup;
 }
+pub fn box_get_max_width(ctx: u16, box: u16) !u16 {
+    const self = try get_box(ctx, box);
+    return self.maxWidth;
+}
+pub fn box_get_max_height(ctx: u16, box: u16) !u16 {
+    const self = try get_box(ctx, box);
+    return self.maxHeight;
+}
 
 pub fn box_set_max_width(ctx: u16, box: u16, width: i16) !void {
     const self = try get_box(ctx, box);
     self.maxWidth = @max(width, 0);
+}
+pub fn box_set_max_height(ctx: u16, box: u16, height: i16) !void {
+    const self = try get_box(ctx, box);
+    self.maxHeight = @max(height, 0);
 }
 pub fn box_get_width(ctx: u16, box: u16) !u16 {
     const self = try get_box(ctx, box);

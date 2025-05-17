@@ -133,12 +133,14 @@ pub const PartialRendered = struct {
 
     pub fn setMaxWidth(self: *PartialRendered, width: u16) !void {
         const context = try get_context(self.ctx);
-        try context.partialData.setWidth(self, width);
+        const w = @min(try self.getWidth(), width);
+        try context.partialData.setWidth(self, w);
     }
 
     pub fn setMaxHeight(self: *PartialRendered, height: u16) !void {
         const context = try get_context(self.ctx);
-        try context.partialData.setHeight(self, height);
+        const h = @min(try self.getHeight(), height);
+        try context.partialData.setHeight(self, h);
     }
     // }
 

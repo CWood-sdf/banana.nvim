@@ -1,11 +1,11 @@
----@module 'banana.nml.render.partialRendered2'
-local p     = require("banana.lazyRequire")("banana.nml.render.partialRendered2")
+---@module 'banana.nml.render.partialRendered'
+local p     = require("banana.lazyRequire")("banana.nml.render.partialRendered")
 ---@module 'banana.libbananabox'
 local lb    = require("banana.lazyRequire")("banana.libbanana")
----@module 'banana.box2'
-local b     = require("banana.lazyRequire")("banana.box2")
----@module 'banana.utils.case'
-local case  = require("banana.lazyRequire")("banana.utils.case")
+---@module 'banana.box'
+local b     = require("banana.lazyRequire")("banana.box")
+-- ---@module 'banana.utils.case'
+-- local case  = require("banana.lazyRequire")("banana.utils.case")
 ---@module 'banana.utils.debug_flame'
 local flame = require("banana.lazyRequire")("banana.utils.debug_flame")
 
@@ -175,9 +175,7 @@ return function (self, ast, box, parentHl,
     if extra.trace ~= nil then
         lb.box_context_dump_comment(extra.trace, "Rendering " .. ast.tag)
     end
-    self:render(ast, contentBox, hl, contentWidth,
-        parentHeight,
-        startX, startY, inherit, extra)
+    self:render(ast, contentBox, hl, inherit, extra)
     -- flame.pop()
     -- flame.pop()
     -- flame.new("getRendered_expansion")
@@ -244,9 +242,9 @@ return function (self, ast, box, parentHl,
     --         extra.trace:appendBoxBelow(ret:render(true), false)
     --     end
     -- end
-    boundBox.rightX = boundBox.leftX + pr:getWidth()
-    boundBox.bottomY = boundBox.topY + pr:getHeight()
-    ast.boundBox = boundBox
+    -- boundBox.rightX = boundBox.leftX + pr:getWidth()
+    -- boundBox.bottomY = boundBox.topY + pr:getHeight()
+    -- ast.boundBox = boundBox
     -- TODO: Create new ctx for non-static and render to that
     -- Lowkey do we even need a new ctx? like we could prolly just render direct
     -- still

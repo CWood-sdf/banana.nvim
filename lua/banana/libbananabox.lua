@@ -2,11 +2,31 @@
 
 local M = {}
 
----@alias BoxExpect Banana.Box2
+---@alias BoxExpect Banana.Box
 ---@alias PartialExpect Banana.Renderer.PartialRendered
 ---@alias HlExpect fun (line: number, startCol: number, endCol: number, hl: number): nil
 ---@alias StripRightExpect fun (hl: number): number
 
+
+---@param ctx number
+---@return usize
+function M.box_context_get_memory_usage(ctx) end
+
+---@param ctx number
+---@return usize
+function M.box_context_data_memory_usage(ctx) end
+
+---@param ctx number
+---@return usize
+function M.box_context_line_memory_usage(ctx) end
+
+---@param ctx number
+---@return usize
+function M.box_context_pr_memory_usage(ctx) end
+
+---@param ctx number
+---@return usize
+function M.box_context_box_memory_usage(ctx) end
 
 ---@param ctx number
 ---@param box number
@@ -45,6 +65,11 @@ function M.box_context_wipe(ctx) end
 ---@param ctx number
 ---@return boolean
 function M.box_context_exists(ctx) end
+
+---@param ctx number
+---@param boxid number
+---@return nil
+function M.box_destroy(ctx, boxid) end
 
 ---@param ctx number
 ---@param boxid number
@@ -112,6 +137,12 @@ function M.box_pr_box(ctx, partialid) end
 ---@param partialid number
 ---@param al number
 ---@return nil
+function M.box_pr_set_vertical_align(ctx, partialid, al) end
+
+---@param ctx number
+---@param partialid number
+---@param al number
+---@return nil
 function M.box_pr_set_align(ctx, partialid, al) end
 
 ---@param ctx number
@@ -121,9 +152,20 @@ function M.box_pr_render(ctx, partialid) end
 
 ---@param ctx number
 ---@param partialid number
+---@return nil
+function M.box_pr_deinit(ctx, partialid) end
+
+---@param ctx number
+---@param partialid number
 ---@param renderType u8
 ---@return nil
 function M.box_pr_set_render_type(ctx, partialid, renderType) end
+
+---@param ctx number
+---@param partialid number
+---@param lineHeight number
+---@return nil
+function M.box_pr_render_cursored(ctx, partialid, lineHeight) end
 
 ---@param ctx number
 ---@param partialid number
@@ -220,9 +262,25 @@ function M.box_get_hl(ctx, box) end
 
 ---@param ctx number
 ---@param box number
+---@return number
+function M.box_get_max_width(ctx, box) end
+
+---@param ctx number
+---@param box number
+---@return number
+function M.box_get_max_height(ctx, box) end
+
+---@param ctx number
+---@param box number
 ---@param width number
 ---@return nil
 function M.box_set_max_width(ctx, box, width) end
+
+---@param ctx number
+---@param box number
+---@param height number
+---@return nil
+function M.box_set_max_height(ctx, box, height) end
 
 ---@param ctx number
 ---@param box number

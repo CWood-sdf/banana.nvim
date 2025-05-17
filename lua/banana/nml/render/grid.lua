@@ -200,18 +200,12 @@ local function getTemplates(values, sizeInDirection, start, min, isCol, ast, gap
     return ret
 end
 ---@param ast Banana.Ast
----@param box Banana.Box2
+---@param box Banana.Box
 ---@param parentHl Banana.Highlight?
----@param parentWidth number
----@param parentHeight number
----@param startX number
----@param startY number
 ---@param inherit Banana.Renderer.InheritedProperties
 ---@param extra Banana.Renderer.ExtraInfo
 ---@return Banana.Box, integer
-local function actualRender(thing, ast, box, parentHl, parentWidth, parentHeight,
-                            startX,
-                            startY, inherit, extra)
+local function actualRender(thing, ast, box, parentHl, inherit, extra)
     local insert = table.insert
     local hl = ast:_mixHl(parentHl)
     -- the plan is basically to arrange the grid elements in the places that
@@ -698,25 +692,16 @@ end
 
 --- renders an element with display:grid
 ---@param ast Banana.Ast
----@param box Banana.Box2
+---@param box Banana.Box
 ---@param parentHl Banana.Highlight?
----@param parentWidth number
----@param parentHeight number
----@param startX number
----@param startY number
 ---@param inherit Banana.Renderer.InheritedProperties
 ---@param extra Banana.Renderer.ExtraInfo
 ---@return Banana.Box, integer
-function M.render(ast, box, parentHl, parentWidth, parentHeight, startX,
-                  startY, inherit, extra)
+function M.render(ast, box, parentHl, inherit, extra)
     flame.new("TagInfo:renderGridBlock")
     local thing = so.grid_getNew()
     -- have to be able to free the zig memory, hence the pcall
     local ok, errOrRet, i = pcall(actualRender, thing, ast, box, parentHl,
-        parentWidth,
-        parentHeight,
-        startX,
-        startY,
         inherit, extra)
     so.grid_freeSection(thing)
     flame.pop()
