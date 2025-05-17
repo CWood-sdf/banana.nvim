@@ -13,6 +13,9 @@ local _inst = require("banana.lazyRequire")("banana.instance")
 local unit = require("banana.lazyRequire")("banana.ncss.unit")
 
 
+---@type Banana.Ncss.UnitValue?
+local zeroUnit = nil
+
 M.left = 1
 M.top = 2
 M.right = 3
@@ -77,6 +80,9 @@ M.Ast = {
 ---@return Banana.Ast
 function M.Ast:new(tag, parent, source)
     local actualTag = nil
+    if zeroUnit == nil then
+        zeroUnit = unit.newUnit("ch", 0, 0)
+    end
     if require("banana.nml.parser").isValidComponentName(tag) then
         actualTag = _tag.newComponentTag(tag)
     end
@@ -105,16 +111,16 @@ function M.Ast:new(tag, parent, source)
         attributes = {},
         instance = nil,
         padding = {
-            unit.newUnit("ch", 0),
-            unit.newUnit("ch", 0),
-            unit.newUnit("ch", 0),
-            unit.newUnit("ch", 0),
+            zeroUnit,
+            zeroUnit,
+            zeroUnit,
+            zeroUnit,
         },
         margin = {
-            unit.newUnit("ch", 0),
-            unit.newUnit("ch", 0),
-            unit.newUnit("ch", 0),
-            unit.newUnit("ch", 0),
+            zeroUnit,
+            zeroUnit,
+            zeroUnit,
+            zeroUnit,
         },
         style = {},
     }
@@ -624,17 +630,20 @@ function M.Ast:_defaultStyles()
     if self.listCounter ~= nil then
         self.listCounter = 1
     end
+    if zeroUnit == nil then
+        zeroUnit = unit.newUnit("ch", 0, 0)
+    end
     self.padding = {
-        unit.newUnit("ch", 0),
-        unit.newUnit("ch", 0),
-        unit.newUnit("ch", 0),
-        unit.newUnit("ch", 0),
+        zeroUnit,
+        zeroUnit,
+        zeroUnit,
+        zeroUnit,
     }
     self.margin = {
-        unit.newUnit("ch", 0),
-        unit.newUnit("ch", 0),
-        unit.newUnit("ch", 0),
-        unit.newUnit("ch", 0),
+        zeroUnit,
+        zeroUnit,
+        zeroUnit,
+        zeroUnit,
     }
     self.style = {}
     self:_unlockGradients()
