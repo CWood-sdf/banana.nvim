@@ -25,7 +25,7 @@ return function (ast, box, parentHl, i, inherit, extra_)
     flame.new("renderBlock")
     -- local currentLine = b.Box:new(parentHl)
     local hasElements = false
-    local lineHeight = 1
+    local lineHeight = 0
     local width = box:getMaxWidth()
     local height = box:getMaxHeight()
     while i <= #ast.nodes do
@@ -56,6 +56,7 @@ return function (ast, box, parentHl, i, inherit, extra_)
             -- local count = _str.charWidth(v)
             -- local box = b.Box:new(parentHl)
             box:appendStr(v)
+            lineHeight = 1
             hasElements = true
         else
             local tag = v.actualTag
@@ -67,11 +68,7 @@ return function (ast, box, parentHl, i, inherit, extra_)
             v:_resolveUnits(width, height)
             local rendered = tag:getRendered(v, box, parentHl, inherit, extra_)
 
-            if isBlock then
-                rendered:render()
-            else
-                rendered:renderCursored(lineHeight)
-            end
+            lineHeight = rendered:render(lineHeight)
 
             if tag.formatType == _tag.FormatType.Block or tag.formatType == _tag.FormatType.BlockInline then
                 i = i + 1

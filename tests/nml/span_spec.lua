@@ -23,6 +23,36 @@ asd
 ]]
 
 describe("span rendering", function ()
+    it("box spans wrap properly", function ()
+        local inst = require("banana.instance").emptyInstance()
+        inst:useNml(code)
+        inst.DEBUG = false
+        inst.stripRight = false
+        inst:open()
+
+        local span = inst:getElementsByTag("span")[1]
+        span:setTextContent("asd")
+        local span2 = inst:createElement("span")
+        span2:setStyle("width: 3ch; height: 1ch;")
+        inst:body():appendChild(span2)
+        local expectedMap = {
+            "     ",
+            "asd  ",
+            "~~~  ",
+            "     ",
+        }
+        inst:forceRerender()
+        h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
+        -- span:setStyleValue("width", "5ch")
+        -- expectedMap = {
+        --     "     ",
+        --     "asd~a",
+        --     "sd~~~",
+        --     "     ",
+        -- }
+        -- inst:forceRerender()
+        -- h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
+    end)
     it("doesnt completely overflow", function ()
         local inst = require("banana.instance").emptyInstance()
         inst:useNml(code)

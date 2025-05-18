@@ -32,6 +32,9 @@ pub fn panic(msg: []const u8, trace: ?*std.builtin.StackTrace, third: anytype) n
     _ = try logfile.write(msg);
     _ = try logfile.write("\r\n");
 
+    try log.write("AUGGHHGHGH PANIC!!!\n", .{});
+    try log.write("PANIC REASON: {s}\n", .{msg});
+
     if (trace) |stack_trace| {
         _ = try logfile.write("EVERYONE STOP WE HAVE A TRACE!!!");
         _ = try logfile.write("\r\n");

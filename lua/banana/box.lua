@@ -72,7 +72,7 @@ function M.boxFromCtx(ctx, trace)
         trace = trace,
     }
     setmetatable(ret, { __index = Box__index })
-    -- ret:_dumpToSelf()
+    ret:_dumpToSelf()
     return ret
 end
 
@@ -89,13 +89,13 @@ function M.boxFromId(ctx, id, trace)
         trace = trace,
     }
     setmetatable(box, { __index = Box__index })
-    -- box:_dumpToSelf()
+    box:_dumpToSelf()
     return box
 end
 
--- function Box:_dumpToSelf()
--- lb.box_dump_box_data(self.ctx, self.boxid, self)
--- end
+function Box:_dumpToSelf()
+    -- lb.box_dump_box_data(self.ctx, self.boxid, self)
+end
 
 ---@return Banana.Box
 function Box:newAtOffset(x, y)
@@ -109,7 +109,7 @@ function Box:newAtOffset(x, y)
         trace = self.trace,
     }
     setmetatable(ret, { __index = Box__index })
-    -- ret:_dumpToSelf()
+    ret:_dumpToSelf()
     return ret
 end
 
@@ -128,7 +128,7 @@ function Box:newCursored()
         trace = self.trace,
     }
     setmetatable(ret, { __index = Box__index })
-    -- ret:_dumpToSelf()
+    ret:_dumpToSelf()
     return ret
 end
 
@@ -144,7 +144,7 @@ function Box:newBelow()
         trace = self.trace,
     }
     setmetatable(ret, { __index = Box__index })
-    -- ret:_dumpToSelf()
+    ret:_dumpToSelf()
     return ret
 end
 
@@ -160,7 +160,7 @@ function Box:newToRight()
         trace = self.trace,
     }
     setmetatable(ret, { __index = Box__index })
-    -- ret:_dumpToSelf()
+    ret:_dumpToSelf()
     return ret
 end
 
@@ -174,24 +174,25 @@ end
 ---@param other Banana.Box
 function Box:updateCursorFrom(other)
     lb.box_update_cursor_from(self.ctx, self.boxid, other.boxid)
-    -- self:_dumpToSelf()
+    self:_dumpToSelf()
 end
 
 ---@param other Banana.Box
 function Box:putCursorBelow(other)
+    other:_dumpToSelf()
     lb.box_put_cursor_below(self.ctx, self.boxid, other.boxid)
-    -- self:_dumpToSelf()
+    self:_dumpToSelf()
 end
 
 ---@param width number
 function Box:setMaxWidth(width)
     lb.box_set_max_width(self.ctx, self.boxid, width)
-    -- self:_dumpToSelf()
+    self:_dumpToSelf()
 end
 
 function Box:setMaxHeight(height)
     lb.box_set_max_height(self.ctx, self.boxid, height)
-    -- self:_dumpToSelf()
+    self:_dumpToSelf()
 end
 
 function Box:getMaxWidth()
@@ -237,25 +238,25 @@ end
 ---@param width number
 function Box:shrinkWidthTo(width)
     lb.box_shrink_width_to(self.ctx, self.boxid, width)
-    -- self:_dumpToSelf()
+    self:_dumpToSelf()
 end
 
 ---@param width number
 function Box:setWidth(width)
     lb.box_set_width(self.ctx, self.boxid, width)
-    -- self:_dumpToSelf()
+    self:_dumpToSelf()
 end
 
 ---@param width number
 function Box:shiftRightBy(width)
     lb.box_shift_right_by(self.ctx, self.boxid, width)
-    -- self:_dumpToSelf()
+    self:_dumpToSelf()
 end
 
 ---@param width number
 function Box:expandWidthTo(width)
     lb.box_expand_width_to(self.ctx, self.boxid, width)
-    -- self:_dumpToSelf()
+    self:_dumpToSelf()
 end
 
 -- ---@return Banana.Box
@@ -283,19 +284,19 @@ end
 ---@param height number
 function Box:expandHeightTo(height)
     lb.box_expand_height_to(self.ctx, self.boxid, height)
-    -- self:_dumpToSelf()
+    self:_dumpToSelf()
 end
 
 ---@param height number
 function Box:shrinkHeightTo(height)
     lb.box_shrink_height_to(self.ctx, self.boxid, height)
-    -- self:_dumpToSelf()
+    self:_dumpToSelf()
 end
 
 ---@param height number
 function Box:setHeight(height)
     lb.box_set_height(self.ctx, self.boxid, height)
-    -- self:_dumpToSelf()
+    self:_dumpToSelf()
 end
 
 ---@param hl Banana.Highlight
@@ -303,7 +304,7 @@ function Box:setHl(hl)
     local hlg = M.addHighlight(self.ctx, hl)
     lb.box_set_hl(self.ctx, self.boxid, hlg)
     self.hlgroup = hlg
-    -- self:_dumpToSelf()
+    self:_dumpToSelf()
 end
 
 ---@return number
@@ -313,7 +314,7 @@ end
 
 function Box:clean()
     lb.box_clean(self.ctx, self.boxid)
-    -- self:_dumpToSelf()
+    self:_dumpToSelf()
 end
 
 ---Appends string to the right
@@ -326,14 +327,14 @@ function Box:appendStr(str)
     if self.trace ~= nil then
         lb.box_context_dump_to(self.ctx, self.trace, "appendStr post")
     end
-    -- self:_dumpToSelf()
+    self:_dumpToSelf()
 end
 
 ---@param str string
 ---@param style number
 function Box:appendWord(str, style)
     lb.box_append_word(self.ctx, self.boxid, str, style)
-    -- self:_dumpToSelf()
+    self:_dumpToSelf()
 end
 
 ---Renders a box over another box (essentially position:absolute)
@@ -342,7 +343,7 @@ end
 ---@param top number
 function Box:renderOver(other, left, top)
     lb.box_render_over(self.ctx, self.boxid, other, left, top)
-    -- self:_dumpToSelf()
+    self:_dumpToSelf()
 end
 
 return M

@@ -234,7 +234,7 @@ pub const Char = packed struct(u32) {
     }
 };
 
-const Line = struct {
+pub const Line = struct {
     _chars: std.ArrayListUnmanaged(Char),
     _hls: std.ArrayListUnmanaged(Highlight),
 
@@ -286,7 +286,7 @@ const Line = struct {
         }
         while (i < str.len) {
             const availChars = str.len - i;
-            const availWidth = len - self.width();
+            const availWidth = if (self.width() > len) 1 else len - self.width();
             const charsToUse = @min(availChars, availWidth);
             const rest = str[i..];
             if (Char.canSimd(str[i .. i + charsToUse])) {
@@ -344,6 +344,9 @@ const Line = struct {
             }
         }
         const w = self.width();
+        if (w > spot) {
+            return;
+        }
         try self._chars.appendNTimes(ctx.alloc(), .space, spot - w);
         self._hls.appendNTimes(ctx.alloc(), 0, spot - w) catch |e| {
             self._chars.shrinkRetainingCapacity(w);
@@ -587,10 +590,14 @@ pub const BoxContext = struct {
             ) catch {};
             try lines.append(self.alloc(), 0);
         }
+
         var startIndex: usize = 0;
         for (lines.items, 0..) |c, i| {
             if (c == 0) {
                 const str = lines.items[startIndex..i];
+                if (str.len == 0 and i >= lines.items.len - 2) {
+                    continue;
+                }
                 arr.appendAssumeCapacity(tps.stringObject(str));
                 startIndex = i + 1;
             }
@@ -603,33 +610,33 @@ pub const BoxContext = struct {
         // if (arr.items.len >= 256) {
         //     return;
         // }
-        const clear: tps.Array = tps.Array.fromSlice(arr.items[0..0]);
-        fns.nvim_buf_set_lines(
-            consts.LUA_INTERNAL_CALL,
-            @enumFromInt(buf),
-            lineStart,
-            lineEnd,
-            true,
-            clear,
-            &arena,
-            &err,
-        );
-        var endIndex = arr.items.len;
-        while (endIndex >= 256) : (endIndex -= 255) {
-            const replacement: tps.Array = tps.Array.fromSlice(
-                arr.items[endIndex - 255 .. endIndex],
-            );
-            fns.nvim_buf_set_lines(
-                consts.LUA_INTERNAL_CALL,
-                @enumFromInt(buf),
-                lineStart,
-                lineStart,
-                true,
-                replacement,
-                &arena,
-                &err,
-            );
-        }
+        // const clear: tps.Array = tps.Array.fromSlice(arr.items[0..0]);
+        // fns.nvim_buf_set_lines(
+        //     consts.LUA_INTERNAL_CALL,
+        //     @enumFromInt(buf),
+        //     lineStart,
+        //     lineEnd,
+        //     true,
+        //     clear,
+        //     &arena,
+        //     &err,
+        // );
+        const endIndex = arr.items.len;
+        // while (endIndex >= 256) : (endIndex -= 255) {
+        //     const replacement: tps.Array = tps.Array.fromSlice(
+        //         arr.items[endIndex - 255 .. endIndex],
+        //     );
+        //     fns.nvim_buf_set_lines(
+        //         consts.LUA_INTERNAL_CALL,
+        //         @enumFromInt(buf),
+        //         lineStart,
+        //         lineStart,
+        //         true,
+        //         replacement,
+        //         &arena,
+        //         &err,
+        //     );
+        // }
 
         const replacement: tps.Array = tps.Array.fromSlice(arr.items[0..endIndex]);
 
@@ -637,7 +644,7 @@ pub const BoxContext = struct {
             consts.LUA_INTERNAL_CALL,
             @enumFromInt(buf),
             lineStart,
-            lineStart,
+            lineEnd,
             false,
             replacement,
             &arena,
@@ -717,6 +724,11 @@ pub const BoxContext = struct {
                 try newLine._hls.appendSlice(other.alloc(), line._hls.items);
                 try other.lines.append(other.alloc(), newLine);
             }
+        }
+    }
+    pub fn dumpImage(self: *BoxContext, image: []const Line) !void {
+        if (comptime debug) {
+            try self.lines.appendSlice(self.alloc(), image);
         }
     }
     pub fn dumpComment(self: *BoxContext, comment: []const u8) !void {
@@ -911,13 +923,15 @@ pub const Box = struct {
         }
         const context = try self.getContext();
         while (context.lines.items.len < self.offsetY + height) {
-            try context.lines.append(context.alloc(), Line.init());
-            try context.lines.items[context.lines.items.len - 1].appendAsciiNTimes(
+            var line = Line.init();
+            try line.ensureAppendableAt(context, self.offsetX);
+            try line.appendAsciiNTimes(
                 context,
                 ' ',
                 self.hlgroup,
                 self.width,
             );
+            try context.lines.append(context.alloc(), line);
         }
         self.height = height;
     }
@@ -1007,7 +1021,7 @@ pub const Box = struct {
                 context,
                 newStr,
                 self.hlgroup,
-                maxWidth,
+                self.offsetX + maxWidth,
                 self.cursorX == 0,
             );
             self.cursorX += line.width() - startWidth;
@@ -1073,7 +1087,7 @@ pub fn dumpStruct(obj: anytype, indent: []const u8) void {
     }
 }
 
-fn dumpContexts() void {
+pub fn dumpContexts() void {
     log.write("  ctx ptr: {*}\n", .{contexts.items.ptr}) catch {};
     for (contexts.items, 0..) |ctxn, i| {
         if (ctxn) |ctx| {
@@ -1090,18 +1104,29 @@ fn dumpContexts() void {
                 log.write("        .partials[{}] = \n", .{j}) catch {};
                 dumpStruct(partial, indent[0..]);
             }
-            log.write("    .lines = {*}\n", .{ctx.lines.items.ptr}) catch {};
-            for (ctx.lines.items, 0..) |line, j| {
-                log.write("      .lines[{}] = (widths {}, {})\n", .{
-                    j,
-                    line._chars.items.len,
-                    line._hls.items.len,
+            // log.write("    .lines = {*}\n", .{ctx.lines.items.ptr}) catch {};
+            // for (ctx.lines.items, 0..) |line, j| {
+            //     log.write("      .lines[{}] = (widths {}, {})\n", .{
+            //         j,
+            //         line._chars.items.len,
+            //         line._hls.items.len,
+            //     }) catch {};
+            //     // dumpStruct(line, indent[0..]);
+            // }
+            log.write("    .partialData = {*}\n", .{&ctx.partialData}) catch {};
+            inline for (@typeInfo(@FieldType(@TypeOf(ctx.partialData), "fields")).@"struct".fields) |field| {
+                const arr = @field(ctx.partialData.fields, field.name);
+                log.write("      .{s} = [{}] {any}\n", .{
+                    field.name,
+                    arr.items.len,
+                    arr.items,
                 }) catch {};
-                dumpStruct(line, indent[0..]);
+                // dumpStruct(line, indent[0..]);
             }
         } else {
             log.write("    ctx {} is null\n", .{i}) catch {};
         }
+        break;
     }
 }
 
@@ -1212,17 +1237,17 @@ pub fn get_context(ctx: u16) !*BoxContext {
 pub fn get_box(ctx: u16, box: u16) !*Box {
     const context = try get_context(ctx);
     const b = context.getBox(box) orelse return error.NotFound;
-    const indent = "  ";
+    // const indent = "  ";
     log.write("  Getting box {}:{}\n", .{ ctx, box }) catch {};
-    dumpStruct(b.*, indent[0..]);
+    // dumpStruct(b.*, indent[0..]);
     return b;
 }
 pub fn get_partial(ctx: u16, partial: u16) !*PartialRendered {
     const context = try get_context(ctx);
     const ret = context.getPartial(partial) orelse return error.NotFound;
-    const indent = "  ";
+    // const indent = "  ";
     log.write("  Getting partial {}:{}\n", .{ ctx, partial }) catch {};
-    dumpStruct(ret.*, indent[0..]);
+    // dumpStruct(ret.*, indent[0..]);
     return ret;
 }
 
@@ -1341,15 +1366,15 @@ pub fn box_pr_box(ctx: u16, partialid: u16) !u16 {
 }
 pub fn box_pr_set_vertical_align(ctx: u16, partialid: u16, al: u16) !void {
     const partial = try get_partial(ctx, partialid);
-    try partial.setAlign(@enumFromInt(al));
+    try partial.setVerticalAlign(@enumFromInt(al));
 }
 pub fn box_pr_set_align(ctx: u16, partialid: u16, al: u16) !void {
     const partial = try get_partial(ctx, partialid);
     try partial.setAlign(@enumFromInt(al));
 }
-pub fn box_pr_render(ctx: u16, partialid: u16) !void {
+pub fn box_pr_render(ctx: u16, partialid: u16, lineHeight: ?u16) !u16 {
     const partial = try get_partial(ctx, partialid);
-    try partial.render();
+    return try partial.render(lineHeight);
 }
 
 pub fn box_pr_deinit(ctx: u16, partialid: u16) !void {
@@ -1362,15 +1387,10 @@ pub fn box_pr_set_render_type(ctx: u16, partialid: u16, renderType: u8) !void {
     partial.setRenderType(@enumFromInt(renderType));
 }
 
-pub fn box_pr_render_cursored(ctx: u16, partialid: u16, lineHeight: u16) !void {
-    const partial = try get_partial(ctx, partialid);
-    _ = lineHeight;
-    try partial.render();
-}
-pub fn box_pr_render_with_move(ctx: u16, partialid: u16, maxWidth: u16, toX: u16, toY: u16) !bool {
-    const partial = try get_partial(ctx, partialid);
-    return try partial.renderWithMove(maxWidth, toX, toY);
-}
+// pub fn box_pr_render_cursored(ctx: u16, partialid: u16, lineHeight: u16) !void {
+//     const partial = try get_partial(ctx, partialid);
+//     try partial.renderCursored(lineHeight);
+// }
 // }
 
 // context render {

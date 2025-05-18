@@ -147,8 +147,9 @@ function M.box_pr_set_align(ctx, partialid, al) end
 
 ---@param ctx number
 ---@param partialid number
----@return nil
-function M.box_pr_render(ctx, partialid) end
+---@param lineHeight ?number
+---@return number
+function M.box_pr_render(ctx, partialid, lineHeight) end
 
 ---@param ctx number
 ---@param partialid number
@@ -160,20 +161,6 @@ function M.box_pr_deinit(ctx, partialid) end
 ---@param renderType u8
 ---@return nil
 function M.box_pr_set_render_type(ctx, partialid, renderType) end
-
----@param ctx number
----@param partialid number
----@param lineHeight number
----@return nil
-function M.box_pr_render_cursored(ctx, partialid, lineHeight) end
-
----@param ctx number
----@param partialid number
----@param maxWidth number
----@param toX number
----@param toY number
----@return boolean
-function M.box_pr_render_with_move(ctx, partialid, maxWidth, toX, toY) end
 
 ---@param ctx number
 ---@param buf number
@@ -353,6 +340,5 @@ function M.box_context_strip_right_space(ctx, expected_bg) end
 ---@return nil
 function M.box_render_over(ctx, box, otherCtx, left, top) end
 
-
-
 return M
+

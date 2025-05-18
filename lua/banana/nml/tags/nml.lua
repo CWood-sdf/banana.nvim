@@ -17,6 +17,7 @@ local function renderer(_, ast, box, parentHl,
                 inherit, extra)
         elseif node.tag == "body" then
             node:_resolveUnits(box:getMaxWidth(), box:getMaxHeight())
+            extra.useAllHeight = true
             local pr = node.actualTag:getRendered(node, box, parentHl,
                 inherit, extra)
             pr:render()

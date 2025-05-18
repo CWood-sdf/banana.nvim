@@ -169,6 +169,7 @@ function M.parseBlock(tree, parser)
         local tp = child:type()
         local namespace = ""
         local namespaceEnd = 0
+        local actualName = ""
         if tp == "{" or tp == "}" or tp == ts_types.comment then
             goto continue
         end
@@ -195,17 +196,16 @@ function M.parseBlock(tree, parser)
         values, important = M.parsePropValue(child, name, parser)
         for c = 1, #name do
             if name:sub(c, c) == "-" then
+                namespace = name:sub(1, namespaceEnd)
+                actualName = name:sub(namespaceEnd + 2)
                 break
             end
             namespaceEnd = c
         end
-        if namespaceEnd ~= 0 then
-            namespace = name:sub(1, namespaceEnd)
-        end
         ---@type Banana.Ncss.StyleDeclaration
         styleVal = {
             namespace = namespace,
-            actualName = name:sub(namespaceEnd + 2),
+            actualName = actualName,
             name = name,
             values = values,
             important = important,

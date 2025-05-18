@@ -132,8 +132,11 @@ return function (self, ast, box, parentHl,
             ast:_firstStyleValue("height").computed + ast:marginTop() +
             ast:marginBottom()
 
+        -- print("Setting height to " .. height)
+
         if (not ast:parent():isNil() or ast.tag == "template") then
             pr:setMaxHeight(height + ast:marginTop() + ast:marginBottom())
+            pr:setVerticalAlign(p.Align.left)
         end
     elseif useMaxHeight then
         pr:setVerticalAlign(p.Align.left)

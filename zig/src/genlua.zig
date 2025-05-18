@@ -1,4 +1,5 @@
 const std = @import("std");
+const box = @import("box.zig");
 const log = @import("log.zig");
 const lua = @import("lua_api/lua.zig");
 const luaL = @import("lua_api/luaL.zig");
@@ -226,7 +227,7 @@ pub fn luaTemplate(
     }
     const args = lua.get_top(L);
     if (args != i) {
-        _ = lua.push_fmtstring(L, "yo you put in the wrong number of parameters. expected {}, got {}", .{ i, args });
+        _ = lua.push_fmtstring(L, "yo you put in the wrong number of parameters to {s}. expected {}, got {}", .{ name, i, args });
         _ = lua.senderror(L);
         // pushValue(L, failReturn);
         // lua.push_bool(L, false);
@@ -265,6 +266,7 @@ pub fn luaTemplate(
     }
     log.write("Returning {any}\n", .{actualRet}) catch {};
     pushValue(L, actualRet);
+    box.dumpContexts();
     // lua.push_bool(L, ret);
     return 1;
 }

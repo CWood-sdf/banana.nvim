@@ -125,22 +125,22 @@ function Instance:_virtualRender(ast, ctx, width, height)
         min_size = false,
         ctx = ctx,
     }
-    local b = require("banana.box".boxFromCtx(ctx, extra.trace)
+    local b = require("banana.box").boxFromCtx(ctx, extra.trace)
     b:setMaxWidth(width)
     b:setMaxHeight(height)
     -- setmetatable(extra, { __mode = "kv" })
-    -- local ok, err = pcall(function ()
-    tag:renderRoot(ast, b, nil, {
-        ["text-align"] = "left",
-        ["position"] = "static",
-        ["min-size"] = false,
-        ["min-size-direction"] = "horizontal",
-        ["list-style-type"] = "star",
-    }, extra)
-    -- end)
-    -- if not ok then
-    --     vim.notify("Error during render: " .. err .. "\n")
-    -- end
+    local ok, err = pcall(function ()
+        tag:renderRoot(ast, b, nil, {
+            ["text-align"] = "left",
+            ["position"] = "static",
+            ["min-size"] = false,
+            ["min-size-direction"] = "horizontal",
+            ["list-style-type"] = "star",
+        }, extra)
+    end)
+    if not ok then
+        vim.notify("Error during render: " .. err .. "\n")
+    end
 
     if self.stripRight then
         local bgNum = vim.api.nvim_get_hl(0, {
@@ -982,7 +982,7 @@ function Instance:_render()
     if self.DEBUG then
         self:_openDebugWin()
         self:_clearDebugWinBuf()
-    end"banana.box"
+    end
 
 
     local winTime = vim.loop.hrtime() - startTime
