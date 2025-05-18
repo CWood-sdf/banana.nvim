@@ -226,6 +226,7 @@ pub fn luaTemplate(
         }
     }
     const args = lua.get_top(L);
+
     if (args != i) {
         _ = lua.push_fmtstring(L, "yo you put in the wrong number of parameters to {s}. expected {}, got {}", .{ name, i, args });
         _ = lua.senderror(L);
@@ -252,6 +253,7 @@ pub fn luaTemplate(
     // if (nextLen != null) {
     //     @compileError("Expected an int field after a [*]const u8 field");
     // }
+    defer box.dumpContexts();
     const ret = @call(.auto, fToCall, tuple);
     const retInfo = @typeInfo(@TypeOf(ret));
     const actualRet = switch (retInfo) {
@@ -266,7 +268,6 @@ pub fn luaTemplate(
     }
     log.write("Returning {any}\n", .{actualRet}) catch {};
     pushValue(L, actualRet);
-    box.dumpContexts();
     // lua.push_bool(L, ret);
     return 1;
 }

@@ -105,7 +105,7 @@ end
 
 function M.installLibbanana()
     vim.print("Installing libbanana")
-    local job = vim.fn.jobstart("zig build -Doptimize=ReleaseFast",
+    local job = vim.fn.jobstart("zig build",
         {
             cwd = M.getInstallDir() .. "/zig",
             detach = true,

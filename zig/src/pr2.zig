@@ -448,10 +448,11 @@ pub const PartialRendered = struct {
         }
         log.write("done building\n", .{}) catch {};
 
-        containerBox.dirty = containerBox.width != width;
+        containerBox.dirty = true;
         containerBox.width = @max(containerBox.width, width);
         containerBox.cursorX = width;
         containerBox.cursorY = newStartLine;
+        containerBox.height = newStartLine + height;
         if (containerBox.cursorX >= containerBox.maxWidth) {
             containerBox.cursorX = 0;
             containerBox.cursorY += height;

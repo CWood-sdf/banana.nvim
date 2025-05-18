@@ -96,6 +96,7 @@ return function (self, ast, box, parentHl,
     if ast:_firstStyleValue("width") == "fit-content" then
         -- TODO: Should this also include padding?
         inherit["min-size"] = true
+        pr:setAlign(p.Align.noexpand)
     elseif ast:hasStyle("width") then
         -- add margins bc width only sets content-width + padding
         ---@diagnostic disable-next-line: cast-local-type
