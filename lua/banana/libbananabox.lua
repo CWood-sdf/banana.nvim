@@ -109,6 +109,11 @@ function M.box_pr_set_main_hl(ctx, partialid, hl) end
 ---@param ctx number
 ---@param partialid number
 ---@return number
+function M.box_pr_get_min_width(ctx, partialid) end
+
+---@param ctx number
+---@param partialid number
+---@return number
 function M.box_pr_get_width(ctx, partialid) end
 
 ---@param ctx number
@@ -185,6 +190,20 @@ function M.box_context_highlight_at(ctx, L, start) end
 ---@param boxOther number
 ---@return nil
 function M.box_put_cursor_below(ctx, boxOne, boxOther) end
+
+---@param ctx number
+---@param boxid number
+---@param left number
+---@param top number
+---@return nil
+function M.box_unsafe_increase_offset(ctx, boxid, left, top) end
+
+---@param ctx number
+---@param boxid number
+---@param left number
+---@param top number
+---@return nil
+function M.box_unsafe_increase_cursor(ctx, boxid, left, top) end
 
 ---@param ctx number
 ---@param L HlExpect
@@ -340,5 +359,6 @@ function M.box_context_strip_right_space(ctx, expected_bg) end
 ---@return nil
 function M.box_render_over(ctx, box, otherCtx, left, top) end
 
-return M
 
+
+return M

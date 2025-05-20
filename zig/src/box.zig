@@ -383,6 +383,20 @@ pub const Line = struct {
     }
 
     /// Appends an ascii char n times
+    pub fn insertAsciiNTimes(
+        self: *Line,
+        ctx: *BoxContext,
+        index: u16,
+        char: u8,
+        hl: Highlight,
+        n: u16,
+    ) !void {
+        for (0..n) |_| {
+            try self.insertAscii(ctx, index, char, hl);
+        }
+    }
+
+    /// Appends an ascii char n times
     pub fn appendAsciiNTimes(
         self: *Line,
         ctx: *BoxContext,
@@ -859,6 +873,13 @@ pub const Box = struct {
         return try get_context(self.context);
     }
 
+    pub fn realCursorX(self: *const Box) u16 {
+        return self.cursorX + self.offsetX;
+    }
+    pub fn realCursorY(self: *const Box) u16 {
+        return self.cursorY + self.offsetY;
+    }
+
     pub fn putCursorBelow(self: *Box, other: *Box) void {
         const target = other.offsetY + other.height;
         if (target < self.offsetY) {
@@ -869,6 +890,43 @@ pub const Box = struct {
         if (other.width != self.width) {
             self.width = @max(other.width, self.width);
             self.dirty = true;
+        }
+    }
+
+    pub fn increaseOffsetBy(self: *Box, left: i16, top: i16) void {
+        if (left > 0) {
+            self.offsetX += @intCast(left);
+        } else if (-left > self.offsetX) {
+            @branchHint(.unlikely);
+            self.offsetX = 0;
+        } else {
+            self.offsetX -= @intCast(-left);
+        }
+        if (top > 0) {
+            self.offsetY += @intCast(top);
+        } else if (-top > self.offsetY) {
+            @branchHint(.unlikely);
+            self.offsetY = 0;
+        } else {
+            self.offsetY -= @intCast(-top);
+        }
+    }
+    pub fn increaseCursorBy(self: *Box, left: i16, top: i16) void {
+        if (left > 0) {
+            self.cursorX += @intCast(left);
+        } else if (-left > self.cursorX) {
+            @branchHint(.unlikely);
+            self.cursorX = 0;
+        } else {
+            self.cursorX -= @intCast(-left);
+        }
+        if (top > 0) {
+            self.cursorY += @intCast(top);
+        } else if (-top > self.cursorY) {
+            @branchHint(.unlikely);
+            self.cursorY = 0;
+        } else {
+            self.cursorY -= @intCast(-top);
         }
     }
 
@@ -1344,6 +1402,11 @@ pub fn box_pr_set_main_hl(ctx: u16, partialid: u16, hl: Highlight) !void {
     try partial.setMainColor(hl);
 }
 
+pub fn box_pr_get_min_width(ctx: u16, partialid: u16) !u16 {
+    const partial = try get_partial(ctx, partialid);
+    return try partial.getMinWidth();
+}
+
 pub fn box_pr_get_width(ctx: u16, partialid: u16) !u16 {
     const partial = try get_partial(ctx, partialid);
     return try partial.getWidth();
@@ -1415,6 +1478,15 @@ pub fn box_put_cursor_below(ctx: u16, boxOne: u16, boxOther: u16) !void {
     const box1 = try get_box(ctx, boxOne);
     const box2 = try get_box(ctx, boxOther);
     box1.putCursorBelow(box2);
+}
+
+pub fn box_unsafe_increase_offset(ctx: u16, boxid: u16, left: i16, top: i16) !void {
+    const box = try get_box(ctx, boxid);
+    box.increaseCursorBy(left, top);
+}
+pub fn box_unsafe_increase_cursor(ctx: u16, boxid: u16, left: i16, top: i16) !void {
+    const box = try get_box(ctx, boxid);
+    box.increaseOffsetBy(left, top);
 }
 
 /// Here so that functions can get lua functions/tables and document

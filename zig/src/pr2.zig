@@ -206,6 +206,17 @@ pub const PartialRendered = struct {
     ) !u16 {
         return try self.getPartialData(context).getHeight(self) orelse container.maxHeight;
     }
+
+    pub fn getMinWidth(self: *PartialRendered) !u16 {
+        const context = try self.getContext();
+
+        const padding = try self.getPadding(context);
+        const margin = try self.getMargin(context);
+
+        const box = try self.getBox();
+
+        return padding.side() + margin.side() + box.width;
+    }
     pub fn getWidth(self: *PartialRendered) !u16 {
         const context = try self.getContext();
         const container = try self.getContainer();
@@ -467,7 +478,7 @@ pub const PartialRendered = struct {
         context: *BoxContext,
         box: *Box,
         widthExpansion: u16,
-        // containerBox: *Box,
+        containerBox: *Box,
     ) !void {
         var buffer = [_]u8{0} ** 300;
         const dbg: ?*BoxContext =
@@ -479,10 +490,11 @@ pub const PartialRendered = struct {
             else
                 null;
 
-        // const padding = try self.getPadding(context);
-        // const margin = try self.getMargin(context);
+        const padding = try self.getPadding(context);
+        const margin = try self.getMargin(context);
 
         // const widthExpansion = try self.getMaxWidth(context, containerBox) - padding.side() - margin.side() - box.width;
+        const insertPos = containerBox.realCursorX() + padding.left + margin.left + box.width;
 
         switch (try self.getSideAlign(context)) {
             .center => {
@@ -501,7 +513,10 @@ pub const PartialRendered = struct {
                 }
                 for (box.offsetY..box.offsetY + box.height) |i| {
                     const line = try context.getLine(@intCast(i));
-                    try line.appendAsciiNTimes(context, ' ', self.mainColor, rightSide);
+                    const actualInsertPos = insertPos + leftSide;
+                    for (0..rightSide) |_| {
+                        try line.insertAscii(context, actualInsertPos, ' ', self.mainColor);
+                    }
                 }
             },
             .right => {
@@ -511,7 +526,10 @@ pub const PartialRendered = struct {
                 for (box.offsetY..box.offsetY + box.height) |i| {
                     const line = try context.getLine(@intCast(i));
                     log.write("Width expansion yay: {}\n", .{widthExpansion}) catch {};
-                    try line.appendAsciiNTimes(context, ' ', self.mainColor, widthExpansion);
+                    // try line.appendAsciiNTimes(context, ' ', self.mainColor, widthExpansion);
+                    for (0..widthExpansion) |_| {
+                        try line.insertAscii(context, insertPos, ' ', self.mainColor);
+                    }
                 }
             },
             // prolly inlineBlock with no width:
@@ -565,8 +583,8 @@ pub const PartialRendered = struct {
 
         const height = try self.getHeight();
         _ = box;
-        const offX = containerBox.offsetX + containerBox.cursorX;
-        const offY = containerBox.offsetY + containerBox.cursorY;
+        const offX = containerBox.realCursorX();
+        const offY = containerBox.realCursorY();
         const alloc = context.alloc();
         const width = try self._getWidth(context, containerBox);
         const padding = try self.getPadding(context);
@@ -586,7 +604,6 @@ pub const PartialRendered = struct {
             }
             const line = try context.getLine(offY + @as(u16, @intCast(i)));
             if (i < margin.top or i >= height - margin.bottom) {
-                // all margin
                 // TODO: Test if this is faster or not
                 try line.ensureTotalCapacity(alloc, offX + width);
                 const currentStrLen = line.width();
@@ -745,7 +762,7 @@ pub const PartialRendered = struct {
             d.dumpComment(comment) catch {};
         }
 
-        try self.renderWidthExpansion(context, box, widthExpansion);
+        try self.renderWidthExpansion(context, box, widthExpansion, containerBox);
         if (dbg) |d| {
             const comment = try std.fmt.bufPrint(&buffer, "rendered width expansion: {}", .{widthExpansion});
             d.dumpComment(comment) catch {};

@@ -177,6 +177,18 @@ function Box:updateCursorFrom(other)
     self:_dumpToSelf()
 end
 
+---@param left number
+---@param top number
+function Box:unsafeIncreaseOffsetBy(left, top)
+    lb.box_unsafe_increase_offset(self.ctx, self.boxid, left, top)
+end
+
+---@param left number
+---@param top number
+function Box:unsafeIncreaseCursorBy(left, top)
+    lb.box_unsafe_increase_cursor(self.ctx, self.boxid, left, top)
+end
+
 ---@param other Banana.Box
 function Box:putCursorBelow(other)
     other:_dumpToSelf()

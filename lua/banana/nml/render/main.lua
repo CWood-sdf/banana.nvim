@@ -74,7 +74,7 @@ return function (self, ast, box, parentHl,
         end
         flame.pop()
         -- return pr
-        return p.emptyPartialRendered(box)
+        return p.emptyPartialRendered(box, ast)
     end
     local disp = ast:_firstStyleValue("display")
     if disp == "none" then
@@ -83,10 +83,10 @@ return function (self, ast, box, parentHl,
         end
         ast.hidden = true
         flame.pop()
-        return p.emptyPartialRendered(box)
+        return p.emptyPartialRendered(box, ast)
     end
     ast.hidden = false
-    local pr = p.emptyPartialRendered(box)
+    local pr = p.emptyPartialRendered(box, ast)
 
     if ast.actualTag.formatType == _tag.FormatType.Inline then
         pr:setRenderType(p.RenderType.inline)

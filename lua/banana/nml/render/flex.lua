@@ -52,6 +52,56 @@ local function flexGrowSection(parentWidth, takenWidth, renders, start, e)
         end
     end
 end
+
+---Renders everything in a flex block
+---@param ast Banana.Ast
+---@param box Banana.Box
+---@param parentHl Banana.Highlight?
+---@param inherit Banana.Renderer.InheritedProperties
+---@param extra Banana.Renderer.ExtraInfo
+local function flexRenderNoWrap(ast, box, parentHl, inherit, extra)
+    ---@type Banana.Renderer.PartialRendered[]
+    local renders = {}
+    ---@type Banana.Box[]
+    local containers = {}
+
+    local minWidth = 0
+    local width = 0
+    local oldMinSize = inherit["min-size"]
+    inherit["min-size"] = true
+    local parentWidth = box:getMaxWidth()
+    for child in ast:childIter() do
+        child:_resolveUnits(parentWidth, box:getMaxHeight())
+        if child:_firstStyleValue("flex-shrink") == 0 or child:hasStyle("flex-basis") then
+            inherit["min-size"] = false
+        end
+        local newBox = box:newCursored()
+        table.insert(containers, newBox)
+        local rendered = child.actualTag:getRendered(child, newBox, parentHl,
+            inherit, extra)
+
+        inherit["min-size"] = true
+
+        table.insert(renders, rendered)
+        -- if rendered:getHeight() > currentHeight then
+        --     currentHeight = rendered:getHeight()
+        -- end
+
+        box:unsafeIncreaseCursorBy(0, rendered:getWidth())
+        width = width + rendered:getWidth()
+        minWidth = minWidth + rendered:getMinWidth()
+    end
+
+    if width > parentWidth then
+        local distribution = width - parentWidth
+    elseif width < parentWidth then
+    end
+
+    for _, v in ipairs(renders) do
+        v:render()
+    end
+    inherit["min-size"] = oldMinSize
+end
 ---Renders everything in a flex block
 ---@param ast Banana.Ast
 ---@param box Banana.Box
@@ -61,8 +111,18 @@ end
 ---@return Banana.Box, integer
 return function (ast, box, parentHl,
                  inherit, extra)
+    flexRenderNoWrap(ast, box, parentHl, inherit, extra)
     log.trace("TagInfo:renderFlexBlock " .. ast.tag)
     flame.new("renderFlexBlock")
+
+    -- TODO: Flex rendering stuff:
+    --  - flex-shrink distributes available negative space
+    --  however, i have no idea how i could do that without way
+    --  too much werk
+    --  - flex-grow distributes available positive space (ez enough)
+    --  - flex-wrap is just inlineblock yuhh
+    --  - flex-basis is just a min-width (chilling)
+
     -- possible todos:
     --   abstract out base rendering into a function
     --   inline the current height / line calculation
@@ -70,10 +130,17 @@ return function (ast, box, parentHl,
     local oldMinSize = inherit["min-size"]
     inherit["min-size"] = true
     local takenWidth = 0
-    local hl = ast:_mixHl(parentHl)
     ---@type ([Banana.Renderer.PartialRendered, Banana.Ast]?)[]
     local renders = {}
     local rendersLen = 0
+    -- TODO: Flex rendering will require unholy things to be done to the boxes
+    --  - nowrap + nogrow: just render as inline block (like wrap ig)
+    --  - nowrap + grow: we will prolly have to make container boxes for each pr (inlineBlock),
+    --  then after rendering (left to right) each pr, increase following
+    --  container boxes cursorX, and render
+    --  - wrap + nogrow: prolly can just force boxes to be inlineBlock and everything
+    --  should automatically wrap
+    --  - wrap + grow: just nowrap+grow with
 
     for _, v in ipairs(ast.nodes) do
         if type(v) == "string" then
@@ -91,7 +158,8 @@ return function (ast, box, parentHl,
         if v:_firstStyleValue("flex-shrink") == 0 or v:hasStyle("flex-basis") then
             inherit["min-size"] = false
         end
-        local rendered = v.actualTag:getRendered(v, hl, basisVal, parentHeight,
+        local rendered = v.actualTag:getRendered(v, parentHl, basisVal,
+            parentHeight,
             startX, startY, inherit, extra)
 
         inherit["min-size"] = true
@@ -107,23 +175,23 @@ return function (ast, box, parentHl,
         ::continue::
     end
 
-    if extra.debug then
-        extra.trace:appendBoxBelow(dbg.traceBreak("flex w/o fr"), false)
-        extra.trace:appendBoxBelow(ast:_testDumpBox(), false)
-        for i, v in ipairs(renders) do
-            if v ~= nil then
-                extra.trace:appendBoxBelow(dbg.traceBreak(i .. ""), false)
-                extra.trace:appendBoxBelow(v[1]:render(true), false)
-                extra.trace:appendBoxBelow(dbg.traceBreak(v[1].renderAlign),
-                    false)
-            else
-                extra.trace:appendBoxBelow(dbg.traceBreak(i .. ""), false)
-                local box = b.Box:new()
-                box:appendStr("empty")
-                extra.trace:appendBoxBelow(box, false)
-            end
-        end
-    end
+    -- if extra.debug then
+    --     extra.trace:appendBoxBelow(dbg.traceBreak("flex w/o fr"), false)
+    --     extra.trace:appendBoxBelow(ast:_testDumpBox(), false)
+    --     for i, v in ipairs(renders) do
+    --         if v ~= nil then
+    --             extra.trace:appendBoxBelow(dbg.traceBreak(i .. ""), false)
+    --             extra.trace:appendBoxBelow(v[1]:render(true), false)
+    --             extra.trace:appendBoxBelow(dbg.traceBreak(v[1].renderAlign),
+    --                 false)
+    --         else
+    --             extra.trace:appendBoxBelow(dbg.traceBreak(i .. ""), false)
+    --             local box = b.Box:new()
+    --             box:appendStr("empty")
+    --             extra.trace:appendBoxBelow(box, false)
+    --         end
+    --     end
+    -- end
 
 
     -- flex-grow and half of flex-wrap
@@ -225,9 +293,9 @@ return function (ast, box, parentHl,
             dbg.traceBreak("Wrapping into " .. #lines .. " lines"), false)
     end
 
-    local ret = b.Box:new(hl)
+    local ret = b.Box:new(parentHl)
     for _, l in ipairs(lines) do
-        local box = b.Box:new(hl)
+        local box = b.Box:new(parentHl)
         for _, val in ipairs(l) do
             box:append(val[1]:render(), nil)
         end
