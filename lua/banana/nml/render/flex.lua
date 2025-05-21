@@ -11,7 +11,8 @@ local lb = require("banana.lazyRequire")("banana.libbanana")
 ---@param parentHl Banana.Highlight?
 ---@param inherit Banana.Renderer.InheritedProperties
 ---@param extra Banana.Renderer.ExtraInfo
-local function flexRenderNoWrap(ast, box, parentHl, inherit, extra)
+---@param maxWidths number[]?
+local function flexRenderNoWrap(ast, box, parentHl, inherit, extra, maxWidths)
     ---@type Banana.Renderer.PartialRendered[]
     local renders = {}
     ---@type Banana.Box[]
@@ -45,32 +46,40 @@ local function flexRenderNoWrap(ast, box, parentHl, inherit, extra)
             inherit, extra)
 
         if child:hasStyle("flex-basis") and render:getWidth() < maxWidth then
-            render.center:setWidth(child:_firstStyleComputedValue("flex-basis", 0))
+            local basis = child:_firstStyleComputedValue("flex-basis", 0)
+            ---@cast basis number
+            render.center:setWidth(basis)
         end
 
         inherit["min-size"] = true
 
         table.insert(renders, render)
-        -- if rendered:getHeight() > currentHeight then
-        --     currentHeight = rendered:getHeight()
-        -- end
 
         width = width + render:getWidth()
         minWidth = minWidth + render:getMinWidth()
-        totalGrows = totalGrows + child:_firstStyleComputedValue("flex-grow", 1)
+        totalGrows = totalGrows + child:_firstStyleValue("flex-grow", 1)
         totalShrinks = totalShrinks +
-            child:_firstStyleComputedValue("flex-shrink", 1)
+            child:_firstStyleValue("flex-shrink", 1)
         maxHeight = math.max(maxHeight, render:getHeight())
     end
 
+    if minWidth > parentWidth then
+        for _, render in ipairs(renders) do
+            lb.box_context_delete(render.ctx)
+        end
+
+        return
+    end
+
     if width > parentWidth and totalShrinks > 0 then
-        -- local distribution = width - parentWidth
+        local distribution = width - parentWidth
     elseif width < parentWidth and totalGrows > 0 then
         local extraWidth = parentWidth - width
         local growPer = math.floor(extraWidth / totalGrows)
         local extraGrow = extraWidth - growPer * totalGrows
         for _, render in ipairs(renders) do
-            local grow = render.ast:_firstStyleComputedValue("flex-grow", 1)
+            local grow = render.ast:_firstStyleValue("flex-grow", 1)
+            ---@cast grow number
             if grow == 0 then
                 goto continue
             end
@@ -87,13 +96,13 @@ local function flexRenderNoWrap(ast, box, parentHl, inherit, extra)
 
             render:setMaxWidth(render:getWidth() + growAmount)
             render.center:setWidth(newBoxWidth)
-            render:setMaxHeight(maxHeight)
-            render:setVerticalAlign(p.Align.left)
             ::continue::
         end
     end
 
     for _, pr in ipairs(renders) do
+        pr:setMaxHeight(maxHeight)
+        pr:setVerticalAlign(p.Align.left)
         pr:render()
         box:renderOver(pr.ctx, 0, 0)
         lb.box_context_delete(pr.ctx)

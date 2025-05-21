@@ -987,6 +987,7 @@ pub const Box = struct {
         }
         const context = try self.getContext();
         while (context.lines.items.len < self.offsetY + height) {
+            log.write("Appending line!\n", .{}) catch {};
             var line = Line.init();
             try line.ensureAppendableAt(context, self.offsetX);
             try line.appendAsciiNTimes(

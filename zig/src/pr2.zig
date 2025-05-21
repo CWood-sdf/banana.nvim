@@ -308,6 +308,8 @@ pub const PartialRendered = struct {
 
     // }
 
+    // render functions {
+
     pub fn render(self: *PartialRendered, lineHeight: ?u16) !u16 {
         const startTime = std.time.microTimestamp();
 
@@ -343,24 +345,9 @@ pub const PartialRendered = struct {
         return newLineHeight;
     }
 
-    // pub fn renderCursored(self: *PartialRendered, lineHeight: u16) !void {
-    //     const startTime = std.time.microTimestamp();
-    //
-    //     defer {
-    //         const time = std.time.microTimestamp() - startTime;
-    //         log.write("Time taken: {}us\n", .{time}) catch {};
-    //     }
-    //     const containerBox = try self.getContainer();
-    //     const box = try self.getBox();
-    //     const context = try self.getContext();
-    //     switch (self.tag.tag) {
-    //         .@"inline" => try self.renderInline(box, containerBox),
-    //         .block => try self.renderBlock(context, box, containerBox),
-    //         .inlineBlock => try self.renderInlineBlock(context, box, containerBox, lineHeight),
-    //     }
-    // }
-
     fn renderInline(self: *PartialRendered, box: *Box, containerBox: *Box) !void {
+        // inline elements have no margin, padding, width, height, ...
+        // so therefore any "rendering" has already been done by the boxAppendStr
         _ = self;
         containerBox.updateCursorFrom(box);
     }
@@ -736,7 +723,7 @@ pub const PartialRendered = struct {
                 .left, .center, .right => maxHeight - padding.vert() - margin.vert() - box.height,
                 .noexpand => 0,
             };
-        log.write("Yuhh did stuff done\n", .{}) catch {};
+        log.write("Yuhh did stuff done he: {}\n", .{heightExpansion}) catch {};
         const mainWidth = box.width + widthExpansion;
         const mainHeight = box.height + heightExpansion;
         const height = mainHeight + padding.vert() + margin.vert();
@@ -791,22 +778,10 @@ pub const PartialRendered = struct {
         if (dbg) |d| {
             context.dumpTo(d, try std.fmt.bufPrint(&buffer, "new height: {}", .{containerBox.height})) catch {};
         }
-        // } else if (self.tag.margin == 1) {
-        //     try self.renderMargin(context, box, containerBox);
-        // } else if (self.tag.padding == 1) {
-        //     try self.renderPadding(context, box, containerBox);
-        // }
     }
 
-    fn renderCursoredOverflow(self: *PartialRendered, lineHeight: u16) !bool {
-        if (self.startCursorX != 0) {
-            try self.render();
-            return false;
-        }
-        const containerBox = try self.getContainer();
-        const maxWidth = containerBox.maxWidth - containerBox.cursorX;
-        return try self.renderWithMove(maxWidth, 0, containerBox.cursorY + lineHeight);
-    }
+    // }
+
 };
 
 const PrDataItem = struct {

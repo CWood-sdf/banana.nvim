@@ -102,8 +102,7 @@ return function (self, ast, box, parentHl,
     elseif ast:hasStyle("flex-basis") then
         -- add margins bc width only sets content-width + padding
         ---@diagnostic disable-next-line: cast-local-type
-        local width = ast:_firstStyleValue("flex-basis").computed +
-            ast:marginLeft() +
+        local width = ast:_firstStyleValue("width").computed + ast:marginLeft() +
             ast:marginRight()
         pr:setMaxWidth(width)
         if inherit["text-align"] == "left" then
