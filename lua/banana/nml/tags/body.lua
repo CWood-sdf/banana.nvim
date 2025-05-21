@@ -14,7 +14,7 @@ local function renderer(self, ast, box, parentHl, inherit, extra)
     -- ret:setHl(hl)
     for _, _, _ in self:blockIter(ast, box, parentHl, inherit, extra) do
     end
-    if box:height() < box:getMaxHeight() then
+    if box:getHeight() < box:getMaxHeight() then
         box:expandHeightTo(box:getMaxHeight())
     end
     -- if box:width() < parentWidth then

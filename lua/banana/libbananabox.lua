@@ -135,6 +135,12 @@ function M.box_pr_set_max_width(ctx, partialid, width) end
 
 ---@param ctx number
 ---@param partialid number
+---@param width number
+---@return nil
+function M.box_pr_increase_max_width(ctx, partialid, width) end
+
+---@param ctx number
+---@param partialid number
 ---@return number
 function M.box_pr_box(ctx, partialid) end
 
@@ -190,6 +196,12 @@ function M.box_context_highlight_at(ctx, L, start) end
 ---@param boxOther number
 ---@return nil
 function M.box_put_cursor_below(ctx, boxOne, boxOther) end
+
+---@param ctx number
+---@param boxid number
+---@param width number
+---@return nil
+function M.box_unsafe_set_width(ctx, boxid, width) end
 
 ---@param ctx number
 ---@param boxid number

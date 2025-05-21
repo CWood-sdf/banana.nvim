@@ -88,12 +88,12 @@ end
 
 ---@return number
 function Context:height()
-    return self.box:height()
+    return self.box:getHeight()
 end
 
 ---@return number
 function Context:width()
-    return self.box:width()
+    return self.box:getWidth()
 end
 
 ---Draws a single character at the

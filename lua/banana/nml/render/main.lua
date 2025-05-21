@@ -97,6 +97,27 @@ return function (self, ast, box, parentHl,
         -- TODO: Should this also include padding?
         inherit["min-size"] = true
         pr:setAlign(p.Align.noexpand)
+    elseif inherit["min-size"] then
+        pr:setAlign(p.Align.noexpand)
+    elseif ast:hasStyle("flex-basis") then
+        -- add margins bc width only sets content-width + padding
+        ---@diagnostic disable-next-line: cast-local-type
+        local width = ast:_firstStyleValue("flex-basis").computed +
+            ast:marginLeft() +
+            ast:marginRight()
+        pr:setMaxWidth(width)
+        if inherit["text-align"] == "left" then
+            pr:setAlign(p.Align.left)
+        elseif inherit["text-align"] == "right" then
+            pr:setAlign(p.Align.right)
+        elseif inherit["text-align"] == "center" then
+            pr:setAlign(p.Align.center)
+        else
+            log.throw("Undefined text align type " .. inherit["text-align"])
+        end
+        if inherit["min-size"] then
+            inherit["min-size"] = false
+        end
     elseif ast:hasStyle("width") then
         -- add margins bc width only sets content-width + padding
         ---@diagnostic disable-next-line: cast-local-type

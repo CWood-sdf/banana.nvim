@@ -294,7 +294,7 @@ pub const PartialRendered = struct {
             margin.left + padding.left,
             margin.top + padding.top + containerBox.cursorY,
         );
-        box.maxWidth = try self.getMaxWidth(context, containerBox);
+        box.maxWidth = try self.getMaxWidth(context, containerBox) - margin.side() - padding.side();
 
         return box;
     }

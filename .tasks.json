@@ -11,7 +11,7 @@
 		},
 		{
 			"name": "crash",
-			"cmd": "nvim -c \"lua vim.defer_fn(function() require('banana').test.grid() end, 500)\"",
+			"cmd": "nvim test.nml",
 			"window": {
 				"name": "ookc",
 				"close": false

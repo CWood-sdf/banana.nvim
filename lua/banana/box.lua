@@ -181,18 +181,26 @@ end
 ---@param top number
 function Box:unsafeIncreaseOffsetBy(left, top)
     lb.box_unsafe_increase_offset(self.ctx, self.boxid, left, top)
+    self:_dumpToSelf()
+end
+
+---@param width number
+function Box:unsafeSetWidth(width)
+    lb.box_unsafe_set_width(self.ctx, self.boxid, width)
+    self:_dumpToSelf()
 end
 
 ---@param left number
 ---@param top number
 function Box:unsafeIncreaseCursorBy(left, top)
     lb.box_unsafe_increase_cursor(self.ctx, self.boxid, left, top)
+    self:_dumpToSelf()
 end
 
 ---@param other Banana.Box
 function Box:putCursorBelow(other)
-    other:_dumpToSelf()
     lb.box_put_cursor_below(self.ctx, self.boxid, other.boxid)
+    other:_dumpToSelf()
     self:_dumpToSelf()
 end
 
@@ -282,13 +290,13 @@ end
 -- end
 
 ---@return number
-function Box:height()
+function Box:getHeight()
     local ret = lb.box_get_height(self.ctx, self.boxid)
     return ret
 end
 
 ---@return integer
-function Box:width()
+function Box:getWidth()
     local ret = lb.box_get_width(self.ctx, self.boxid)
     return ret
 end
@@ -349,7 +357,7 @@ function Box:appendWord(str, style)
     self:_dumpToSelf()
 end
 
----Renders a box over another box (essentially position:absolute)
+---Renders a context over this box
 ---@param other number
 ---@param left number
 ---@param top number

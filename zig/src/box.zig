@@ -269,22 +269,24 @@ pub const Line = struct {
         len: u16,
         addNoMatterWhat: bool,
     ) !u16 {
-        // TODO: Use simd to make brr
         var i: u16 = 0;
         if (self._hls.items.len != self._chars.items.len) {
-            log.write("Fuck start\n", .{}) catch {};
-            @panic("fuck you");
+            log.write("in appendWordToLen, inequal slices\n", .{}) catch {};
+            @panic("inequal slices in appendWordToLen");
         }
         defer {
             if (self._hls.items.len != self._chars.items.len) {
-                log.write("Fuck end\n", .{}) catch {};
-                @panic("fuck you");
+                log.write("after appendWordToLen, inequal slices\n", .{}) catch {};
+                @panic("inequal slices after appendWordToLen");
             }
         }
         if (self.width() == len and !addNoMatterWhat) {
             return 0;
         }
         while (i < str.len) {
+            if (str.len < i) {
+                return error.StrLenTooSmall;
+            }
             const availChars = str.len - i;
             const availWidth = if (self.width() > len) 1 else len - self.width();
             const charsToUse = @min(availChars, availWidth);
@@ -334,13 +336,13 @@ pub const Line = struct {
 
     pub fn ensureAppendableAt(self: *Line, ctx: *BoxContext, spot: u16) !void {
         if (self._hls.items.len != self._chars.items.len) {
-            log.write("asdf\n", .{}) catch {};
-            @panic("fuck you");
+            log.write("inequal slices in ensureAppendableAt\n", .{}) catch {};
+            @panic("inequal slices in ensureAppendableAt");
         }
         defer {
             if (self._hls.items.len != self._chars.items.len) {
-                log.write("ensureAppendableAt\n", .{}) catch {};
-                @panic("fuck you");
+                log.write("inequal slices after ensureAppendableAt\n", .{}) catch {};
+                @panic("inequal slices after ensureAppendableAt");
             }
         }
         const w = self.width();
@@ -911,6 +913,7 @@ pub const Box = struct {
             self.offsetY -= @intCast(-top);
         }
     }
+
     pub fn increaseCursorBy(self: *Box, left: i16, top: i16) void {
         if (left > 0) {
             self.cursorX += @intCast(left);
@@ -939,6 +942,9 @@ pub const Box = struct {
                 line.popLastChar();
             }
         }
+        self.width = width;
+    }
+    pub fn unsafeSetWidth(self: *Box, width: u16) void {
         self.width = width;
     }
     pub fn setWidth(self: *Box, width: u16) !void {
@@ -970,7 +976,7 @@ pub const Box = struct {
         for (context.lines.items[self.offsetY .. self.offsetY + self.height]) |*line| {
             try line.ensureTotalCapacity(context.alloc(), extra + line.width());
             for (0..extra) |_| {
-                try line.insertAscii(context, 0, ' ', self.hlgroup);
+                try line.insertAscii(context, self.offsetX, ' ', self.hlgroup);
             }
         }
         self.width += extra;
@@ -1030,7 +1036,7 @@ pub const Box = struct {
                 context,
                 ' ',
                 self.hlgroup,
-                self.width,
+                self.width + self.offsetX,
             );
         }
         log.write("lens: {}, off: {}, height: {}\n", .{ context.lines.items.len, self.offsetY, self.offsetY + self.height }) catch {};
@@ -1121,8 +1127,35 @@ pub const Box = struct {
         if (context == other) {
             return error.SameContext;
         }
-        _ = left; // autofix
-        _ = top; // autofix
+        const offsetX = self.offsetX + self.cursorX + left;
+        const offsetY = self.offsetY + self.cursorY + top;
+        var actualWidth: u16 = 0;
+        defer {
+            self.cursorX += actualWidth + left;
+            self.width = @max(self.width, self.cursorX);
+            log.write("LINE LEN: {}", .{other.lines.items.len}) catch {};
+            self.height = @max(self.height, self.cursorY + @as(u16, @intCast(other.lines.items.len)) + top);
+            if (self.cursorX > self.maxWidth) {
+                self.cursorY += @as(u16, @intCast(other.lines.items.len)) + top;
+                self.cursorX = 0;
+            }
+        }
+        for (other.lines.items, 0..) |newLine, i| {
+            const line = try context.getLine(@as(u16, @intCast(i)) + offsetY);
+            try line.ensureAppendableAt(context, offsetX + newLine.width());
+            const width = newLine.width();
+            actualWidth = @max(width, actualWidth);
+            std.mem.copyForwards(
+                Char,
+                line._chars.items[offsetX .. offsetX + width],
+                newLine._chars.items[0..],
+            );
+            std.mem.copyForwards(
+                Highlight,
+                line._hls.items[offsetX .. offsetX + width],
+                newLine._hls.items[0..],
+            );
+        }
     }
 };
 
@@ -1192,7 +1225,7 @@ fn dumpObjectToLua(T: type, obj: *const T, L: *lua.State) !void {
     const info = @typeInfo(T).@"struct";
     inline for (info.fields) |field| {
         const name = field.name;
-        const luaName = std.fmt.comptimePrint("_debug_{s}", .{name});
+        const luaName = std.fmt.comptimePrint("_{s}", .{name});
         // log.write("Pushing debug field {s} for type {}\n", .{ name, T }) catch {};
         const top = lua.get_top(L);
         switch (@typeInfo(field.type)) {
@@ -1286,15 +1319,15 @@ pub fn box_dump_pr_data(ctx: u16, pr: u16, value: PartialExpect) !void {
 pub fn get_context(ctx: u16) !*BoxContext {
     // dumpContexts();
     if (ctx >= contexts.items.len) {
-        return error.NotFound;
+        return error.ContextNotFound;
     }
     if (contexts.items[ctx]) |*c| return c;
-    return error.NotFound;
+    return error.ContextNotFound;
 }
 
 pub fn get_box(ctx: u16, box: u16) !*Box {
     const context = try get_context(ctx);
-    const b = context.getBox(box) orelse return error.NotFound;
+    const b = context.getBox(box) orelse return error.BoxNotFound;
     // const indent = "  ";
     log.write("  Getting box {}:{}\n", .{ ctx, box }) catch {};
     // dumpStruct(b.*, indent[0..]);
@@ -1302,7 +1335,7 @@ pub fn get_box(ctx: u16, box: u16) !*Box {
 }
 pub fn get_partial(ctx: u16, partial: u16) !*PartialRendered {
     const context = try get_context(ctx);
-    const ret = context.getPartial(partial) orelse return error.NotFound;
+    const ret = context.getPartial(partial) orelse return error.PartialNotFound;
     // const indent = "  ";
     log.write("  Getting partial {}:{}\n", .{ ctx, partial }) catch {};
     // dumpStruct(ret.*, indent[0..]);
@@ -1423,6 +1456,10 @@ pub fn box_pr_set_max_width(ctx: u16, partialid: u16, width: u16) !void {
     const partial = try get_partial(ctx, partialid);
     try partial.setMaxWidth(width);
 }
+pub fn box_pr_increase_max_width(ctx: u16, partialid: u16, width: u16) !void {
+    const partial = try get_partial(ctx, partialid);
+    try partial.setMaxWidth(width);
+}
 pub fn box_pr_box(ctx: u16, partialid: u16) !u16 {
     const partial = try get_partial(ctx, partialid);
     return try partial.createBox();
@@ -1480,13 +1517,17 @@ pub fn box_put_cursor_below(ctx: u16, boxOne: u16, boxOther: u16) !void {
     box1.putCursorBelow(box2);
 }
 
+pub fn box_unsafe_set_width(ctx: u16, boxid: u16, width: u16) !void {
+    const box = try get_box(ctx, boxid);
+    box.unsafeSetWidth(width);
+}
 pub fn box_unsafe_increase_offset(ctx: u16, boxid: u16, left: i16, top: i16) !void {
     const box = try get_box(ctx, boxid);
-    box.increaseCursorBy(left, top);
+    box.increaseOffsetBy(left, top);
 }
 pub fn box_unsafe_increase_cursor(ctx: u16, boxid: u16, left: i16, top: i16) !void {
     const box = try get_box(ctx, boxid);
-    box.increaseOffsetBy(left, top);
+    box.increaseCursorBy(left, top);
 }
 
 /// Here so that functions can get lua functions/tables and document
