@@ -41,7 +41,7 @@ pub const to_userdata = lua_touserdata;
 
 // stack checking functions {
 pub fn is_bool(L: *State, index: c_int) bool {
-    return lua_isboolean(L, index) != 0;
+    return lua_isboolean(L, index);
 }
 extern fn lua_isnil(L: *State, index: c_int) callconv(.C) c_int;
 pub fn is_nil(L: *State, index: c_int) bool {
@@ -185,7 +185,7 @@ pub fn typename(L: *State, tp: Type) []const u8 {
 }
 
 inline fn lua_isboolean(L: *State, n: c_int) bool {
-    return lua_type(L, n) == Type.boolean;
+    return lua_type(L, n) == @intFromEnum(Type.boolean);
 }
 extern fn lua_getfield(L: *State, idx: c_int, k: [*c]const u8) void;
 pub fn get_global(L: *State, s: [*c]const u8) void {

@@ -130,8 +130,9 @@ function M.box_pr_set_max_height(ctx, partialid, height) end
 ---@param ctx number
 ---@param partialid number
 ---@param width number
+---@param force ?boolean
 ---@return nil
-function M.box_pr_set_max_width(ctx, partialid, width) end
+function M.box_pr_set_max_width(ctx, partialid, width, force) end
 
 ---@param ctx number
 ---@param partialid number
@@ -149,6 +150,11 @@ function M.box_pr_box(ctx, partialid) end
 ---@param al number
 ---@return nil
 function M.box_pr_set_vertical_align(ctx, partialid, al) end
+
+---@param ctx number
+---@param partialid number
+---@return number
+function M.box_pr_get_align(ctx, partialid) end
 
 ---@param ctx number
 ---@param partialid number

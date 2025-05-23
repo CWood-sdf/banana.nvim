@@ -135,10 +135,10 @@ pub const PartialRendered = struct {
         self.mainColor = main;
     }
 
-    pub fn setMaxWidth(self: *PartialRendered, width: u16) !void {
+    pub fn setMaxWidth(self: *PartialRendered, width: u16, force: bool) !void {
         const context = try get_context(self.ctx);
         const currentWidth = try context.partialData.getWidth(self) orelse std.math.maxInt(@TypeOf(width));
-        const w = @min(currentWidth, width);
+        const w = if (force) width else @min(currentWidth, width);
         try context.partialData.setWidth(self, w);
     }
 
@@ -749,7 +749,10 @@ pub const PartialRendered = struct {
         if (dbg) |d| {
             context.dumpTo(d, "Pre height expand") catch {};
             d.dumpComment(
-                try std.fmt.bufPrint(&buffer, "target width: {}", .{box.width}),
+                try std.fmt.bufPrint(&buffer, "target height: {}", .{height}),
+            ) catch {};
+            d.dumpComment(
+                try std.fmt.bufPrint(&buffer, "box height: {}", .{box.height}),
             ) catch {};
         }
 

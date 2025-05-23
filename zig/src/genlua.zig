@@ -37,7 +37,7 @@ pub fn pushValue(L: *lua.State, v: anytype) void {
         },
         .pointer => |p| {
             if (p.size == .slice) {
-                log.write("Pushing string {s}\n", .{v}) catch {};
+                // log.write("Pushing string {s}\n", .{v}) catch {};
                 lua.push_stringslice(L, v);
             } else if (p.size == .one) {
                 lua.push_lightuserdata(L, v);
@@ -61,7 +61,7 @@ pub fn toLuaType(tp: type) lua.Type {
             return .number;
         },
         .bool => {
-            return .bool;
+            return .boolean;
         },
         else => {
             return .table;
@@ -98,7 +98,7 @@ pub fn parseParam(L: *lua.State, index: c_int, tp: type, failReturn: anytype) !t
             if (!lua.is_bool(L, index)) {
                 return error.IncorrectType;
             }
-            return lua.to_bool(L, index, tp);
+            return lua.to_bool(L, index);
         },
         .float => {
             if (!lua.is_number(L, index)) {
@@ -168,7 +168,7 @@ pub fn luaTemplate(
     comptime name: []const u8,
     // failReturn: anytype,
 ) c_int {
-    log.write("Calling function {s}\n", .{name}) catch {};
+    // log.write("Calling function {s}\n", .{name}) catch {};
     const f = @typeInfo(@TypeOf(fToCall)).@"fn";
     comptime var paramLen = 0;
     comptime var i = 0;
@@ -230,9 +230,9 @@ pub fn luaTemplate(
             },
         }
     }
-    log.write("created tuple\n", .{}) catch {};
+    // log.write("created tuple\n", .{}) catch {};
     const args = lua.get_top(L);
-    log.write("got {} args for {}\n", .{ args, i }) catch {};
+    // log.write("got {} args for {}\n", .{ args, i }) catch {};
 
     if (args != i) {
         _ = lua.push_fmtstring(L, "yo you put in the wrong number of parameters to {s}. expected {}, got {}", .{ name, i, args });
@@ -241,7 +241,7 @@ pub fn luaTemplate(
         // lua.push_bool(L, false);
         return 1;
     }
-    log.write("checked arg count\n", .{}) catch {};
+    // log.write("checked arg count\n", .{}) catch {};
     const tupleTp = std.meta.Tuple(tupleFields[0..i]);
     var tuple: tupleTp = undefined;
     const tupleInfo = @typeInfo(tupleTp).@"struct";
@@ -258,25 +258,25 @@ pub fn luaTemplate(
             log.write("With generic param {any}\n", .{@field(tuple, field.name)}) catch {};
         }
     }
-    log.write("created params\n", .{}) catch {};
+    // log.write("created params\n", .{}) catch {};
     // if (nextLen != null) {
     //     @compileError("Expected an int field after a [*]const u8 field");
     // }
     // defer box.dumpContexts();
     const ret = @call(.auto, fToCall, tuple);
-    log.write("called fn\n", .{}) catch {};
+    // log.write("called fn\n", .{}) catch {};
     const retInfo = @typeInfo(@TypeOf(ret));
     const actualRet = switch (retInfo) {
         .error_union => ret catch |e| {
-            log.write("ret is an error!\n", .{}) catch {};
+            // log.write("ret is an error!\n", .{}) catch {};
             lua.push_stringslice(L, @errorName(e));
-            log.write("pushed error name\n", .{}) catch {};
+            // log.write("pushed error name\n", .{}) catch {};
             lua.senderror(L);
             return 0;
         },
         else => ret,
     };
-    log.write("almost prepped return type\n", .{}) catch {};
+    // log.write("almost prepped return type\n", .{}) catch {};
     if (@TypeOf(actualRet) == void) {
         return 0;
     }

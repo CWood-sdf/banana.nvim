@@ -85,8 +85,9 @@ function PartialRendered:setMainHl(hl)
 end
 
 ---@param w number
-function PartialRendered:setMaxWidth(w)
-    lb.box_pr_set_max_width(self.ctx, self.pr, w)
+---@param force? boolean
+function PartialRendered:setMaxWidth(w, force)
+    lb.box_pr_set_max_width(self.ctx, self.pr, w, force)
     self:_dump()
 end
 

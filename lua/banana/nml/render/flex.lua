@@ -125,8 +125,8 @@ local function flexRenderNoWrap(ast, box, parentHl, inherit, extra, maxWidths)
             if grow == 0 then
                 goto continue
             end
-            local boxWidth = render.center:getWidth()
-
+            -- local boxWidth = render.center:getWidth()
+            --
             local growAmount = growPer * grow
             if extraGrow > 0 then
                 local extraAdded = math.min(math.ceil(grow), extraGrow)
@@ -134,10 +134,10 @@ local function flexRenderNoWrap(ast, box, parentHl, inherit, extra, maxWidths)
                 extraGrow = extraGrow - extraAdded
             end
 
-            local newBoxWidth = boxWidth + growAmount
-
-            render:setMaxWidth(render:getWidth() + growAmount)
-            render.center:setWidth(newBoxWidth)
+            -- local newBoxWidth = boxWidth + growAmount
+            --
+            render:setMaxWidth(render:getWidth() + growAmount, true)
+            -- render.center:setWidth(newBoxWidth)
             ::continue::
         end
     end

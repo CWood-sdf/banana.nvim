@@ -9,7 +9,7 @@ const fns = @import("nvim_api/functions.zig");
 const tps = @import("nvim_api/types.zig");
 
 pub fn subOr(l: anytype, r: anytype, default: anytype) @TypeOf(l) {
-    comptime if (@TypeOf(l) != @TypeOf(r)) {
+    comptime if (@TypeOf(l) != @TypeOf(r) and @TypeOf(r) != comptime_int) {
         @compileError(std.fmt.comptimePrint(
             "Got two different types to safeSubtract: l={} r={}\n",
             .{ @TypeOf(l), @TypeOf(r) },
@@ -1136,10 +1136,10 @@ pub const Box = struct {
     pub fn appendStr(self: *Box, str: []const u8) !void {
         var isFirst: bool = true;
         var newStr = str;
-        if (self.height == 0) {
-            self.height = 1;
-        }
         const context = try self.getContext();
+        if (self.height == self.cursorY) {
+            self.height += 1;
+        }
         while (newStr.len != 0) {
             const maxWidth = self.maxWidth;
             const line = try context.getLine(self.cursorY + self.offsetY);
@@ -1155,10 +1155,12 @@ pub const Box = struct {
                 self.cursorX == 0,
             );
             self.cursorX += try sub(line.width(), startWidth);
+            if (self.cursorY == self.height) {
+                self.height += 1;
+            }
             self.width = @max(self.width, self.cursorX);
             if (self.cursorX >= self.maxWidth) {
                 self.cursorX = 0;
-                self.height += 1;
                 self.cursorY += 1;
                 self.dirty = true;
             }
@@ -1193,8 +1195,8 @@ pub const Box = struct {
         if (context == other) {
             return error.SameContext;
         }
-        const offsetX = self.offsetX + left;
-        const offsetY = self.offsetY + top;
+        const offsetX = self.offsetX + self.cursorX + left;
+        const offsetY = self.offsetY + self.cursorY + top;
         var actualWidth: u16 = 0;
         defer {
             self.cursorX += actualWidth + left;
@@ -1518,13 +1520,13 @@ pub fn box_pr_set_max_height(ctx: u16, partialid: u16, height: u16) !void {
     const partial = try get_partial(ctx, partialid);
     try partial.setMaxHeight(height);
 }
-pub fn box_pr_set_max_width(ctx: u16, partialid: u16, width: u16) !void {
+pub fn box_pr_set_max_width(ctx: u16, partialid: u16, width: u16, force: ?bool) !void {
     const partial = try get_partial(ctx, partialid);
-    try partial.setMaxWidth(width);
+    try partial.setMaxWidth(width, force orelse false);
 }
 pub fn box_pr_increase_max_width(ctx: u16, partialid: u16, width: u16) !void {
     const partial = try get_partial(ctx, partialid);
-    try partial.setMaxWidth(width);
+    try partial.setMaxWidth(width, true);
 }
 pub fn box_pr_box(ctx: u16, partialid: u16) !u16 {
     const partial = try get_partial(ctx, partialid);
