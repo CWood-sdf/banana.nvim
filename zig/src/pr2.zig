@@ -4,6 +4,10 @@ const std = @import("std");
 const log = @import("log.zig");
 const get_context = _b.get_context;
 const get_box = _b.get_box;
+const sub = _b.sub;
+const subMult = _b.subMult;
+const subMultOr = _b.subMultOr;
+const subOr = _b.subOr;
 const Id = _b.Id;
 const NullableId = _b.NullableId;
 const Highlight = _b.Highlight;
@@ -294,7 +298,11 @@ pub const PartialRendered = struct {
             margin.left + padding.left,
             margin.top + padding.top + containerBox.cursorY,
         );
-        box.maxWidth = try self.getMaxWidth(context, containerBox) - margin.side() - padding.side();
+        box.maxWidth = subMultOr(u16, &[_]u16{
+            try self.getMaxWidth(context, containerBox),
+            margin.side(),
+            padding.side(),
+        }, 0);
 
         return box;
     }
@@ -353,7 +361,7 @@ pub const PartialRendered = struct {
     }
 
     fn renderInlineBlock(self: *PartialRendered, context: *BoxContext, box: *Box, containerBox: *Box, lineHeight: u16) !u16 {
-        const maxWidth = containerBox.maxWidth - containerBox.cursorX;
+        const maxWidth = subOr(containerBox.maxWidth, containerBox.cursorX, 0);
 
         var buffer = [_]u8{0} ** 300;
         const dbg: ?*BoxContext =
@@ -531,11 +539,6 @@ pub const PartialRendered = struct {
         // containerBox: *Box,
         heightExpansion: u16,
     ) !void {
-        // const padding = try self.getPadding(context);
-        // const margin = try self.getMargin(context);
-
-        // const heightExpansion = try self.getMaxHeight(context, containerBox) - padding.vert() - margin.vert() - box.height;
-
         log.write("Expanding height by: {}\n", .{heightExpansion}) catch {};
 
         switch (try self.getVerticalAlign(context)) {
@@ -576,7 +579,11 @@ pub const PartialRendered = struct {
         const width = try self._getWidth(context, containerBox);
         const padding = try self.getPadding(context);
         const margin = try self.getMargin(context);
-        const mainWidth = width - padding.side() - margin.side();
+        const mainWidth = try subMult(u16, &[_]u16{
+            width,
+            padding.side(),
+            margin.side(),
+        });
         if (dbg) |d| {
             const str = try std.fmt.bufPrint(&buffer, "Rendering to width {}", .{width});
             d.dumpComment(str) catch {};
@@ -600,7 +607,7 @@ pub const PartialRendered = struct {
                         context,
                         ' ',
                         containerBox.hlgroup,
-                        offX + width - currentStrLen,
+                        subOr(offX + width, currentStrLen, 0),
                     );
                 }
                 if (currentStrLen > offX) {
@@ -617,7 +624,7 @@ pub const PartialRendered = struct {
                         context,
                         ' ',
                         containerBox.hlgroup,
-                        offX + width - currentStrLen,
+                        subOr(offX + width, currentStrLen, 0),
                     );
                 }
                 if (dbg) |d| {
@@ -657,7 +664,7 @@ pub const PartialRendered = struct {
                         context,
                         ' ',
                         containerBox.hlgroup,
-                        offX + width - currentStrLen,
+                        subOr(offX + width, currentStrLen, 0),
                     );
                 }
 
@@ -712,7 +719,12 @@ pub const PartialRendered = struct {
             if (box.width + margin.side() + padding.side() > maxWidth)
                 0
             else switch (sideAlign) {
-                .left, .center, .right => maxWidth - padding.side() - margin.side() - box.width,
+                .left, .center, .right => subMultOr(u16, &[_]u16{
+                    maxWidth,
+                    padding.side(),
+                    margin.side(),
+                    box.width,
+                }, 0),
                 .noexpand => 0,
             };
         log.write("Yuhh did stuff\n", .{}) catch {};
@@ -720,7 +732,12 @@ pub const PartialRendered = struct {
             if (box.height + margin.vert() + padding.vert() > maxHeight)
                 0
             else switch (verticalAlign) {
-                .left, .center, .right => maxHeight - padding.vert() - margin.vert() - box.height,
+                .left, .center, .right => subMultOr(u16, &[_]u16{
+                    maxHeight,
+                    padding.vert(),
+                    margin.vert(),
+                    box.height,
+                }, 0),
                 .noexpand => 0,
             };
         log.write("Yuhh did stuff done he: {}\n", .{heightExpansion}) catch {};
@@ -918,10 +935,6 @@ pub const PrDataStack = struct {
         pr: *PartialRendered,
     ) !?u16 {
         return try prListsGetValue(self, pr, &ignoreInline, "width");
-        // if (pr.tag.tag == .@"inline" or pr.tag.width == 0) {
-        //     return null;
-        // }
-        // return self.width.getLastOrNull() orelse return error.BadStackSize;
     }
     pub fn setWidth(
         self: *PrDataStack,
@@ -929,16 +942,6 @@ pub const PrDataStack = struct {
         width: u16,
     ) !void {
         try prListsSetValue(self, pr, "width", width);
-        // defer pr.tag.width = 1;
-        // if (pr.tag.width == 1) {
-        //     if (self.width.items.len == 0) {
-        //         return error.BadStackSize;
-        //     }
-        //     self.width.items[self.width.items.len - 1] = width;
-        //     return;
-        // }
-        // const context: *BoxContext = @fieldParentPtr("partialData", self);
-        // try self.width.append(context.alloc(), width);
     }
 
     pub fn getHeight(
@@ -953,24 +956,10 @@ pub const PrDataStack = struct {
         height: u16,
     ) !void {
         try prListsSetValue(self, pr, "height", height);
-        // defer pr.tag.height = 1;
-        // if (pr.tag.height == 1) {
-        //     if (self.height.items.len == 0) {
-        //         return error.BadStackSize;
-        //     }
-        //     self.height.items[self.height.items.len - 1] = height;
-        //     return;
-        // }
-        // const context: *BoxContext = @fieldParentPtr("partialData", self);
-        // try self.height.append(context.alloc(), height);
     }
 
     pub fn getPadding(self: *PrDataStack, pr: *PartialRendered) !?PartialRendered.Pad {
         return try prListsGetValue(self, pr, &ignoreInline, "padding");
-        // if (pr.tag.tag == .@"inline" or pr.tag.padding == 0) {
-        //     return null;
-        // }
-        // return self.padding.getLastOrNull() orelse return error.BadStackSize;
     }
     pub fn setPadding(
         self: *PrDataStack,
@@ -978,24 +967,10 @@ pub const PrDataStack = struct {
         pad: PartialRendered.Pad,
     ) !void {
         try prListsSetValue(self, pr, "padding", pad);
-        // defer pr.tag.padding = 1;
-        // if (pr.tag.padding == 1) {
-        //     if (self.padding.items.len == 0) {
-        //         return error.BadStackSize;
-        //     }
-        //     self.padding.items[self.padding.items.len - 1] = pad;
-        //     return;
-        // }
-        // const context: *BoxContext = @fieldParentPtr("partialData", self);
-        // try self.padding.append(context.alloc(), pad);
     }
 
     pub fn getMargin(self: *PrDataStack, pr: *PartialRendered) !?PartialRendered.Pad {
         return try prListsGetValue(self, pr, &ignoreInline, "margin");
-        // if (pr.tag.tag == .@"inline" or pr.tag.margin == 0) {
-        //     return null;
-        // }
-        // return self.margin.getLastOrNull() orelse return error.BadStackSize;
     }
     pub fn setMargin(
         self: *PrDataStack,
@@ -1003,16 +978,6 @@ pub const PrDataStack = struct {
         margin: PartialRendered.Pad,
     ) !void {
         try prListsSetValue(self, pr, "margin", margin);
-        // defer pr.tag.margin = 1;
-        // if (pr.tag.margin == 1) {
-        //     if (self.margin.items.len == 0) {
-        //         return error.BadStackSize;
-        //     }
-        //     self.margin.items[self.margin.items.len - 1] = margin;
-        //     return;
-        // }
-        // const context: *BoxContext = @fieldParentPtr("partialData", self);
-        // try self.margin.append(context.alloc(), margin);
     }
 
     pub fn getVerticalAlign(
@@ -1020,11 +985,6 @@ pub const PrDataStack = struct {
         pr: *PartialRendered,
     ) !?RenderAlign {
         return try prListsGetValue(self, pr, &ignoreInline, "verticalAlign");
-        // log.write("getVerticalAlign: tag: {}, verticalAlign: {}\n", .{ pr.tag.tag, pr.tag.verticalAlign }) catch {};
-        // if (pr.tag.tag == .@"inline" or pr.tag.verticalAlign == 0) {
-        //     return null;
-        // }
-        // return self.verticalAlign.getLastOrNull() orelse return error.BadStackSize;
     }
     pub fn setVerticalAlign(
         self: *PrDataStack,
@@ -1032,16 +992,6 @@ pub const PrDataStack = struct {
         verticalAlign: RenderAlign,
     ) !void {
         try prListsSetValue(self, pr, "verticalAlign", verticalAlign);
-        // defer pr.tag.verticalAlign = 1;
-        // if (pr.tag.verticalAlign == 1) {
-        //     if (self.verticalAlign.items.len == 0) {
-        //         return error.BadStackSize;
-        //     }
-        //     self.verticalAlign.items[self.verticalAlign.items.len - 1] = verticalAlign;
-        //     return;
-        // }
-        // const context: *BoxContext = @fieldParentPtr("partialData", self);
-        // try self.verticalAlign.append(context.alloc(), verticalAlign);
     }
 
     pub fn getSideAlign(
@@ -1049,10 +999,6 @@ pub const PrDataStack = struct {
         pr: *PartialRendered,
     ) !?RenderAlign {
         return try prListsGetValue(self, pr, &ignoreInline, "sideAlign");
-        // if (pr.tag.tag == .@"inline" or pr.tag.sideAlign == 0) {
-        //     return null;
-        // }
-        // return self.sideAlign.getLastOrNull() orelse return error.BadStackSize;
     }
     pub fn setSideAlign(
         self: *PrDataStack,
@@ -1060,17 +1006,6 @@ pub const PrDataStack = struct {
         sideAlign: RenderAlign,
     ) !void {
         try prListsSetValue(self, pr, "sideAlign", sideAlign);
-        // log.write("setting side align to: {}\n", .{sideAlign}) catch {};
-        // defer pr.tag.sideAlign = 1;
-        // if (pr.tag.sideAlign == 1) {
-        //     if (self.sideAlign.items.len == 0) {
-        //         return error.BadStackSize;
-        //     }
-        //     self.sideAlign.items[self.sideAlign.items.len - 1] = sideAlign;
-        //     return;
-        // }
-        // const context: *BoxContext = @fieldParentPtr("partialData", self);
-        // try self.sideAlign.append(context.alloc(), sideAlign);
     }
 
     // }

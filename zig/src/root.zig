@@ -1,4 +1,5 @@
 const std = @import("std");
+const dst = @import("dst.zig");
 const log = @import("log.zig");
 const lua = @import("lua_api/lua.zig");
 const luaL = @import("lua_api/luaL.zig");
@@ -91,6 +92,17 @@ export fn luaopen_banana_libbanana(state: *lua.State) c_int {
     }
     const gridFns = gen.genLuaDecls(grid, "grid_");
     inline for (gridFns) |f| {
+        // std.debug.print("{s}\n", .{f.name});
+        // _ = file.write(std.fmt.allocPrint(std.heap.page_allocator, "name {s}\n", .{f.name}) catch "asdf") catch 0;
+        const newName = std.heap.page_allocator.dupeZ(u8, f.name) catch return 0;
+        const function = luaL.Reg.init(newName, f.f);
+        list.append(
+            std.heap.page_allocator,
+            function,
+        ) catch return 0;
+    }
+    const dstFns = gen.genLuaDecls(dst, "dst_");
+    inline for (dstFns) |f| {
         // std.debug.print("{s}\n", .{f.name});
         // _ = file.write(std.fmt.allocPrint(std.heap.page_allocator, "name {s}\n", .{f.name}) catch "asdf") catch 0;
         const newName = std.heap.page_allocator.dupeZ(u8, f.name) catch return 0;

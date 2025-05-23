@@ -8,6 +8,65 @@ const log = @import("log.zig");
 const fns = @import("nvim_api/functions.zig");
 const tps = @import("nvim_api/types.zig");
 
+pub fn subOr(l: anytype, r: anytype, default: anytype) @TypeOf(l) {
+    comptime if (@TypeOf(l) != @TypeOf(r)) {
+        @compileError(std.fmt.comptimePrint(
+            "Got two different types to safeSubtract: l={} r={}\n",
+            .{ @TypeOf(l), @TypeOf(r) },
+        ));
+    };
+    comptime if (@TypeOf(l) != @TypeOf(default) and @TypeOf(default) != comptime_int) {
+        @compileError(std.fmt.comptimePrint(
+            "Got two different types to safeSubtract: l={} default={}\n",
+            .{ @TypeOf(l), @TypeOf(default) },
+        ));
+    };
+
+    const T = @TypeOf(l);
+
+    if (comptime @typeInfo(T).int.signedness == .unsigned) {
+        if (r > l) {
+            return default;
+        }
+    }
+    return l - r;
+}
+pub fn subMultOr(comptime T: type, l: []const T, comptime default: T) T {
+    return subMult(T, l) catch default;
+}
+pub fn subMult(comptime T: type, l: []const T) !T {
+    if (l.len == 0) {
+        return error.EmptyArray;
+    }
+    var ret: T = l[0];
+    for (1..l.len) |i| {
+        if (comptime @typeInfo(T).int.signedness == .unsigned) {
+            if (l[i] > ret) {
+                return error.UnsignedSubtractToNegative;
+            }
+        }
+        ret -= l[i];
+    }
+    return ret;
+}
+pub fn sub(l: anytype, r: anytype) !@TypeOf(l) {
+    // comptime if (@TypeOf(l) != @TypeOf(r)) {
+    //     @compileError(std.fmt.comptimePrint(
+    //         "Got two different types to safeSubtract: {} {}\n",
+    //         .{ @TypeOf(l), @TypeOf(r) },
+    //     ));
+    // };
+
+    const T = @TypeOf(l);
+
+    if (comptime @typeInfo(T).int.signedness == .unsigned) {
+        if (r > l) {
+            return error.UnsignedSubtractToNegative;
+        }
+    }
+    return l - r;
+}
+
 pub const Highlight = u16;
 
 pub const Id = u16;
@@ -287,8 +346,8 @@ pub const Line = struct {
             if (str.len < i) {
                 return error.StrLenTooSmall;
             }
-            const availChars = str.len - i;
-            const availWidth = if (self.width() > len) 1 else len - self.width();
+            const availChars = try sub(str.len, i);
+            const availWidth = if (self.width() > len) 1 else try sub(len, self.width());
             const charsToUse = @min(availChars, availWidth);
             const rest = str[i..];
             if (Char.canSimd(str[i .. i + charsToUse])) {
@@ -413,7 +472,10 @@ pub const Line = struct {
         };
     }
 
-    pub fn widthFrom(self: *Line, base: u16) u16 {
+    pub fn widthFrom(self: *const Line, base: u16) u16 {
+        if (base > self.width()) {
+            return 0;
+        }
         return self.width() - base;
     }
 };
@@ -611,7 +673,7 @@ pub const BoxContext = struct {
         for (lines.items, 0..) |c, i| {
             if (c == 0) {
                 const str = lines.items[startIndex..i];
-                if (str.len == 0 and i >= lines.items.len - 2) {
+                if (str.len == 0 and lines.items.len >= 2 and i >= lines.items.len - 2) {
                     continue;
                 }
                 arr.appendAssumeCapacity(tps.stringObject(str));
@@ -814,8 +876,8 @@ pub const Box = struct {
             .offsetX = self.offsetX + x,
             .offsetY = self.offsetY + y,
             .width = 0,
-            .maxWidth = self.maxWidth - x,
-            .maxHeight = self.maxHeight - y,
+            .maxWidth = subOr(self.maxWidth, x, 0),
+            .maxHeight = subOr(self.maxHeight, y, 0),
             .dirty = false,
             .hlgroup = self.hlgroup,
             .cursorX = 0,
@@ -1006,6 +1068,9 @@ pub const Box = struct {
         }
         const context = try self.getContext();
         for (0..(self.height - height)) |_| {
+            if (context.lines.items.len == 0) {
+                break;
+            }
             context.lines.items[context.lines.items.len - 1].deinit(context.alloc());
             _ = context.lines.pop();
         }
@@ -1089,7 +1154,7 @@ pub const Box = struct {
                 self.offsetX + maxWidth,
                 self.cursorX == 0,
             );
-            self.cursorX += line.width() - startWidth;
+            self.cursorX += try sub(line.width(), startWidth);
             self.width = @max(self.width, self.cursorX);
             if (self.cursorX >= self.maxWidth) {
                 self.cursorX = 0;
@@ -1128,8 +1193,8 @@ pub const Box = struct {
         if (context == other) {
             return error.SameContext;
         }
-        const offsetX = self.offsetX + self.cursorX + left;
-        const offsetY = self.offsetY + self.cursorY + top;
+        const offsetX = self.offsetX + left;
+        const offsetY = self.offsetY + top;
         var actualWidth: u16 = 0;
         defer {
             self.cursorX += actualWidth + left;
@@ -1468,6 +1533,11 @@ pub fn box_pr_box(ctx: u16, partialid: u16) !u16 {
 pub fn box_pr_set_vertical_align(ctx: u16, partialid: u16, al: u16) !void {
     const partial = try get_partial(ctx, partialid);
     try partial.setVerticalAlign(@enumFromInt(al));
+}
+pub fn box_pr_get_align(ctx: u16, partialid: u16) !u16 {
+    const partial = try get_partial(ctx, partialid);
+    const al = try partial.getSideAlign(try get_context(ctx));
+    return @intFromEnum(al);
 }
 pub fn box_pr_set_align(ctx: u16, partialid: u16, al: u16) !void {
     const partial = try get_partial(ctx, partialid);

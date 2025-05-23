@@ -6,3 +6,5 @@ vim.keymap.set("n", "<leader>rs", "<cmd>TSInstallFromGrammar! ncss<CR>",
     { desc = "ncss treesitter" })
 vim.keymap.set("n", "<leader>ro", "<cmd>BananaSo<CR>",
     { desc = "banana so" })
+vim.keymap.set("n", "<leader>rd", "<cmd>lua require('banana.dst').spam()<CR>",
+    { desc = "banana dst gen" })

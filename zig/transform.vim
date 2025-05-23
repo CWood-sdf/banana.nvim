@@ -6,7 +6,7 @@ v/^pub fn/d
 v/box_/d
 %s/!/
 %s/\[]const u8/string/g
-%s/Highlight/u32/g
+%s/Highlight/u16/g
 %s/\(\w*\): \([a-zA-Z0-9?]*\)/["\1", "\2"]/g
 %s/ \(\w*\)$/, ["\1"],
 %s/(/, "params": [

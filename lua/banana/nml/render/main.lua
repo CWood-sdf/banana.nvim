@@ -123,6 +123,8 @@ return function (self, ast, box, parentHl,
         local width = ast:_firstStyleValue("width").computed + ast:marginLeft() +
             ast:marginRight()
         pr:setMaxWidth(width)
+        -- yes ik i could just do pr:setAlign(p.Align[inherit["text-align"]})
+        -- with a nil check, however that is gross and makes me feel pain
         if inherit["text-align"] == "left" then
             pr:setAlign(p.Align.left)
         elseif inherit["text-align"] == "right" then

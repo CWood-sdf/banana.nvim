@@ -35,7 +35,7 @@
 		},
 		{
 			"name": "zig debug",
-			"cmd": "/usr/local/bin/nvim -c 'so zigtestpre.lua' test.nml",
+			"cmd": "/usr/local/bin/nvim -c 'so zigtestpre.lua' bench/dst/0.lua",
 			"window": {
 				"name": "ookzd",
 				"close": true
