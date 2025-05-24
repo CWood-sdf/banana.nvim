@@ -101,8 +101,11 @@ local function flexRenderWrap(ast, box, parentHl, inherit, extra)
         newBox:setMaxWidth(maxWidth)
         newBox:setMaxHeight(box:getMaxHeight())
         table.insert(containers, newBox)
+        -- local oldContext = extra.ctx
+        -- extra.ctx = context
         local render = child.actualTag:getRendered(child, newBox, parentHl,
             inherit, extra)
+        -- extra.ctx = oldContext
 
         inherit["min-size"] = true
 

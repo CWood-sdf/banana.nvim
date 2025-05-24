@@ -78,9 +78,9 @@ const Dst = struct {
         } else return error.RandomUninitialized;
     }
 
-    pub fn getFunctionCount(self: *Dst) !u16 {
+    pub fn getFunctionCount(self: *Dst) !u32 {
         if (self.random) |*rand| {
-            return rand.intRangeLessThan(u16, 0, 1000);
+            return rand.intRangeLessThan(u32, 0, 100000);
         } else return error.RandomUninitialized;
     }
 
@@ -123,7 +123,7 @@ const Dst = struct {
         if (self.random) |*rand| {
             const len = rand.intRangeLessThan(usize, 0, self.stringBuf.len);
             for (self.stringBuf[0..len]) |*c| {
-                c.* = rand.intRangeAtMost(u8, ' ', 20);
+                c.* = rand.intRangeAtMost(u8, ' ', 100);
             }
             return self.stringBuf[0..len];
         } else return error.RandomUninitialized;
@@ -159,7 +159,7 @@ pub fn dst_get_function_name(self: *Dst, i: usize) ![]const u8 {
     return try alloc.dupeZ(u8, try self.getFunctionName(i));
 }
 
-pub fn dst_get_function_count(self: *Dst) !u16 {
+pub fn dst_get_function_count(self: *Dst) !u32 {
     return try self.getFunctionCount();
 }
 pub fn dst_get_param_count(self: *Dst) !usize {

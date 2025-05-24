@@ -53,6 +53,9 @@ function M.new(outFileName)
         lb.dst_new_function(dst, name)
         for _, param in ipairs(fn.params) do
             if #param == 2 then
+                -- if param[2] == "string" then
+                --     goto continue
+                -- end
                 if not lb.dst_add_param(dst, param[2]) then
                     -- print("Failed to add param " .. param[2])
                     goto continue
@@ -67,6 +70,7 @@ function M.new(outFileName)
     end
 
     lb.dst_init_random(dst)
+    lb.box_context_delete_all()
 
     local fnCount = 100000 -- lb.dst_get_function_count(dst)
 
@@ -77,6 +81,7 @@ function M.new(outFileName)
     end
 
     outFile:write([[
+local lb = require('banana.libbanana')
 ---@return boolean
 local function runFunction(name, params)
     local ok, _ = pcall(function ()
@@ -85,7 +90,6 @@ local function runFunction(name, params)
     return ok
 end
     ]])
-    outFile:write("pcall(function()\nlocal lb = require('banana.libbanana')\n\n")
 
     local paramTypes = {
         none = 0,
@@ -106,6 +110,7 @@ end
         local iters = 0
         while not ok and iters < 1 do
             outFile:write("runFunction('" .. fnames[fn + 1] .. "', {")
+            outFile:flush()
 
             local callParams = {}
 
@@ -143,7 +148,10 @@ end
                 end
             end
             outFile:write("})")
+            -- outFile:write(fnames[fn + 1] .. "   ")
+            -- outFile:write(vim.inspect(callParams))
             outFile:flush()
+
             ok = runFunction(fnames[fn + 1], callParams)
             if ok then
                 outFile:write(" --ok")
@@ -151,7 +159,6 @@ end
             outFile:write("\n")
         end
     end
-    outFile:write("end)")
     outFile:close()
 end
 
@@ -159,15 +166,20 @@ function M.spam()
     -- local jobs = {}
     local count = 1000
     local countDone = 0
+    local dir = 0
+    while vim.fn.filereadable("lua/banana/bench/dst/" .. dir .. "/0.lua") == 1 do
+        dir = dir + 1
+        if dir > 10 then
+            error("ooga")
+        end
+    end
     for i = 0, count do
-        print("Creating " .. i)
-        local name = "bench/dst/" .. i .. ".lua"
+        local name = "lua/banana/bench/dst/" .. dir .. "/" .. i .. ".lua"
         if vim.fn.filereadable(name) == 1 then
             goto continue
         end
         M.new(name)
         countDone = countDone + 1
-        -- vim.cmd("so " .. name)
         ::continue::
     end
     if countDone >= count then

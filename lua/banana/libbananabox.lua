@@ -41,6 +41,9 @@ function M.box_dump_box_data(ctx, box, value) end
 ---@return nil
 function M.box_dump_pr_data(ctx, pr, value) end
 
+---@return nil
+function M.box_context_delete_all() end
+
 ---@return number
 function M.box_context_create() end
 
@@ -187,9 +190,30 @@ function M.box_pr_deinit(ctx, partialid) end
 
 ---@param ctx number
 ---@param partialid number
+---@return number
+function M.box_pr_get_render_type(ctx, partialid) end
+
+---@param ctx number
+---@param partialid number
 ---@param renderType number
 ---@return nil
 function M.box_pr_set_render_type(ctx, partialid, renderType) end
+
+---@param ctx number
+---@param x number
+---@param y number
+---@param w number
+---@param h number
+---@param newHl number
+---@return number
+function M.box_image_snap(ctx, x, y, w, h, newHl) end
+
+---@param ctx number
+---@param image number
+---@param x number
+---@param y number
+---@return nil
+function M.box_image_render_over(ctx, image, x, y) end
 
 ---@param ctx number
 ---@param buf number
@@ -290,6 +314,16 @@ function M.box_update_cursor_from(ctx, box, other) end
 ---@param width number
 ---@return nil
 function M.box_set_width(ctx, box, width) end
+
+---@param ctx number
+---@param box number
+---@return number
+function M.box_get_offset_y(ctx, box) end
+
+---@param ctx number
+---@param box number
+---@return number
+function M.box_get_offset_x(ctx, box) end
 
 ---@param ctx number
 ---@param box number
@@ -398,5 +432,7 @@ function M.box_context_strip_right_space(ctx, expected_bg) end
 ---@param top number
 ---@return nil
 function M.box_render_over(ctx, box, otherCtx, left, top) end
+
+
 
 return M

@@ -8,3 +8,6 @@ vim.keymap.set("n", "<leader>ro", "<cmd>BananaSo<CR>",
     { desc = "banana so" })
 vim.keymap.set("n", "<leader>rd", "<cmd>lua require('banana.dst').spam()<CR>",
     { desc = "banana dst gen" })
+vim.keymap.set("n", "<leader>rp",
+    "<cmd>lua require('banana.bench.dst.0')<CR>",
+    { desc = "banana dst run" })

@@ -11,22 +11,29 @@ local lb = require("banana.lazyRequire")("banana.libbanana")
 
 local M = {}
 
+---@type Banana.Highlight[][]
 local hls = {}
+
+---@type { [Banana.Highlight]: number }[]
+local hlsMap = {}
 
 ---@return number
 function M.createContext()
     local ctx = lb.box_context_create()
     hls[ctx + 1] = {}
+    hlsMap[ctx + 1] = {}
     return ctx
 end
 
 ---@param ctx number
 function M.deleteContext(ctx)
     hls[ctx + 1] = {}
+    hlsMap[ctx + 1] = {}
 end
 
 function M.wipeContext(ctx)
     hls[ctx + 1] = {}
+    hlsMap[ctx + 1] = {}
 end
 
 ---@param ctx number
@@ -36,8 +43,12 @@ function M.addHighlight(ctx, hl)
     if hl == nil then
         return 0
     end
+    if hlsMap[ctx + 1][hl] ~= nil then
+        return hlsMap[ctx + 1][hl]
+    end
     -- if #hls == 0 and hl.bg == "red" then
     table.insert(hls[ctx + 1], hl)
+    hlsMap[ctx + 1][hl] = #hls[ctx + 1]
     -- end
     return #hls[ctx + 1]
 end

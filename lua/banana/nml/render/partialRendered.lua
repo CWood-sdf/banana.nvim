@@ -28,9 +28,22 @@ M.RenderType = {
 ---@field trace number?
 ---@field center Banana.Box?
 ---@field ast Banana.Ast
+---@field postRender fun()[]
 local PartialRendered = {}
 
 local PrIndex = flame.wrapClass(PartialRendered, "Partial", false)
+
+---@return Banana.Renderer.PartialRendered
+function M.noopPartialRendered()
+    local ret = {
+    }
+    setmetatable(ret, {
+        __index = function ()
+            return function () end
+        end,
+    })
+    return ret
+end
 
 ---@param container Banana.Box
 ---@param ast Banana.Ast
@@ -40,6 +53,7 @@ function M.emptyPartialRendered(container, ast)
     local pr = lb.box_pr_new(ctx, container.boxid)
     ---@type Banana.Renderer.PartialRendered
     local ret = {
+        postRender = {},
         ast = ast,
         ctx = ctx,
         pr = pr,
@@ -148,6 +162,12 @@ function PartialRendered:setAlign(align)
     self:_dump()
 end
 
+---@return Banana.Renderer.RenderType
+function PartialRendered:getRenderType()
+    return lb.box_pr_get_render_type(self.ctx, self.pr)
+end
+
+---@param renderType Banana.Renderer.RenderType
 function PartialRendered:setRenderType(renderType)
     lb.box_pr_set_render_type(self.ctx, self.pr, renderType)
     self:_dump()
@@ -170,6 +190,10 @@ function PartialRendered:render(lineHeight)
 
     local boundBox = self:getBoundBox(1)
     self.ast.boundBox = boundBox
+
+    for _, fn in ipairs(self.postRender) do
+        fn()
+    end
 
     self:_dump()
     self:destroy()

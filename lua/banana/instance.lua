@@ -62,6 +62,7 @@ local instances = {}
 ---@class Banana.Instance
 ---@field DEBUG_stressTest boolean
 ---@field DEBUG_dumpTree boolean
+---@field DEBUG_catch? boolean
 ---@field DEBUG boolean
 ---@field ctx? number
 ---@field winid? number
@@ -129,7 +130,7 @@ function Instance:_virtualRender(ast, ctx, width, height)
     b:setMaxWidth(width)
     b:setMaxHeight(height)
     -- setmetatable(extra, { __mode = "kv" })
-    local ok, err = pcall(function ()
+    local renderCall = function ()
         tag:renderRoot(ast, b, nil, {
             ["text-align"] = "left",
             ["position"] = "static",
@@ -137,7 +138,14 @@ function Instance:_virtualRender(ast, ctx, width, height)
             ["min-size-direction"] = "horizontal",
             ["list-style-type"] = "star",
         }, extra)
-    end)
+    end
+    local ok, err
+    if (self.DEBUG_catch == false) or (self.DEBUG == true and self.DEBUG_catch == nil) then
+        ok = true
+        renderCall()
+    else
+        ok, err = pcall(renderCall)
+    end
     if not ok then
         vim.notify("Error during render: " .. err .. "\n")
     end

@@ -2,6 +2,7 @@ const debug = @import("debug.zig").debug;
 const _pr = @import("pr2.zig");
 const std = @import("std");
 const lua = @import("lua_api/lua.zig");
+const Image = @import("Image.zig");
 
 const Hl = @import("hl.zig");
 const consts = @import("nvim_api/constants.zig");
@@ -298,6 +299,11 @@ pub const Line = struct {
     _chars: std.ArrayListUnmanaged(Char),
     _hls: std.ArrayListUnmanaged(Highlight),
 
+    pub const empty: Line = .{
+        ._hls = .empty,
+        ._chars = .empty,
+    };
+
     pub fn init() Line {
         return .{
             ._chars = .empty,
@@ -437,6 +443,9 @@ pub const Line = struct {
         char: u8,
         hl: Highlight,
     ) !void {
+        if (index > self._chars.items.len) {
+            return error.OverindexingInsertAscii;
+        }
         try self._chars.insert(ctx.alloc(), index, Char.fromAscii(char));
         self._hls.insert(ctx.alloc(), index, hl) catch |e| {
             _ = self._chars.orderedRemove(index);
@@ -490,6 +499,8 @@ pub const BoxContext = struct {
     _alloc: std.mem.Allocator,
     boxes: std.ArrayListUnmanaged(Box) = .empty,
     partials: std.ArrayListUnmanaged(PartialRendered) = .empty,
+    images: std.ArrayListUnmanaged(Image) = .empty,
+    imageLines: std.ArrayListUnmanaged(Line) = .empty,
     partialData: PrDataStack = .empty,
 
     // ctor/dtor
@@ -521,6 +532,27 @@ pub const BoxContext = struct {
         self.partials = .empty;
         self.partialData = .empty;
         return self.arena.reset(.retain_capacity);
+    }
+
+    pub fn newImage(self: *BoxContext, x: u16, y: u16, w: u16, h: u16, overwriteHl: Highlight) !u16 {
+        const image = try Image.snap(self, x, y, w, h, overwriteHl);
+        try self.images.append(self.alloc(), image);
+
+        return @intCast(self.images.items.len - 1);
+    }
+    pub fn renderImageOver(self: *BoxContext, imageId: u16, x: u16, y: u16) !void {
+        if (imageId >= self.images.items.len) {
+            return error.InvalidImageHandle;
+        }
+        const image = self.images.items[imageId];
+        const imageLines = self.imageLines.items[image.startIndex..image.endIndex];
+        for (imageLines, 0..) |imageLine, i| {
+            const actualY = y + @as(u16, @intCast(i));
+            const line = try self.getLine(actualY);
+            try line.ensureAppendableAt(self, x + imageLine.width());
+            @memcpy(line._chars.items[x .. x + imageLine.width()], imageLine._chars.items[0..]);
+            @memcpy(line._hls.items[x .. x + imageLine.width()], imageLine._hls.items[0..]);
+        }
     }
     pub fn newBox(self: *BoxContext, box: Box) !u16 {
         try self.boxes.append(self.arena.allocator(), box);
@@ -781,6 +813,7 @@ pub const BoxContext = struct {
             }
         }
     }
+
     pub fn dumpTo(self: *BoxContext, other: *BoxContext, reason: []const u8) !void {
         if (comptime debug) {
             var breakLine = Line.init();
@@ -991,6 +1024,9 @@ pub const Box = struct {
     pub fn shrinkWidthTo(self: *Box, width: u16) !void {
         const context = try self.getContext();
         for (self.offsetY..self.offsetY + self.height) |i| {
+            if (i >= context.lines.items.len) {
+                return error.OverindexingShrinkWidth;
+            }
             const line: *Line = &context.lines.items[i];
             while (line.width() > width) {
                 line.popLastChar();
@@ -1027,6 +1063,10 @@ pub const Box = struct {
 
     pub fn shiftRightwardsBy(self: *Box, extra: u16) !void {
         const context = try self.getContext();
+        if (self.height + self.offsetY > context.lines.items.len) {
+            return error.OverindexingShiftRight;
+        }
+
         for (context.lines.items[self.offsetY .. self.offsetY + self.height]) |*line| {
             try line.ensureTotalCapacity(context.alloc(), extra + line.width());
             for (0..extra) |_| {
@@ -1143,24 +1183,31 @@ pub const Box = struct {
                 context,
                 newStr,
                 self.hlgroup,
-                self.offsetX + maxWidth,
+                try std.math.add(u16, self.offsetX, maxWidth),
                 self.cursorX == 0,
             );
-            self.cursorX += try sub(line.width(), startWidth);
-            if (self.cursorY == self.height) {
-                self.height += 1;
-            }
-            self.width = @max(self.width, self.cursorX);
-            if (self.cursorX >= self.maxWidth) {
-                self.cursorX = 0;
+            if (index == 0) {
                 self.cursorY += 1;
+                self.height += 1;
                 self.dirty = true;
+                self.cursorX = 0;
+            } else {
+                self.cursorX += try sub(line.width(), startWidth);
+                if (self.cursorY == self.height) {
+                    self.height += 1;
+                }
+                self.width = @max(self.width, self.cursorX);
+                if (self.cursorX >= self.maxWidth) {
+                    self.cursorX = 0;
+                    self.cursorY += 1;
+                    self.dirty = true;
+                }
+                if (index >= newStr.len) {
+                    break;
+                }
+                newStr = newStr[index..];
+                isFirst = false;
             }
-            if (index >= newStr.len) {
-                break;
-            }
-            newStr = newStr[index..];
-            isFirst = false;
         }
     }
 
@@ -1221,6 +1268,8 @@ pub const Box = struct {
 };
 
 pub const PartialRendered = _pr.PartialRendered;
+pub const RenderAlign = _pr.RenderAlign;
+pub const RenderType = _pr.RenderType;
 pub const PrDataStack = _pr.PrDataStack;
 
 pub fn init_boxes() void {
@@ -1404,7 +1453,11 @@ pub fn get_partial(ctx: u16, partial: u16) !*PartialRendered {
 }
 
 // new context {
-/// Returns -1 on failure
+pub fn box_context_delete_all() void {
+    for (0.., contexts.items) |i, _| {
+        _ = box_context_delete(@intCast(i));
+    }
+}
 /// @return i16 the id of a new box context
 pub fn box_context_create() !u16 {
     for (contexts.items, 0..) |item, i| {
@@ -1537,7 +1590,7 @@ pub fn box_pr_box(ctx: u16, partialid: u16) !u16 {
 }
 pub fn box_pr_set_vertical_align(ctx: u16, partialid: u16, al: u16) !void {
     const partial = try get_partial(ctx, partialid);
-    try partial.setVerticalAlign(@enumFromInt(al));
+    try partial.setVerticalAlign(try std.meta.intToEnum(RenderAlign, al));
 }
 pub fn box_pr_get_align(ctx: u16, partialid: u16) !u16 {
     const partial = try get_partial(ctx, partialid);
@@ -1546,7 +1599,7 @@ pub fn box_pr_get_align(ctx: u16, partialid: u16) !u16 {
 }
 pub fn box_pr_set_align(ctx: u16, partialid: u16, al: u16) !void {
     const partial = try get_partial(ctx, partialid);
-    try partial.setAlign(@enumFromInt(al));
+    try partial.setAlign(try std.meta.intToEnum(RenderAlign, al));
 }
 pub fn box_pr_render(ctx: u16, partialid: u16, lineHeight: ?u16) !u16 {
     const partial = try get_partial(ctx, partialid);
@@ -1558,16 +1611,26 @@ pub fn box_pr_deinit(ctx: u16, partialid: u16) !void {
     partial.deinit();
 }
 
+pub fn box_pr_get_render_type(ctx: u16, partialid: u16) !u16 {
+    const partial = try get_partial(ctx, partialid);
+    return @intFromEnum(partial.tag.tag);
+}
 pub fn box_pr_set_render_type(ctx: u16, partialid: u16, renderType: u8) !void {
     const partial = try get_partial(ctx, partialid);
-    partial.setRenderType(@enumFromInt(renderType));
+    partial.setRenderType(try std.meta.intToEnum(RenderType, renderType));
 }
 
-// pub fn box_pr_render_cursored(ctx: u16, partialid: u16, lineHeight: u16) !void {
-//     const partial = try get_partial(ctx, partialid);
-//     try partial.renderCursored(lineHeight);
 // }
-// }
+
+pub fn box_image_snap(ctx: u16, x: u16, y: u16, w: u16, h: u16, newHl: Highlight) !u16 {
+    const context = try get_context(ctx);
+    return try context.newImage(x, y, w, h, newHl);
+}
+
+pub fn box_image_render_over(ctx: u16, image: u16, x: u16, y: u16) !void {
+    const context = try get_context(ctx);
+    return try context.renderImageOver(image, x, y);
+}
 
 // context render {
 ///

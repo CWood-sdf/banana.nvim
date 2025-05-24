@@ -29,7 +29,7 @@ M.padNames = { "left", "top", "right", "bottom" }
 ---@field rightX number The right edge, exclusive
 ---@field bottomY number The bottom edge, exclusive
 
----@alias Banana.RelativeBox { box: Banana.Box, left: number, top: number, z: number}[]
+---@alias Banana.RelativeBox { image: number, left: number, top: number, z: number}
 
 local astId = 0
 

@@ -74,7 +74,7 @@ return function (self, ast, box, parentHl,
         end
         flame.pop()
         -- return pr
-        return p.emptyPartialRendered(box, ast)
+        return p.noopPartialRendered()
     end
     local disp = ast:_firstStyleValue("display")
     if disp == "none" then
@@ -83,7 +83,7 @@ return function (self, ast, box, parentHl,
         end
         ast.hidden = true
         flame.pop()
-        return p.emptyPartialRendered(box, ast)
+        return p.noopPartialRendered()
     end
     ast.hidden = false
     local pr = p.emptyPartialRendered(box, ast)
@@ -271,65 +271,47 @@ return function (self, ast, box, parentHl,
     -- boundBox.rightX = boundBox.leftX + pr:getWidth()
     -- boundBox.bottomY = boundBox.topY + pr:getHeight()
     -- ast.boundBox = boundBox
-    -- TODO: Create new ctx for non-static and render to that
-    -- Lowkey do we even need a new ctx? like we could prolly just render direct
-    -- still
-    -- But also, have to move this logic farther up
     if position ~= "static" then
-        log.throw("Reimplement relative rendering")
-        -- -- flame.pop()
-        -- -- flame.new("getRendered_relative")
-        -- local newRet = b.Box:new(parentHl)
-        -- local render = ret:render()
-        -- while newRet:height() < render:height() do
-        --     local newBox = b.Box:new(newRet.hlgroup)
-        --     newBox:appendStr(string.rep(" ", render:width()))
-        --     newRet:appendBoxBelow(newBox)
-        -- end
-        -- -- if extra.debug then
-        -- --     extra.trace:appendBoxBelow(dbg.traceBreak("float render"), false)
-        -- --     extra.trace:appendBoxBelow(ast:_testDumpBox(), false)
-        -- --     extra.trace:appendBoxBelow(render:clone(), false)
-        -- --     extra.trace:appendBoxBelow(dbg.traceBreak("extraRender render"),
-        -- --         false)
-        -- --     extra.trace:appendBoxBelow(ast:_testDumpBox(), false)
-        -- --     extra.trace:appendBoxBelow(newRet:clone(), false)
-        -- -- end
-        -- ---@type Banana.Ast
-        -- local root = ast
-        -- while root.relativeBoxes == nil do
-        --     root = root._parent
-        -- end
-        -- table.insert(root.relativeBoxes, {
-        --     box = render,
-        --     left = startX - 1 - ast:paddingLeft(),
-        --     top = startY - 1 - ast:paddingTop(),
-        --     z = ast:_firstStyleValue("z-index", 0)
-        -- })
-        -- ast.relativeBoxId = #root.relativeBoxes
-        -- ret.center = newRet
-        -- ret.mainColor = parentHl
-        -- ret.padding.left = 0
-        -- ret.padding.right = 0
-        -- ret.padding.top = 0
-        -- ret.padding.bottom = 0
-        -- ret.widthExpansion = 0
-        -- ret.heightExpansion = 0
-        -- if ast:hasStyle("left") then
-        --     startX = startX - ast:_firstStyleComputedValue("left", 0)
-        -- elseif ast:hasStyle("right") then
-        --     startX = startX + ast:_firstStyleComputedValue("right", 0)
-        -- end
-        -- if ast:hasStyle("top") then
-        --     startY = startY - ast:_firstStyleComputedValue("top", 0)
-        -- elseif ast:hasStyle("bottom") then
-        --     startY = startY + ast:_firstStyleComputedValue("bottom", 0)
-        -- end
-        -- -- if extra.debug then
-        -- --     extra.trace:appendBoxBelow(dbg.traceBreak("new render"), false)
-        -- --     extra.trace:appendBoxBelow(ast:_testDumpBox(), false)
-        -- --     extra.trace:appendBoxBelow(ret:render(true), false)
-        -- -- end
+        if pr:getRenderType() == p.RenderType.inline then
+            log.throw("Absolute position not implemented for inline els yet")
+        end
+        table.insert(pr.postRender, function ()
+            local bound = ast.boundBox
+            if bound == nil then
+                log.throw(
+                    "Unreachable: Ast bound box not set after PartialRendered:render()")
+                error("")
+            end
+            local image = lb.box_image_snap(pr.ctx, bound.leftX, bound.topY,
+                bound.rightX - bound.leftX, bound.bottomY - bound.topY,
+                b.addHighlight(extra.ctx, parentHl))
+
+            local deltaX = 0
+            local deltaY = 0
+            if ast:hasStyle("left") then
+                deltaX = deltaX + ast:_firstStyleValue("left").computed
+            elseif ast:hasStyle("right") then
+                deltaX = deltaX - ast:_firstStyleValue("right").computed
+            end
+            if ast:hasStyle("top") then
+                deltaY = deltaY + ast:_firstStyleValue("top").computed
+            elseif ast:hasStyle("bottom") then
+                deltaY = deltaY + ast:_firstStyleValue("bottom").computed
+            end
+            ast:_increaseLeftBound(deltaX)
+            ast:_increaseTopBound(deltaY)
+            -- ---@type Banana.Ast
+            local root = ast
+            while root.relativeBoxes == nil do
+                root = root._parent
+            end
+            table.insert(root.relativeBoxes, {
+                image = image,
+                left = ast.boundBox.leftX - ast:marginLeft(),
+                top = ast.boundBox.topY - ast:marginTop(),
+                z = ast:_firstStyleValue("z-index", 0)
+            })
+        end)
     end
     -- flame.pop()
     -- flame.new("getRendered_margin")
@@ -354,28 +336,22 @@ return function (self, ast, box, parentHl,
         -- end
     end
     if ast.relativeBoxes ~= nil and #ast.relativeBoxes > 0 then
-        log.throw("Reimplement relative boxes")
+        -- log.throw("Reimplement relative boxes")
         -- -- flame.pop()
         -- -- flame.new("getRendered_rel")
-        -- table.sort(ast.relativeBoxes, function (l, r)
-        --     return l.z < r.z
-        -- end)
+        table.sort(ast.relativeBoxes, function (l, r)
+            return l.z < r.z
+        end)
         -- -- flame.new("element render")
-        -- local rendered = ret:render()
+        -- local rendered = pr:render()
         -- -- -- flame.expect("element render")
         -- -- flame.pop()
-        -- for _, data in ipairs(ast.relativeBoxes) do
-        --     rendered:renderOver(data.box, data.left, data.top)
-        -- end
-        -- ret.center = rendered
-        -- ret.margin.left = 0
-        -- ret.margin.right = 0
-        -- ret.margin.top = 0
-        -- ret.margin.bottom = 0
-        -- ret.padding.left = 0
-        -- ret.padding.right = 0
-        -- ret.padding.top = 0
-        -- ret.padding.bottom = 0
+        pr:render()
+        for _, data in ipairs(ast.relativeBoxes) do
+            lb.box_image_render_over(pr.ctx, data.image, data.left, data.top)
+            -- rendered:renderOver(data.box, data.left, data.top)
+        end
+        pr = p.noopPartialRendered()
     end
     for k, _ in pairs(inheritOld) do
         inherit[k] = inheritOld[k]
