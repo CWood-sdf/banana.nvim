@@ -48,6 +48,14 @@ pub fn pushValue(L: *lua.State, v: anytype) void {
 
             lua.push_lightuserdata(L, @ptrCast(v));
         },
+        .@"struct" => |s| {
+            lua.create_table(L, 0, s.fields.len);
+            inline for (s.fields) |field| {
+                const top = lua.get_top(L);
+                pushValue(L, @field(v, field.name));
+                lua.set_field(L, top, field.name);
+            }
+        },
         else => {
             @compileError(std.fmt.comptimePrint("Cant push type {}\n", .{@TypeOf(v)}));
         },
@@ -168,7 +176,7 @@ pub fn luaTemplate(
     comptime name: []const u8,
     // failReturn: anytype,
 ) c_int {
-    // log.write("Calling function {s}\n", .{name}) catch {};
+    log.write("Calling function {s}\n", .{name}) catch {};
     const f = @typeInfo(@TypeOf(fToCall)).@"fn";
     comptime var paramLen = 0;
     comptime var i = 0;
@@ -330,33 +338,33 @@ pub fn genLuaDecls(
                 else => fnInfo.return_type.?,
             };
 
-            if (mainReturn == bool or comptime isInt(mainReturn) or isZeroPointer(mainReturn) or mainReturn == void) {
-                const newThing = struct {
-                    // pub const fInfo = fnInfo;
+            // if (mainReturn == bool or comptime isInt(mainReturn) or isZeroPointer(mainReturn) or mainReturn == void) {
+            const newThing = struct {
+                pub const fInfo = fnInfo;
 
-                    pub fn actualFn(L: *lua.State) callconv(.C) c_int {
-                        // std.debug.print("{s}\n", .{method.name});
-                        const r = luaTemplate(
-                            L,
-                            @field(scope, method.name),
-                            method.name,
-                        );
-                        return r;
-                    }
-                };
-                ret[i] = .{
-                    .f = newThing.actualFn,
-                    .name = method.name,
-                    .ret = mainReturn,
-                    .params = fnInfo.params,
-                };
-                i += 1;
-            } else {
-                @compileError(std.fmt.comptimePrint(
-                    "Unusable return type {} while parsing function {s}\n",
-                    .{ fnInfo.return_type.?, method.name },
-                ));
-            }
+                pub fn actualFn(L: *lua.State) callconv(.C) c_int {
+                    // std.debug.print("{s}\n", .{method.name});
+                    const r = luaTemplate(
+                        L,
+                        @field(scope, method.name),
+                        method.name,
+                    );
+                    return r;
+                }
+            };
+            ret[i] = .{
+                .f = newThing.actualFn,
+                .name = method.name,
+                .ret = mainReturn,
+                .params = fnInfo.params,
+            };
+            i += 1;
+            // } else {
+            //     @compileError(std.fmt.comptimePrint(
+            //         "Unusable return type {} while parsing function {s}\n",
+            //         .{ fnInfo.return_type.?, method.name },
+            //     ));
+            // }
         }
         // functions[i] = newThing.actualFn;
     }

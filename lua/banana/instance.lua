@@ -1010,6 +1010,8 @@ function Instance:_render()
     startTime = vim.loop.hrtime()
 
     if skip then
+        lb.box_context_wipe(self.ctx)
+        box.wipeContext(self.ctx)
         self.rendering = false
         self.renderRequested = true
         -- collectgarbage("restart")

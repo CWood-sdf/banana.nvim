@@ -14,6 +14,13 @@ const Highlight = _b.Highlight;
 const BoxContext = _b.BoxContext;
 const Box = _b.Box;
 
+pub const BoundBox = struct {
+    leftX: u16,
+    topY: u16,
+    bottomY: u16,
+    rightX: u16,
+};
+
 pub const RenderType = enum(u2) {
     // Won't be moved; cursored; no margin, padding, or max width
     @"inline" = 0,
@@ -83,6 +90,36 @@ pub const PartialRendered = struct {
         _ = context.partials.pop();
     }
 
+    // bound box {
+    pub fn getBoundBoxCount(self: *const PartialRendered) !u16 {
+        return switch (self.tag.tag) {
+            .@"inline" => blk: {
+                const box = try self.getBox();
+                const container = try self.getContainer();
+                break :blk box.cursorY - container.cursorY + 1;
+            },
+            else => 1,
+        };
+    }
+
+    pub fn getBoundBox(self: *const PartialRendered, n: u16) !BoundBox {
+        if (n > 1 and self.tag.tag != .@"inline") {
+            return error.InlineBoundBoxOnNonInline;
+        }
+        const box = try self.getBox();
+        const padding = try self.getPadding(try self.getContext());
+        const margin = try self.getMargin(try self.getContext());
+        const width = try self.getWidth();
+        const height = try self.getHeight();
+        return .{
+            .leftX = try sub(box.offsetX, padding.left),
+            .rightX = box.offsetX + width - margin.side(),
+            .topY = try sub(box.offsetY, padding.top),
+            .bottomY = box.offsetY + height - margin.vert(),
+        };
+    }
+    // }
+
     // value setters {
 
     fn setAsBlockType(self: *PartialRendered) void {
@@ -151,18 +188,18 @@ pub const PartialRendered = struct {
     // }
 
     // internal box getters {
-    fn getContainer(self: *PartialRendered) !*Box {
+    fn getContainer(self: *const PartialRendered) !*Box {
         return try get_box(self.ctx, self.containerBox);
     }
-    fn getContext(self: *PartialRendered) !*BoxContext {
+    fn getContext(self: *const PartialRendered) !*BoxContext {
         return try get_context(self.ctx);
     }
-    fn getPartialData(self: *PartialRendered, context: *BoxContext) *PrDataStack {
+    fn getPartialData(self: *const PartialRendered, context: *BoxContext) *PrDataStack {
         _ = self;
         // const ctx = try self.getContext();
         return &context.partialData;
     }
-    fn getBox(self: *PartialRendered) !*Box {
+    fn getBox(self: *const PartialRendered) !*Box {
         if (self.box.asOptional()) |id| {
             return try get_box(self.ctx, id);
         }
@@ -172,18 +209,18 @@ pub const PartialRendered = struct {
 
     // value getters {
     pub fn getMaxWidth(
-        self: *PartialRendered,
+        self: *const PartialRendered,
         context: *BoxContext,
         container: *Box,
     ) !u16 {
         return try self.getPartialData(context).getWidth(self) orelse container.maxWidth;
     }
 
-    pub fn getMargin(self: *PartialRendered, context: *BoxContext) !Pad {
+    pub fn getMargin(self: *const PartialRendered, context: *BoxContext) !Pad {
         return try self.getPartialData(context).getMargin(self) orelse .zero;
     }
 
-    pub fn getSideAlign(self: *PartialRendered, context: *BoxContext) !RenderAlign {
+    pub fn getSideAlign(self: *const PartialRendered, context: *BoxContext) !RenderAlign {
         if (self.tag.tag == .@"inline") {
             return .noexpand;
         }
@@ -195,16 +232,16 @@ pub const PartialRendered = struct {
         return try self.getPartialData(context).getSideAlign(self) orelse defaultAlign;
     }
 
-    pub fn getVerticalAlign(self: *PartialRendered, context: *BoxContext) !RenderAlign {
+    pub fn getVerticalAlign(self: *const PartialRendered, context: *BoxContext) !RenderAlign {
         return try self.getPartialData(context).getVerticalAlign(self) orelse .noexpand;
     }
 
-    pub fn getPadding(self: *PartialRendered, context: *BoxContext) !Pad {
+    pub fn getPadding(self: *const PartialRendered, context: *BoxContext) !Pad {
         return try self.getPartialData(context).getPadding(self) orelse .zero;
     }
 
     pub fn getMaxHeight(
-        self: *PartialRendered,
+        self: *const PartialRendered,
         context: *BoxContext,
         container: *Box,
     ) !u16 {
@@ -221,13 +258,13 @@ pub const PartialRendered = struct {
 
         return padding.side() + margin.side() + box.width;
     }
-    pub fn getWidth(self: *PartialRendered) !u16 {
+    pub fn getWidth(self: *const PartialRendered) !u16 {
         const context = try self.getContext();
         const container = try self.getContainer();
         return try self._getWidth(context, container);
     }
 
-    pub fn _getWidth(self: *PartialRendered, context: *BoxContext, container: *Box) !u16 {
+    pub fn _getWidth(self: *const PartialRendered, context: *BoxContext, container: *Box) !u16 {
         const box = try self.getBox();
         if (self.tag.tag == .@"inline") {
             return box.width;
@@ -242,12 +279,12 @@ pub const PartialRendered = struct {
         return width;
     }
 
-    pub fn getHeight(self: *PartialRendered) !u16 {
+    pub fn getHeight(self: *const PartialRendered) !u16 {
         const context = try self.getContext();
         const container = try self.getContainer();
         return try self._getHeight(context, container);
     }
-    pub fn _getHeight(self: *PartialRendered, context: *BoxContext, container: *Box) !u16 {
+    pub fn _getHeight(self: *const PartialRendered, context: *BoxContext, container: *Box) !u16 {
         const box = try self.getBox();
         const padding = try self.getPadding(context);
         const margin = try self.getMargin(context);
@@ -303,6 +340,19 @@ pub const PartialRendered = struct {
             margin.side(),
             padding.side(),
         }, 0);
+        const dbg: ?*BoxContext =
+            if (comptime debug)
+                if (self.dbgCtx.asOptional()) |id|
+                    try get_context(id)
+                else
+                    null
+            else
+                null;
+        if (dbg) |d| {
+            var buffer = [_]u8{0} ** 300;
+            d.dumpComment(try std.fmt.bufPrint(&buffer, "setting max width to {}", .{box.maxWidth})) catch {};
+        }
+        log.write("setting max width to {}\n", .{box.maxWidth}) catch {};
 
         return box;
     }
@@ -869,7 +919,7 @@ fn prListsCleanupFor(self: *GenPrLists(), pr: *PartialRendered) void {
 
 fn prListsGetValue(
     self: *PrDataStack,
-    pr: *PartialRendered,
+    pr: *const PartialRendered,
     comptime ignore: []const RenderType,
     comptime field: []const u8,
 ) !?@FieldType(PrDataItem, field) {
@@ -935,7 +985,7 @@ pub const PrDataStack = struct {
 
     pub fn getWidth(
         self: *PrDataStack,
-        pr: *PartialRendered,
+        pr: *const PartialRendered,
     ) !?u16 {
         return try prListsGetValue(self, pr, &ignoreInline, "width");
     }
@@ -949,7 +999,7 @@ pub const PrDataStack = struct {
 
     pub fn getHeight(
         self: *PrDataStack,
-        pr: *PartialRendered,
+        pr: *const PartialRendered,
     ) !?u16 {
         return try prListsGetValue(self, pr, &ignoreInline, "height");
     }
@@ -961,7 +1011,7 @@ pub const PrDataStack = struct {
         try prListsSetValue(self, pr, "height", height);
     }
 
-    pub fn getPadding(self: *PrDataStack, pr: *PartialRendered) !?PartialRendered.Pad {
+    pub fn getPadding(self: *PrDataStack, pr: *const PartialRendered) !?PartialRendered.Pad {
         return try prListsGetValue(self, pr, &ignoreInline, "padding");
     }
     pub fn setPadding(
@@ -972,7 +1022,7 @@ pub const PrDataStack = struct {
         try prListsSetValue(self, pr, "padding", pad);
     }
 
-    pub fn getMargin(self: *PrDataStack, pr: *PartialRendered) !?PartialRendered.Pad {
+    pub fn getMargin(self: *PrDataStack, pr: *const PartialRendered) !?PartialRendered.Pad {
         return try prListsGetValue(self, pr, &ignoreInline, "margin");
     }
     pub fn setMargin(
@@ -985,7 +1035,7 @@ pub const PrDataStack = struct {
 
     pub fn getVerticalAlign(
         self: *PrDataStack,
-        pr: *PartialRendered,
+        pr: *const PartialRendered,
     ) !?RenderAlign {
         return try prListsGetValue(self, pr, &ignoreInline, "verticalAlign");
     }
@@ -999,7 +1049,7 @@ pub const PrDataStack = struct {
 
     pub fn getSideAlign(
         self: *PrDataStack,
-        pr: *PartialRendered,
+        pr: *const PartialRendered,
     ) !?RenderAlign {
         return try prListsGetValue(self, pr, &ignoreInline, "sideAlign");
     }

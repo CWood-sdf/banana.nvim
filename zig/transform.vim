@@ -15,6 +15,7 @@ v/box_/d
 %s/]),/],
 %s/),/
 %s/^\(.*\),$/{\1},
+%s/\(\w*Expect\)/Banana._header.\1/g
 norm ggO[
 norm Go]
 norm Gk$x
@@ -23,5 +24,7 @@ exe "normal ggVG\<esc>"
 '<,'>!jq
 
 %s/\(u\|i\)\d\d/number/ge
+%s/\(u8\|i8\)/number/ge
+%s/usize/number/ge
 %s/bool/boolean/ge
 %s/void/nil/ge

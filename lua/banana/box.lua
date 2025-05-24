@@ -184,6 +184,26 @@ function Box:unsafeIncreaseOffsetBy(left, top)
     self:_dumpToSelf()
 end
 
+---@return number
+function Box:getOffsetY()
+    return lb.box_get_offset_y(self.ctx, self.boxid)
+end
+
+---@return number
+function Box:getOffsetX()
+    return lb.box_get_offset_x(self.ctx, self.boxid)
+end
+
+---@return number
+function Box:getCursorY()
+    return lb.box_get_cursor_y(self.ctx, self.boxid)
+end
+
+---@return number
+function Box:getCursorX()
+    return lb.box_get_cursor_x(self.ctx, self.boxid)
+end
+
 ---@param width number
 function Box:unsafeSetWidth(width)
     lb.box_unsafe_set_width(self.ctx, self.boxid, width)

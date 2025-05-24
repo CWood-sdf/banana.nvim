@@ -103,6 +103,17 @@ function PartialRendered:setMaxHeight(w)
     self:_dump()
 end
 
+---@return number
+function PartialRendered:getBoundBoxCount()
+    return lb.box_pr_get_bound_box_count(self.ctx, self.pr)
+end
+
+---@param n number
+---@return Banana.Ast.BoundingBox
+function PartialRendered:getBoundBox(n)
+    return lb.box_pr_get_bound_box(self.ctx, self.pr, n)
+end
+
 ---@return Banana.Box
 function PartialRendered:getBox()
     local id = lb.box_pr_box(self.ctx, self.pr)
@@ -156,6 +167,9 @@ function PartialRendered:render(lineHeight)
         lb.box_context_dump_to(self.ctx, self.trace, "render post")
     end
     flame.pop()
+
+    local boundBox = self:getBoundBox(1)
+    self.ast.boundBox = boundBox
 
     self:_dump()
     self:destroy()

@@ -2,41 +2,42 @@
 
 local M = {}
 
----@alias BoxExpect Banana.Box
----@alias PartialExpect Banana.Renderer.PartialRendered
----@alias HlExpect fun (line: number, startCol: number, endCol: number, hl: number): nil
----@alias StripRightExpect fun (hl: number): number
+---@alias Banana._header.BoxExpect Banana.Box
+---@alias Banana._header.PartialExpect Banana.Renderer.PartialRendered
+---@alias Banana._header.BoundBoxExpect Banana.Ast.BoundingBox
+---@alias Banana._header.HlExpect fun (line: number, startCol: number, endCol: number, hl: number): nil
+---@alias Banana._header.StripRightExpect fun (hl: number): number
 
 
 ---@param ctx number
----@return usize
+---@return number
 function M.box_context_get_memory_usage(ctx) end
 
 ---@param ctx number
----@return usize
+---@return number
 function M.box_context_data_memory_usage(ctx) end
 
 ---@param ctx number
----@return usize
+---@return number
 function M.box_context_line_memory_usage(ctx) end
 
 ---@param ctx number
----@return usize
+---@return number
 function M.box_context_pr_memory_usage(ctx) end
 
 ---@param ctx number
----@return usize
+---@return number
 function M.box_context_box_memory_usage(ctx) end
 
 ---@param ctx number
 ---@param box number
----@param value BoxExpect
+---@param value Banana._header.BoxExpect
 ---@return nil
 function M.box_dump_box_data(ctx, box, value) end
 
 ---@param ctx number
 ---@param pr number
----@param value PartialExpect
+---@param value Banana._header.PartialExpect
 ---@return nil
 function M.box_dump_pr_data(ctx, pr, value) end
 
@@ -75,6 +76,17 @@ function M.box_destroy(ctx, boxid) end
 ---@param boxid number
 ---@return number
 function M.box_pr_new(ctx, boxid) end
+
+---@param ctx number
+---@param pr number
+---@return number
+function M.box_pr_get_bound_box_count(ctx, pr) end
+
+---@param ctx number
+---@param pr number
+---@param n number
+---@return Banana._header.BoundBoxExpect
+function M.box_pr_get_bound_box(ctx, pr, n) end
 
 ---@param ctx number
 ---@param pr number
@@ -175,7 +187,7 @@ function M.box_pr_deinit(ctx, partialid) end
 
 ---@param ctx number
 ---@param partialid number
----@param renderType u8
+---@param renderType number
 ---@return nil
 function M.box_pr_set_render_type(ctx, partialid, renderType) end
 
@@ -192,7 +204,7 @@ function M.box_context_render(ctx, buf) end
 function M.box_context_render_at(ctx, buf, start, _end) end
 
 ---@param ctx number
----@param L HlExpect
+---@param L Banana._header.HlExpect
 ---@param start number
 ---@return nil
 function M.box_context_highlight_at(ctx, L, start) end
@@ -224,7 +236,7 @@ function M.box_unsafe_increase_offset(ctx, boxid, left, top) end
 function M.box_unsafe_increase_cursor(ctx, boxid, left, top) end
 
 ---@param ctx number
----@param L HlExpect
+---@param L Banana._header.HlExpect
 ---@return nil
 function M.box_context_highlight(ctx, L) end
 
@@ -278,6 +290,16 @@ function M.box_update_cursor_from(ctx, box, other) end
 ---@param width number
 ---@return nil
 function M.box_set_width(ctx, box, width) end
+
+---@param ctx number
+---@param box number
+---@return number
+function M.box_get_cursor_y(ctx, box) end
+
+---@param ctx number
+---@param box number
+---@return number
+function M.box_get_cursor_x(ctx, box) end
 
 ---@param ctx number
 ---@param box number
@@ -365,7 +387,7 @@ function M.box_set_hl(ctx, box, style) end
 function M.box_append_word(ctx, box, str, style) end
 
 ---@param ctx number
----@param expected_bg StripRightExpect
+---@param expected_bg Banana._header.StripRightExpect
 ---@return nil
 function M.box_context_strip_right_space(ctx, expected_bg) end
 
@@ -376,7 +398,5 @@ function M.box_context_strip_right_space(ctx, expected_bg) end
 ---@param top number
 ---@return nil
 function M.box_render_over(ctx, box, otherCtx, left, top) end
-
-
 
 return M

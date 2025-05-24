@@ -1,4 +1,5 @@
 const debug = @import("debug.zig").debug;
+const _pr = @import("pr2.zig");
 const std = @import("std");
 const lua = @import("lua_api/lua.zig");
 
@@ -382,9 +383,9 @@ pub const Line = struct {
                 } else if (char.width > 2) {
                     return error.TripleWidthCharacter;
                 }
-                if (self.width() >= len) {
-                    return i;
-                }
+            }
+            if (self.width() >= len) {
+                return i;
             }
         }
         return i;
@@ -644,9 +645,7 @@ pub const BoxContext = struct {
             lines.deinit(self.alloc());
         }
         log.write("Creating string table\n", .{}) catch {};
-        const emptyStr = "";
         for (self.lines.items) |*line| {
-            const startIndex = lines.items.len;
             for (line._chars.items) |char| {
                 var chars = [_]u8{0} ** 4;
                 const bytes = try char.toBytes(&chars);
@@ -657,15 +656,6 @@ pub const BoxContext = struct {
                     );
                 }
             }
-            // TODO: Assumes added characters
-            const str = if (lines.items.len != startIndex)
-                lines.items[startIndex..]
-            else
-                emptyStr[0..0];
-            log.write(
-                "  Created line '{s}'\n",
-                .{str},
-            ) catch {};
             try lines.append(self.alloc(), 0);
         }
 
@@ -688,33 +678,35 @@ pub const BoxContext = struct {
         // if (arr.items.len >= 256) {
         //     return;
         // }
-        // const clear: tps.Array = tps.Array.fromSlice(arr.items[0..0]);
-        // fns.nvim_buf_set_lines(
-        //     consts.LUA_INTERNAL_CALL,
-        //     @enumFromInt(buf),
-        //     lineStart,
-        //     lineEnd,
-        //     true,
-        //     clear,
-        //     &arena,
-        //     &err,
-        // );
-        const endIndex = arr.items.len;
-        // while (endIndex >= 256) : (endIndex -= 255) {
-        //     const replacement: tps.Array = tps.Array.fromSlice(
-        //         arr.items[endIndex - 255 .. endIndex],
-        //     );
-        //     fns.nvim_buf_set_lines(
-        //         consts.LUA_INTERNAL_CALL,
-        //         @enumFromInt(buf),
-        //         lineStart,
-        //         lineStart,
-        //         true,
-        //         replacement,
-        //         &arena,
-        //         &err,
-        //     );
-        // }
+        if (arr.items.len >= 256) {
+            const clear: tps.Array = tps.Array.fromSlice(arr.items[0..0]);
+            fns.nvim_buf_set_lines(
+                consts.LUA_INTERNAL_CALL,
+                @enumFromInt(buf),
+                lineStart,
+                lineEnd,
+                true,
+                clear,
+                &arena,
+                &err,
+            );
+        }
+        var endIndex = arr.items.len;
+        while (endIndex >= 256) : (endIndex -= 255) {
+            const replacement: tps.Array = tps.Array.fromSlice(
+                arr.items[endIndex - 255 .. endIndex],
+            );
+            fns.nvim_buf_set_lines(
+                consts.LUA_INTERNAL_CALL,
+                @enumFromInt(buf),
+                lineStart,
+                lineStart,
+                true,
+                replacement,
+                &arena,
+                &err,
+            );
+        }
 
         const replacement: tps.Array = tps.Array.fromSlice(arr.items[0..endIndex]);
 
@@ -722,7 +714,7 @@ pub const BoxContext = struct {
             consts.LUA_INTERNAL_CALL,
             @enumFromInt(buf),
             lineStart,
-            lineEnd,
+            if (arr.items.len < 256) lineEnd else lineStart,
             false,
             replacement,
             &arena,
@@ -1201,8 +1193,9 @@ pub const Box = struct {
         defer {
             self.cursorX += actualWidth + left;
             self.width = @max(self.width, self.cursorX);
-            log.write("LINE LEN: {}", .{other.lines.items.len}) catch {};
+            log.write("LINE LEN: {}\n", .{other.lines.items.len}) catch {};
             self.height = @max(self.height, self.cursorY + @as(u16, @intCast(other.lines.items.len)) + top);
+            log.write("box height post renderOver: {}\n", .{self.height}) catch {};
             if (self.cursorX > self.maxWidth) {
                 self.cursorY += @as(u16, @intCast(other.lines.items.len)) + top;
                 self.cursorX = 0;
@@ -1227,8 +1220,8 @@ pub const Box = struct {
     }
 };
 
-pub const PartialRendered = @import("pr2.zig").PartialRendered;
-pub const PrDataStack = @import("pr2.zig").PrDataStack;
+pub const PartialRendered = _pr.PartialRendered;
+pub const PrDataStack = _pr.PrDataStack;
 
 pub fn init_boxes() void {
     contexts = .empty;
@@ -1486,6 +1479,16 @@ pub fn box_pr_new(ctx: u16, boxid: u16) !u16 {
     const partial = PartialRendered.init(box, boxid);
     return try context.newPartial(partial);
 }
+pub fn box_pr_get_bound_box_count(ctx: u16, pr: u16) !u16 {
+    const partial = try get_partial(ctx, pr);
+    return try partial.getBoundBoxCount();
+}
+
+const BoundBoxExpect = ExpectStruct("Banana.Ast.BoundingBox", _pr.BoundBox);
+pub fn box_pr_get_bound_box(ctx: u16, pr: u16, n: u16) !BoundBoxExpect {
+    const partial = try get_partial(ctx, pr);
+    return try partial.getBoundBox(n);
+}
 pub fn box_pr_set_dbg_ctx(ctx: u16, pr: u16, dbg: ?u16) !void {
     const partial = try get_partial(ctx, pr);
     partial.setDebugContext(dbg);
@@ -1615,6 +1618,13 @@ pub fn Expect(tp: type) type {
 
 /// Here so that functions can get lua functions/tables and document
 /// what they want from the type
+pub fn ExpectStruct(comptime str: []const u8, T: type) type {
+    _ = str;
+    return T;
+}
+
+/// Here so that functions can get lua functions/tables and document
+/// what they want from the type
 pub fn ExpectStr(comptime str: []const u8) type {
     return struct {
         L: *lua.State,
@@ -1688,6 +1698,22 @@ pub fn box_update_cursor_from(ctx: u16, box: u16, other: u16) !void {
 pub fn box_set_width(ctx: u16, box: u16, width: u16) !void {
     const self = try get_box(ctx, box);
     try self.setWidth(width);
+}
+pub fn box_get_offset_y(ctx: u16, box: u16) !u16 {
+    const self = try get_box(ctx, box);
+    return self.offsetY;
+}
+pub fn box_get_offset_x(ctx: u16, box: u16) !u16 {
+    const self = try get_box(ctx, box);
+    return self.offsetX;
+}
+pub fn box_get_cursor_y(ctx: u16, box: u16) !u16 {
+    const self = try get_box(ctx, box);
+    return self.cursorY;
+}
+pub fn box_get_cursor_x(ctx: u16, box: u16) !u16 {
+    const self = try get_box(ctx, box);
+    return self.cursorX;
 }
 
 pub fn box_get_hl(ctx: u16, box: u16) !u16 {
