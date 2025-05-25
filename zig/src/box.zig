@@ -534,6 +534,25 @@ pub const BoxContext = struct {
         return self.arena.reset(.retain_capacity);
     }
 
+    pub fn cloneImage(self: *BoxContext, other: *BoxContext, imageId: u16) !u16 {
+        const startLine = self.imageLines.items.len;
+        if (imageId >= other.images.items.len) {
+            return error.InvalidImageHandle;
+        }
+        const otherImage = other.images.items[imageId];
+        for (other.imageLines.items[otherImage.startIndex..otherImage.endIndex]) |line| {
+            var newLine: Line = .empty;
+            try newLine._chars.appendSlice(self.alloc(), line._chars.items);
+            try newLine._hls.appendSlice(self.alloc(), line._hls.items);
+            try self.imageLines.append(self.alloc(), newLine);
+        }
+        const endLine = self.imageLines.items.len;
+        try self.images.append(self.alloc(), .{
+            .startIndex = @intCast(startLine),
+            .endIndex = @intCast(endLine),
+        });
+        return @intCast(self.images.items.len - 1);
+    }
     pub fn newImage(self: *BoxContext, x: u16, y: u16, w: u16, h: u16, overwriteHl: Highlight) !u16 {
         const image = try Image.snap(self, x, y, w, h, overwriteHl);
         try self.images.append(self.alloc(), image);
@@ -1622,6 +1641,11 @@ pub fn box_pr_set_render_type(ctx: u16, partialid: u16, renderType: u8) !void {
 
 // }
 
+pub fn box_image_clone(ctx: u16, otherCtx: u16, imageId: u16) !u16 {
+    const context = try get_context(ctx);
+    const other = try get_context(otherCtx);
+    return try context.cloneImage(other, imageId);
+}
 pub fn box_image_snap(ctx: u16, x: u16, y: u16, w: u16, h: u16, newHl: Highlight) !u16 {
     const context = try get_context(ctx);
     return try context.newImage(x, y, w, h, newHl);

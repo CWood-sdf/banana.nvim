@@ -200,6 +200,12 @@ function M.box_pr_get_render_type(ctx, partialid) end
 function M.box_pr_set_render_type(ctx, partialid, renderType) end
 
 ---@param ctx number
+---@param otherCtx number
+---@param imageId number
+---@return number
+function M.box_image_clone(ctx, otherCtx, imageId) end
+
+---@param ctx number
 ---@param x number
 ---@param y number
 ---@param w number

@@ -63,7 +63,7 @@ return function (self, ast, box, parentHl,
     end
     -- flame.pop()
     -- flame.new("getRendered_misc")
-    if position == "absolute" then
+    if position == "absolute" and extra.renderAbsolute ~= true then
         local root = ast
         while root.absoluteAsts == nil do
             root = root._parent
@@ -271,7 +271,7 @@ return function (self, ast, box, parentHl,
     -- boundBox.rightX = boundBox.leftX + pr:getWidth()
     -- boundBox.bottomY = boundBox.topY + pr:getHeight()
     -- ast.boundBox = boundBox
-    if position ~= "static" then
+    if position == "relative" then
         if pr:getRenderType() == p.RenderType.inline then
             log.throw("Absolute position not implemented for inline els yet")
         end
@@ -300,7 +300,7 @@ return function (self, ast, box, parentHl,
             end
             ast:_increaseLeftBound(deltaX)
             ast:_increaseTopBound(deltaY)
-            -- ---@type Banana.Ast
+            ---@type Banana.Ast
             local root = ast
             while root.relativeBoxes == nil do
                 root = root._parent
@@ -324,16 +324,54 @@ return function (self, ast, box, parentHl,
     --     end
     -- end
     if ast.absoluteAsts ~= nil and #ast.absoluteAsts > 0 then
-        log.throw("Reimplement absoluteAsts")
-        -- for _, v in ipairs(ast.absoluteAsts) do
-        --     v:_resolveUnits(parentWidth, parentHeight)
-        --     v.style.position[1].value = "relative"
-        --     v.actualTag:getRendered(
-        --         v, ret.mainColor, parentWidth, parentHeight, startX, startY,
-        --         inherit,
-        --         extra)
-        --     v.style.position[1].value = "absolute"
-        -- end
+        -- log.throw("Reimplement absoluteAsts")
+        local oldRenderAbsolute = extra.renderAbsolute
+        ---@type Banana.Ast
+        local root = ast
+        while root.relativeBoxes == nil do
+            root = root._parent
+        end
+        extra.renderAbsolute = true
+        for _, v in ipairs(ast.absoluteAsts) do
+            v:_resolveUnits(box:getMaxWidth(), box:getMaxHeight())
+            local ctx = lb.box_context_create()
+            local renderBox = b.boxFromCtx(ctx, extra.trace)
+            -- local targetBox = b.boxFromCtx(pr.ctx, extra.trace)
+            renderBox:setMaxWidth(box:getMaxWidth())
+            renderBox:setMaxHeight(box:getMaxHeight())
+            local render = v.actualTag:getRendered(v, renderBox, parentHl,
+                inherit,
+                extra)
+            local width = render:getWidth()
+            local height = render:getHeight()
+            render:render()
+            local img = lb.box_image_snap(ctx, 0, 0, width, height, 0)
+            local posX = 0
+            local posY = 0
+            if v:hasStyle("left") then
+                posX = posX + v:_firstStyleValue("left").computed
+            elseif v:hasStyle("right") then
+                posX = posX - v:_firstStyleValue("right").computed
+            end
+            if v:hasStyle("top") then
+                posY = posY + v:_firstStyleValue("top").computed
+            elseif v:hasStyle("bottom") then
+                posY = posY + v:_firstStyleValue("bottom").computed
+            end
+            -- targetBox:renderOver(ctx, posX, posY)
+            -- targetBox:destroy()
+            local actualImage = lb.box_image_clone(pr.ctx, ctx, img)
+            table.insert(root.relativeBoxes, {
+                image = actualImage,
+                left = posX,
+                top = posY,
+                z = v:_firstStyleValue("z-index", 0)
+            })
+            ast:_increaseTopBound(posY)
+            ast:_increaseLeftBound(posX)
+            lb.box_context_delete(ctx)
+        end
+        extra.renderAbsolute = oldRenderAbsolute
     end
     if ast.relativeBoxes ~= nil and #ast.relativeBoxes > 0 then
         -- log.throw("Reimplement relative boxes")

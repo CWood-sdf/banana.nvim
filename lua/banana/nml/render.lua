@@ -23,6 +23,7 @@ local _tag = require("banana.lazyRequire")("banana.nml.tag")
 ---@field ctx number
 ---@field trace number?
 ---@field debug boolean
+---@field renderAbsolute boolean?
 ---@field useAllHeight boolean
 ---@field isRealRender boolean
 ---@field componentStack Banana.Ast[]
