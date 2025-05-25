@@ -367,8 +367,8 @@ return function (self, ast, box, parentHl,
                 top = posY,
                 z = v:_firstStyleValue("z-index", 0)
             })
-            ast:_increaseTopBound(posY)
-            ast:_increaseLeftBound(posX)
+            v:_increaseTopBound(posY)
+            v:_increaseLeftBound(posX)
             lb.box_context_delete(ctx)
         end
         extra.renderAbsolute = oldRenderAbsolute

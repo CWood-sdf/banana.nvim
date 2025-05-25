@@ -107,15 +107,16 @@ pub const PartialRendered = struct {
             return error.InlineBoundBoxOnNonInline;
         }
         const box = try self.getBox();
-        const padding = try self.getPadding(try self.getContext());
-        const margin = try self.getMargin(try self.getContext());
+        const ctx = try self.getContext();
+        const padding = try self.getPadding(ctx);
+        const margin = try self.getMargin(ctx);
         const width = try self.getWidth();
         const height = try self.getHeight();
         return .{
-            .leftX = try sub(box.offsetX, padding.left),
-            .rightX = box.offsetX + width - margin.side(),
-            .topY = try sub(box.offsetY, padding.top),
-            .bottomY = box.offsetY + height - margin.vert(),
+            .leftX = try sub(box.offsetX, padding.left) + 1,
+            .rightX = box.offsetX + width - margin.side() + 1,
+            .topY = try sub(box.offsetY, padding.top) + 1,
+            .bottomY = box.offsetY + height - margin.vert() + 1,
         };
     }
     // }
