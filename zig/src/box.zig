@@ -311,6 +311,13 @@ pub const Line = struct {
         };
     }
 
+    pub fn clone(self: *const Line, alloc: std.mem.Allocator) !Line {
+        var ret: Line = .empty;
+        try ret._chars.appendSlice(alloc, self._chars.items);
+        try ret._hls.appendSlice(alloc, self._hls.items);
+        return ret;
+    }
+
     pub fn getMemoryUsage(self: *const Line) usize {
         return self._chars.capacity * @sizeOf(Char) + self._hls.capacity * @sizeOf(Highlight);
     }
@@ -530,6 +537,8 @@ pub const BoxContext = struct {
         self.lines = .empty;
         self.boxes = .empty;
         self.partials = .empty;
+        self.images = .empty;
+        self.imageLines = .empty;
         self.partialData = .empty;
         return self.arena.reset(.retain_capacity);
     }
@@ -541,9 +550,7 @@ pub const BoxContext = struct {
         }
         const otherImage = other.images.items[imageId];
         for (other.imageLines.items[otherImage.startIndex..otherImage.endIndex]) |line| {
-            var newLine: Line = .empty;
-            try newLine._chars.appendSlice(self.alloc(), line._chars.items);
-            try newLine._hls.appendSlice(self.alloc(), line._hls.items);
+            const newLine: Line = try line.clone(self.alloc());
             try self.imageLines.append(self.alloc(), newLine);
         }
         const endLine = self.imageLines.items.len;
