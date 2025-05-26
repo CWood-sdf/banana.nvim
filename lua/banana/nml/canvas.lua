@@ -131,7 +131,6 @@ end
 ---@return Banana.Nml.CanvasContext
 function M.newContext(ast)
     ---@type Banana.Nml.CanvasContext
-    ---@diagnostic disable-next-line: missing-fields
     local ctx = {
         fillChar = " ",
         fillBg = "#ffffff",

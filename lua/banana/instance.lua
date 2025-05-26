@@ -1119,7 +1119,9 @@ function Instance:_render()
                 end
                 if type(bgVal) == "table" then
                     ---@cast bgVal Banana.Gradient
-                    bgVal:setPos(col - 1, line)
+                    vim.notify(col .. ", " .. bgVal.leftX .. "\n")
+                    vim.notify(line .. ", " .. bgVal.topY .. "\n")
+                    bgVal:setPos(col, line)
                     hlvalue.bg = bgVal:nextCharColor()
                 end
                 local group = "banana_grad_" ..

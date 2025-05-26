@@ -85,7 +85,7 @@ end
 ---@param height number
 ---@param boundAst Banana.Ast
 function Gradient:setBounds(left, top, width, height, boundAst)
-    self.leftX = left - 1
+    self.leftX = left
     self.topY = top - 1
     self.boundAst = boundAst
     self:setSize(width, height)
@@ -120,7 +120,6 @@ function Gradient:_clone()
         return self.cloneOwner:_clone()
     end
     ---@type Banana.Gradient
-    ---@diagnostic disable-next-line: missing-fields
     local clone = {
         locked = false,
         type = self.type,

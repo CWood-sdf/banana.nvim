@@ -97,7 +97,6 @@ function M.Ast:new(tag, parent, source)
         path = {}
     end
     ---@type Banana.Ast
-    ---@diagnostic disable-next-line: missing-fields
     local ast = {
         hl = {},
         _astId = astId,

@@ -75,7 +75,6 @@ local Box__index = flame.wrapClass(Box, "Box", false)
 function M.boxFromCtx(ctx, trace)
     local boxid = lb.box_new_from_context(ctx, 0)
     ---@type Banana.Box
-    ---@diagnostic disable-next-line: missing-fields
     local ret = {
         ctx = ctx,
         boxid = boxid,
