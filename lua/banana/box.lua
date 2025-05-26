@@ -105,7 +105,7 @@ function M.boxFromId(ctx, id, trace)
 end
 
 function Box:_dumpToSelf()
-    -- lb.box_dump_box_data(self.ctx, self.boxid, self)
+    lb.box_dump_box_data(self.ctx, self.boxid, self)
 end
 
 ---@return Banana.Box
@@ -347,6 +347,12 @@ end
 ---@param height number
 function Box:setHeight(height)
     lb.box_set_height(self.ctx, self.boxid, height)
+    self:_dumpToSelf()
+end
+
+---@param hl number
+function Box:setHlId(hl)
+    lb.box_set_hl(self.ctx, self.boxid, hl)
     self:_dumpToSelf()
 end
 

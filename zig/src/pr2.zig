@@ -438,6 +438,7 @@ pub const PartialRendered = struct {
             containerBox.dirty = containerBox.width != containerBox.cursorX;
             containerBox.width = @max(containerBox.width, containerBox.cursorX);
             const newLineHeight = @max(lineHeight, height);
+            containerBox.height = @max(containerBox.cursorY + newLineHeight, containerBox.height);
             if (containerBox.cursorX >= containerBox.maxWidth) {
                 containerBox.cursorX = 0;
                 containerBox.cursorY += newLineHeight;
@@ -496,7 +497,7 @@ pub const PartialRendered = struct {
             }
             const line = try context.getLine(@intCast(lineI));
             log.write("appendable to {}\n", .{containerBox.offsetX}) catch {};
-            try line.ensureAppendableAt(context, containerBox.offsetX);
+            try line.ensureAppendableAt(context, containerBox.offsetX, containerBox.hlgroup);
             log.write("getting image line\n", .{}) catch {};
             const imageLine = image.items[i];
 
@@ -573,9 +574,11 @@ pub const PartialRendered = struct {
                     const line = try context.getLine(@intCast(i));
                     log.write("Width expansion yay: {}\n", .{widthExpansion}) catch {};
                     // try line.appendAsciiNTimes(context, ' ', self.mainColor, widthExpansion);
+                    try line.ensureAppendableAt(context, insertPos, self.mainColor);
                     for (0..widthExpansion) |_| {
                         try line.insertAscii(context, insertPos, ' ', self.mainColor);
                     }
+                    log.write("Width expansion done yay: {}\n", .{widthExpansion}) catch {};
                 }
             },
             // prolly inlineBlock with no width:

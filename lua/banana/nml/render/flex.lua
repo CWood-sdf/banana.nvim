@@ -22,14 +22,16 @@ local function flexAdjustSection(arr, width, maxWidth, totalGrows, height,
     local extraWidth = maxWidth - width
     local growPer = extraWidth / totalGrows
     local extraGrow = 0
-    for _, render in ipairs(arr) do
+    local totalWidth = 0
+    for i, render in ipairs(arr) do
         render:setMaxHeight(height)
         render:setVerticalAlign(p.Align.left)
 
-        local grow = render.ast:_firstStyleValue("flex-grow", 1)
+        local grow = render.ast:_firstStyleValue("flex-grow", 0)
 
         ---@cast grow number
         if grow == 0 then
+            totalWidth = totalWidth + render:getWidth()
             goto continue
         end
 
@@ -37,9 +39,16 @@ local function flexAdjustSection(arr, width, maxWidth, totalGrows, height,
         local actualGrow = math.floor(growAmount)
 
         extraGrow = extraGrow + growAmount - actualGrow
-        if extraGrow >= 1 then
+        totalWidth = totalWidth + render:getWidth() + actualGrow
+        if extraGrow >= 1 and totalWidth < maxWidth then
             actualGrow = actualGrow + 1
+            totalWidth = totalWidth + 1
             extraGrow = extraGrow - 1
+        end
+
+        if totalWidth < maxWidth and i == #arr then
+            totalWidth = totalWidth + 1
+            actualGrow = actualGrow + 1
         end
 
         render:setMaxWidth(render:getWidth() + actualGrow, true)
@@ -97,6 +106,7 @@ local function flexRenderWrap(ast, box, parentHl, inherit, extra)
                 child:marginRight()
         end
         local context = lb.box_context_create()
+        table.insert(extra.extraCtx, context)
         local newBox = b.boxFromCtx(context, extra.trace)
         newBox:setMaxWidth(maxWidth)
         newBox:setMaxHeight(box:getMaxHeight())
@@ -136,7 +146,7 @@ local function flexRenderWrap(ast, box, parentHl, inherit, extra)
         width = width + render:getWidth()
 
         table.insert(renders, render)
-        totalGrows = totalGrows + child:_firstStyleValue("flex-grow", 1)
+        totalGrows = totalGrows + child:_firstStyleValue("flex-grow", 0)
         totalShrinks = totalShrinks +
             child:_firstStyleValue("flex-shrink", 1)
         maxHeight = math.max(maxHeight, render:getHeight())
@@ -152,19 +162,18 @@ local function flexRenderWrap(ast, box, parentHl, inherit, extra)
     end
 
     local xOffset = box:getOffsetX()
-    local yOffset = box:getOffsetY()
     for _, v in ipairs(lines) do
         flexAdjustSection(v.arr, v.width, parentWidth, v.totalGrows, v.height,
             inherit)
         local lineBox = box:newBelow()
-        local yCursor = box:getCursorY()
+        local yOffset = lineBox:getOffsetY()
         for _, pr in ipairs(v.arr) do
             pr:render()
-            local xCursor = box:getCursorX()
+            local xCursor = lineBox:getCursorX()
             lineBox:renderOver(pr.ctx, 0, 0)
             lb.box_context_delete(pr.ctx)
             pr.ast:_increaseLeftBound(xOffset + xCursor)
-            pr.ast:_increaseTopBound(yOffset + yCursor)
+            pr.ast:_increaseTopBound(yOffset)
         end
         box:putCursorBelow(lineBox)
         lineBox:destroy()
@@ -210,6 +219,7 @@ local function flexRenderNoWrap(ast, box, parentHl, inherit, extra, maxWidths)
                 child:marginRight()
         end
         local context = lb.box_context_create()
+        table.insert(extra.extraCtx, context)
         local newBox = b.boxFromCtx(context, extra.trace)
         newBox:setMaxWidth(maxWidth)
         newBox:setMaxHeight(box:getMaxHeight())
@@ -234,7 +244,7 @@ local function flexRenderNoWrap(ast, box, parentHl, inherit, extra, maxWidths)
         end
         width = width + render:getWidth()
 
-        totalGrows = totalGrows + child:_firstStyleValue("flex-grow", 1)
+        totalGrows = totalGrows + child:_firstStyleValue("flex-grow", 0)
         totalShrinks = totalShrinks +
             child:_firstStyleValue("flex-shrink", 1)
         maxHeight = math.max(maxHeight, render:getHeight())
@@ -260,7 +270,7 @@ local function flexRenderNoWrap(ast, box, parentHl, inherit, extra, maxWidths)
 
         local extraToAdd = 0
         local totalWidth = 0
-        for _, render in ipairs(renders) do
+        for j, render in ipairs(renders) do
             local decrease    = render:getWidth() / width *
                 render.ast:_firstStyleValue("flex-shrink", 1) *
                 shrinkFactor
@@ -273,11 +283,14 @@ local function flexRenderNoWrap(ast, box, parentHl, inherit, extra, maxWidths)
                 totalWidth = totalWidth + 1
                 extraToAdd = extraToAdd - 1
             end
+            if j == #renders and totalWidth < parentWidth then
+                w = w + 1
+            end
             if minWidth > parentWidth then
                 table.insert(newWidths, w)
             else
                 render:setMaxWidth(w)
-                render.center:setWidth(w)
+                -- render.center:setWidth(w)
             end
         end
 
@@ -296,13 +309,15 @@ local function flexRenderNoWrap(ast, box, parentHl, inherit, extra, maxWidths)
     local xOffset = box:getOffsetX()
     local yOffset = box:getOffsetY()
     local yCursor = box:getCursorY()
+    local xCursor = box:getCursorX()
     for _, pr in ipairs(renders) do
         pr:setMaxHeight(maxHeight)
         pr:setVerticalAlign(p.Align.left)
+        local w = pr:getWidth()
         pr:render()
-        local xCursor = box:getCursorX()
         pr.ast:_increaseLeftBound(xOffset + xCursor)
         pr.ast:_increaseTopBound(yOffset + yCursor)
+        xCursor = xCursor + w
         box:renderOver(pr.ctx, 0, 0)
         lb.box_context_delete(pr.ctx)
         -- TODO: Fixup ast bound boxes

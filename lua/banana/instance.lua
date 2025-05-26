@@ -117,6 +117,7 @@ function Instance:_virtualRender(ast, ctx, width, height)
     -- local traceInst = box.createContext()
     ---@type Banana.Renderer.ExtraInfo
     local extra = {
+        extraCtx = {},
         componentStack = {},
         useAllHeight = false,
         trace = traceCtx,
@@ -148,6 +149,10 @@ function Instance:_virtualRender(ast, ctx, width, height)
     end
     if not ok then
         vim.notify("Error during render: " .. err .. "\n")
+    end
+
+    for _, extraCtx in ipairs(extra.extraCtx) do
+        lb.box_context_delete(extraCtx)
     end
 
     if self.stripRight then

@@ -28,6 +28,7 @@ M.RenderType = {
 ---@field trace number?
 ---@field center Banana.Box?
 ---@field ast Banana.Ast
+---@field mainHl number
 ---@field postRender fun()[]
 local PartialRendered = {}
 
@@ -53,6 +54,7 @@ function M.emptyPartialRendered(container, ast)
     local pr = lb.box_pr_new(ctx, container.boxid)
     ---@type Banana.Renderer.PartialRendered
     local ret = {
+        mainHl = 0,
         postRender = {},
         ast = ast,
         ctx = ctx,
@@ -94,6 +96,7 @@ end
 
 ---@param hl number
 function PartialRendered:setMainHl(hl)
+    self.mainHl = hl
     lb.box_pr_set_main_hl(self.ctx, self.pr, hl)
     self:_dump()
 end

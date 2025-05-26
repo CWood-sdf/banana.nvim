@@ -20,6 +20,7 @@ local _tag = require("banana.lazyRequire")("banana.nml.tag")
 
 ---@class (exact) Banana.Renderer.ExtraInfo
 ---@field box Banana.Box?
+---@field extraCtx number[]
 ---@field ctx number
 ---@field trace number?
 ---@field debug boolean

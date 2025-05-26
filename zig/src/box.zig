@@ -407,7 +407,7 @@ pub const Line = struct {
         _ = try self.appendWordToLen(ctx, str, hl, @as(u16, @intCast(str.len)) + self.width(), true);
     }
 
-    pub fn ensureAppendableAt(self: *Line, ctx: *BoxContext, spot: u16) !void {
+    pub fn ensureAppendableAt(self: *Line, ctx: *BoxContext, spot: u16, hl: Highlight) !void {
         if (self._hls.items.len != self._chars.items.len) {
             log.write("inequal slices in ensureAppendableAt\n", .{}) catch {};
             @panic("inequal slices in ensureAppendableAt");
@@ -423,7 +423,7 @@ pub const Line = struct {
             return;
         }
         try self._chars.appendNTimes(ctx.alloc(), .space, spot - w);
-        self._hls.appendNTimes(ctx.alloc(), 0, spot - w) catch |e| {
+        self._hls.appendNTimes(ctx.alloc(), hl, spot - w) catch |e| {
             self._chars.shrinkRetainingCapacity(w);
             return e;
         };
@@ -575,7 +575,7 @@ pub const BoxContext = struct {
         for (imageLines, 0..) |imageLine, i| {
             const actualY = y + @as(u16, @intCast(i));
             const line = try self.getLine(actualY);
-            try line.ensureAppendableAt(self, x + imageLine.width());
+            try line.ensureAppendableAt(self, x + imageLine.width(), 0);
             @memcpy(line._chars.items[x .. x + imageLine.width()], imageLine._chars.items[0..]);
             @memcpy(line._hls.items[x .. x + imageLine.width()], imageLine._hls.items[0..]);
         }
@@ -1109,7 +1109,7 @@ pub const Box = struct {
         while (context.lines.items.len < self.offsetY + height) {
             log.write("Appending line!\n", .{}) catch {};
             var line = Line.init();
-            try line.ensureAppendableAt(context, self.offsetX);
+            try line.ensureAppendableAt(context, self.offsetX, self.hlgroup);
             try line.appendAsciiNTimes(
                 context,
                 ' ',
@@ -1202,7 +1202,7 @@ pub const Box = struct {
             const maxWidth = self.maxWidth;
             const line = try context.getLine(self.cursorY + self.offsetY);
 
-            try line.ensureAppendableAt(context, self.offsetX + self.cursorX);
+            try line.ensureAppendableAt(context, self.offsetX + self.cursorX, self.hlgroup);
             const startWidth = line.width();
 
             const index = try line.appendWordToLen(
@@ -1276,7 +1276,7 @@ pub const Box = struct {
         }
         for (other.lines.items, 0..) |newLine, i| {
             const line = try context.getLine(@as(u16, @intCast(i)) + offsetY);
-            try line.ensureAppendableAt(context, offsetX + newLine.width());
+            try line.ensureAppendableAt(context, offsetX + newLine.width(), self.hlgroup);
             const width = newLine.width();
             actualWidth = @max(width, actualWidth);
             std.mem.copyForwards(
@@ -1655,6 +1655,7 @@ pub fn box_image_clone(ctx: u16, otherCtx: u16, imageId: u16) !u16 {
 }
 pub fn box_image_snap(ctx: u16, x: u16, y: u16, w: u16, h: u16, newHl: Highlight) !u16 {
     const context = try get_context(ctx);
+    log.write("YO IMAGE: {} {} {} {} {}\n", .{ x, y, w, h, newHl }) catch {};
     return try context.newImage(x, y, w, h, newHl);
 }
 

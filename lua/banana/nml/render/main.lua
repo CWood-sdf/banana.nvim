@@ -282,7 +282,8 @@ return function (self, ast, box, parentHl,
                     "Unreachable: Ast bound box not set after PartialRendered:render()")
                 error("")
             end
-            local image = lb.box_image_snap(pr.ctx, bound.leftX, bound.topY,
+            local image = lb.box_image_snap(pr.ctx, bound.leftX - 1,
+                bound.topY - 1,
                 bound.rightX - bound.leftX, bound.bottomY - bound.topY,
                 b.addHighlight(extra.ctx, parentHl))
 
@@ -307,8 +308,8 @@ return function (self, ast, box, parentHl,
             end
             table.insert(root.relativeBoxes, {
                 image = image,
-                left = ast.boundBox.leftX - ast:marginLeft(),
-                top = ast.boundBox.topY - ast:marginTop(),
+                left = ast.boundBox.leftX - ast:marginLeft() - 1,
+                top = ast.boundBox.topY - ast:marginTop() - 1,
                 z = ast:_firstStyleValue("z-index", 0)
             })
         end)
@@ -335,6 +336,7 @@ return function (self, ast, box, parentHl,
         for _, v in ipairs(ast.absoluteAsts) do
             v:_resolveUnits(box:getMaxWidth(), box:getMaxHeight())
             local ctx = lb.box_context_create()
+            table.insert(extra.extraCtx, ctx)
             local renderBox = b.boxFromCtx(ctx, extra.trace)
             -- local targetBox = b.boxFromCtx(pr.ctx, extra.trace)
             renderBox:setMaxWidth(box:getMaxWidth())

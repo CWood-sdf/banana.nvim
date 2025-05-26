@@ -164,11 +164,15 @@ describe("span rendering", function ()
             "~~~~ ",
         }
         inst:forceRerender()
-        local ok1, _ = pcall(h.assertBgMapsMatch, h.bufToBgMap(inst.bufnr),
+        local ok1, e1 = pcall(h.assertBgMapsMatch, h.bufToBgMap(inst.bufnr),
             expectedMap1)
-        local ok2, _ = pcall(h.assertBgMapsMatch, h.bufToBgMap(inst.bufnr),
+        local ok2, e2 = pcall(h.assertBgMapsMatch, h.bufToBgMap(inst.bufnr),
             expectedMap2)
-        assert(ok1 or ok2, "Expected one of the centers to work")
+        if not (ok1 or ok2) then
+            error(
+                "Expected one of the centers to work\n Errors given: " ..
+                e1 .. ", " .. e2)
+        end
     end)
     it("relative positions", function ()
         local inst = require("banana.instance").emptyInstance()

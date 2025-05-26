@@ -15,9 +15,14 @@ pub fn snap(context: *BoxContext, x: u16, y: u16, w: u16, h: u16, overwriteHl: H
     for (0..h) |i| {
         const actualY = y + @as(u16, @intCast(i));
         const line = try context.getLine(actualY);
-        const newLine: Line = try line.clone(context.alloc());
+        var newLine: Line = .empty;
         // alloc jagged images just in case an inline el is relative
-        const lineEnd = @min(x + w, line.width());
+        const lineEnd = @min(x + w, line.width() + 1);
+        if (x >= line._chars.items.len) {
+            continue;
+        }
+        try newLine._chars.appendSlice(alloc, line._chars.items[x..lineEnd]);
+        try newLine._hls.appendSlice(alloc, line._hls.items[x..lineEnd]);
 
         @memset(line._chars.items[x..lineEnd], .space);
         @memset(line._hls.items[x..lineEnd], overwriteHl);

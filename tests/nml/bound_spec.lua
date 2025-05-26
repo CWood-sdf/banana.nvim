@@ -49,6 +49,6 @@ describe("bound box", function ()
             { leftX = 3, rightX = 8, topY = 3, bottomY = 4 }
         )
         h.boundsMatch(inst:querySelectorAll("#ol > li > span")[1],
-            { leftX = 6, rightX = 9, topY = 2, bottomY = 3 })
+            { leftX = 3, rightX = 9, topY = 2, bottomY = 3 })
     end)
 end)

@@ -9,9 +9,6 @@ local function renderer(self, ast, box, parentHl,
 
                         inherit, extra)
     -- flame.new("tag:ol")
-    local b = require("banana.box")
-    ---@type Banana.Box
-    local ret = b.Box:new()
 
     ---@type string
     -- local listType = "* "
@@ -38,7 +35,6 @@ local function renderer(self, ast, box, parentHl,
         -- ret:appendBoxBelow(box)
     end
     -- flame.pop()
-    return ret
 end
 ---@type Banana.TagInfo
 local M = t.newTag(

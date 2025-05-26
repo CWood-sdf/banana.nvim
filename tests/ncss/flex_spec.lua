@@ -18,6 +18,9 @@ nml {
 .grow {
     flex-grow: 1;
 }
+.no-grow {
+    flex-grow: 0;
+}
 .center {
     text-align: center;
 }
@@ -66,7 +69,7 @@ describe("Flex test", function ()
         inst:open()
         h.createElements({
             "div#.fr1.center:a",
-            "div#.w2.center:aa",
+            "div#.w2.center.no-grow:aa",
             "div#.fr1.center:a",
         }, inst, inst:getElementById("flex"))
 
@@ -93,7 +96,7 @@ describe("Flex test", function ()
 
         local expectedMap = {
             "         ",
-            "~a~~bc~d~",
+            "~a~bc~d~~",
             "         ",
         }
         inst:forceRerender()
@@ -115,7 +118,7 @@ describe("Flex test", function ()
 
         local expectedMap = {
             "         ",
-            "~ab~~c~d~",
+            "~ab~c~d~~",
             "         ",
         }
         inst:forceRerender()
@@ -212,7 +215,7 @@ describe("Flex test", function ()
 
         local expectedMap = {
             "         ",
-            "~~asg~asd",
+            "~~asgasd~",
             "         ",
         }
         inst:forceRerender()
@@ -290,7 +293,7 @@ describe("Flex test", function ()
 
         local expectedMap = {
             "         ",
-            "~a~~~b~c~",
+            "~a~~b~c~~",
             "         ",
         }
         inst:forceRerender()
@@ -344,9 +347,9 @@ describe("Flex test", function ()
         }, inst, inst:getElementById("flex"))
 
         local expectedMap = {
-            "           ",
-            "~a~b~c~d~e~",
-            "           ",
+            "         ",
+            "~ab~cd~e~",
+            "         ",
         }
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)

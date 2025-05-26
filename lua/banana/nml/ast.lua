@@ -599,17 +599,17 @@ function M.Ast:_getMaxListWidth(styleTp)
             local add = math.floor((len - 888) / 1000)
             return add + 12
         end
-        if len >= 388 then return 11 end
-        if len >= 288 then return 10 end
-        if len >= 188 then return 9 end
-        if len >= 88 then return 8 end
-        if len >= 38 then return 7 end
-        if len >= 28 then return 6 end
-        if len >= 18 then return 5 end
-        if len >= 8 then return 4 end
-        if len >= 3 then return 3 end
-        if len >= 2 then return 2 end
-        if len >= 1 then return 1 end
+        if len >= 388 then return 11 + 2 end
+        if len >= 288 then return 10 + 2 end
+        if len >= 188 then return 9 + 2 end
+        if len >= 88 then return 8 + 2 end
+        if len >= 38 then return 7 + 2 end
+        if len >= 28 then return 6 + 2 end
+        if len >= 18 then return 5 + 2 end
+        if len >= 8 then return 4 + 2 end
+        if len >= 3 then return 3 + 2 end
+        if len >= 2 then return 2 + 2 end
+        if len >= 1 then return 1 + 2 end
         return 0
     end
     return math.floor(math.log10(len) + 1) + 2
