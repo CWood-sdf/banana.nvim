@@ -28,6 +28,8 @@ local flame = require("banana.lazyRequire")("banana.utils.debug_flame")
 ---@field repeating boolean
 ---@field line? number
 ---@field col? number
+---@field leftX? number
+---@field topY? number
 ---@field lenNeeded boolean
 ---@field private locked boolean
 ---@field private cloneList Banana.Gradient[]
@@ -37,6 +39,7 @@ local flame = require("banana.lazyRequire")("banana.utils.debug_flame")
 ---@field private cacheDirty boolean
 ---@field private parentListIndex? number
 ---@field private owner? Banana.Ast
+---@field private boundAst? Banana.Ast
 local Gradient = {}
 
 ---@class (exact) Banana.Highlight: vim.api.keyset.highlight
@@ -74,6 +77,41 @@ function Gradient:getInstance(ast)
     end
     ret.owner = ast
     return ret
+end
+
+---@param left number
+---@param top number
+---@param width number
+---@param height number
+---@param boundAst Banana.Ast
+function Gradient:setBounds(left, top, width, height, boundAst)
+    self.leftX = left - 1
+    self.topY = top - 1
+    self.boundAst = boundAst
+    self:setSize(width, height)
+end
+
+---@param vert number
+---@param ast Banana.Ast
+function Gradient:moveDownBy(vert, ast)
+    if self.boundAst ~= ast then
+        return
+    end
+    self.topY = self.topY + vert
+end
+
+function Gradient:setPos(x, y)
+    self.col = x - self.leftX
+    self.line = y - self.topY
+end
+
+---@param left number
+---@param ast Banana.Ast
+function Gradient:moveLeftBy(left, ast)
+    if self.boundAst ~= ast then
+        return
+    end
+    self.leftX = self.leftX + left
 end
 
 ---@return Banana.Gradient
@@ -115,21 +153,21 @@ function Gradient:unlock()
     end
 end
 
-function Gradient:startLineRender()
-    self.col = 0
-    self.lenNeeded = self.line == 0
-end
+-- function Gradient:startLineRender()
+--     self.col = 0
+--     self.lenNeeded = self.line == 0
+-- end
 
----Skips the next n chars (for words not gradientized)
----@param count number
-function Gradient:skipNext(count)
-    self.col = self.col + count
-end
+-- ---Skips the next n chars (for words not gradientized)
+-- ---@param count number
+-- function Gradient:skipNext(count)
+--     self.col = self.col + count
+-- end
 
-function Gradient:nextLine()
-    self.line = self.line + 1
-    self.col = 0
-end
+-- function Gradient:nextLine()
+--     self.line = self.line + 1
+--     self.col = 0
+-- end
 
 ---@param n number
 ---@return number
@@ -494,7 +532,6 @@ end
 function M.linearGradient()
     -- vim.notify("creating linear gradient\n")
     ---@type Banana.Gradient
-    ---@diagnostic disable-next-line: missing-fields
     local gradient = {
         locked = false,
         cloneOwner = nil,
@@ -515,7 +552,6 @@ end
 ---@return Banana.Gradient
 function M.radialGradient()
     ---@type Banana.Gradient
-    ---@diagnostic disable-next-line: missing-fields
     local gradient = {
         locked = false,
         cloneOwner = nil,

@@ -185,23 +185,52 @@ function Instance:_virtualRender(ast, ctx, width, height)
         vim.api.nvim_win_set_hl_ns(self.DEBUG_winId, ns)
         vim.api.nvim_buf_clear_namespace(self.DEBUG_bufNr, ns, 0, -1)
         lb.box_context_highlight(traceCtx, function (line, startCol, endCol, hl)
-            if hls[hl] == nil then
-                local hlvalue = box.getHl(self.ctx, hl)
-                if hlvalue == nil then
+            pcall(function ()
+                local actualHl = box.getHl(self.ctx, hl)
+                if actualHl == nil then
                     return
                 end
-                local group = "banana_hl_" .. hl
-                vim.api.nvim_set_hl(ns, group,
-                    hlvalue)
-                hls[hl] = group
-            end
-            local group = hls[hl]
-            vim.api.nvim_buf_set_extmark(self.DEBUG_bufNr, ns, line,
-                startCol,
-                {
-                    end_col = endCol,
-                    hl_group = group,
-                })
+                if type(actualHl.fg) == "table" or type(actualHl.bg) == "table" then
+                    for col = startCol, endCol - 1 do
+                        local fgVal = actualHl.fg
+                        local bgVal = actualHl.bg
+
+                        if type(fgVal) == "table" then
+                            fgVal:setPos(col, line)
+                            ---@cast fgVal Banana.Gradient
+                            actualHl.fg = fgVal:nextCharColor()
+                        end
+                        if type(bgVal) == "table" then
+                            bgVal:setPos(col, line)
+                            ---@cast bgVal Banana.Gradient
+                            actualHl.bg = bgVal:nextCharColor()
+                        end
+                        local group = "banana_hl_" ..
+                            hl .. "_grad_" .. col .. "_" .. line
+                        vim.api.nvim_set_hl(ns, group,
+                            actualHl)
+                        actualHl.fg = fgVal
+                        actualHl.bg = bgVal
+                        hls[hl] = group
+                        vim.api.nvim_buf_set_extmark(self.DEBUG_bufNr, ns, line,
+                            startCol,
+                            {
+                                end_col = endCol,
+                                hl_group = group,
+                            })
+                    end
+                else
+                    local group = hls[hl] or ("banana_hl_" .. hl)
+                    vim.api.nvim_set_hl(ns, group, actualHl)
+                    hls[hl] = group
+                    vim.api.nvim_buf_set_extmark(self.DEBUG_bufNr, ns, line,
+                        startCol,
+                        {
+                            end_col = endCol,
+                            hl_group = group,
+                        })
+                end
+            end)
         end)
         lb.box_context_delete(traceCtx)
         -- self:_writeBoxToDebugWin(extra.trace)
@@ -1070,22 +1099,59 @@ function Instance:_render()
     vim.api.nvim_buf_clear_namespace(self.bufnr, self.highlightNs, 0, -1)
     vim.api.nvim_buf_clear_namespace(self.bufnr, 0, 0, -1)
     lb.box_context_highlight(self.ctx, function (line, startCol, endCol, hl)
-        if hls[hl] == nil then
-            local hlvalue = box.getHl(self.ctx, hl)
+        if hl == 0 then return end
+        local hlvalue = box.getHl(self.ctx, hl)
+        if hlvalue == nil then
             if hlvalue == nil then
                 return
             end
-            local group = "banana_hl_" .. hl
-            vim.api.nvim_set_hl(self.highlightNs, group,
-                hlvalue)
-            hls[hl] = group
         end
-        local group = hls[hl]
-        vim.api.nvim_buf_set_extmark(self.bufnr, self.highlightNs, line, startCol,
-            {
-                end_col = endCol,
-                hl_group = group,
-            })
+
+        if type(hlvalue.fg) == "table" or type(hlvalue.bg) == "table" then
+            for col = startCol, endCol - 1 do
+                local fgVal = hlvalue.fg
+                local bgVal = hlvalue.bg
+
+                if type(fgVal) == "table" then
+                    ---@cast fgVal Banana.Gradient
+                    fgVal:setPos(col, line)
+                    hlvalue.fg = fgVal:nextCharColor()
+                end
+                if type(bgVal) == "table" then
+                    ---@cast bgVal Banana.Gradient
+                    bgVal:setPos(col - 1, line)
+                    hlvalue.bg = bgVal:nextCharColor()
+                end
+                local group = "banana_grad_" ..
+                    hl .. "_" .. col .. "_" .. line
+                vim.api.nvim_set_hl(self.highlightNs, group,
+                    hlvalue)
+                vim.api.nvim_buf_set_extmark(self.bufnr, self.highlightNs,
+                    line,
+                    col,
+                    {
+                        end_col = col + 1,
+                        hl_group = group,
+                    })
+                hlvalue.fg = fgVal
+                hlvalue.bg = bgVal
+            end
+        else
+            local group = hls[hl]
+
+            if group == nil then
+                group = "banana_hl_" .. hl
+                hls[hl] = group
+                vim.api.nvim_set_hl(self.highlightNs, group,
+                    hlvalue)
+            end
+            vim.api.nvim_buf_set_extmark(self.bufnr, self.highlightNs, line,
+                startCol,
+                {
+                    end_col = endCol,
+                    hl_group = group,
+                })
+        end
     end)
     -- self:_highlight(stuffToRender, 0)
     local extraLines = {}

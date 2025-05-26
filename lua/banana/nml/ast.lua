@@ -1407,6 +1407,18 @@ function M.Ast:_increaseLeftBound(number)
     for child in self:childIter() do
         child:_increaseLeftBound(number)
     end
+    if type(self.hl.fg) == "table" then
+        ---@type Banana.Gradient
+        ---@diagnostic disable-next-line: assign-type-mismatch
+        local grad = self.hl.fg
+        grad:moveLeftBy(number, self)
+    end
+    if type(self.hl.bg) == "table" then
+        ---@type Banana.Gradient
+        ---@diagnostic disable-next-line: assign-type-mismatch
+        local grad = self.hl.bg
+        grad:moveLeftBy(number, self)
+    end
 end
 
 ---@param number number
@@ -1429,6 +1441,18 @@ function M.Ast:_increaseTopBound(number)
     end
     for child in self:childIter() do
         child:_increaseTopBound(number)
+    end
+    if type(self.hl.fg) == "table" then
+        ---@type Banana.Gradient
+        ---@diagnostic disable-next-line: assign-type-mismatch
+        local grad = self.hl.fg
+        grad:moveDownBy(number, self)
+    end
+    if type(self.hl.bg) == "table" then
+        ---@type Banana.Gradient
+        ---@diagnostic disable-next-line: assign-type-mismatch
+        local grad = self.hl.bg
+        grad:moveDownBy(number, self)
     end
 end
 

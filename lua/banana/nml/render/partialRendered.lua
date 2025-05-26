@@ -198,6 +198,26 @@ function PartialRendered:render(lineHeight)
         fn()
     end
 
+    local gradWidth = boundBox.rightX - boundBox.leftX + self.ast:paddingLeft() +
+        self.ast:paddingRight()
+    local gradHeight = boundBox.bottomY - boundBox.topY +
+        self.ast:paddingTop() +
+        self.ast:paddingBottom()
+    if type(self.ast.hl.fg) == "table" then
+        ---@type Banana.Gradient
+        ---@diagnostic disable-next-line: assign-type-mismatch
+        local grad = self.ast.hl.fg
+        grad:setBounds(boundBox.leftX - 1, boundBox.topY, gradWidth, gradHeight,
+            self.ast)
+    end
+    if type(self.ast.hl.bg) == "table" then
+        ---@type Banana.Gradient
+        ---@diagnostic disable-next-line: assign-type-mismatch
+        local grad = self.ast.hl.bg
+        grad:setBounds(boundBox.leftX - 1, boundBox.topY, gradWidth, gradHeight,
+            self.ast)
+    end
+
     self:_dump()
     self:destroy()
     return ret
