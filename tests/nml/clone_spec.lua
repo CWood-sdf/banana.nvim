@@ -37,7 +37,7 @@ describe("clone", function ()
         }
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
-        local clone = inst:getElementsByTag("div")[1]:clone(true)
+        local clone = inst:getElementsByTagName("div")[1]:clone(true)
         inst:body():appendChild(clone)
 
         expectedMap = {

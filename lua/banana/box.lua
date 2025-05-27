@@ -111,7 +111,6 @@ end
 function Box:newAtOffset(x, y)
     local boxid = lb.box_new_from_offset(self.ctx, self.boxid, x, y)
     ---@type Banana.Box
-    ---@diagnostic disable-next-line: missing-fields
     local ret = {
         ctx = self.ctx,
         boxid = boxid,
@@ -130,7 +129,6 @@ end
 function Box:newCursored()
     local boxid = lb.box_new_cursored(self.ctx, self.boxid)
     ---@type Banana.Box
-    ---@diagnostic disable-next-line: missing-fields
     local ret = {
         ctx = self.ctx,
         boxid = boxid,
@@ -146,7 +144,6 @@ end
 function Box:newBelow()
     local boxid = lb.box_new_below_from(self.ctx, self.boxid)
     ---@type Banana.Box
-    ---@diagnostic disable-next-line: missing-fields
     local ret = {
         ctx = self.ctx,
         boxid = boxid,
@@ -162,7 +159,6 @@ end
 function Box:newToRight()
     local boxid = lb.box_new_right_from(self.ctx, self.boxid)
     ---@type Banana.Box
-    ---@diagnostic disable-next-line: missing-fields
     local ret = {
         ctx = self.ctx,
         boxid = boxid,

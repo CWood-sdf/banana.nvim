@@ -32,7 +32,7 @@ describe("Percentage tests", function ()
         inst.DEBUG = false
         inst.stripRight = false
         inst:open()
-        inst:getElementsByTag("div")[1]:setStyleValue("margin-left", "50%")
+        inst:getElementsByTagName("div")[1]:setStyleValue("margin-left", "50%")
 
         local expectedMap = {
             "        ",

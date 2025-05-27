@@ -30,7 +30,7 @@ describe("span rendering", function ()
         inst.stripRight = false
         inst:open()
 
-        local span = inst:getElementsByTag("span")[1]
+        local span = inst:getElementsByTagName("span")[1]
         span:setTextContent("asd")
         local span2 = inst:createElement("span")
         span2:setStyle("width: 3ch; height: 1ch;")
@@ -60,7 +60,7 @@ describe("span rendering", function ()
         inst.stripRight = false
         inst:open()
 
-        local span = inst:getElementsByTag("span")[1]
+        local span = inst:getElementsByTagName("span")[1]
         span:setTextContent("asd asd")
         local expectedMap = {
             "     ",
@@ -87,7 +87,7 @@ describe("span rendering", function ()
         inst.stripRight = false
         inst:open()
 
-        local span = inst:getElementsByTag("span")[1]
+        local span = inst:getElementsByTagName("span")[1]
         span:setStyle("margin-left: 1ch;")
         local expectedMap = {
             "     ",
@@ -105,7 +105,7 @@ describe("span rendering", function ()
         inst.stripRight = false
         inst:open()
 
-        local span = inst:getElementsByTag("span")[1]
+        local span = inst:getElementsByTagName("span")[1]
         span:setStyle(
             "width: 100%; height: 100%; text-align: center; padding-top: 1ch;")
         local expectedMap = {
@@ -126,7 +126,7 @@ describe("span rendering", function ()
         inst.stripRight = false
         inst:open()
 
-        local span = inst:getElementsByTag("span")[1]
+        local span = inst:getElementsByTagName("span")[1]
         span:setStyle(" text-align: center;")
         local expectedMap = {
             "     ",
@@ -145,7 +145,7 @@ describe("span rendering", function ()
         inst.stripRight = false
         inst:open()
 
-        local span = inst:getElementsByTag("span")[1]
+        local span = inst:getElementsByTagName("span")[1]
         span:setStyle("width: 4ch; height: 100%; text-align: center;")
         local expectedMap1 = {
             "     ",
@@ -181,7 +181,7 @@ describe("span rendering", function ()
         inst.stripRight = false
         inst:open()
 
-        local span = inst:getElementsByTag("span")[1]
+        local span = inst:getElementsByTagName("span")[1]
         span:setStyle(
             "width: 2ch; height: 3ch; position: relative; left: 1ch; top: 1ch;")
         local expectedMap = {
@@ -201,7 +201,7 @@ describe("span rendering", function ()
         inst.stripRight = false
         inst:open()
 
-        local span = inst:getElementsByTag("span")[1]
+        local span = inst:getElementsByTagName("span")[1]
         span:setStyle("width: 2ch; height: 3ch;")
         local expectedMap = {
             "     ",
@@ -228,7 +228,7 @@ describe("span rendering", function ()
         }
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
 
-        local span = inst:getElementsByTag("span")[1]
+        local span = inst:getElementsByTagName("span")[1]
         span:setStyle("width: 3ch; height: 3ch;")
         expectedMap = {
             "     ",

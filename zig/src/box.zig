@@ -1874,11 +1874,6 @@ pub fn box_append_str(ctx: u16, box: u16, str: []const u8) !void {
 }
 // }
 
-// pub fn appendStr(elf: *Box, str: [*]const u8, len: u16) bool {
-//     self.appendStr_internal(str[0..len]) catch return false;
-//     return true;
-// }
-
 // set hl {
 pub fn box_set_hl(ctx: u16, box: u16, style: u16) !void {
     const self = try get_box(ctx, box);
@@ -1890,23 +1885,12 @@ pub fn box_append_word(ctx: u16, box: u16, str: []const u8, style: Highlight) !v
     const self = try get_box(ctx, box);
     try self.appendWord(str, style);
 }
-// TODO: Remove in favor of managed splitting
-// pb fn getLine(i){}
-
-// TODO: Remove in fvor of offsets
-
-// pub fn appendBoxBelow(box, expand){}
 
 const StripRightExpect = Expect(fn (hl: Highlight) u16);
 pub fn box_context_strip_right_space(ctx: u16, expected_bg: StripRightExpect) !void {
     const context = try get_context(ctx);
     try context.stripRightSpace(expected_bg.L, lua.get_top(expected_bg.L));
 }
-// TODO: Unused
-
-// pub fn trimWidthLastLine(width, trimStrat){}
-
-// NOTE: Rendering over should *only* happen from prepared box contexts
 
 pub fn box_render_over(ctx: u16, box: u16, otherCtx: u16, left: u16, top: u16) !void {
     const self = try get_box(ctx, box);
