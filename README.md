@@ -1,6 +1,6 @@
 # Banana.nvim
 
-A blazingly fast html renderer for neovim
+A blazingly fast html renderer that allows you to write uis for neovim in html
 
 > [!CAUTION]
 >
@@ -15,22 +15,20 @@ A blazingly fast html renderer for neovim
 >
 > Banana only works on neovim version 0.10.0 and above
 
+## Why
+
+If you've ever written a UI for a neovim plugin, you know that it is not very trivial to do as soon as you want interactivity or fancy element placement
+
+Banana makes it so that instead of imperatively creating UIs (eg "put red text at this position"), you can declaratively create a UI with html (eg "put a 5x5 red box below the title")
+
 ## Example
 
-This is the banana hello world:
+To create a simple hello world, put the following code in a file that ends with `.nml` and run the command `:BananaSo` inside it:
 
 ```html
 <nml>
-  <!-- in banana/stuff/foo.nml -->
   <head>
-    <style>
-      nml {
-        width: 75%;
-        height: 75%;
-        left: 12%;
-        top: 12%;
-      }
-    </style>
+    <!-- will put stuff here later -->
   </head>
   <body>
     <div>Hello World!</div>
@@ -38,24 +36,55 @@ This is the banana hello world:
 </nml>
 ```
 
-then in a lua file:
+If you want to resize the window, you can add the following code to the `<head>` tag:
 
-```lua
-local instance = require('banana.instance').newInstance("stuff/foo", "random buffer name")
-instance:open()
+```html
+<head>
+  <style>
+    nml {
+      left: 10%;
+      top: 10%;
+      width: 50%;
+      height: 50%;
+    }
+  </style>
+</head>
 ```
 
-or you can run the command `:BananaSo` inside that file for banana to automatically set up a testing instance
+If you want to change element colors, you can add the following code to the stylesheet:
 
-all of that code results in this window:
+```css
+div {
+  /* hl-<name> passes <name> to nvim_set_hl, currently only some properties are supported */
+  hl-bg: red;
+  hl-fg: black;
+  hl-bold: true;
+}
+```
 
-![helloworld](./assets/images/helloworld.png)
+If you want to add a script to the page, you can add the following code to the body tag:
 
-The file structure for this example can be seen below:
+```html
+<body>
+<script>
+  -- its just lua code here!
+  local div = document:getElementByTagName("div")[1]
+  -- makes it so that when you press K over the div, it prints a message
+  div:attachRemap("n", "K", { "hover" }, function()
+    print("Hovering over the div!")
+  end, {})
+</script>
+</body>
+```
 
-<img alt="banana-example-filetree" src="https://github.com/user-attachments/assets/0743a4d3-1c41-49eb-9c23-dd6609be3bb2" width="325" /><br />
+If you want to create a UI that can be reopened and closed, save the nml file to `<folder>/banana/<name>/<file>.nml` (where `<folder>` is somewhere in your lua path (eg `~/.config/nvim` and `~/.config/nvim/banana/thing/<file>.nml`), and run the following lua code:
 
-this may seem underwhelming as the above result can be done in a few lines of lua, but banana starts becoming extremely helpful when you start doing more complex rendering cases like nested tags, css grid display, or css flex display. For a better example, check out [banana-example](https://github.com/CWood-sdf/banana-example) or the other examples below
+```lua
+local document = require("banana.instance").newInstance("thing/<file>", "Window name")
+
+document:open()
+document:close()
+```
 
 ### Other examples
 
@@ -125,11 +154,3 @@ There is a lot of work still to be done. If you want to help out, the primary ar
 - extensibility
 
 If you have a css/html feature that you really want implemented, post it in an issue and I will see what I can do. However, there are currently no plans to support jsx or the like because it will add a massive amount of complexity (in plugin dev's dx (lsp), my sanity (and dx), and probably the end user's experience too (perf issues)).
-
-## Self promotion
-
-Follow me on [x](https://x.com/CWood_sdf)
-
-Try out my other two plugins: [spaceport](https://github.com/CWood-sdf/spaceport.nvim) and [pineapple](https://github.com/CWood-sdf/pineapple)
-
-Follow me on github
