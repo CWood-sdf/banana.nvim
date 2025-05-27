@@ -1597,7 +1597,7 @@ end
 ---works like js getElementsByTagName
 ---@param name string the tag name to search for
 ---@return Banana.Ast[]
-function Instance:getElementsByTag(name)
+function Instance:getElementsByTagName(name)
     if nilAst == nil then
         log.throw(
             "Unreachable")
