@@ -649,7 +649,7 @@ pub const BoxContext = struct {
                 if (isBanned == null) {
                     lua.push_value(L, pos);
                     lua.push_int(L, @intCast(currentHl));
-                    lua.call(L, 2, 1);
+                    lua.call(L, 1, 1);
                     const top = lua.get_top(L);
                     if (!lua.is_number(L, top)) {
                         return error.BadReturn;
@@ -660,6 +660,7 @@ pub const BoxContext = struct {
                     } else {
                         try passingItems.append(self.alloc(), currentHl);
                     }
+                    lua.pop(L, 1);
                 }
                 if (isBanned.?) {
                     line.popLastChar();
@@ -1899,7 +1900,7 @@ pub fn box_append_word(ctx: u16, box: u16, str: []const u8, style: Highlight) !v
 const StripRightExpect = Expect(fn (hl: Highlight) u16);
 pub fn box_context_strip_right_space(ctx: u16, expected_bg: StripRightExpect) !void {
     const context = try get_context(ctx);
-    try context.stripRightSpace(expected_bg.L, 2);
+    try context.stripRightSpace(expected_bg.L, lua.get_top(expected_bg.L));
 }
 // TODO: Unused
 
