@@ -10,19 +10,16 @@ local function renderer(self, ast, box, parentHl, inherit, extra)
     -- flame.new("tag:slot")
     local lastEl = extra.componentStack[#extra.componentStack]
     local renderable = lastEl:_getSlot(ast.attributes["name"])
-    local b = require("banana.box")
     if renderable:isNil() then
-        local ret = b.Box:new()
         for _, _, _ in self:blockIter(ast, box, parentHl, inherit, extra) do
         end
+        return
         -- flame.pop()
-        return ret
     end
     local ret = renderable.actualTag:getRendered(renderable, box, parentHl,
         inherit, extra)
     -- flame.pop()
     ret:render()
-    return ret.center
 end
 ---@type Banana.TagInfo
 local M = t.newTag(

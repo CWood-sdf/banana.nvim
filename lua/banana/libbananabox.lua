@@ -427,6 +427,17 @@ function M.box_set_hl(ctx, box, style) end
 function M.box_append_word(ctx, box, str, style) end
 
 ---@param ctx number
+---@param box number
+---@param x number
+---@param y number
+---@param w number
+---@param h number
+---@param char string
+---@param style number
+---@return nil
+function M.box_overlay(ctx, box, x, y, w, h, char, style) end
+
+---@param ctx number
 ---@param expected_bg Banana._header.StripRightExpect
 ---@return nil
 function M.box_context_strip_right_space(ctx, expected_bg) end

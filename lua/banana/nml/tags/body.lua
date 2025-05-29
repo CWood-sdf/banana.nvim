@@ -5,9 +5,9 @@ local t = require("banana.lazyRequire")("banana.nml.tag")
 
 ---@type Banana.Renderer
 local function renderer(self, ast, box, parentHl, inherit, extra)
-    flame.new("tag:body")
+    -- flame.new("tag:body")
     if not extra.isRealRender then
-        flame.pop()
+        -- flame.pop()
         return
     end
     -- local ret = box:newAtOffset(0, 0)
@@ -20,7 +20,7 @@ local function renderer(self, ast, box, parentHl, inherit, extra)
     -- if box:width() < parentWidth then
     --     box:expandWidthTo(parentWidth)
     -- end
-    flame.pop()
+    -- flame.pop()
 end
 ---@type Banana.TagInfo
 local M = t.newTag(

@@ -95,7 +95,7 @@ function TagInfo:blockIter(ast, box, parentHl, inherit, extra)
         if i > #ast.nodes then
             return nil
         end
-        flame.new("TagInfo:blockIter")
+        -- flame.new("TagInfo:blockIter")
         local oldI = i
         local renderBox = box:newBelow()
         if ast:_firstStyleValue("display") == "flex" then
@@ -113,7 +113,7 @@ function TagInfo:blockIter(ast, box, parentHl, inherit, extra)
         end
         box:putCursorBelow(renderBox)
         renderBox:destroy()
-        flame.pop()
+        -- flame.pop()
         return i, i - oldI
     end
 end
@@ -176,16 +176,16 @@ end
 ---@param extra Banana.Renderer.ExtraInfo
 function TagInfo:renderComponent(ast, box, parentHl,
                                  inherit, extra)
-    -- flame.new("TagInfo:renderComponent")
+    flame.new("TagInfo:renderComponent")
     ast:_tryMountComponent()
     extra.componentStack = extra.componentStack or {}
     table.insert(extra.componentStack, ast)
 
     ast.componentTree:_resolveUnits(box:getMaxWidth(), box:getMaxHeight())
     ast.componentTree.actualTag:getRendered(ast.componentTree, box,
-        parentHl, inherit, extra):render()
+        parentHl, inherit, extra):render(0)
     table.remove(extra.componentStack, #extra.componentStack)
-    -- flame.pop()
+    flame.pop()
 end
 
 M.TagInfo = TagInfo

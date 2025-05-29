@@ -721,13 +721,13 @@ end
 ---@param extra Banana.Renderer.ExtraInfo
 ---@return Banana.Box, integer
 function M.render(ast, box, parentHl, inherit, extra)
-    flame.new("TagInfo:renderGridBlock")
+    -- flame.new("TagInfo:renderGridBlock")
     local thing = so.grid_getNew()
     -- have to be able to free the zig memory, hence the pcall
     local errOrRet, i = actualRender(thing, ast, box, parentHl,
         inherit, extra)
     so.grid_freeSection(thing)
-    flame.pop()
+    -- flame.pop()
     -- if not ok then error(errOrRet) end
     return errOrRet, i
 end

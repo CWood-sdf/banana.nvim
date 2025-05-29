@@ -10,11 +10,6 @@ local function renderer(self, ast, box, _,
     -- flame.new("tag:title")
     local inst = require("banana.instance").getInstance(ast.instance)
     inst:setBufName(ast:getTextContent())
-    local b = require("banana.box")
-    ---@type Banana.Box
-    local ret = b.Box:new()
-    -- flame.pop()
-    return ret
 end
 ---@type Banana.TagInfo
 local M = t.newTag(

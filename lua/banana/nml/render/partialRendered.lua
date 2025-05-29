@@ -32,7 +32,8 @@ M.RenderType = {
 ---@field postRender fun()[]
 local PartialRendered = {}
 
-local PrIndex = flame.wrapClass(PartialRendered, "Partial", false)
+local PrIndex =
+    PartialRendered -- flame.wrapClass(PartialRendered, "Partial", true)
 
 ---@return Banana.Renderer.PartialRendered
 function M.noopPartialRendered()
@@ -183,13 +184,13 @@ function PartialRendered:render(lineHeight)
     if self.trace ~= nil then
         lb.box_context_dump_to(self.ctx, self.trace, "render pre")
     end
-    flame.new("box_pr_render")
+    -- flame.new("box_pr_render")
     local ret = lb.box_pr_render(self.ctx, self.pr, lineHeight)
     if self.trace ~= nil then
         lb.box_context_dump_to(self.ctx, self.trace, "render post")
         lb.box_context_dump_to(self.ctx, self.trace, "render post")
     end
-    flame.pop()
+    -- flame.pop()
 
     local boundBox = self:getBoundBox(1)
     self.ast.boundBox = boundBox

@@ -139,11 +139,15 @@ function M.initTsParsers()
     end
     tsInit = true
     local parser_config = require("nvim-treesitter.parsers").get_parser_configs()
-    vim.treesitter.language.register("nml", "nml")
+    vim.filetype.add({
+        extension = { nml = "nml", ncss = "ncss" },
+    })
+
     ---@diagnostic disable-next-line: inject-field
     parser_config.nml = {
         install_info = {
-            url = M.getInstallDir() .. "/tree-sitter-nml",
+            url = "https://github.com/CWood-sdf/tree-sitter-nml",
+            -- path = M.getInstallDir() .. "/tree-sitter-nml",
             files = { "src/parser.c", "src/scanner.c" },
             branch = "main",
             generate_requires_npm = false,
@@ -151,10 +155,11 @@ function M.initTsParsers()
         },
         filetype = "nml",
     }
+    vim.treesitter.language.register("nml", "nml")
     ---@diagnostic disable-next-line: inject-field
     parser_config.ncss = {
         install_info = {
-            url = M.getInstallDir() .. "/tree-sitter-ncss",
+            url = "https://github.com/CWood-sdf/tree-sitter-ncss",
             files = { "src/parser.c", "src/scanner.c" },
             branch = "main",
             generate_requires_npm = false,

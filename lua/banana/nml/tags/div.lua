@@ -5,13 +5,13 @@ local t = require("banana.lazyRequire")("banana.nml.tag")
 
 ---@type Banana.Renderer
 local function renderer(self, ast, box, parentHl, inherit, extra)
-    flame.new("tag:div")
+    -- flame.new("tag:div")
     for _, _, _ in self:blockIter(ast, box, parentHl, inherit, extra) do
         -- ret:appendBoxBelow(box)
     end
     -- flame.expect("tag:div")
-    flame.pop()
-    return box
+    -- flame.pop()
+    -- return box
 end
 ---@type Banana.TagInfo
 local M = t.newTag(

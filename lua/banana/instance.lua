@@ -162,6 +162,7 @@ function Instance:_virtualRender(ast, ctx, width, height)
         if bgNum ~= nil then
             expectedBg = string.format("#%06x", bgNum)
         end
+        flame.new("stripRight")
         lb.box_context_strip_right_space(self.ctx, function (hl)
             local style = box.getHl(self.ctx, hl)
             if style ~= nil then
@@ -174,6 +175,7 @@ function Instance:_virtualRender(ast, ctx, width, height)
             end
             return 1
         end)
+        flame.pop()
     end
     if extra.debug and self.DEBUG_bufNr ~= nil and traceCtx ~= nil then
         lb.box_context_render(traceCtx, self.DEBUG_bufNr)
@@ -239,7 +241,7 @@ function Instance:_virtualRender(ast, ctx, width, height)
 end
 
 function Instance:_openDebugWin()
-    flame.new("debugwin")
+    -- flame.new("debugwin")
     if self.DEBUG_bufNr == nil or not vim.api.nvim_buf_is_valid(self.DEBUG_bufNr) then
         self.DEBUG_bufNr = vim.api.nvim_create_buf(false, true)
         -- vim.api.nvim_set_option_value("filetype", "markdown", {
@@ -251,8 +253,8 @@ function Instance:_openDebugWin()
         -- vim.api.nvim_buf_clear_namespace(self.DEBUG_bufNr, 0, 0, -1)
     end
 
-    flame.pop()
-    flame.new("debugwin2")
+    -- flame.pop()
+    -- flame.new("debugwin2")
     if self.DEBUG_winId == nil or not vim.api.nvim_win_is_valid(self.DEBUG_winId) then
         local w = math.floor(self.DEBUG_winWidth or vim.o.columns / 2.5)
         self.DEBUG_winId = vim.api.nvim_open_win(self.DEBUG_bufNr, false, {
@@ -272,7 +274,7 @@ function Instance:_openDebugWin()
     else
         -- vim.api.nvim_set_current_win(self.DEBUG_winId)
     end
-    flame.pop()
+    -- flame.pop()
 end
 
 function Instance:_clearDebugWinBuf()
@@ -290,24 +292,6 @@ function Instance:_writeLinesToDebugWin(lines)
     local l = vim.api.nvim_buf_get_lines(self.DEBUG_bufNr, 0, -1, false)
 
     vim.api.nvim_buf_set_lines(self.DEBUG_bufNr, #l, -1, false, lines)
-end
-
----@param box Banana.Box
-function Instance:_writeBoxToDebugWin(box)
-    if self.DEBUG_bufNr == nil or not vim.api.nvim_buf_is_valid(self.DEBUG_bufNr) then
-        return
-    end
-    local lines = box:getLines()
-    local offset = #vim.api.nvim_buf_get_lines(self.DEBUG_bufNr, 0, -1, false)
-    for _, l in ipairs(lines) do
-        local line = ""
-        for _, w in ipairs(l) do
-            line = line .. w.word
-        end
-        vim.api.nvim_buf_set_lines(self.DEBUG_bufNr, -1, -1, false, { line })
-    end
-    self:_highlight(lines, offset, self.DEBUG_bufNr, self.DEBUG_winId,
-        self.highlightNs, false)
 end
 
 ---Sets the name of the buffer
@@ -820,7 +804,7 @@ end
 
 ---@return number, number
 function Instance:_createWinAndBuf()
-    flame.new("winAndBuf")
+    -- flame.new("winAndBuf")
     local headQuery = require("banana.ncss.query").selectors.oneTag("head")
     local headTag = headQuery:getMatches(self.ast)
     local ctx = lb.box_context_create()
@@ -933,8 +917,8 @@ function Instance:_createWinAndBuf()
         vim.api.nvim_win_set_buf(self.winid, self.bufnr)
     end
     lb.box_context_delete(ctx)
-    flame.expect("winAndBuf")
-    flame.pop()
+    -- flame.expect("winAndBuf")
+    -- flame.pop()
 
     return width, height
 end
@@ -954,7 +938,7 @@ function Instance:_deferRender(post)
         if post ~= nil then
             post()
         end
-    end, 20)
+    end, 5)
 end
 
 function Instance:_requestRender()
@@ -1002,10 +986,10 @@ function Instance:_render()
     local actualStart = startTime
     local astTime = 0
     local styleTime = 0
-    -- if self.DEBUG_showPerf or self.DEBUG then
-    --     -- flame.overrideIsDev()
-    --     -- flame.newIter()
-    -- end
+    if self.DEBUG_showPerf or self.DEBUG then
+        flame.overrideIsDev()
+        flame.newIter()
+    end
     flame.new("style")
     self.ast:_clearStyles()
     self:_applyStyleDeclarations(self.ast, self.styleRules)
@@ -1015,8 +999,9 @@ function Instance:_render()
     flame.pop()
     self:body().relativeBoxes = {}
     self:body().absoluteAsts = {}
+    -- vim.notify("Rendering\n")
 
-    styleTime = (vim.loop.hrtime() - startTime) * 10
+    styleTime = vim.loop.hrtime() - startTime
     startTime = vim.loop.hrtime()
 
     local width, height = self:_createWinAndBuf()
@@ -1057,9 +1042,14 @@ function Instance:_render()
         self.renderRequested = true
         -- collectgarbage("restart")
         -- collectgarbage("collect")
-        self:_deferRender(function ()
-            self:_fireEvent("ScriptDone")
-        end)
+        self.renderRequested = false
+        self.renderStart = vim.loop.hrtime()
+        self:_render()
+        self.renderRequested = false
+        self.rendering = false
+        -- self:_deferRender(function ()
+        self:_fireEvent("ScriptDone")
+        -- end)
         return
     end
 

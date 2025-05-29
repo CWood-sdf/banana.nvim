@@ -688,11 +688,6 @@ pub const BoxContext = struct {
     pub fn render(self: *BoxContext, buf: tps.Integer, lineStart: i64, lineEnd: i64) !void {
         log.write("yuhh rendering buf {}\n", .{buf}) catch {};
         var err = tps.Error{ .type = .None, .msg = @ptrFromInt(0) };
-        var arena: tps.Arena = .{
-            .current_block = "",
-            .size = 0,
-            .pos = 0,
-        };
         log.write("yuhh creating string table\n", .{}) catch {};
         var arr: std.ArrayListUnmanaged(tps.Object) = .empty;
         defer arr.deinit(self.alloc());
@@ -737,48 +732,68 @@ pub const BoxContext = struct {
         // if (arr.items.len >= 256) {
         //     return;
         // }
-        if (arr.items.len >= 256) {
-            const clear: tps.Array = tps.Array.fromSlice(arr.items[0..0]);
-            fns.nvim_buf_set_lines(
-                consts.LUA_INTERNAL_CALL,
-                @enumFromInt(buf),
-                lineStart,
-                lineEnd,
-                true,
-                clear,
-                &arena,
-                &err,
-            );
-        }
-        var endIndex = arr.items.len;
-        while (endIndex >= 256) : (endIndex -= 255) {
-            const replacement: tps.Array = tps.Array.fromSlice(
-                arr.items[endIndex - 255 .. endIndex],
-            );
-            fns.nvim_buf_set_lines(
-                consts.LUA_INTERNAL_CALL,
-                @enumFromInt(buf),
-                lineStart,
-                lineStart,
-                true,
-                replacement,
-                &arena,
-                &err,
-            );
-        }
+        // if (arr.items.len >= 256) {
+        //     // TODO: Reset cursor
+        //     const clear: tps.Array = tps.Array.fromSlice(arr.items[0..0]);
+        //     fns.nvim_buf_set_lines(
+        //         consts.LUA_INTERNAL_CALL,
+        //         @enumFromInt(buf),
+        //         lineStart,
+        //         lineEnd,
+        //         true,
+        //         clear,
+        //         &arena,
+        //         &err,
+        //     );
+        //     var endIndex = arr.items.len;
+        //     while (endIndex >= 256) : (endIndex -= 255) {
+        //         const replacement: tps.Array = tps.Array.fromSlice(
+        //             arr.items[endIndex - 255 .. endIndex],
+        //         );
+        //         fns.nvim_buf_set_lines(
+        //             consts.LUA_INTERNAL_CALL,
+        //             @enumFromInt(buf),
+        //             lineStart,
+        //             lineStart,
+        //             true,
+        //             replacement,
+        //             &arena,
+        //             &err,
+        //         );
+        //     }
+        //     const replacement: tps.Array = tps.Array.fromSlice(arr.items[0..endIndex]);
+        //
+        //     fns.nvim_buf_set_lines(
+        //         consts.LUA_INTERNAL_CALL,
+        //         @enumFromInt(buf),
+        //         lineStart,
+        //         lineStart,
+        //         false,
+        //         replacement,
+        //         &arena,
+        //         &err,
+        //     );
+        // } else {
+        const replacement: tps.Array = tps.Array.fromSlice(arr.items[0..arr.items.len]);
 
-        const replacement: tps.Array = tps.Array.fromSlice(arr.items[0..endIndex]);
+        const arenaBuf: []u8 = @ptrCast(try self.alloc().alloc(*u8, arr.items.len + 10));
+        var arena: tps.Arena = .{
+            .current_block = arenaBuf.ptr,
+            .size = arenaBuf.len,
+            .pos = 0,
+        };
 
         fns.nvim_buf_set_lines(
             consts.LUA_INTERNAL_CALL,
             @enumFromInt(buf),
             lineStart,
-            if (arr.items.len < 256) lineEnd else lineStart,
+            lineEnd,
             false,
             replacement,
             &arena,
             &err,
         );
+        // }
         log.write("Lines written: {}\n", .{arr.items.len}) catch {};
 
         if (err.type != .None) {
@@ -983,6 +998,35 @@ pub const Box = struct {
             .cursorX = 0,
             .cursorY = 0,
         };
+    }
+
+    pub fn overlay(self: *Box, x: u16, y: u16, w: u16, h: u16, char: []const u8, hl: Highlight) !void {
+        const c = try Char.fromUtf8(char);
+        const localOffsetX = self.cursorX + x;
+        const localOffsetY = self.cursorY + y;
+        var realW = @min(self.maxWidth - localOffsetX, w);
+        realW -= realW % c.width;
+        const realH = @min(self.maxHeight - localOffsetY, h);
+        if (localOffsetX + realW > self.width) {
+            self.width = localOffsetX + realW;
+            self.dirty = true;
+        }
+        if (localOffsetY + realH > self.height) {
+            self.height = localOffsetY + realH;
+        }
+        const offsetX = self.offsetX + localOffsetX;
+        const offsetY = self.offsetY + localOffsetY;
+        const ctx = try self.getContext();
+        for (offsetY..offsetY + realH) |i| {
+            const line = try ctx.getLine(@intCast(i));
+            var xPos = offsetX;
+            try line.ensureAppendableAt(ctx, offsetX + realW, 0);
+            while (xPos < offsetX + realW) : (xPos += c.width) {
+                line._chars.items[xPos + c.width - 1] = .dummy;
+                line._chars.items[xPos] = c;
+                line._hls.items[xPos] = hl;
+            }
+        }
     }
 
     pub fn getContext(self: *Box) !*BoxContext {
@@ -1884,6 +1928,11 @@ pub fn box_set_hl(ctx: u16, box: u16, style: u16) !void {
 pub fn box_append_word(ctx: u16, box: u16, str: []const u8, style: Highlight) !void {
     const self = try get_box(ctx, box);
     try self.appendWord(str, style);
+}
+
+pub fn box_overlay(ctx: u16, box: u16, x: u16, y: u16, w: u16, h: u16, char: []const u8, style: Highlight) !void {
+    const self = try get_box(ctx, box);
+    try self.overlay(x, y, w, h, char, style);
 }
 
 const StripRightExpect = Expect(fn (hl: Highlight) u16);

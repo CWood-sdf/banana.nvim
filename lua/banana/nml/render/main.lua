@@ -38,7 +38,7 @@ end
 ---@return Banana.Renderer.PartialRendered
 return function (self, ast, box, parentHl,
                  inherit, extra)
-    flame.new("getRendered_start")
+    -- flame.new("getRendered_start")
     ast.relativeBoxId = nil
     local inheritOld = {}
     -- setmetatable(inherit, { __mode = "kv" })
@@ -67,7 +67,7 @@ return function (self, ast, box, parentHl,
         for k, _ in pairs(inheritOld) do
             inherit[k] = inheritOld[k]
         end
-        flame.pop()
+        -- flame.pop()
         -- return pr
         return p.noopPartialRendered()
     end
@@ -77,7 +77,7 @@ return function (self, ast, box, parentHl,
             inherit[k] = inheritOld[k]
         end
         ast.hidden = true
-        flame.pop()
+        -- flame.pop()
         return p.noopPartialRendered()
     end
     ast.hidden = false
@@ -284,6 +284,6 @@ return function (self, ast, box, parentHl,
     for k, _ in pairs(inheritOld) do
         inherit[k] = inheritOld[k]
     end
-    flame.pop()
+    -- flame.pop()
     return pr
 end

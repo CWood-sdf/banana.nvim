@@ -11,8 +11,13 @@ local lb = require("banana.lazyRequire")("banana.libbanana")
 
 local M = {}
 
----@type Banana.Highlight[][]
+---A global list of all the highlights
+---@type (Banana.Highlight?)[]
 local hls = {}
+
+---The highlights owned by a context
+---@type number[][]
+local contextHls = {}
 
 ---@type { [Banana.Highlight]: number }[]
 local hlsMap = {}
@@ -20,20 +25,22 @@ local hlsMap = {}
 ---@return number
 function M.createContext()
     local ctx = lb.box_context_create()
-    hls[ctx + 1] = {}
     hlsMap[ctx + 1] = {}
+    contextHls[ctx + 1] = {}
     return ctx
 end
 
 ---@param ctx number
 function M.deleteContext(ctx)
-    hls[ctx + 1] = {}
+    for _, hl in ipairs(contextHls[ctx + 1]) do
+        hls[hl] = nil
+    end
+    contextHls[ctx + 1] = {}
     hlsMap[ctx + 1] = {}
 end
 
 function M.wipeContext(ctx)
-    hls[ctx + 1] = {}
-    hlsMap[ctx + 1] = {}
+    M.deleteContext(ctx)
 end
 
 ---@param ctx number
@@ -43,19 +50,20 @@ function M.addHighlight(ctx, hl)
     if hl == nil then
         return 0
     end
-    if hlsMap[ctx + 1][hl] ~= nil then
-        return hlsMap[ctx + 1][hl]
+    local str = vim.inspect(hl)
+    if hlsMap[ctx + 1][str] ~= nil then
+        return hlsMap[ctx + 1][str]
     end
-    -- if #hls == 0 and hl.bg == "red" then
-    table.insert(hls[ctx + 1], hl)
-    hlsMap[ctx + 1][hl] = #hls[ctx + 1]
-    -- end
-    return #hls[ctx + 1]
+    local id = #hls + 1
+    hls[#hls+1] = hl
+    hlsMap[ctx + 1][str] = id
+    table.insert(contextHls[ctx + 1], id)
+    return id
 end
 
 ---@return Banana.Highlight?
-function M.getHl(ctx, hl)
-    return hls[ctx + 1][hl]
+function M.getHl(_, hl)
+    return hls[hl]
 end
 
 ---@class (exact) Banana.Box
@@ -68,7 +76,7 @@ local Box = {
     boxid = 0,
     hlgroup = 0,
 }
-local Box__index = flame.wrapClass(Box, "Box", false)
+local Box__index = Box -- flame.wrapClass(Box, "Box", true)
 ---@param ctx number
 ---@param trace number?
 ---@return Banana.Box
@@ -104,7 +112,7 @@ function M.boxFromId(ctx, id, trace)
 end
 
 function Box:_dumpToSelf()
-    lb.box_dump_box_data(self.ctx, self.boxid, self)
+    -- lb.box_dump_box_data(self.ctx, self.boxid, self)
 end
 
 ---@return Banana.Box
@@ -302,6 +310,17 @@ end
 ---@param width number
 function Box:expandWidthTo(width)
     lb.box_expand_width_to(self.ctx, self.boxid, width)
+    self:_dumpToSelf()
+end
+
+---@param x number
+---@param y number
+---@param w number
+---@param h number
+---@param char string
+---@param style number
+function Box:overlay(x, y, w, h, char, style)
+    lb.box_overlay(x, y, w, h, char, style)
     self:_dumpToSelf()
 end
 

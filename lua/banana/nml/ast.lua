@@ -133,6 +133,7 @@ function M.Ast:new(tag, parent, source)
     end
     setmetatable(ast, { __index = M.Ast })
 
+
     return ast
 end
 
@@ -649,6 +650,7 @@ function M.Ast:_defaultStyles()
         zeroUnit,
         zeroUnit,
     }
+    self.hidden = true
     self.style = {}
     self:_unlockGradients()
     self.hl = {}
@@ -663,7 +665,7 @@ function M.Ast:_clearStyles()
         self:_tryMountComponent()
     end
     if self.componentTree ~= nil then
-        self.componentTree:_defaultStyles()
+        self.componentTree:_clearStyles()
     end
     self:_defaultStyles()
     for node in self:childIter() do
@@ -705,7 +707,7 @@ function M.Ast:insertBefore(child, referenceNode)
         end
     end
     if not found then
-        table.insert(self.node, 1, child)
+        table.insert(self.nodes, 1, child)
     end
     self:_requestRender()
 end
@@ -1595,6 +1597,7 @@ end
 ---Returns the printed text value of this element (does not include newlines)
 ---@return string
 function M.Ast:getTextContent()
+    -- TODO: Handle substitutions and stuff
     local ret = ""
     for _, v in ipairs(self.nodes) do
         if type(v) == "string" then
@@ -1647,9 +1650,7 @@ end
 ---Returns true when this node is not rendered
 ---@return boolean
 function M.Ast:isHidden()
-    if self.hidden then return true end
-    if self._parent:isNil() then return false end
-    return self._parent:isHidden()
+    return self.hidden
 end
 
 ---Attaches the given remap to the ast
@@ -1681,7 +1682,9 @@ function M.Ast:attachRemap(mode, lhs, mods, rhs, opts)
         end
     end
     local actualRhs = function ()
-        if self:isHidden() then return false end
+        if self:isHidden() then
+            return false
+        end
         local works = #modFns == 0
         for _, v in ipairs(modFns) do
             if v() then

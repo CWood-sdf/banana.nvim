@@ -1,8 +1,13 @@
 local M = {}
 ---@module "banana.box"
 local box = require "banana.lazyRequire" ("banana.box")
+---@module "banana.libbananabox"
+local lb = require "banana.lazyRequire" ("banana.libbananabox")
+
 ---@class Banana.Nml.CanvasContext
+---@field ctx number
 ---@field fillChar string
+---@field hlid number?
 ---@field fillBg string
 ---@field fillFg string
 ---@field box Banana.Box
@@ -10,12 +15,43 @@ local box = require "banana.lazyRequire" ("banana.box")
 local Context = {
 }
 
-function Context:background()
-    local newBox = box.Box:new({
+---@param bg any
+function Context:setFillBg(bg)
+    if self.fillBg ~= bg then
+        self.fillBg = bg
+        self.hlid = nil
+    end
+end
+
+---@param fg any
+function Context:setFillFg(fg)
+    if self.fillFg ~= fg then
+        self.fillFg = fg
+        self.hlid = nil
+    end
+end
+
+---@return number
+function Context:_getHlId()
+    if self.hlid ~= nil then
+        return self.hlid
+    end
+    local hlid = box.addHighlight(self.ctx, {
         bg = self.fillBg,
         fg = self.fillFg,
-    }, self.fillChar)
+    })
+    self.hlid = hlid
+    return hlid
+end
+
+function Context:background()
     local w, h = self:width(), self:height()
+    box.wipeContext(box)
+    lb.box_context_wipe(self.ctx)
+    self.hlid = nil
+    ---@type Banana.Box
+    local newBox = box.boxFromCtx(self.ctx, nil)
+    newBox:setHlId(self:_getHlId())
     self.box = newBox
     self:resize(w, h)
     self.ast:_requestRender()
@@ -39,10 +75,7 @@ end
 ---@param w number
 ---@param h number
 function Context:rect(x, y, w, h)
-    local overlay = box.Box:new({
-        bg = self.fillBg,
-        fg = self.fillFg,
-    }, self.fillChar)
+    local hlid = self:_getHlId()
     x = math.floor(x)
     y = math.floor(y)
     w = math.floor(w)
@@ -75,16 +108,14 @@ function Context:rect(x, y, w, h)
         x = 0
         w = w - extra
     end
-    overlay:expandHeightTo(math.min(h, self:height() - y))
-    overlay:expandWidthTo(math.min(w, self:width() - x))
-    self.box:renderOver(overlay, x, y)
+    self.box:overlay(x, y, w, h, self.fillChar, hlid)
     self.ast:_requestRender()
 end
 
----@return Banana.Box
-function Context:getBox()
-    return self.box:clone()
-end
+-- ---@return Banana.Box
+-- function Context:getBox()
+--     -- return self.box:clone()
+-- end
 
 ---@return number
 function Context:height()
@@ -100,10 +131,7 @@ end
 ---@param x any
 ---@param y any
 function Context:point(x, y)
-    local overlay = box.Box:new({
-        bg = self.fillBg,
-        fg = self.fillFg,
-    }, self.fillChar)
+    local hlid = self:_getHlId()
     x = math.floor(x)
     y = math.floor(y)
     if y >= self:height() or y < 0 then
@@ -112,9 +140,7 @@ function Context:point(x, y)
     if x >= self:width() or x < 0 then
         return
     end
-    overlay:expandHeightTo(1)
-    overlay:expandWidthTo(1)
-    self.box:renderOver(overlay, x, y)
+    self.box:overlay(x, y, 1, 1, self.fillChar, hlid)
     self.ast:_requestRender()
 end
 
@@ -132,6 +158,7 @@ end
 function M.newContext(ast)
     ---@type Banana.Nml.CanvasContext
     local ctx = {
+        ctx = lb.box_context_create(),
         fillChar = " ",
         fillBg = "#ffffff",
         fillFg = "#000000",
