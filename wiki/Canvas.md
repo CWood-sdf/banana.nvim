@@ -12,12 +12,25 @@ local canvas = document:getElementsByTagName("canvas")[1]
 
 -- done!
 local context = canvas:getContext()
+
+context:setFillFg("#ff0000")
+context:setFillChar(" ")
+context:rect(1, 1, 5, 5)
 ```
 
 After that, you can just call methods and stuff to render
 
 ## TOC
 
+- [`setFillChar`](#setFillChar)
+- [`setFillFg`](#setFillFg)
+- [`setFillBg`](#setFillBg)
+- [`text`](#text)
+- [`point`](#point)
+- [`width`](#width)
+- [`height`](#height)
+- [`rect`](#rect)
+- [`background`](#background)
 
 # Methods
   
