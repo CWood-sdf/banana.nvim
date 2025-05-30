@@ -654,7 +654,7 @@ pub const BoxContext = struct {
                     if (!lua.is_number(L, top)) {
                         return error.BadReturn;
                     }
-                    isBanned = lua.to_cast_int(L, top, u8) != 0;
+                    isBanned = try lua.to_cast_int(L, top, u8) != 0;
                     if (isBanned.?) {
                         try bannedItems.append(self.alloc(), currentHl);
                     } else {

@@ -14,10 +14,12 @@ pub const get_top = lua_gettop;
 extern fn lua_tonumber(L: *State, index: c_int) callconv(.C) Number;
 pub const to_number = lua_tonumber;
 pub fn to_int(L: *State, index: c_int) i64 {
-    return @intFromFloat(to_number(L, index));
+    const int: i64 = @intFromFloat(to_number(L, index));
+    return std.math.cast(i64, int) orelse error.IntCantFit;
 }
-pub fn to_cast_int(L: *State, index: c_int, tp: type) tp {
-    return @as(tp, @intFromFloat(to_number(L, index)));
+pub fn to_cast_int(L: *State, index: c_int, tp: type) !tp {
+    const int: i64 = @intFromFloat(to_number(L, index));
+    return std.math.cast(tp, int) orelse error.IntCantFit;
 }
 extern fn lua_toboolean(L: *State, index: c_int) callconv(.C) c_int;
 pub fn to_bool(L: *State, index: c_int) bool {

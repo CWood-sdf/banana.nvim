@@ -19,15 +19,16 @@ pub fn luaReturn(L: *lua.State, v: anytype) c_int {
     return 1;
 }
 
-pub fn pushValue(L: *lua.State, v: anytype) void {
+pub fn pushError(L: *lua.State, v: anyerror) void {
+    lua.push_stringslice(L, @errorName(v));
+    _ = lua.senderror(L);
+}
+
+pub fn pushValue(L: *lua.State, v: anytype) !void {
     const info = @typeInfo(@TypeOf(v));
     switch (info) {
         .int => {
-            if (@as(i128, @intCast(v)) > @as(i128, @intCast(std.math.maxInt(c_int))) or @as(i128, @intCast(v)) < @as(i128, @intCast(std.math.minInt(c_int)))) {
-                lua.push_stringslice(L, "IntegerTooBig");
-                _ = lua.senderror(L);
-            }
-            lua.push_int(L, @intCast(v));
+            lua.push_int(L, std.math.cast(c_int, v) orelse return error.IntUncastable);
         },
         .bool => {
             lua.push_bool(L, v);
@@ -52,7 +53,7 @@ pub fn pushValue(L: *lua.State, v: anytype) void {
             lua.create_table(L, 0, s.fields.len);
             inline for (s.fields) |field| {
                 const top = lua.get_top(L);
-                pushValue(L, @field(v, field.name));
+                try pushValue(L, @field(v, field.name));
                 lua.set_field(L, top, field.name);
             }
         },
@@ -78,29 +79,29 @@ pub fn toLuaType(tp: type) lua.Type {
 }
 pub fn parseParam(L: *lua.State, index: c_int, tp: type, failReturn: anytype) !tp {
     const info = @typeInfo(tp);
-    errdefer {
-        const failInfo = @typeInfo(@TypeOf(failReturn));
-        switch (failInfo) {
-            .null => {
-                _ = lua.push_fmtstring(
-                    L,
-                    "Expected type {} but got type {} in parameter {}",
-                    .{ toLuaType(tp), lua.gettype(L, index), index },
-                );
-                _ = lua.senderror(L);
-            },
-            else => {
-                pushValue(L, failReturn);
-            },
-        }
-    }
+    // errdefer {
+    //     const failInfo = @typeInfo(@TypeOf(failReturn));
+    //     switch (failInfo) {
+    //         .null => {
+    //             _ = lua.push_fmtstring(
+    //                 L,
+    //                 "Expected type {} but got type {} in parameter {}",
+    //                 .{ toLuaType(tp), lua.gettype(L, index), index },
+    //             );
+    //             _ = lua.senderror(L);
+    //         },
+    //         else => {
+    //             pushValue(L, failReturn);
+    //         },
+    //     }
+    // }
     switch (info) {
         .int => {
             if (!lua.is_number(L, index)) {
                 return error.IncorrectType;
             }
 
-            return lua.to_cast_int(L, index, tp);
+            return try lua.to_cast_int(L, index, tp);
         },
         .bool => {
             if (!lua.is_bool(L, index)) {
@@ -255,14 +256,20 @@ pub fn luaTemplate(
     const tupleInfo = @typeInfo(tupleTp).@"struct";
     inline for (tupleInfo.fields, 1..) |field, j| {
         if (field.type == []const u8) {
-            const slice = parseParam(L, j, []const u8, null) catch return 1;
+            const slice = parseParam(L, j, []const u8, null) catch |e| {
+                pushError(L, e);
+                return 0;
+            };
             @field(tuple, field.name) = slice;
             log.write("With string param '{s}'\n", .{slice}) catch {};
         } else if (comptime isStruct(field.type) and @hasField(field.type, "L")) {
             @field(tuple, field.name) = .{ .L = L };
             log.write("With lua state param\n", .{}) catch {};
         } else {
-            @field(tuple, field.name) = parseParam(L, j, field.type, null) catch return 1;
+            @field(tuple, field.name) = parseParam(L, j, field.type, null) catch |e| {
+                pushError(L, e);
+                return 0;
+            };
             log.write("With generic param {any}\n", .{@field(tuple, field.name)}) catch {};
         }
     }
@@ -296,7 +303,9 @@ pub fn luaTemplate(
 
         else => log.write("Returning {any}\n", .{actualRet}) catch {},
     }
-    pushValue(L, actualRet);
+    pushValue(L, actualRet) catch |e| {
+        pushError(L, e);
+    };
     // lua.push_bool(L, ret);
     return 1;
 }
