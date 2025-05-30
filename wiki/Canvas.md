@@ -1,4 +1,4 @@
-Banana currently has a *very* minimal implementation of the canvas api. This is to allow elements to be used as freeform drawing areas to create anything
+Banana currently has a *very* minimal implementation of the canvas api. This is to allow elements to be used as freeform drawing areas to create anything. See the [mdn article](https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D) to learn more about what is being partially implemented here
 
 ## Setup
 
