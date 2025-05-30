@@ -193,6 +193,11 @@ function M.Ast:_tryMountComponent()
     self:_mountComponent()
 end
 
+---@return Banana.Nml.CanvasContext
+function M.Ast:getContext()
+    return self.data.__ctx
+end
+
 function M.Ast:_mountComponent()
     if not self:_isComponent() then
         log.throw("Cannot mount tag '" ..

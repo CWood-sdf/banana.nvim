@@ -14,6 +14,7 @@ The functions are grouped into a few categories.
 - [`nextSibling`](#nextSibling)
 - [`getTagName`](#getTagName)
 - [`getRootNode`](#getRootNode)
+- [`getContext`](#getContext)
 - [`assertHasStyle`](#assertHasStyle)
 - [`paddingLeft`](#paddingLeft)
 - [`paddingRight`](#paddingRight)
@@ -120,6 +121,12 @@ Returns the name of the tag that the ast represents (eg. 'div')
 Returns the root node of this section of the DOM tree.
 
 - **Returns**: `Banana.Ast` - The root node.
+
+## `getContext`
+
+Returns a canvas context that can be used to render. This ONLY returns a valid context on `<canvas>` elements, otherwise, it returns nil. See [canvas rendering](Canvas) for more information
+
+- **Returns**: `Banana.Nml.CanvasContext` - The context
 
 ## `assertHasStyle`
 
