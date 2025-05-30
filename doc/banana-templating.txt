@@ -1,4 +1,4 @@
-*banana-templating.txt*            For            Last change: 2025 January 23
+*banana-templating.txt*        For NVIM v0.12.0       Last change: 2025 May 30
 
 ==============================================================================
 Table of Contents                        *banana-templating-table-of-contents*
