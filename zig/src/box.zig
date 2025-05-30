@@ -1741,6 +1741,11 @@ pub fn box_unsafe_increase_offset(ctx: u16, boxid: u16, left: i16, top: i16) !vo
     const box = try get_box(ctx, boxid);
     box.increaseOffsetBy(left, top);
 }
+pub fn box_unsafe_set_cursor(ctx: u16, boxid: u16, left: u16, top: u16) !void {
+    const box = try get_box(ctx, boxid);
+    box.cursorX = left;
+    box.cursorY = top;
+}
 pub fn box_unsafe_increase_cursor(ctx: u16, boxid: u16, left: i16, top: i16) !void {
     const box = try get_box(ctx, boxid);
     box.increaseCursorBy(left, top);

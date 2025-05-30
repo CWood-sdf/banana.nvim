@@ -263,6 +263,13 @@ function M.box_unsafe_increase_offset(ctx, boxid, left, top) end
 ---@param left number
 ---@param top number
 ---@return nil
+function M.box_unsafe_set_cursor(ctx, boxid, left, top) end
+
+---@param ctx number
+---@param boxid number
+---@param left number
+---@param top number
+---@return nil
 function M.box_unsafe_increase_cursor(ctx, boxid, left, top) end
 
 ---@param ctx number

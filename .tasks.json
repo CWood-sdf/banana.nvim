@@ -27,7 +27,7 @@
 		},
 		{
 			"name": "debug",
-			"cmd": "nvim -c \"lua vim.defer_fn(function() require('osv').launch({ port = 8086 }) end, 200)\" test.nml",
+			"cmd": "nvim -c \"lua vim.defer_fn(function() require('osv').launch({ port = 8086 }) end, 200)\" asdf.lua",
 			"window": {
 				"name": "ookd",
 				"close": true

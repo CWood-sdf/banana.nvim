@@ -2,7 +2,7 @@ local M = {}
 ---@module "banana.box"
 local box = require "banana.lazyRequire" ("banana.box")
 ---@module "banana.libbananabox"
-local lb = require "banana.lazyRequire" ("banana.libbananabox")
+local lb = require "banana.lazyRequire" ("banana.libbanana")
 
 ---@class Banana.Nml.CanvasContext
 ---@field ctx number
@@ -14,6 +14,11 @@ local lb = require "banana.lazyRequire" ("banana.libbananabox")
 ---@field ast Banana.Ast
 local Context = {
 }
+
+---@param c string
+function Context:setFillChar(c)
+    self.fillChar = c
+end
 
 ---@param bg any
 function Context:setFillBg(bg)
@@ -46,7 +51,7 @@ end
 
 function Context:background()
     local w, h = self:width(), self:height()
-    box.wipeContext(box)
+    box.wipeContext(self.ctx)
     lb.box_context_wipe(self.ctx)
     self.hlid = nil
     ---@type Banana.Box
@@ -67,6 +72,7 @@ function Context:resize(w, h)
     if self:width() ~= w then
         self.box:setWidth(w)
     end
+    self.box:clean()
 end
 
 ---Draws a rect at the specified top left (x, y) with size {w}x{h}
@@ -150,19 +156,54 @@ end
 ---@param y number
 ---@param maxWidth number?
 function Context:text(str, x, y, maxWidth)
+    local newCtx = lb.box_context_create()
 
+    if y >= self:height() or y < 0 then
+        return
+    end
+    if x >= self:width() or x < 0 then
+        return
+    end
+
+    local ok, err = pcall(function ()
+        local b = box.boxFromCtx(newCtx)
+        if maxWidth ~= nil then
+            b:setMaxWidth(maxWidth)
+        end
+        b:setHlId(self:_getHlId())
+        b:appendStr(str)
+        local w = self:width()
+        if x + b:getWidth() > w then
+            b:shrinkWidthTo(w - x)
+        end
+        local h = self:height()
+        if y + b:getHeight() > h then
+            b:shrinkHeightTo(h - y)
+        end
+
+        self.box:renderOver(newCtx, x, y)
+        self.box:unsafeSetCursor(0, 0)
+    end)
+
+    lb.box_context_delete(newCtx)
+
+    if not ok then
+        error(err)
+    end
+    self.ast:_requestRender()
 end
 
 ---@param ast Banana.Ast
 ---@return Banana.Nml.CanvasContext
 function M.newContext(ast)
+    local c = box.createContext()
     ---@type Banana.Nml.CanvasContext
     local ctx = {
-        ctx = lb.box_context_create(),
+        ctx = c,
         fillChar = " ",
         fillBg = "#ffffff",
         fillFg = "#000000",
-        box = box.Box:new({ bg = "#ffffff" }),
+        box = box.boxFromCtx(c),
         ast = ast,
     }
     setmetatable(ctx, { __index = Context })

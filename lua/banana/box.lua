@@ -226,6 +226,13 @@ end
 
 ---@param left number
 ---@param top number
+function Box:unsafeSetCursor(left, top)
+    lb.box_unsafe_set_cursor(self.ctx, self.boxid, left, top)
+    self:_dumpToSelf()
+end
+
+---@param left number
+---@param top number
 function Box:unsafeIncreaseCursorBy(left, top)
     lb.box_unsafe_increase_cursor(self.ctx, self.boxid, left, top)
     self:_dumpToSelf()
@@ -320,7 +327,7 @@ end
 ---@param char string
 ---@param style number
 function Box:overlay(x, y, w, h, char, style)
-    lb.box_overlay(x, y, w, h, char, style)
+    lb.box_overlay(self.ctx, self.boxid, x, y, w, h, char, style)
     self:_dumpToSelf()
 end
 
