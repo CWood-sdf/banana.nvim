@@ -1,224 +1,247 @@
 ---@module 'banana.utils.debug_flame'
 local flame = require("banana.lazyRequire")("banana.utils.debug_flame")
 ---@module 'banana.box'
-local b = require("banana.lazyRequire")("banana.box")
----@module 'banana.nml.ast'
-local _ast = require("banana.lazyRequire")("banana.nml.ast")
+local box = require("banana.lazyRequire")("banana.box")
+---@module 'banana.libbananabox'
+local lb = require("banana.lazyRequire")("banana.libbanana")
 local M = {}
----@class (exact) Banana.Renderer.Surround
----@field left number
----@field right number
----@field top number
----@field bottom number
----@field fillChar? string For borders if they ever happen
+
+---@enum Banana.Renderer.Align
+M.Align = {
+    left = 0,
+    center = 1,
+    right = 2,
+    noexpand = 3,
+}
+
+---@enum Banana.Renderer.RenderType
+M.RenderType = {
+    inline = 0,
+    inlineBlock = 1,
+    block = 2,
+
+}
 
 ---@class (exact) Banana.Renderer.PartialRendered
----@field margin Banana.Renderer.Surround
----@field padding Banana.Renderer.Surround
----@field widthExpansion number
----@field heightExpansion number
----@field center Banana.Box
----@field marginColor? Banana.Highlight
----@field mainColor? Banana.Highlight
----@field renderAlign "left"|"center"|"right"
----@field maxWidth number
+---@field ctx number
+---@field pr number
+---@field trace number?
+---@field center Banana.Box?
+---@field ast Banana.Ast
+---@field mainHl number
+---@field postRender fun()[]
 local PartialRendered = {}
-local meta = {
-    __index = flame.wrapClass(PartialRendered, "PartialRendered", false),
-    -- __mode = "kv"
-}
-local weak = {}
+
+local PrIndex =
+    PartialRendered -- flame.wrapClass(PartialRendered, "Partial", true)
 
 ---@return Banana.Renderer.PartialRendered
-function M.emptyPartialRendered()
+function M.noopPartialRendered()
+    local ret = {
+    }
+    setmetatable(ret, {
+        __index = function ()
+            return function () end
+        end,
+    })
+    return ret
+end
+
+---@param container Banana.Box
+---@param ast Banana.Ast
+---@return Banana.Renderer.PartialRendered
+function M.emptyPartialRendered(container, ast)
+    local ctx = container.ctx
+    local pr = lb.box_pr_new(ctx, container.boxid)
     ---@type Banana.Renderer.PartialRendered
     local ret = {
-        maxWidth = 0,
-        renderAlign = "left",
-        mainColor = {},
-        marginColor = {},
-        center = b.Box:new(),
-        heightExpansion = 0,
-        widthExpansion = 0,
-        margin = {
-            top    = 0,
-            left   = 0,
-            right  = 0,
-            bottom = 0,
-        },
-        padding = {
-            top    = 0,
-            left   = 0,
-            right  = 0,
-            bottom = 0,
-        },
-
+        mainHl = 0,
+        postRender = {},
+        ast = ast,
+        ctx = ctx,
+        pr = pr,
+        center = nil,
     }
-    for k, v in pairs(ret) do
-        if type(v) == "table" then
-            ---@diagnostic disable-next-line: param-type-mismatch
-            -- setmetatable(ret[k], weak)
-        end
-    end
-    setmetatable(ret, meta)
+
+    setmetatable(ret, { __index = PrIndex })
+    ret:_dump()
     return ret
+end
+
+function PartialRendered:_dump()
+    -- lb.box_dump_pr_data(self.ctx, self.pr, self)
+end
+
+---@param ctx number?
+function PartialRendered:setDbgCtx(ctx)
+    lb.box_pr_set_dbg_ctx(self.ctx, self.pr, ctx)
+end
+
+---@param left number
+---@param right number
+---@param top number
+---@param bottom number
+function PartialRendered:setMargin(left, right, top, bottom)
+    lb.box_pr_set_margin(self.ctx, self.pr, left, right, top, bottom)
+    self:_dump()
+end
+
+---@param left number
+---@param right number
+---@param top number
+---@param bottom number
+function PartialRendered:setPad(left, right, top, bottom)
+    lb.box_pr_set_pad(self.ctx, self.pr, left, right, top, bottom)
+    self:_dump()
+end
+
+---@param hl number
+function PartialRendered:setMainHl(hl)
+    self.mainHl = hl
+    lb.box_pr_set_main_hl(self.ctx, self.pr, hl)
+    self:_dump()
+end
+
+---@param w number
+---@param force? boolean
+function PartialRendered:setMaxWidth(w, force)
+    lb.box_pr_set_max_width(self.ctx, self.pr, w, force)
+    self:_dump()
+end
+
+---@param a Banana.Renderer.Align
+function PartialRendered:setVerticalAlign(a)
+    lb.box_pr_set_vertical_align(self.ctx, self.pr, a)
+    self:_dump()
+end
+
+---@param w number
+function PartialRendered:setMaxHeight(w)
+    lb.box_pr_set_max_height(self.ctx, self.pr, w)
+    self:_dump()
+end
+
+---@return number
+function PartialRendered:getBoundBoxCount()
+    return lb.box_pr_get_bound_box_count(self.ctx, self.pr)
+end
+
+---@param n number
+---@return Banana.Ast.BoundingBox
+function PartialRendered:getBoundBox(n)
+    return lb.box_pr_get_bound_box(self.ctx, self.pr, n)
+end
+
+---@return Banana.Box
+function PartialRendered:getBox()
+    local id = lb.box_pr_box(self.ctx, self.pr)
+    self.center = box.boxFromId(self.ctx, id, self.trace)
+    self:_dump()
+    return self.center
+end
+
+---@return number
+function PartialRendered:getMinWidth()
+    return lb.box_pr_get_min_width(self.ctx, self.pr)
 end
 
 ---@return number
 function PartialRendered:getWidth()
-    return self.margin.left + self.margin.right
-        + self.padding.left + self.padding.right
-        + self.widthExpansion + self.center:width()
+    return lb.box_pr_get_width(self.ctx, self.pr)
 end
 
 ---@return number
 function PartialRendered:getHeight()
-    return self.margin.top + self.margin.bottom
-        + self.padding.top + self.padding.bottom
-        + self.heightExpansion + self.center:height()
+    return lb.box_pr_get_height(self.ctx, self.pr)
 end
 
----@param num number
-function PartialRendered:expandWidthTo(num)
-    self.widthExpansion = num - (self:getWidth() - self.widthExpansion)
+---@return Banana.Renderer.Align
+function PartialRendered:getAlign()
+    return lb.box_pr_get_align(self.ctx, self.pr)
 end
 
----@param num number
-function PartialRendered:expandHeightTo(num)
-    self.heightExpansion = num - (self:getHeight() - self.heightExpansion)
+---@param align Banana.Renderer.Align
+function PartialRendered:setAlign(align)
+    lb.box_pr_set_align(self.ctx, self.pr, align)
+    self:_dump()
 end
 
----comment
----@param box Banana.Box
----@param pad Banana.Renderer.Surround
----@param color Banana.Highlight
----@return Banana.Box
-function PartialRendered:padWith(box, pad, color)
-    if pad.top ~= 0 then
-        local topBox = b.Box:new(color)
-        topBox:expandWidthTo(box:width())
-        topBox:expandHeightTo(pad.top)
-        topBox:appendBoxBelow(box)
-        box = topBox
-    end
-    if pad.bottom ~= 0 then
-        local btmBox = b.Box:new(color)
-        btmBox:expandWidthTo(box:width())
-        btmBox:expandHeightTo(pad.bottom)
-        box:appendBoxBelow(btmBox)
-    end
-    if pad.left ~= 0 then
-        local leftBox = b.Box:new(color)
-        -- print("Pre: '" .. box:_debugStr() .. "'")
-        leftBox:expandHeightTo(box:height())
-        leftBox:expandWidthTo(pad.left)
-        leftBox:append(box)
-        box = leftBox
-        -- print("padding " .. vim.inspect(pad))
-        -- print("Result: '" .. box:_debugStr() .. "'")
-    end
-    if pad.right ~= 0 then
-        local rightBox = b.Box:new(color)
-        rightBox:expandHeightTo(box:height())
-        rightBox:expandWidthTo(pad.right)
-        box:append(rightBox)
-    end
-    return box
+---@return Banana.Renderer.RenderType
+function PartialRendered:getRenderType()
+    return lb.box_pr_get_render_type(self.ctx, self.pr)
 end
 
----@param clone boolean?
----@return Banana.Box
-function PartialRendered:render(clone)
-    -- if clone == true then
-    --     print("has clone, ignoring")
-    --     return b.Box:new(nil)
-    -- end
-    -- flame.new("PartialRendered:render")
-    clone = clone or false
-    if clone then
-        -- if not require("banana.utils.debug").isdev() then
-        -- print("Calling clone in prod?!")
-        -- end
-        local new = vim.fn.deepcopy(self)
-        setmetatable(new, {
-            __index = PartialRendered,
-        })
-        new.center = self.center:clone()
-        -- flame.pop()
-        return new:render()
+---@param renderType Banana.Renderer.RenderType
+function PartialRendered:setRenderType(renderType)
+    lb.box_pr_set_render_type(self.ctx, self.pr, renderType)
+    self:_dump()
+end
+
+---@param lineHeight ?number
+---@return number
+function PartialRendered:render(lineHeight)
+    if self.center == nil then error("Calling render when no box created") end
+    if self.trace ~= nil then
+        lb.box_context_dump_to(self.ctx, self.trace, "render pre")
     end
-    local box = self.center
-    if clone then
-        box = box:clone()
+    -- flame.new("box_pr_render")
+    local ret = lb.box_pr_render(self.ctx, self.pr, lineHeight)
+    if self.trace ~= nil then
+        lb.box_context_dump_to(self.ctx, self.trace, "render post")
+        lb.box_context_dump_to(self.ctx, self.trace, "render post")
     end
-    if self.heightExpansion > 0 then
-        local btmBox = b.Box:new(self.mainColor)
-        -- btmBox:appendStr('', nil)
-        btmBox:expandWidthTo(box:width())
-        btmBox:expandHeightTo(self.heightExpansion)
-        box:appendBoxBelow(btmBox)
-    end
-    if self.widthExpansion > 0 then
-        local left = b.Box:new(self.mainColor)
-        if box:height() == 0 then
-            left:expandWidthTo(self.widthExpansion)
-        else
-            -- left:appendStr('', nil)
-            left:expandWidthTo(self.widthExpansion)
-            left:expandHeightTo(box:height())
-        end
-        if self.renderAlign == "right" then
-            left:append(box)
-            box = left
-        elseif self.renderAlign == "left" then
-            box:append(left)
-        else
-            local l = b.Box:new(self.mainColor)
-            -- l:appendStr('', nil)
-            l:expandWidthTo(math.ceil(self.widthExpansion / 2))
-            l:expandHeightTo(box:height())
-            local r = b.Box:new(self.mainColor)
-            -- r:appendStr('', nil)
-            r:expandWidthTo(math.floor(self.widthExpansion / 2))
-            r:expandHeightTo(box:height())
-            l:append(box)
-            l:append(r)
-            box = l
-        end
-    end
-    box = self:padWith(box, self.padding, self.mainColor)
-    box:setGradientSize()
-    box:insertGradientMarker()
-    box = self:padWith(box, self.margin, self.marginColor)
     -- flame.pop()
-    return box
+
+    local boundBox = self:getBoundBox(1)
+    self.ast.boundBox = boundBox
+
+    for _, fn in ipairs(self.postRender) do
+        fn()
+    end
+
+    local gradWidth = boundBox.rightX - boundBox.leftX + self.ast:paddingLeft() +
+        self.ast:paddingRight()
+    local gradHeight = boundBox.bottomY - boundBox.topY +
+        self.ast:paddingTop() +
+        self.ast:paddingBottom()
+    if type(self.ast.hl.fg) == "table" then
+        ---@type Banana.Gradient
+        ---@diagnostic disable-next-line: assign-type-mismatch
+        local grad = self.ast.hl.fg
+        grad:setBounds(boundBox.leftX - 1, boundBox.topY, gradWidth, gradHeight,
+            self.ast)
+    end
+    if type(self.ast.hl.bg) == "table" then
+        ---@type Banana.Gradient
+        ---@diagnostic disable-next-line: assign-type-mismatch
+        local grad = self.ast.hl.bg
+        grad:setBounds(boundBox.leftX - 1, boundBox.topY, gradWidth, gradHeight,
+            self.ast)
+    end
+
+    self:_dump()
+    self:destroy()
+    return ret
 end
 
----@param name string
----@param ast Banana.Ast
----@return boolean
-function PartialRendered:applyPad(name, ast)
-    --flame.new("applyPad")
-    local changed = false
-    if ast[name][_ast.left].computed ~= 0 then
-        self[name].left = ast[name][_ast.left].computed
-        changed = true
-    end
-    if ast[name][_ast.right].computed ~= 0 then
-        self[name].right = ast[name][_ast.right].computed
-        changed = true
-    end
-    if ast[name][_ast.top].computed ~= 0 then
-        self[name].top = ast[name][_ast.top].computed
-        changed = true
-    end
-    if ast[name][_ast.bottom].computed ~= 0 then
-        self[name].bottom = ast[name][_ast.bottom].computed
-        changed = true
-    end
+function PartialRendered:destroy()
+    lb.box_pr_deinit(self.ctx, self.pr)
+    self.center:destroy()
+end
 
-    --flame.pop()
-    return changed
+---@param lineHeight number
+---@return boolean
+function PartialRendered:renderCursored(lineHeight)
+    if self.center == nil then return false end
+    if self.trace ~= nil then
+        lb.box_context_dump_to(self.ctx, self.trace, "renderCursored pre")
+    end
+    local ret = lb.box_pr_render_cursored(self.ctx, self.pr, lineHeight)
+    if self.trace ~= nil then
+        lb.box_context_dump_to(self.ctx, self.trace, "renderCursored post")
+    end
+    self:_dump()
+    return ret
 end
 
 return M

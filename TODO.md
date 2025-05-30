@@ -86,6 +86,7 @@
 - [x] repeat()
 - [x] grid-template-columns
 - [x] grid-template-rows
+- [ ] rework rendering so that variable widths are allowed
 - [ ] grid-template-areas
 - [ ] grid-template (shorthand prop)
 - [ ] grid-auto-columns

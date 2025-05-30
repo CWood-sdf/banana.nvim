@@ -7,10 +7,10 @@ local M = {}
 local _tag = require("banana.lazyRequire")("banana.nml.tag")
 
 ---@class (exact) Banana.Renderer.InheritedProperties
----@field text_align string
+---@field ["text-align"] string
 ---@field position "static"|"absolute"|"sticky"|"relative"
----@field min_size boolean
----@field list_style_type string
+---@field ["min-size"] boolean
+---@field ["list-style-type"] string
 
 ---@class (exact) Banana.Renderer.InitialProperties: Banana.Renderer.InheritedProperties
 ---@field flex_shrink number
@@ -20,13 +20,16 @@ local _tag = require("banana.lazyRequire")("banana.nml.tag")
 
 ---@class (exact) Banana.Renderer.ExtraInfo
 ---@field box Banana.Box?
----@field trace Banana.Box
+---@field extraCtx number[]
+---@field ctx number
+---@field trace number?
 ---@field debug boolean
+---@field renderAbsolute boolean?
 ---@field useAllHeight boolean
 ---@field isRealRender boolean
 ---@field componentStack Banana.Ast[]
 
----@alias Banana.Renderer fun(self: Banana.TagInfo, ast: Banana.Ast, parentHl: Banana.Highlight?, parentWidth: number, parentHeight: number, startX: number, startY: number, inherit: Banana.Renderer.InheritedProperties, extra: Banana.Renderer.ExtraInfo): Banana.RenderRet
+---@alias Banana.Renderer fun(self: Banana.TagInfo, ast: Banana.Ast, box: Banana.Box, parentHl: Banana.Highlight?, inherit: Banana.Renderer.InheritedProperties, extra: Banana.Renderer.ExtraInfo)
 
 
 ---@class (exact) Banana.TagInfo
@@ -39,44 +42,41 @@ local TagInfo = {
     name = "",
     formatType = _tag.FormatType.Inline,
     selfClosing = false,
-    render = function (_) return {} end,
+    render = function (_) end,
 }
 
 
 
 ---@param ast Banana.Ast
+---@param box Banana.Box
 ---@param startHl Banana.Highlight?
----@param winWidth number
----@param winHeight number
 ---@param inherit Banana.Renderer.InheritedProperties
 ---@param extra Banana.Renderer.ExtraInfo
 ---@return Banana.Box
-function TagInfo:renderRoot(ast, startHl, winWidth, winHeight, inherit, extra)
+function TagInfo:renderRoot(ast, box, startHl, inherit,
+                            extra)
     -- flame.new("renderRoot")
     log.trace("TagInfo:renderRoot")
-    local ret = self:render(ast, startHl, winWidth, winHeight, 1, 1, inherit,
-        extra)
+    local ret = self:render(ast, box, startHl, inherit, extra)
     -- flame.expect("renderRoot")
     -- flame.pop()
     return ret
 end
 
 ---@param ast Banana.Ast
+---@param box Banana.Box
 ---@param parentHl Banana.Highlight?
----@param parentWidth number
----@param parentHeight number
----@param startX number
----@param startY number
 ---@param inherit Banana.Renderer.InheritedProperties
 ---@param extra Banana.Renderer.ExtraInfo
 ---@return Banana.Renderer.PartialRendered
-function TagInfo:getRendered(ast, parentHl, parentWidth, parentHeight, startX,
-                             startY, inherit, extra)
+function TagInfo:getRendered(ast, box, parentHl, inherit, extra)
     log.trace("TagInfo:getRendered " ..
         ast.tag .. "#" .. (ast:getAttribute("id") or ""))
+    local main = require("banana.nml.render.main")
 
-    local ret = require("banana.nml.render.main")(
-        self, ast, parentHl, parentWidth, parentHeight, startX, startY, inherit,
+    local ret = main(
+        self, ast, box, parentHl,
+        inherit,
         extra)
     -- flame.expect("getRendered start")
     return ret
@@ -84,139 +84,108 @@ end
 
 ---Returns an iterator that renders blocks
 ---@param ast  Banana.Ast
+---@param box Banana.Box
 ---@param parentHl Banana.Highlight?
----@param parentWidth number
----@param parentHeight number
----@param startX number
----@param startY number
 ---@param inherit Banana.Renderer.InheritedProperties
 ---@param extra Banana.Renderer.ExtraInfo
----@return fun(): integer?, Banana.Box?, integer?
-function TagInfo:blockIter(ast, parentHl, parentWidth, parentHeight, startX,
-                           startY, inherit, extra)
+---@return fun(): integer?, integer?
+function TagInfo:blockIter(ast, box, parentHl, inherit, extra)
     local i = 1
     return function ()
         if i > #ast.nodes then
             return nil
         end
-        flame.new("TagInfo:blockIter")
+        -- flame.new("TagInfo:blockIter")
         local oldI = i
-        local render = nil
+        local renderBox = box:newBelow()
         if ast:_firstStyleValue("display") == "flex" then
             -- error("impl flex")
-            render = self:renderFlexBlock(
-                ast, parentHl, parentWidth, parentHeight,
-                startX, startY, inherit, extra)
+            self:renderFlexBlock(ast, renderBox, parentHl, inherit, extra)
             i = #ast.nodes + 1
         elseif ast:_firstStyleValue("display") == "grid" then
-            render = self:renderGridBlock(
-                ast, parentHl, parentWidth, parentHeight,
-                startX, startY, inherit, extra)
+            self:renderGridBlock(ast, renderBox, parentHl, inherit,
+                extra)
             i = #ast.nodes + 1
         else
-            render, i = self:renderBlock(
-                ast, parentHl, i, parentWidth, parentHeight,
-                startX, startY, inherit, extra)
+            i = self:renderBlock(
+                ast, renderBox, parentHl, i,
+                inherit, extra)
         end
-        startY = startY + render:height()
-        flame.pop()
-        return oldI, render, i - oldI
+        box:putCursorBelow(renderBox)
+        renderBox:destroy()
+        -- flame.pop()
+        return i, i - oldI
     end
 end
 
 ---@param ast Banana.Ast
+---@param box Banana.Box
 ---@param parentHl Banana.Highlight?
----@param parentWidth number
----@param parentHeight number
----@param startX number
----@param startY number
 ---@param inherit Banana.Renderer.InheritedProperties
----@return Banana.Box
-function TagInfo:renderInlineEl(ast, parentHl, parentWidth, parentHeight, startX,
-                                startY, inherit, extra)
+function TagInfo:renderInlineEl(ast, box, parentHl, inherit, extra)
     ---@type Banana.Box
-    local ret, _ = self:renderBlock(ast, ast:_mixHl(parentHl), 1, parentWidth,
-        parentHeight, startX, startY, inherit,
-        extra)
-    return ret
+    self:renderBlock(ast, box, ast:_mixHl(parentHl), 1, inherit, extra)
 end
 
 --- renders an element with display:grid
 ---@param ast Banana.Ast
+---@param box Banana.Box
 ---@param parentHl Banana.Highlight?
----@param parentWidth number
----@param parentHeight number
----@param startX number
----@param startY number
 ---@param inherit Banana.Renderer.InheritedProperties
 ---@param extra Banana.Renderer.ExtraInfo
----@return Banana.Box, integer
-function TagInfo:renderGridBlock(ast, parentHl, parentWidth, parentHeight, startX,
-                                 startY, inherit, extra)
+---@return integer
+function TagInfo:renderGridBlock(ast, box, parentHl, inherit, extra)
     local gr = require("banana.nml.render.grid")
-    return gr.render(ast, parentHl, parentWidth, parentHeight, startX,
-        startY, inherit, extra)
+    gr.render(ast, box, parentHl, inherit, extra)
+    return #ast.nodes
 end
 
 ---Renders everything in a flex block
 ---@param ast Banana.Ast
+---@param box Banana.Box
 ---@param parentHl Banana.Highlight?
----@param parentWidth number
----@param parentHeight number
----@param startX number
----@param startY number
 ---@param inherit Banana.Renderer.InheritedProperties
 ---@param extra Banana.Renderer.ExtraInfo
----@return Banana.Box, integer
-function TagInfo:renderFlexBlock(ast, parentHl, parentWidth, parentHeight, startX,
-                                 startY, inherit, extra)
+---@return integer
+function TagInfo:renderFlexBlock(ast, box, parentHl, inherit, extra)
     local fr = require("banana.nml.render.flex")
-    return fr(ast, parentHl, parentWidth, parentHeight, startX,
-        startY, inherit, extra)
+    fr(ast, box, parentHl, inherit, extra)
+    return #ast.nodes
 end
 
 ---Renders everything in a block
 ---@param ast Banana.Ast
+---@param box Banana.Box
 ---@param parentHl Banana.Highlight?
 ---@param i integer
----@param parentWidth number
----@param parentHeight number
----@param startX number
----@param startY number
 ---@param inherit Banana.Renderer.InheritedProperties
 ---@param extra_ Banana.Renderer.ExtraInfo
----@return Banana.Box, integer
-function TagInfo:renderBlock(ast, parentHl, i, parentWidth, parentHeight, startX,
-                             startY, inherit, extra_)
+---@return integer
+function TagInfo:renderBlock(ast, box, parentHl, i,
+                             inherit, extra_)
     local br = require("banana.nml.render.block")
-    return br(ast, parentHl, i, parentWidth, parentHeight, startX, startY,
+    local ret = br(ast, box, parentHl, i,
         inherit, extra_)
+    return ret
 end
 
 ---@param ast Banana.Ast
+---@param box Banana.Box
 ---@param parentHl Banana.Highlight?
----@param parentWidth number
----@param parentHeight number
----@param startX number
----@param startY number
 ---@param inherit Banana.Renderer.InheritedProperties
 ---@param extra Banana.Renderer.ExtraInfo
----@return Banana.Box
-function TagInfo:renderComponent(ast, parentHl, parentWidth, parentHeight,
-                                 startX, startY, inherit, extra)
-    -- flame.new("TagInfo:renderComponent")
+function TagInfo:renderComponent(ast, box, parentHl,
+                                 inherit, extra)
+    flame.new("TagInfo:renderComponent")
     ast:_tryMountComponent()
     extra.componentStack = extra.componentStack or {}
     table.insert(extra.componentStack, ast)
 
-    ast.componentTree:_resolveUnits(parentWidth, parentHeight)
-    local ret = ast.componentTree.actualTag:getRendered(ast.componentTree,
-        parentHl,
-        parentWidth,
-        parentHeight, startX, startY, inherit, extra)
+    ast.componentTree:_resolveUnits(box:getMaxWidth(), box:getMaxHeight())
+    ast.componentTree.actualTag:getRendered(ast.componentTree, box,
+        parentHl, inherit, extra):render(0)
     table.remove(extra.componentStack, #extra.componentStack)
-    -- flame.pop()
-    return ret:render()
+    flame.pop()
 end
 
 M.TagInfo = TagInfo

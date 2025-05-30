@@ -5,13 +5,10 @@ local flame = require("banana.lazyRequire")("banana.utils.debug_flame")
 local t = require("banana.lazyRequire")("banana.nml.tag")
 
 ---@type Banana.Renderer
-local function renderer(self, ast, parentHl, parentWidth, parentHeight, startX,
-                        startY, inherit, extra)
+local function renderer(self, ast, box, parentHl,
+
+                        inherit, extra)
     -- flame.new("tag:ol")
-    local b = require("banana.box")
-    ---@type Banana.Box
-    local ret = b.Box:new()
-    ret.hlgroup = ast:_mixHl(parentHl)
 
     ---@type string
     -- local listType = "* "
@@ -25,7 +22,7 @@ local function renderer(self, ast, parentHl, parentWidth, parentHeight, startX,
     --     numSize = ast.style["list-base-width"][1].value.computed
     --     ---@cast numSize number
     -- end
-    for _, box, _ in self:blockIter(ast, ret.hlgroup, parentWidth, parentHeight, startX, startY, inherit, extra) do
+    for _, _, _ in self:blockIter(ast, box, parentHl, inherit, extra) do
         -- local v = ast.nodes[i]
         -- local currentLine = b.Box:new(ret.hlgroup)
         -- if type(v) ~= "string" and v.actualTag.name == 'li' then
@@ -35,10 +32,9 @@ local function renderer(self, ast, parentHl, parentWidth, parentHeight, startX,
         -- end
         -- currentLine:expandWidthTo(numSize)
         -- currentLine:append(box, b.MergeStrategy.Bottom)
-        ret:appendBoxBelow(box)
+        -- ret:appendBoxBelow(box)
     end
     -- flame.pop()
-    return ret
 end
 ---@type Banana.TagInfo
 local M = t.newTag(

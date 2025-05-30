@@ -1,7 +1,9 @@
+---@module 'banana.box'
+local box = require("banana.lazyRequire")("banana.box")
 ---@module 'banana.utils.log'
 local log = require("banana.lazyRequire")("banana.utils.log")
----@module 'banana.utils.string'
-local _str = require("banana.lazyRequire")("banana.utils.string")
+---@module 'banana.libbananabox'
+local lb = require("banana.lazyRequire")("banana.libbanana")
 ---@module 'banana.utils.debug_flame'
 local flame = require("banana.lazyRequire")("banana.utils.debug_flame")
 
@@ -58,7 +60,9 @@ local instances = {}
 ---@class Banana.Instance
 ---@field DEBUG_stressTest boolean
 ---@field DEBUG_dumpTree boolean
+---@field DEBUG_catch? boolean
 ---@field DEBUG boolean
+---@field ctx? number
 ---@field winid? number
 ---@field bufnr? number
 ---@field bufname string
@@ -97,60 +101,160 @@ local Instance = {}
 ---@field style? Banana.Highlight
 
 ---@param ast Banana.Ast
+---@param ctx number
 ---@param width number
 ---@param height number
----@return Banana.Line[]
-function Instance:_virtualRender(ast, width, height)
+function Instance:_virtualRender(ast, ctx, width, height)
     flame.new("virtualRender")
     -- setmetatable(ret, { __mode = "kv" })
     local tag = ast.actualTag
+    local traceCtx = nil
+    if self.DEBUG_showBuild then
+        traceCtx = lb.box_context_create()
+    end
+    -- local traceInst = box.createContext()
     ---@type Banana.Renderer.ExtraInfo
     local extra = {
+        extraCtx = {},
         componentStack = {},
         useAllHeight = false,
-        trace = require("banana.box").Box:new(),
+        trace = traceCtx,
         debug = self.DEBUG_showBuild,
         isRealRender = true,
         screenHeight = height,
-    }
-    -- setmetatable(extra, { __mode = "kv" })
-    local rendered = tag:renderRoot(ast, nil, width, height, {
-        text_align = "left",
-        position = "static",
         min_size = false,
-        min_size_direction = "horizontal",
-        list_style_type = "star",
-    }, extra)
+        ctx = ctx,
+    }
+    local b = require("banana.box").boxFromCtx(ctx, extra.trace)
+    b:setMaxWidth(width)
+    b:setMaxHeight(height)
+    -- setmetatable(extra, { __mode = "kv" })
+    local renderCall = function ()
+        tag:renderRoot(ast, b, nil, {
+            ["text-align"] = "left",
+            ["position"] = "static",
+            ["min-size"] = false,
+            ["min-size-direction"] = "horizontal",
+            ["list-style-type"] = "star",
+        }, extra)
+    end
+    local ok, err
+    if (self.DEBUG_catch == false) or (self.DEBUG == true and self.DEBUG_catch == nil) then
+        ok = true
+        renderCall()
+    else
+        ok, err = pcall(renderCall)
+    end
+    if not ok then
+        vim.notify("Error during render: " .. err .. "\n")
+    end
+
+    for _, extraCtx in ipairs(extra.extraCtx) do
+        lb.box_context_delete(extraCtx)
+    end
+
     if self.stripRight then
         local bgNum = vim.api.nvim_get_hl(0, {
             name = M.defaultWinHighlight,
             -- name = self.
         }).bg
-        local bg = nil
+        local expectedBg = nil
         if bgNum ~= nil then
-            bg = string.format("#%06x", bgNum)
+            expectedBg = string.format("#%06x", bgNum)
         end
-        rendered:stripRightSpace(bg)
+        flame.new("stripRight")
+        lb.box_context_strip_right_space(self.ctx, function (hl)
+            local style = box.getHl(hl)
+            if style ~= nil then
+                if style.link ~= nil then
+                    return 0
+                end
+                if style.bg ~= expectedBg and style.bg ~= nil then
+                    return 0
+                end
+            end
+            return 1
+        end)
+        flame.pop()
     end
-    if extra.debug then
-        self:_writeBoxToDebugWin(extra.trace)
+    if extra.debug and self.DEBUG_bufNr ~= nil and traceCtx ~= nil then
+        lb.box_context_render(traceCtx, self.DEBUG_bufNr)
+        local hls = {}
+        local ns = vim.api.nvim_create_namespace("BANANA_DEBUG_" ..
+            self.instanceId)
+        vim.api.nvim_win_set_hl_ns(self.DEBUG_winId, ns)
+        vim.api.nvim_buf_clear_namespace(self.DEBUG_bufNr, ns, 0, -1)
+        lb.box_context_highlight(traceCtx, function (line, startCol, endCol, hl)
+            pcall(function ()
+                local actualHl = box.getHl(hl)
+                if actualHl == nil then
+                    return
+                end
+                if type(actualHl.fg) == "table" or type(actualHl.bg) == "table" then
+                    for col = startCol, endCol - 1 do
+                        local fgVal = actualHl.fg
+                        local bgVal = actualHl.bg
+
+                        if type(fgVal) == "table" then
+                            fgVal:setPos(col, line)
+                            ---@cast fgVal Banana.Gradient
+                            actualHl.fg = fgVal:nextCharColor()
+                        end
+                        if type(bgVal) == "table" then
+                            bgVal:setPos(col, line)
+                            ---@cast bgVal Banana.Gradient
+                            actualHl.bg = bgVal:nextCharColor()
+                        end
+                        local group = "banana_hl_" ..
+                            hl .. "_grad_" .. col .. "_" .. line
+                        vim.api.nvim_set_hl(ns, group,
+                            actualHl)
+                        actualHl.fg = fgVal
+                        actualHl.bg = bgVal
+                        hls[hl] = group
+                        vim.api.nvim_buf_set_extmark(self.DEBUG_bufNr, ns, line,
+                            startCol,
+                            {
+                                end_col = endCol,
+                                hl_group = group,
+                            })
+                    end
+                else
+                    local group = hls[hl] or ("banana_hl_" .. hl)
+                    vim.api.nvim_set_hl(ns, group, actualHl)
+                    hls[hl] = group
+                    vim.api.nvim_buf_set_extmark(self.DEBUG_bufNr, ns, line,
+                        startCol,
+                        {
+                            end_col = endCol,
+                            hl_group = group,
+                        })
+                end
+            end)
+        end)
+        lb.box_context_delete(traceCtx)
+        -- self:_writeBoxToDebugWin(extra.trace)
         -- rendered:appendBoxBelow(extra.trace)
     end
     flame.pop()
-    return rendered:getLines()
+    -- return rendered:getLines()
 end
 
 function Instance:_openDebugWin()
+    -- flame.new("debugwin")
     if self.DEBUG_bufNr == nil or not vim.api.nvim_buf_is_valid(self.DEBUG_bufNr) then
         self.DEBUG_bufNr = vim.api.nvim_create_buf(false, true)
-        vim.api.nvim_set_option_value("filetype", "markdown", {
-            buf = self.DEBUG_bufNr
-        })
+        -- vim.api.nvim_set_option_value("filetype", "markdown", {
+        --     buf = self.DEBUG_bufNr
+        -- })
     else
         -- vim.api.nvim_buf_clear_namespace(self.DEBUG_bufNr, self.highlightNs, 0,
         --     -1)
         -- vim.api.nvim_buf_clear_namespace(self.DEBUG_bufNr, 0, 0, -1)
     end
+
+    -- flame.pop()
+    -- flame.new("debugwin2")
     if self.DEBUG_winId == nil or not vim.api.nvim_win_is_valid(self.DEBUG_winId) then
         local w = math.floor(self.DEBUG_winWidth or vim.o.columns / 2.5)
         self.DEBUG_winId = vim.api.nvim_open_win(self.DEBUG_bufNr, false, {
@@ -170,6 +274,7 @@ function Instance:_openDebugWin()
     else
         -- vim.api.nvim_set_current_win(self.DEBUG_winId)
     end
+    -- flame.pop()
 end
 
 function Instance:_clearDebugWinBuf()
@@ -185,28 +290,8 @@ function Instance:_writeLinesToDebugWin(lines)
         return
     end
     local l = vim.api.nvim_buf_get_lines(self.DEBUG_bufNr, 0, -1, false)
-    for _, v in ipairs(lines) do
-        table.insert(l, v)
-    end
-    vim.api.nvim_buf_set_lines(self.DEBUG_bufNr, 0, -1, false, l)
-end
 
----@param box Banana.Box
-function Instance:_writeBoxToDebugWin(box)
-    if self.DEBUG_bufNr == nil or not vim.api.nvim_buf_is_valid(self.DEBUG_bufNr) then
-        return
-    end
-    local lines = box:getLines()
-    local offset = #vim.api.nvim_buf_get_lines(self.DEBUG_bufNr, 0, -1, false)
-    for _, l in ipairs(lines) do
-        local line = ""
-        for _, w in ipairs(l) do
-            line = line .. w.word
-        end
-        vim.api.nvim_buf_set_lines(self.DEBUG_bufNr, -1, -1, false, { line })
-    end
-    self:_highlight(lines, offset, self.DEBUG_bufNr, self.DEBUG_winId,
-        self.highlightNs, false)
+    vim.api.nvim_buf_set_lines(self.DEBUG_bufNr, #l, -1, false, lines)
 end
 
 ---Sets the name of the buffer
@@ -569,7 +654,7 @@ function Instance:_removeMapsFor(ast)
         local newTable = {}
         -- setmetatable(newTable, { __mode = "k" })
         for _, v in ipairs(self.astMapDeps[ast] or {}) do
-            local mode, lhs, map, id = v[1], v[2], v[3], v[4]
+            local mode, lhs, _, id = v[1], v[2], v[3], v[4]
             -- map.disabled = true
             self.keymaps[mode][lhs][id] = 0
             self.keymapAvailIndex[mode][lhs] = math.min(
@@ -719,25 +804,27 @@ end
 
 ---@return number, number
 function Instance:_createWinAndBuf()
-    flame.new("winAndBuf")
+    -- flame.new("winAndBuf")
     local headQuery = require("banana.ncss.query").selectors.oneTag("head")
     local headTag = headQuery:getMatches(self.ast)
+    local ctx = lb.box_context_create()
     if #headTag ~= 0 then
-        headTag[1].actualTag:renderRoot(headTag[1], nil, 0, 0, {
+        local b = box.boxFromCtx(ctx)
+        headTag[1].actualTag:renderRoot(headTag[1], b, nil, {
             list_style_type = "*",
             position = "static",
             text_align = "left",
             min_size = false,
         }, {
+            extraCtx = {},
+            ctx = ctx,
             componentStack = {},
             useAllHeight = false,
-            trace = require("banana.box").Box:new(),
+            -- trace = require("banana.box").Box:new(),
             debug = self.DEBUG_showBuild,
             isRealRender = false,
         })
     end
-    flame.expect("winAndBuf")
-    flame.pop()
 
 
     local containerWidth = vim.o.columns
@@ -829,6 +916,9 @@ function Instance:_createWinAndBuf()
         end
         vim.api.nvim_win_set_buf(self.winid, self.bufnr)
     end
+    lb.box_context_delete(ctx)
+    -- flame.expect("winAndBuf")
+    -- flame.pop()
 
     return width, height
 end
@@ -848,7 +938,7 @@ function Instance:_deferRender(post)
         if post ~= nil then
             post()
         end
-    end, 10)
+    end, 5)
 end
 
 function Instance:_requestRender()
@@ -866,10 +956,22 @@ function Instance:forceRerender()
     self:_render()
 end
 
-function Instance:_render()
-    if self.DEBUG_showPerf or self.DEBUG then
-        flame.overrideIsDev()
+function Instance:getFps()
+    local start = vim.uv.hrtime()
+    local count = 0
+    for _ = 1, 1000 do
+        if vim.uv.hrtime() - start > 1000000000 then
+            break
+        end
+        self:_render()
+        count = count + 1
     end
+    local time = vim.uv.hrtime() - start
+    return count / (time / 1000000000)
+end
+
+local stressStartTime = 0
+function Instance:_render()
     if not self.isVisible then
         return
     end
@@ -880,18 +982,24 @@ function Instance:_render()
     -- collectgarbage("stop")
     log.clearCtx()
     log.trace("Instance:render with " .. #self.scripts .. " scripts")
-    flame.newIter()
     local startTime = vim.loop.hrtime()
     local actualStart = startTime
     local astTime = 0
     local styleTime = 0
+    if self.DEBUG_showPerf or self.DEBUG then
+        flame.overrideIsDev()
+        flame.newIter()
+    end
+    flame.new("style")
     self.ast:_clearStyles()
     self:_applyStyleDeclarations(self.ast, self.styleRules)
     for ast, rules in pairs(self.foreignStyles) do
         self:_applyStyleDeclarations(ast, rules)
     end
+    flame.pop()
     self:body().relativeBoxes = {}
     self:body().absoluteAsts = {}
+    -- vim.notify("Rendering\n")
 
     styleTime = vim.loop.hrtime() - startTime
     startTime = vim.loop.hrtime()
@@ -902,20 +1010,21 @@ function Instance:_render()
         self:_clearDebugWinBuf()
     end
 
+
     local winTime = vim.loop.hrtime() - startTime
+    if self.ctx == nil then
+        self.ctx = require("banana.box").createContext()
+    end
     startTime = vim.loop.hrtime()
 
     -- self:body():resolveUnits(width, height, {})
     flame.new("renderAll")
     self.urlAsts = {}
-    local stuffToRender = self:_virtualRender(self.ast, width, height)
+    local _ = self:_virtualRender(self.ast, self.ctx, width, height)
     flame.pop()
-    -- vim.defer_fn(function ()
-    --     self:_render()
-    -- end, 30)
     local renderTime = vim.loop.hrtime() - startTime
     local skip = false
-    for i, script in ipairs(self.scripts) do
+    for _, script in ipairs(self.scripts) do
         skip = true
         -- if i == 2 then
         --     break
@@ -927,52 +1036,132 @@ function Instance:_render()
     startTime = vim.loop.hrtime()
 
     if skip then
+        lb.box_context_wipe(self.ctx)
+        box.wipeContext(self.ctx)
         self.rendering = false
         self.renderRequested = true
         -- collectgarbage("restart")
         -- collectgarbage("collect")
-        self:_deferRender(function ()
-            self:_fireEvent("ScriptDone")
-        end)
+        self.renderRequested = false
+        self.renderStart = vim.loop.hrtime()
+        self:_render()
+        self.renderRequested = false
+        self.rendering = false
+        -- self:_deferRender(function ()
+        self:_fireEvent("ScriptDone")
+        -- end)
         return
     end
 
-    local lines = {}
-    for _, line in ipairs(stuffToRender) do
-        local lineStr = ""
-        for _, word in ipairs(line) do
-            lineStr = lineStr .. word.word
-        end
-        table.insert(lines, lineStr)
-    end
+    -- for _, line in ipairs(stuffToRender) do
+    --     local lineStr = ""
+    --     for _, word in ipairs(line) do
+    --         lineStr = lineStr .. word.word
+    --     end
+    --     table.insert(lines, lineStr)
+    -- end
 
 
     local reductionTime = vim.loop.hrtime() - startTime
     startTime = vim.loop.hrtime()
 
+    -- log.trace("Flushing " ..
+    --     #lines .. " lines to buffer " .. self.bufnr .. " on win " .. self.winid)
+
+    local bufTime = vim.loop.hrtime() - startTime
+    startTime = vim.loop.hrtime()
     vim.api.nvim_set_option_value("modifiable", true, {
         buf = self.bufnr
     })
     vim.api.nvim_set_option_value("buftype", "nofile", {
         buf = self.bufnr
     })
-    log.trace("Flushing " ..
-        #lines .. " lines to buffer " .. self.bufnr .. " on win " .. self.winid)
-    vim.api.nvim_buf_set_lines(self.bufnr, 0, -1, false, lines)
+    lb.box_context_render(self.ctx, self.bufnr)
     vim.api.nvim_set_option_value("modifiable", self.bufOpts.modifiable or false,
         {
             buf = self.bufnr
         })
+    local hls = {}
 
-    local bufTime = vim.loop.hrtime() - startTime
-    startTime = vim.loop.hrtime()
-    self:_highlight(stuffToRender, 0)
+    vim.api.nvim_win_set_hl_ns(self.winid, self.highlightNs)
+    vim.api.nvim_buf_clear_namespace(self.bufnr, self.highlightNs, 0, -1)
+    vim.api.nvim_buf_clear_namespace(self.bufnr, 0, 0, -1)
+    lb.box_context_highlight(self.ctx, function (line, startCol, endCol, hl)
+        if hl == 0 then return end
+        local hlvalue = box.getHl(hl)
+        if hlvalue == nil then
+            if hlvalue == nil then
+                return
+            end
+        end
+
+        if type(hlvalue.fg) == "table" or type(hlvalue.bg) == "table" then
+            for col = startCol, endCol - 1 do
+                local fgVal = hlvalue.fg
+                local bgVal = hlvalue.bg
+
+                if type(fgVal) == "table" then
+                    ---@cast fgVal Banana.Gradient
+                    fgVal:setPos(col, line)
+                    hlvalue.fg = fgVal:nextCharColor()
+                end
+                if type(bgVal) == "table" then
+                    ---@cast bgVal Banana.Gradient
+                    bgVal:setPos(col, line)
+                    hlvalue.bg = bgVal:nextCharColor()
+                end
+                local group = "banana_grad_" ..
+                    hl .. "_" .. col .. "_" .. line
+                vim.api.nvim_set_hl(self.highlightNs, group,
+                    hlvalue)
+                vim.api.nvim_buf_set_extmark(self.bufnr, self.highlightNs,
+                    line,
+                    col,
+                    {
+                        end_col = col + 1,
+                        hl_group = group,
+                    })
+                hlvalue.fg = fgVal
+                hlvalue.bg = bgVal
+            end
+        else
+            local group = hls[hl]
+
+            if group == nil then
+                group = "banana_hl_" .. hl
+                hls[hl] = group
+                vim.api.nvim_set_hl(self.highlightNs, group,
+                    hlvalue)
+            end
+            vim.api.nvim_buf_set_extmark(self.bufnr, self.highlightNs, line,
+                startCol,
+                {
+                    end_col = endCol,
+                    hl_group = group,
+                })
+        end
+    end)
+    -- self:_highlight(stuffToRender, 0)
+    local extraLines = {}
+    if self.DEBUG then
+        table.insert(extraLines,
+            "Memory usage total: " .. lb.box_context_get_memory_usage(self.ctx))
+        table.insert(extraLines,
+            "  box usage: " .. lb.box_context_box_memory_usage(self.ctx))
+        table.insert(extraLines,
+            "  data usage: " .. lb.box_context_data_memory_usage(self.ctx))
+        table.insert(extraLines,
+            "  line usage: " .. lb.box_context_line_memory_usage(self.ctx))
+        table.insert(extraLines,
+            "  pr usage: " .. lb.box_context_pr_memory_usage(self.ctx))
+    end
+    lb.box_context_wipe(self.ctx)
+    box.wipeContext(self.ctx)
     self:_dumpUrls(self.bufnr, self.highlightNs)
 
     local hlTime = vim.loop.hrtime() - startTime
     totalTime = totalTime + vim.loop.hrtime() - actualStart
 
-    local extraLines = {}
 
     if self.DEBUG_dumpTree then
         local dump = self.ast:_dumpTree()
@@ -985,8 +1174,16 @@ function Instance:_render()
     end
 
     if self.DEBUG_stressTest then
-        if n < 200 then
+        if n == 1 then
+            stressStartTime = vim.loop.hrtime()
+        end
+        if n < 20000 then
             self:_deferRender()
+        else
+            local time = ((vim.loop.hrtime() - stressStartTime) / 1e6)
+            local iterTime = time / 500 - 10
+            print("Stress test took " ..
+                time .. "ms (~" .. iterTime .. "ms/cycle)")
         end
     end
     if self.DEBUG_showPerf then
@@ -1047,13 +1244,6 @@ function Instance:_render()
         table.insert(extraLines, "Total: " .. total .. "ms")
     end
     if #extraLines ~= 0 then
-        -- vim.api.nvim_set_option_value("modifiable", true, {
-        --     buf = self.bufnr
-        -- })
-        -- vim.api.nvim_buf_set_lines(self.bufnr, #lines, -1, false, extraLines)
-        -- vim.api.nvim_set_option_value("modifiable", false, {
-        --     buf = self.bufnr
-        -- })
         self:_writeLinesToDebugWin(extraLines)
     end
     self.rendering = false
@@ -1087,187 +1277,187 @@ function Instance:_dumpUrls(bufnr, ns)
     end
 end
 
----@param lines Banana.Line[]
----@param offset number?
----@param bufnr number?
----@param winid number?
----@param ns number?
----@param noclear boolean?
-function Instance:_highlight(lines, offset, bufnr, winid, ns, noclear)
-    noclear = noclear or false
-    flame.new(":_highlight")
-    offset = offset or 0
-    -- flame.new("hl:ns")
-    ns = ns or self.highlightNs or 1
-    winid = winid or self.winid or 0
-    bufnr = bufnr or self.bufnr or 0
-    vim.api.nvim_win_set_hl_ns(winid, ns)
-    if self.highlightNs ~= nil and not noclear then
-        vim.api.nvim_buf_clear_namespace(bufnr, ns, 0, -1)
-        vim.api.nvim_buf_clear_namespace(bufnr, 0, 0, -1)
-        -- vim.api.nvim_win_set_hl_ns(self.winid, self.highlightNs)
-        -- self.highlightNs = nil
-    end
-    -- flame.pop()
-    if bufnr == nil or not vim.api.nvim_buf_is_valid(bufnr) then
-        log.throw(
-            "Unreachable (buf is invalid in higlightBuffer)")
-        error("")
-    end
-    local row = offset
-    local col = 0
-    local hlId = 0
-    for _, v in ipairs(lines) do
-        local i = 1
-        ---@type Banana.Gradient[]
-        local gradients = {}
-        while i <= #v do
-            local word = v[i]
-            local hlGroup = ""
-            -- local ns = self.highlightNs
-            -- local delta = _str.charWidth(word.word)
-            -- log.debug(word.word .. ": " .. delta)
-            local byteCount = _str.byteCount(word.word)
-
-            local isGrad = false
-            if word.style ~= nil then
-                isGrad = type(word.style.fg) == "table" or
-                    type(word.style.bg) == "table"
-            end
-            local charWidth = _str.charWidth(word.word)
-            local hasFgGrad = false
-            local hasBgGrad = false
-            for gradI = #gradients, 1, -1 do
-                local bg = nil
-                if word.style ~= nil then
-                    bg = word.style.bg
-                end
-                local fg = nil
-                if word.style ~= nil then
-                    fg = word.style.fg
-                end
-                if gradients[gradI] ~= bg and gradients[gradI] ~= fg then
-                    gradients[gradI]:skipNext(charWidth)
-                end
-                if gradients[gradI] == bg then
-                    hasBgGrad = true
-                end
-                if gradients[gradI] == fg then
-                    hasFgGrad = true
-                end
-            end
-            if word.style == nil then
-                hlGroup = M.defaultWinHighlight
-                -- hlGroup = "NormalFloat"
-                -- ns = 0
-            elseif word.style.__name ~= nil then
-                -- ns = 0
-                --flame.new("hl:named_hl")
-                hlGroup = word.style.__name or "Normal"
-                local hl = vim.api.nvim_get_hl(ns, {
-                    name = hlGroup,
-                })
-                local keysCount = #vim.tbl_keys(word.style)
-                -- Apparently i have to use json to detect vim.empty_dict()
-                local hlNotExists = vim.json.encode(hl) == "{}"
-                -- If there are default highlight options, and the highlight does not exist, create it
-                if isGrad then
-                    log.throw(
-                        "ERROR: gradients cannot be used as default fields for named highlights")
-                end
-                if hlNotExists and keysCount > 1 then
-                    --flame.new("hl:create_named")
-                    local opts = vim.deepcopy(word.style)
-                    opts.__name = nil
-                    if opts == nil then
-                        log.throw(
-                            "Unreachable [highlightBuffer colorOpts is nil]")
-                        error("")
-                    end
-                    vim.api.nvim_set_hl(0, hlGroup, opts)
-                    --flame.pop()
-                elseif hlNotExists then
-                    hlGroup = M.defaultWinHighlight
-                end
-            elseif isGrad then
-                -- flame.new("_highlight:setGrad")
-                local fg = word.style.fg
-                local bg = word.style.bg
-                local bgGrad = type(bg) == "table"
-                local fgGrad = type(fg) == "table"
-                if bgGrad and not hasBgGrad then
-                    table.insert(gradients, bg)
-                end
-                if fgGrad and not hasFgGrad then
-                    table.insert(gradients, fg)
-                end
-                local charI = 1
-                -- local wordI = orgI
-                -- local wordStr = v[orgI].word
-                while charI <= byteCount do
-                    local char = word.word:sub(charI, charI)
-
-                    local charByteSize = _str.codepointLen(char)
-
-                    if bgGrad then
-                        ---@diagnostic disable-next-line: need-check-nil, param-type-mismatch
-                        word.style.bg = bg:nextCharColor()
-                        -- print(bg.width)
-                    end
-
-                    if fgGrad and char ~= " " then
-                        ---@diagnostic disable-next-line: need-check-nil, param-type-mismatch
-                        word.style.fg = fg:nextCharColor()
-                    elseif fgGrad then
-                        ---@diagnostic disable-next-line: need-check-nil, param-type-mismatch
-                        fg:skipNext(1)
-                        word.style.fg = "#000000"
-                    end
-                    hlGroup = "banana_hl_" .. hlId
-                    -- flame.new("_highlight:set_hl/")
-                    vim.api.nvim_set_hl(ns, hlGroup,
-                        word.style)
-                    self:_highlightText(bufnr, ns, row, charI + col - 1,
-                        col + charI - 1 + charByteSize, hlGroup)
-                    -- vim.api.nvim_buf_add_highlight(bufnr, ns,
-                    --     hlGroup, row,
-                    --     charI + col - 1,
-                    --     col + charI - 1 + charByteSize)
-                    -- flame.pop()
-                    hlId = hlId + 1
-                    charI = charI + charByteSize
-                end
-                word.style.fg = fg
-                word.style.bg = bg
-                -- flame.pop()
-            else
-                hlGroup = "banana_hl_" .. hlId
-                vim.api.nvim_set_hl(ns, hlGroup, word
-                    .style)
-                hlId = hlId + 1
-                -- usedHighlights[optsStr] = hlGroup
-                --flame.pop()
-            end
-            if not isGrad then
-                self:_highlightText(bufnr, ns, row, col, col + byteCount, hlGroup)
-
-                -- vim.api.nvim_buf_add_highlight(bufnr, ns, hlGroup, row,
-                --     col,
-                --     col + byteCount)
-            end
-            col = col + byteCount
-            --flame.pop()
-            i = i + 1
-        end
-        for _, s in ipairs(gradients) do
-            s:nextLine()
-        end
-        col = 0
-        row = row + 1
-        --flame.pop()
-    end
-    flame.pop()
-end
+-- ---@param lines Banana.Line[]
+-- ---@param offset number?
+-- ---@param bufnr number?
+-- ---@param winid number?
+-- ---@param ns number?
+-- ---@param noclear boolean?
+-- function Instance:_highlight(lines, offset, bufnr, winid, ns, noclear)
+--     noclear = noclear or false
+--     flame.new(":_highlight")
+--     offset = offset or 0
+--     -- flame.new("hl:ns")
+--     ns = ns or self.highlightNs or 1
+--     winid = winid or self.winid or 0
+--     bufnr = bufnr or self.bufnr or 0
+--     vim.api.nvim_win_set_hl_ns(winid, ns)
+--     if self.highlightNs ~= nil and not noclear then
+--         vim.api.nvim_buf_clear_namespace(bufnr, ns, 0, -1)
+--         vim.api.nvim_buf_clear_namespace(bufnr, 0, 0, -1)
+--         -- vim.api.nvim_win_set_hl_ns(self.winid, self.highlightNs)
+--         -- self.highlightNs = nil
+--     end
+--     -- flame.pop()
+--     if bufnr == nil or not vim.api.nvim_buf_is_valid(bufnr) then
+--         log.throw(
+--             "Unreachable (buf is invalid in higlightBuffer)")
+--         error("")
+--     end
+--     local row = offset
+--     local col = 0
+--     local hlId = 0
+--     for _, v in ipairs(lines) do
+--         local i = 1
+--         ---@type Banana.Gradient[]
+--         local gradients = {}
+--         while i <= #v do
+--             local word = v[i]
+--             local hlGroup = ""
+--             -- local ns = self.highlightNs
+--             -- local delta = _str.charWidth(word.word)
+--             -- log.debug(word.word .. ": " .. delta)
+--             local byteCount = _str.byteCount(word.word)
+--
+--             local isGrad = false
+--             if word.style ~= nil then
+--                 isGrad = type(word.style.fg) == "table" or
+--                     type(word.style.bg) == "table"
+--             end
+--             local charWidth = _str.charWidth(word.word)
+--             local hasFgGrad = false
+--             local hasBgGrad = false
+--             for gradI = #gradients, 1, -1 do
+--                 local bg = nil
+--                 if word.style ~= nil then
+--                     bg = word.style.bg
+--                 end
+--                 local fg = nil
+--                 if word.style ~= nil then
+--                     fg = word.style.fg
+--                 end
+--                 if gradients[gradI] ~= bg and gradients[gradI] ~= fg then
+--                     gradients[gradI]:skipNext(charWidth)
+--                 end
+--                 if gradients[gradI] == bg then
+--                     hasBgGrad = true
+--                 end
+--                 if gradients[gradI] == fg then
+--                     hasFgGrad = true
+--                 end
+--             end
+--             if word.style == nil then
+--                 hlGroup = M.defaultWinHighlight
+--                 -- hlGroup = "NormalFloat"
+--                 -- ns = 0
+--             elseif word.style.__name ~= nil then
+--                 -- ns = 0
+--                 --flame.new("hl:named_hl")
+--                 hlGroup = word.style.__name or "Normal"
+--                 local hl = vim.api.nvim_get_hl(ns, {
+--                     name = hlGroup,
+--                 })
+--                 local keysCount = #vim.tbl_keys(word.style)
+--                 -- Apparently i have to use json to detect vim.empty_dict()
+--                 local hlNotExists = vim.json.encode(hl) == "{}"
+--                 -- If there are default highlight options, and the highlight does not exist, create it
+--                 if isGrad then
+--                     log.throw(
+--                         "ERROR: gradients cannot be used as default fields for named highlights")
+--                 end
+--                 if hlNotExists and keysCount > 1 then
+--                     --flame.new("hl:create_named")
+--                     local opts = vim.deepcopy(word.style)
+--                     opts.__name = nil
+--                     if opts == nil then
+--                         log.throw(
+--                             "Unreachable [highlightBuffer colorOpts is nil]")
+--                         error("")
+--                     end
+--                     vim.api.nvim_set_hl(0, hlGroup, opts)
+--                     --flame.pop()
+--                 elseif hlNotExists then
+--                     hlGroup = M.defaultWinHighlight
+--                 end
+--             elseif isGrad then
+--                 -- flame.new("_highlight:setGrad")
+--                 local fg = word.style.fg
+--                 local bg = word.style.bg
+--                 local bgGrad = type(bg) == "table"
+--                 local fgGrad = type(fg) == "table"
+--                 if bgGrad and not hasBgGrad then
+--                     table.insert(gradients, bg)
+--                 end
+--                 if fgGrad and not hasFgGrad then
+--                     table.insert(gradients, fg)
+--                 end
+--                 local charI = 1
+--                 -- local wordI = orgI
+--                 -- local wordStr = v[orgI].word
+--                 while charI <= byteCount do
+--                     local char = word.word:sub(charI, charI)
+--
+--                     local charByteSize = _str.codepointLen(char)
+--
+--                     if bgGrad then
+--                         ---@diagnostic disable-next-line: need-check-nil, param-type-mismatch
+--                         word.style.bg = bg:nextCharColor()
+--                         -- print(bg.width)
+--                     end
+--
+--                     if fgGrad and char ~= " " then
+--                         ---@diagnostic disable-next-line: need-check-nil, param-type-mismatch
+--                         word.style.fg = fg:nextCharColor()
+--                     elseif fgGrad then
+--                         ---@diagnostic disable-next-line: need-check-nil, param-type-mismatch
+--                         fg:skipNext(1)
+--                         word.style.fg = "#000000"
+--                     end
+--                     hlGroup = "banana_hl_" .. hlId
+--                     -- flame.new("_highlight:set_hl/")
+--                     vim.api.nvim_set_hl(ns, hlGroup,
+--                         word.style)
+--                     self:_highlightText(bufnr, ns, row, charI + col - 1,
+--                         col + charI - 1 + charByteSize, hlGroup)
+--                     -- vim.api.nvim_buf_add_highlight(bufnr, ns,
+--                     --     hlGroup, row,
+--                     --     charI + col - 1,
+--                     --     col + charI - 1 + charByteSize)
+--                     -- flame.pop()
+--                     hlId = hlId + 1
+--                     charI = charI + charByteSize
+--                 end
+--                 word.style.fg = fg
+--                 word.style.bg = bg
+--                 -- flame.pop()
+--             else
+--                 hlGroup = "banana_hl_" .. hlId
+--                 vim.api.nvim_set_hl(ns, hlGroup, word
+--                     .style)
+--                 hlId = hlId + 1
+--                 -- usedHighlights[optsStr] = hlGroup
+--                 --flame.pop()
+--             end
+--             if not isGrad then
+--                 self:_highlightText(bufnr, ns, row, col, col + byteCount, hlGroup)
+--
+--                 -- vim.api.nvim_buf_add_highlight(bufnr, ns, hlGroup, row,
+--                 --     col,
+--                 --     col + byteCount)
+--             end
+--             col = col + byteCount
+--             --flame.pop()
+--             i = i + 1
+--         end
+--         for _, s in ipairs(gradients) do
+--             s:nextLine()
+--         end
+--         col = 0
+--         row = row + 1
+--         --flame.pop()
+--     end
+--     flame.pop()
+-- end
 
 function Instance:_highlightText(bufnr, ns, row, col, endCol, group)
     vim.api.nvim_buf_set_extmark(bufnr, ns, row, col, {
@@ -1397,7 +1587,7 @@ end
 ---works like js getElementsByTagName
 ---@param name string the tag name to search for
 ---@return Banana.Ast[]
-function Instance:getElementsByTag(name)
+function Instance:getElementsByTagName(name)
     if nilAst == nil then
         log.throw(
             "Unreachable")

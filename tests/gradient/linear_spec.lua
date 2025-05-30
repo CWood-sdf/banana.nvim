@@ -27,14 +27,16 @@ end
 ---@param tlColor Banana.GradientColorStop
 ---@param brColor Banana.GradientColorStop
 local function basicAsserts(grad, tlColor, brColor)
-    grad:setSize(5, 5)
-    grad:startLineRender()
+    local ast = {}
+    grad:setBounds(0, 1, 5, 5, ast)
+    -- grad:startLineRender()
+    grad:setPos(0, 0)
     local tl = grad:nextCharColor()
     local expTl = grad:_lerpColors(tlColor, tlColor, 1)
     colMatch(tl, expTl,
         "Could not match top left colors (NOTE: expected '" ..
         expTl .. "' but got '" .. tl .. "')")
-    grad:_testSpot(4, 4)
+    grad:setPos(4, 4)
     local br = grad:nextCharColor()
     local expBr = grad:_lerpColors(brColor, brColor, 1)
     colMatch(br, expBr,

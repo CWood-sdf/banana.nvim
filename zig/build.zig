@@ -4,6 +4,59 @@ const std = @import("std");
 // declaratively construct a build graph that will be executed by an external
 // runner.
 pub fn build(b: *std.Build) void {
+    // const file = std.fs.cwd().readFileAlloc(std.heap.page_allocator, "src/box.zig", 100000) catch std.heap.page_allocator.alloc(u8, 1) catch return;
+    //
+    // defer std.heap.page_allocator.free(file);
+    //
+    // const fileZeroed = std.heap.page_allocator.dupeZ(u8, file) catch return;
+    // defer std.heap.page_allocator.free(fileZeroed);
+    //
+    // var ast = std.zig.Ast.parse(std.heap.page_allocator, fileZeroed, .zig) catch return;
+    // defer ast.deinit(std.heap.page_allocator);
+    //
+    // const rootDecls = ast.rootDecls();
+    //
+    // for (rootDecls) |decl| {
+    //     const node: std.zig.Ast.Node.Data = ast.nodes.items(.data)[decl];
+    //     const tag: std.zig.Ast.Node.Tag = ast.nodes.items(.tag)[decl];
+    //     if (tag == .fn_decl) {
+    //         std.debug.print("{}\n", .{tag});
+    //         // std.debug.print("{}\n", .{node});
+    //         const protoTag = ast.nodes.items(.tag)[node.lhs];
+    //         std.debug.print("{}\n", .{protoTag});
+    //         switch (protoTag) {
+    //             .fn_proto_simple => {
+    //                 var buffer: [1]std.zig.Ast.Node.Index = undefined;
+    //                 const proto: std.zig.Ast.full.FnProto = ast.fnProtoSimple(&buffer, node.lhs);
+    //                 if (proto.visib_token) |tok| {
+    //                     const tp = ast.tokens.items(.tag)[tok];
+    //                     std.debug.print("visb token: {}\n", .{tp});
+    //                 }
+    //                 const tok = proto.visib_token.?;
+    //                 std.debug.print("{}\n", .{proto});
+    //             },
+    //             .fn_proto_multi => {
+    //                 std.debug.print("Multi\n", .{});
+    //             },
+    //             else => unreachable,
+    //         }
+    //     }
+    // }
+    // const node: std.zig.Ast.Node.Data = ast.nodes.items(.data)[0];
+    // const tag: std.zig.Ast.Node.Tag = ast.nodes.items(.tag)[0];
+    // std.debug.print("{}\n", .{tag});
+    // std.debug.print("{}\n", .{node});
+    // std.debug.assert(tag == .root);
+    //
+    // std.debug.print("loop\n", .{});
+    // for (node.rhs..node.rhs + 1) |i| {
+    //     const item: std.zig.Ast.Node.Tag = ast.nodes.items(.tag)[i];
+    //     std.debug.print("{}\n", .{item});
+    //
+    //     const data = ast.nodes.items(.data)[i];
+    //     std.debug.print("{}\n", .{data});
+    // }
+
     // Standard target options allows the person running `zig build` to choose
     // what target to build for. Here we do not override the defaults, which
     // means any target is allowed, and the default is native. Other options
@@ -28,6 +81,11 @@ pub fn build(b: *std.Build) void {
     // This declares intent for the library to be installed into the standard
     // location when the user invokes the "install" step (the default step when
     // running `zig build`).
+    b.getInstallStep().dependOn(&b.addInstallArtifact(libbanana, .{
+        .dest_dir = .{
+            .override = .{ .custom = "../../lua/banana/" },
+        },
+    }).step);
     b.installArtifact(libbanana);
 
     const exe = b.addExecutable(.{
@@ -39,11 +97,6 @@ pub fn build(b: *std.Build) void {
     // exe.linkLibC();
     // const tracy = b.option([]const u8, "tracy", "Enable Tracy integration. Supply path to Tracy source");
     // exe.addIncludePath(std.Build.LazyPath{ .path = "src/nvim" });
-
-    // if (tracy) |tracy_path| {
-    exe.addIncludePath(.{ .cwd_relative = "src/nvim" });
-    exe.addIncludePath(.{ .cwd_relative = "src/nvim/src" });
-    // }
 
     // This declares intent for the executable to be installed into the
     // standard location when the user invokes the "install" step (the default

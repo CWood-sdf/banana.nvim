@@ -1,8 +1,13 @@
 local M = {}
 ---@module "banana.box"
 local box = require "banana.lazyRequire" ("banana.box")
+---@module "banana.libbananabox"
+local lb = require "banana.lazyRequire" ("banana.libbanana")
+
 ---@class Banana.Nml.CanvasContext
+---@field ctx number
 ---@field fillChar string
+---@field hlid number?
 ---@field fillBg string
 ---@field fillFg string
 ---@field box Banana.Box
@@ -10,12 +15,48 @@ local box = require "banana.lazyRequire" ("banana.box")
 local Context = {
 }
 
-function Context:background()
-    local newBox = box.Box:new({
+---@param c string
+function Context:setFillChar(c)
+    self.fillChar = c
+end
+
+---@param bg any
+function Context:setFillBg(bg)
+    if self.fillBg ~= bg then
+        self.fillBg = bg
+        self.hlid = nil
+    end
+end
+
+---@param fg any
+function Context:setFillFg(fg)
+    if self.fillFg ~= fg then
+        self.fillFg = fg
+        self.hlid = nil
+    end
+end
+
+---@return number
+function Context:_getHlId()
+    if self.hlid ~= nil then
+        return self.hlid
+    end
+    local hlid = box.addHighlight(self.ctx, {
         bg = self.fillBg,
         fg = self.fillFg,
-    }, self.fillChar)
+    })
+    self.hlid = hlid
+    return hlid
+end
+
+function Context:background()
     local w, h = self:width(), self:height()
+    box.wipeContext(self.ctx)
+    lb.box_context_wipe(self.ctx)
+    self.hlid = nil
+    ---@type Banana.Box
+    local newBox = box.boxFromCtx(self.ctx, nil)
+    newBox:setHlId(self:_getHlId())
     self.box = newBox
     self:resize(w, h)
     self.ast:_requestRender()
@@ -31,6 +72,7 @@ function Context:resize(w, h)
     if self:width() ~= w then
         self.box:setWidth(w)
     end
+    self.box:clean()
 end
 
 ---Draws a rect at the specified top left (x, y) with size {w}x{h}
@@ -39,10 +81,7 @@ end
 ---@param w number
 ---@param h number
 function Context:rect(x, y, w, h)
-    local overlay = box.Box:new({
-        bg = self.fillBg,
-        fg = self.fillFg,
-    }, self.fillChar)
+    local hlid = self:_getHlId()
     x = math.floor(x)
     y = math.floor(y)
     w = math.floor(w)
@@ -75,35 +114,30 @@ function Context:rect(x, y, w, h)
         x = 0
         w = w - extra
     end
-    overlay:expandHeightTo(math.min(h, self:height() - y))
-    overlay:expandWidthTo(math.min(w, self:width() - x))
-    self.box:renderOver(overlay, x, y)
+    self.box:overlay(x, y, w, h, self.fillChar, hlid)
     self.ast:_requestRender()
 end
 
----@return Banana.Box
-function Context:getBox()
-    return self.box:clone()
-end
+-- ---@return Banana.Box
+-- function Context:getBox()
+--     -- return self.box:clone()
+-- end
 
 ---@return number
 function Context:height()
-    return self.box:height()
+    return self.box:getHeight()
 end
 
 ---@return number
 function Context:width()
-    return self.box:width()
+    return self.box:getWidth()
 end
 
 ---Draws a single character at the
 ---@param x any
 ---@param y any
 function Context:point(x, y)
-    local overlay = box.Box:new({
-        bg = self.fillBg,
-        fg = self.fillFg,
-    }, self.fillChar)
+    local hlid = self:_getHlId()
     x = math.floor(x)
     y = math.floor(y)
     if y >= self:height() or y < 0 then
@@ -112,9 +146,7 @@ function Context:point(x, y)
     if x >= self:width() or x < 0 then
         return
     end
-    overlay:expandHeightTo(1)
-    overlay:expandWidthTo(1)
-    self.box:renderOver(overlay, x, y)
+    self.box:overlay(x, y, 1, 1, self.fillChar, hlid)
     self.ast:_requestRender()
 end
 
@@ -124,19 +156,72 @@ end
 ---@param y number
 ---@param maxWidth number?
 function Context:text(str, x, y, maxWidth)
+    local newCtx = lb.box_context_create()
 
+    if y >= self:height() or y < 0 then
+        return
+    end
+    if x >= self:width() or x < 0 then
+        return
+    end
+
+    local ok, err = pcall(function ()
+        local b = box.boxFromCtx(newCtx)
+        if maxWidth ~= nil then
+            b:setMaxWidth(maxWidth)
+        end
+        b:setHlId(self:_getHlId())
+        b:appendStr(str)
+        local w = self:width()
+        if x + b:getWidth() > w then
+            b:shrinkWidthTo(w - x)
+        end
+        local h = self:height()
+        if y + b:getHeight() > h then
+            b:shrinkHeightTo(h - y)
+        end
+
+        self.box:renderOver(newCtx, x, y)
+        self.box:unsafeSetCursor(0, 0)
+    end)
+
+    lb.box_context_delete(newCtx)
+
+    if not ok then
+        error(err)
+    end
+    self.ast:_requestRender()
 end
 
 ---@param ast Banana.Ast
 ---@return Banana.Nml.CanvasContext
-function M.newContext(ast)
+function M.newContext(ast, hl)
+    local c = box.createContext()
+    local defaultHl = vim.api.nvim_get_hl(0, {
+        name = "NormalFloat"
+    })
+    local defaultFg = string.format("#%06x", defaultHl.fg)
+    local defaultBg = string.format("#%06x", defaultHl.bg)
+    local hlColor = box.getHl(hl) or {}
+    local fg = defaultFg
+    local bg = defaultBg
+    if hlColor.bg ~= nil and type(hlColor.bg) == "string" then
+        ---@diagnostic disable-next-line: cast-local-type
+        bg = hlColor.bg
+    end
+    if hlColor.fg ~= nil and type(hlColor.fg) == "string" then
+        ---@diagnostic disable-next-line: cast-local-type
+        fg = hlColor.fg
+    end
+    ---@cast bg string
+    ---@cast fg string
     ---@type Banana.Nml.CanvasContext
-    ---@diagnostic disable-next-line: missing-fields
     local ctx = {
+        ctx = c,
         fillChar = " ",
-        fillBg = "#ffffff",
-        fillFg = "#000000",
-        box = box.Box:new({ bg = "#ffffff" }),
+        fillBg = bg,
+        fillFg = fg,
+        box = box.boxFromCtx(c),
         ast = ast,
     }
     setmetatable(ctx, { __index = Context })

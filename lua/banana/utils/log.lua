@@ -116,7 +116,7 @@ log.new = function (config, standalone)
 
     local log_at_level = function (level, level_config, message_maker, ...)
         -- Return early if we're below the config.level
-        if level < levels[config.level] then
+        if level < levels[config.level] or true then
             return
         end
         -- flame.new("log", true)

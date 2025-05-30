@@ -4,12 +4,9 @@ local flame = require("banana.lazyRequire")("banana.utils.debug_flame")
 local t = require("banana.lazyRequire")("banana.nml.tag")
 
 ---@type Banana.Renderer
-local function renderer(self, ast, parentHl, parentWidth, parentHeight, startX,
-                        startY, inherit, extra)
+local function renderer(self, ast, box, parentHl, inherit, extra)
     -- flame.new("tag:span")
-    local ret = self:renderInlineEl(ast, parentHl, parentWidth, parentHeight,
-        startX,
-        startY, inherit, extra)
+    local ret = self:renderInlineEl(ast, box, parentHl, inherit, extra)
     -- flame.pop()
     return ret
 end

@@ -23,6 +23,36 @@ asd
 ]]
 
 describe("span rendering", function ()
+    it("box spans wrap properly", function ()
+        local inst = require("banana.instance").emptyInstance()
+        inst:useNml(code)
+        inst.DEBUG = false
+        inst.stripRight = false
+        inst:open()
+
+        local span = inst:getElementsByTagName("span")[1]
+        span:setTextContent("asd")
+        local span2 = inst:createElement("span")
+        span2:setStyle("width: 3ch; height: 1ch;")
+        inst:body():appendChild(span2)
+        local expectedMap = {
+            "     ",
+            "asd  ",
+            "~~~  ",
+            "     ",
+        }
+        inst:forceRerender()
+        h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
+        -- span:setStyleValue("width", "5ch")
+        -- expectedMap = {
+        --     "     ",
+        --     "asd~a",
+        --     "sd~~~",
+        --     "     ",
+        -- }
+        -- inst:forceRerender()
+        -- h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
+    end)
     it("doesnt completely overflow", function ()
         local inst = require("banana.instance").emptyInstance()
         inst:useNml(code)
@@ -30,7 +60,7 @@ describe("span rendering", function ()
         inst.stripRight = false
         inst:open()
 
-        local span = inst:getElementsByTag("span")[1]
+        local span = inst:getElementsByTagName("span")[1]
         span:setTextContent("asd asd")
         local expectedMap = {
             "     ",
@@ -57,7 +87,7 @@ describe("span rendering", function ()
         inst.stripRight = false
         inst:open()
 
-        local span = inst:getElementsByTag("span")[1]
+        local span = inst:getElementsByTagName("span")[1]
         span:setStyle("margin-left: 1ch;")
         local expectedMap = {
             "     ",
@@ -75,7 +105,7 @@ describe("span rendering", function ()
         inst.stripRight = false
         inst:open()
 
-        local span = inst:getElementsByTag("span")[1]
+        local span = inst:getElementsByTagName("span")[1]
         span:setStyle(
             "width: 100%; height: 100%; text-align: center; padding-top: 1ch;")
         local expectedMap = {
@@ -96,7 +126,7 @@ describe("span rendering", function ()
         inst.stripRight = false
         inst:open()
 
-        local span = inst:getElementsByTag("span")[1]
+        local span = inst:getElementsByTagName("span")[1]
         span:setStyle(" text-align: center;")
         local expectedMap = {
             "     ",
@@ -115,7 +145,7 @@ describe("span rendering", function ()
         inst.stripRight = false
         inst:open()
 
-        local span = inst:getElementsByTag("span")[1]
+        local span = inst:getElementsByTagName("span")[1]
         span:setStyle("width: 4ch; height: 100%; text-align: center;")
         local expectedMap1 = {
             "     ",
@@ -134,11 +164,15 @@ describe("span rendering", function ()
             "~~~~ ",
         }
         inst:forceRerender()
-        local ok1, _ = pcall(h.assertBgMapsMatch, h.bufToBgMap(inst.bufnr),
+        local ok1, e1 = pcall(h.assertBgMapsMatch, h.bufToBgMap(inst.bufnr),
             expectedMap1)
-        local ok2, _ = pcall(h.assertBgMapsMatch, h.bufToBgMap(inst.bufnr),
+        local ok2, e2 = pcall(h.assertBgMapsMatch, h.bufToBgMap(inst.bufnr),
             expectedMap2)
-        assert(ok1 or ok2, "Expected one of the centers to work")
+        if not (ok1 or ok2) then
+            error(
+                "Expected one of the centers to work\n Errors given: " ..
+                e1 .. ", " .. e2)
+        end
     end)
     it("relative positions", function ()
         local inst = require("banana.instance").emptyInstance()
@@ -147,7 +181,7 @@ describe("span rendering", function ()
         inst.stripRight = false
         inst:open()
 
-        local span = inst:getElementsByTag("span")[1]
+        local span = inst:getElementsByTagName("span")[1]
         span:setStyle(
             "width: 2ch; height: 3ch; position: relative; left: 1ch; top: 1ch;")
         local expectedMap = {
@@ -167,7 +201,7 @@ describe("span rendering", function ()
         inst.stripRight = false
         inst:open()
 
-        local span = inst:getElementsByTag("span")[1]
+        local span = inst:getElementsByTagName("span")[1]
         span:setStyle("width: 2ch; height: 3ch;")
         local expectedMap = {
             "     ",
@@ -194,7 +228,7 @@ describe("span rendering", function ()
         }
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
 
-        local span = inst:getElementsByTag("span")[1]
+        local span = inst:getElementsByTagName("span")[1]
         span:setStyle("width: 3ch; height: 3ch;")
         expectedMap = {
             "     ",

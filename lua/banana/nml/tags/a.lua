@@ -4,17 +4,12 @@
 local t = require("banana.lazyRequire")("banana.nml.tag")
 
 ---@type Banana.Renderer
-local function renderer(self, ast, parentHl, parentWidth, parentHeight, startX,
-                        startY, inherit, extra)
+local function renderer(self, ast, box, parentHl, inherit, extra)
     -- flame.new("tag:span")
-    local ret = self:renderInlineEl(ast, parentHl, parentWidth, parentHeight,
-        startX,
-        startY, inherit, extra)
+    self:renderInlineEl(ast, box, parentHl, inherit, extra)
     if extra.isRealRender and ast:hasAttribute("href") then
         table.insert(ast:ownerDocument().urlAsts, ast)
     end
-    -- flame.pop()
-    return ret
 end
 ---@type Banana.TagInfo
 local M = t.newTag(

@@ -6,26 +6,20 @@ local t = require("banana.lazyRequire")("banana.nml.tag")
 local log = require("banana.lazyRequire")("banana.utils.log")
 
 ---@type Banana.Renderer
-local function renderer(self, ast, parentHl, parentWidth, parentHeight, startX,
-                        startY, inherit, extra)
+local function renderer(self, ast, box, parentHl, inherit, extra)
     -- flame.new("tag:slot")
     local lastEl = extra.componentStack[#extra.componentStack]
     local renderable = lastEl:_getSlot(ast.attributes["name"])
-    local b = require("banana.box")
     if renderable:isNil() then
-        local ret = b.Box:new()
-        ret.hlgroup = ast:_mixHl(parentHl)
-        for _, box, _ in self:blockIter(ast, ret.hlgroup, parentWidth, parentHeight, startX, startY, inherit, extra) do
-            ret:appendBoxBelow(box)
+        for _, _, _ in self:blockIter(ast, box, parentHl, inherit, extra) do
         end
+        return
         -- flame.pop()
-        return ret
     end
-    local ret = renderable.actualTag:getRendered(renderable, parentHl,
-        parentWidth,
-        parentHeight, startX, startY, inherit, extra)
+    local ret = renderable.actualTag:getRendered(renderable, box, parentHl,
+        inherit, extra)
     -- flame.pop()
-    return ret:render()
+    ret:render()
 end
 ---@type Banana.TagInfo
 local M = t.newTag(

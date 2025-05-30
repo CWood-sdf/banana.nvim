@@ -59,6 +59,8 @@ function ParseData:getStringFromNode(node)
 end
 
 ---@class (exact) Banana.Ncss.StyleDeclaration
+---@field namespace string
+---@field actualName string
 ---@field name string
 ---@field values Banana.Ncss.StyleValue[]
 ---@field important boolean
@@ -165,6 +167,9 @@ function M.parseBlock(tree, parser)
         local styleVal = nil
         local important = nil
         local tp = child:type()
+        local namespace = ""
+        local namespaceEnd = 0
+        local actualName = ""
         if tp == "{" or tp == "}" or tp == ts_types.comment then
             goto continue
         end
@@ -189,8 +194,18 @@ function M.parseBlock(tree, parser)
         name = parser:getStringFromRange({ propName:start() },
             { propName:end_() })
         values, important = M.parsePropValue(child, name, parser)
+        for c = 1, #name do
+            if name:sub(c, c) == "-" then
+                namespace = name:sub(1, namespaceEnd)
+                actualName = name:sub(namespaceEnd + 2)
+                break
+            end
+            namespaceEnd = c
+        end
         ---@type Banana.Ncss.StyleDeclaration
         styleVal = {
+            namespace = namespace,
+            actualName = actualName,
             name = name,
             values = values,
             important = important,

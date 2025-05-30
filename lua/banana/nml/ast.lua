@@ -13,6 +13,9 @@ local _inst = require("banana.lazyRequire")("banana.instance")
 local unit = require("banana.lazyRequire")("banana.ncss.unit")
 
 
+---@type Banana.Ncss.UnitValue?
+local zeroUnit = nil
+
 M.left = 1
 M.top = 2
 M.right = 3
@@ -26,7 +29,7 @@ M.padNames = { "left", "top", "right", "bottom" }
 ---@field rightX number The right edge, exclusive
 ---@field bottomY number The bottom edge, exclusive
 
----@alias Banana.RelativeBox { box: Banana.Box, left: number, top: number, z: number}[]
+---@alias Banana.RelativeBox { image: number, left: number, top: number, z: number}
 
 local astId = 0
 
@@ -58,6 +61,7 @@ local astId = 0
 ---@field componentCache? { [string]: Banana.Component } Cache of components
 ---@field componentTree? Banana.Ast If is component, will contain <template> to render
 ---@field componentParent? Banana.Ast If is <template>, will contain component
+---@field _isComponentCache boolean
 M.Ast = {
     nodes = {},
     tag = "",
@@ -77,8 +81,13 @@ M.Ast = {
 ---@return Banana.Ast
 function M.Ast:new(tag, parent, source)
     local actualTag = nil
+    if zeroUnit == nil then
+        zeroUnit = unit.newUnit("ch", 0, 0)
+    end
+    local isComponent = false
     if require("banana.nml.parser").isValidComponentName(tag) then
         actualTag = _tag.newComponentTag(tag)
+        isComponent = true
     end
     actualTag = actualTag or require("banana.nml.tag").makeTag(tag)
     local path
@@ -88,7 +97,6 @@ function M.Ast:new(tag, parent, source)
         path = {}
     end
     ---@type Banana.Ast
-    ---@diagnostic disable-next-line: missing-fields
     local ast = {
         hl = {},
         _astId = astId,
@@ -98,6 +106,7 @@ function M.Ast:new(tag, parent, source)
         hidden = false,
         boundBox = nil,
         precedences = {},
+        _isComponentCache = isComponent,
         nodes = {},
         tag = tag,
         _parent = parent,
@@ -105,16 +114,16 @@ function M.Ast:new(tag, parent, source)
         attributes = {},
         instance = nil,
         padding = {
-            unit.newUnit("ch", 0),
-            unit.newUnit("ch", 0),
-            unit.newUnit("ch", 0),
-            unit.newUnit("ch", 0),
+            zeroUnit,
+            zeroUnit,
+            zeroUnit,
+            zeroUnit,
         },
         margin = {
-            unit.newUnit("ch", 0),
-            unit.newUnit("ch", 0),
-            unit.newUnit("ch", 0),
-            unit.newUnit("ch", 0),
+            zeroUnit,
+            zeroUnit,
+            zeroUnit,
+            zeroUnit,
         },
         style = {},
     }
@@ -123,6 +132,7 @@ function M.Ast:new(tag, parent, source)
         ast.listCounter = 1
     end
     setmetatable(ast, { __index = M.Ast })
+
 
     return ast
 end
@@ -282,8 +292,9 @@ end
 
 ---@return boolean
 function M.Ast:_isComponent()
-    local ret, _ = require("banana.nml.parser").isValidComponentName(self.tag)
-    return ret
+    return self._isComponentCache
+    -- local ret, _ = require("banana.nml.parser").isValidComponentName(self.tag)
+    -- return ret
 end
 
 ---@param pad number?
@@ -588,17 +599,17 @@ function M.Ast:_getMaxListWidth(styleTp)
             local add = math.floor((len - 888) / 1000)
             return add + 12
         end
-        if len >= 388 then return 11 end
-        if len >= 288 then return 10 end
-        if len >= 188 then return 9 end
-        if len >= 88 then return 8 end
-        if len >= 38 then return 7 end
-        if len >= 28 then return 6 end
-        if len >= 18 then return 5 end
-        if len >= 8 then return 4 end
-        if len >= 3 then return 3 end
-        if len >= 2 then return 2 end
-        if len >= 1 then return 1 end
+        if len >= 388 then return 11 + 2 end
+        if len >= 288 then return 10 + 2 end
+        if len >= 188 then return 9 + 2 end
+        if len >= 88 then return 8 + 2 end
+        if len >= 38 then return 7 + 2 end
+        if len >= 28 then return 6 + 2 end
+        if len >= 18 then return 5 + 2 end
+        if len >= 8 then return 4 + 2 end
+        if len >= 3 then return 3 + 2 end
+        if len >= 2 then return 2 + 2 end
+        if len >= 1 then return 1 + 2 end
         return 0
     end
     return math.floor(math.log10(len) + 1) + 2
@@ -624,18 +635,22 @@ function M.Ast:_defaultStyles()
     if self.listCounter ~= nil then
         self.listCounter = 1
     end
+    if zeroUnit == nil then
+        zeroUnit = unit.newUnit("ch", 0, 0)
+    end
     self.padding = {
-        unit.newUnit("ch", 0),
-        unit.newUnit("ch", 0),
-        unit.newUnit("ch", 0),
-        unit.newUnit("ch", 0),
+        zeroUnit,
+        zeroUnit,
+        zeroUnit,
+        zeroUnit,
     }
     self.margin = {
-        unit.newUnit("ch", 0),
-        unit.newUnit("ch", 0),
-        unit.newUnit("ch", 0),
-        unit.newUnit("ch", 0),
+        zeroUnit,
+        zeroUnit,
+        zeroUnit,
+        zeroUnit,
     }
+    self.hidden = true
     self.style = {}
     self:_unlockGradients()
     self.hl = {}
@@ -650,7 +665,7 @@ function M.Ast:_clearStyles()
         self:_tryMountComponent()
     end
     if self.componentTree ~= nil then
-        self.componentTree:_defaultStyles()
+        self.componentTree:_clearStyles()
     end
     self:_defaultStyles()
     for node in self:childIter() do
@@ -692,7 +707,7 @@ function M.Ast:insertBefore(child, referenceNode)
         end
     end
     if not found then
-        table.insert(self.node, 1, child)
+        table.insert(self.nodes, 1, child)
     end
     self:_requestRender()
 end
@@ -1177,8 +1192,8 @@ function M.Ast:_applyStyleDeclarations(declarations, basePrec)
             goto continue
         end
         self.precedences[v.name] = prec
-        if v.name:sub(1, 3) == "hl-" then
-            local name = v.name:sub(4, _str.charWidth(v.name))
+        if v.namespace == "hl" then
+            local name = v.actualName
 
             local value = v.values[1]
             if value.type == "plain" and value.value == "inherit" then
@@ -1191,8 +1206,8 @@ function M.Ast:_applyStyleDeclarations(declarations, basePrec)
             end
             self.hl[name] = value.value
             self:_lockGradients()
-        elseif v.name:sub(1, 8) == "padding-" then
-            local side = v.name:sub(9, #v.name)
+        elseif v.namespace == "padding" then
+            local side = v.actualName
 
             local value = v.values[1]
             local index = M[side]
@@ -1204,8 +1219,8 @@ function M.Ast:_applyStyleDeclarations(declarations, basePrec)
             local val = value.value
             ---@cast val Banana.Ncss.UnitValue
             self.padding[index] = val
-        elseif v.name:sub(1, 7) == "margin-" then
-            local side = v.name:sub(8, #v.name)
+        elseif v.namespace == "margin" then
+            local side = v.actualName
 
             local value = v.values[1]
             local index = M[side]
@@ -1393,6 +1408,18 @@ function M.Ast:_increaseLeftBound(number)
     for child in self:childIter() do
         child:_increaseLeftBound(number)
     end
+    if type(self.hl.fg) == "table" then
+        ---@type Banana.Gradient
+        ---@diagnostic disable-next-line: assign-type-mismatch
+        local grad = self.hl.fg
+        grad:moveLeftBy(number, self)
+    end
+    if type(self.hl.bg) == "table" then
+        ---@type Banana.Gradient
+        ---@diagnostic disable-next-line: assign-type-mismatch
+        local grad = self.hl.bg
+        grad:moveLeftBy(number, self)
+    end
 end
 
 ---@param number number
@@ -1415,6 +1442,18 @@ function M.Ast:_increaseTopBound(number)
     end
     for child in self:childIter() do
         child:_increaseTopBound(number)
+    end
+    if type(self.hl.fg) == "table" then
+        ---@type Banana.Gradient
+        ---@diagnostic disable-next-line: assign-type-mismatch
+        local grad = self.hl.fg
+        grad:moveDownBy(number, self)
+    end
+    if type(self.hl.bg) == "table" then
+        ---@type Banana.Gradient
+        ---@diagnostic disable-next-line: assign-type-mismatch
+        local grad = self.hl.bg
+        grad:moveDownBy(number, self)
     end
 end
 
@@ -1558,6 +1597,7 @@ end
 ---Returns the printed text value of this element (does not include newlines)
 ---@return string
 function M.Ast:getTextContent()
+    -- TODO: Handle substitutions and stuff
     local ret = ""
     for _, v in ipairs(self.nodes) do
         if type(v) == "string" then
@@ -1610,9 +1650,7 @@ end
 ---Returns true when this node is not rendered
 ---@return boolean
 function M.Ast:isHidden()
-    if self.hidden then return true end
-    if self._parent:isNil() then return false end
-    return self._parent:isHidden()
+    return self.hidden
 end
 
 ---Attaches the given remap to the ast
@@ -1644,7 +1682,9 @@ function M.Ast:attachRemap(mode, lhs, mods, rhs, opts)
         end
     end
     local actualRhs = function ()
-        if self:isHidden() then return false end
+        if self:isHidden() then
+            return false
+        end
         local works = #modFns == 0
         for _, v in ipairs(modFns) do
             if v() then

@@ -46,8 +46,6 @@ For most of the properties on this page, you can just look up its documentation 
 
 Following is all the properties currently allowed:
 
-# Highlighting
-
 ## hl-underline
 
 Accepts:
@@ -98,8 +96,6 @@ Accepts:
 - `<string>`
 - `<plain value>`
 
-# Sizing
-
 ## width
 
 Accepts:
@@ -121,8 +117,6 @@ Sets the aspect ratio of the element
 Accepts:
 
 - `<number>`
-
-# Miscellaneous
 
 ## text-align
 
@@ -159,8 +153,6 @@ Accepts:
 - `star`. A "\*" (only works in `<ul>`)
 - `dash`. A "-" (only works in `<ul>`)
 
-# Flex properties
-
 ## flex-basis
 
 Accepts:
@@ -185,8 +177,6 @@ Accepts:
 
 - `wrap`
 - `nowrap`
-
-# Grid properties
 
 ## grid-template-columns
 
@@ -232,8 +222,6 @@ Accepts:
 
 - `<number>(ch|%)`
 
-# positioning
-
 ## position
 
 Accepts:
@@ -273,8 +261,6 @@ Accepts:
 Accepts:
 
 - `<number>(ch|%)`
-
-# padding and margin
 
 ## padding
 

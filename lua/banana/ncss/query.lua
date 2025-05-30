@@ -76,7 +76,6 @@ end
 ---@return Banana.Ncss.Selector
 function M.newSelector(select, specificity, requireSorted, init)
     ---@type Banana.Ncss.Selector
-    ---@diagnostic disable-next-line: missing-fields
     local selector = {
         requireSorted = requireSorted or false,
         init          = init or function () end,
@@ -156,8 +155,10 @@ M.selectors = {
 ---@return Banana.Ncss.Selector
 function M.newManualSelector(select, specificity, requireSorted)
     ---@type Banana.Ncss.Selector
-    ---@diagnostic disable-next-line: missing-fields
     local selector = {
+        dbg           = false,
+        init          = function ()
+        end,
         manualSelect  = select,
         filterType    = M.FilterType.Selector,
         specificity   = specificity,
@@ -202,7 +203,6 @@ end
 ---@return Banana.Ncss.Where
 function M.newWhere(satisfies, specificity, requireSorted, init, castWarning)
     ---@type Banana.Ncss.Where
-    ---@diagnostic disable-next-line: missing-fields
     local where = {
         requireSorted = requireSorted or false,
         init          = init or function () end,

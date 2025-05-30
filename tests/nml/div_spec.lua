@@ -31,7 +31,7 @@ describe("Div rendering", function ()
         inst.stripRight = false
         inst:open()
 
-        local div = inst:getElementsByTag("div")[1]
+        local div = inst:getElementsByTagName("div")[1]
         div:addClass("no-style")
         div:setTextContent("")
         local other = inst:createElement("span")
@@ -54,7 +54,7 @@ describe("Div rendering", function ()
         inst.stripRight = false
         inst:open()
 
-        local div = inst:getElementsByTag("div")[1]
+        local div = inst:getElementsByTagName("div")[1]
         div:setStyle("width: 4ch; height: 2ch; margin-left: 1ch;")
         local expectedMap = {
             "     ",
@@ -73,7 +73,7 @@ describe("Div rendering", function ()
         inst.stripRight = false
         inst:open()
 
-        local div = inst:getElementsByTag("div")[1]
+        local div = inst:getElementsByTagName("div")[1]
         div:setStyle(
             "width: 100%; height: 100%; text-align: center; padding-top: 1ch;")
         local expectedMap = {
@@ -94,7 +94,7 @@ describe("Div rendering", function ()
         inst.stripRight = false
         inst:open()
 
-        local div = inst:getElementsByTag("div")[1]
+        local div = inst:getElementsByTagName("div")[1]
         div:setStyle("width: 100%; height: 100%; text-align: center;")
         local expectedMap = {
             "     ",
@@ -114,7 +114,7 @@ describe("Div rendering", function ()
         inst.stripRight = false
         inst:open()
 
-        local div = inst:getElementsByTag("div")[1]
+        local div = inst:getElementsByTagName("div")[1]
         div:setStyle("width: 4ch; height: 100%; text-align: center;")
         local expectedMap1 = {
             "     ",
@@ -146,7 +146,7 @@ describe("Div rendering", function ()
         inst.stripRight = false
         inst:open()
 
-        local div = inst:getElementsByTag("div")[1]
+        local div = inst:getElementsByTagName("div")[1]
         div:setStyle(
             "width: 2ch; height: 3ch; position: relative; left: 1ch; top: 1ch;")
         local expectedMap = {
@@ -166,7 +166,7 @@ describe("Div rendering", function ()
         inst.stripRight = false
         inst:open()
 
-        local div = inst:getElementsByTag("div")[1]
+        local div = inst:getElementsByTagName("div")[1]
         div:setStyle("width: 2ch; height: 3ch;")
         local expectedMap = {
             "     ",
@@ -193,7 +193,7 @@ describe("Div rendering", function ()
         }
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
 
-        local div = inst:getElementsByTag("div")[1]
+        local div = inst:getElementsByTagName("div")[1]
         div:setStyle("width: 3ch; height: 3ch;")
         expectedMap = {
             "     ",

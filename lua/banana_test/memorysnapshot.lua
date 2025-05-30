@@ -747,15 +747,15 @@ local function OutputMemorySnapshot(strSavePath, strExtraFileName, nMaxRescords,
         if (not strExtraFileName) or (0 == string.len(strExtraFileName)) then
             if cDumpInfoResultsBase then
                 if cConfig.m_bComparedMemoryRefFileAddTime then
-                    strFileName = strFileName .. "-[" .. strDateTime .. "].txt"
+                    strFileName = strFileName .. "-[" .. strDateTime .. "].json"
                 else
-                    strFileName = strFileName .. ".txt"
+                    strFileName = strFileName .. ".json"
                 end
             else
                 if cConfig.m_bAllMemoryRefFileAddTime then
-                    strFileName = strFileName .. "-[" .. strDateTime .. "].txt"
+                    strFileName = strFileName .. "-[" .. strDateTime .. "].json"
                 else
-                    strFileName = strFileName .. ".txt"
+                    strFileName = strFileName .. ".json"
                 end
             end
         else
@@ -763,19 +763,19 @@ local function OutputMemorySnapshot(strSavePath, strExtraFileName, nMaxRescords,
                 if cConfig.m_bComparedMemoryRefFileAddTime then
                     strFileName = strFileName ..
                         "-[" ..
-                        strDateTime .. "]-[" .. strExtraFileName .. "].txt"
+                        strDateTime .. "]-[" .. strExtraFileName .. "].json"
                 else
                     strFileName = strFileName ..
-                        "-[" .. strExtraFileName .. "].txt"
+                        "-[" .. strExtraFileName .. "].json"
                 end
             else
                 if cConfig.m_bAllMemoryRefFileAddTime then
                     strFileName = strFileName ..
                         "-[" ..
-                        strDateTime .. "]-[" .. strExtraFileName .. "].txt"
+                        strDateTime .. "]-[" .. strExtraFileName .. "].json"
                 else
                     strFileName = strFileName ..
-                        "-[" .. strExtraFileName .. "].txt"
+                        "-[" .. strExtraFileName .. "].json"
                 end
             end
         end
@@ -794,38 +794,38 @@ local function OutputMemorySnapshot(strSavePath, strExtraFileName, nMaxRescords,
     end
 
     -- Write table header.
-    if cDumpInfoResultsBase then
-        cOutputer("--------------------------------------------------------\n")
-        cOutputer("-- This is compared memory information.\n")
-
-        cOutputer("--------------------------------------------------------\n")
-        cOutputer("-- Collect base memory reference at line:" ..
-            tostring(cDumpInfoResultsBase.m_nCurrentLine) ..
-            "@file:" .. cDumpInfoResultsBase.m_strShortSrc .. "\n")
-        cOutputer("-- Collect compared memory reference at line:" ..
-            tostring(cDumpInfoResults.m_nCurrentLine) ..
-            "@file:" .. cDumpInfoResults.m_strShortSrc .. "\n")
-    else
-        cOutputer("--------------------------------------------------------\n")
-        cOutputer("-- Collect memory reference at line:" ..
-            tostring(cDumpInfoResults.m_nCurrentLine) ..
-            "@file:" .. cDumpInfoResults.m_strShortSrc .. "\n")
-    end
-
-    cOutputer("--------------------------------------------------------\n")
-    cOutputer(
-        "-- [Table/Function/String Address/Name]\t[Reference Path]\t[Reference Count]\n")
-    cOutputer("--------------------------------------------------------\n")
+    -- if cDumpInfoResultsBase then
+    --     cOutputer("--------------------------------------------------------\n")
+    --     cOutputer("-- This is compared memory information.\n")
+    --
+    --     cOutputer("--------------------------------------------------------\n")
+    --     cOutputer("-- Collect base memory reference at line:" ..
+    --         tostring(cDumpInfoResultsBase.m_nCurrentLine) ..
+    --         "@file:" .. cDumpInfoResultsBase.m_strShortSrc .. "\n")
+    --     cOutputer("-- Collect compared memory reference at line:" ..
+    --         tostring(cDumpInfoResults.m_nCurrentLine) ..
+    --         "@file:" .. cDumpInfoResults.m_strShortSrc .. "\n")
+    -- else
+    --     cOutputer("--------------------------------------------------------\n")
+    --     cOutputer("-- Collect memory reference at line:" ..
+    --         tostring(cDumpInfoResults.m_nCurrentLine) ..
+    --         "@file:" .. cDumpInfoResults.m_strShortSrc .. "\n")
+    -- end
+    --
+    -- cOutputer("--------------------------------------------------------\n")
+    -- cOutputer(
+    --     "-- [Table/Function/String Address/Name]\t[Reference Path]\t[Reference Count]\n")
+    -- cOutputer("--------------------------------------------------------\n")
 
     if strRootObjectName and cRootObject then
-        if "string" == type(cRootObject) then
-            cOutputer("-- From Root Object: \"" ..
-                tostring(cRootObject) .. "\" (" .. strRootObjectName .. ")\n")
-        else
-            cOutputer("-- From Root Object: " ..
-                GetOriginalToStringResult(cRootObject) ..
-                " (" .. strRootObjectName .. ")\n")
-        end
+        -- if "string" == type(cRootObject) then
+        --     cOutputer("-- From Root Object: \"" ..
+        --         tostring(cRootObject) .. "\" (" .. strRootObjectName .. ")\n")
+        -- else
+        --     cOutputer("-- From Root Object: " ..
+        --         GetOriginalToStringResult(cRootObject) ..
+        --         " (" .. strRootObjectName .. ")\n")
+        -- end
     end
 
     -- Save each info.
@@ -840,18 +840,21 @@ local function OutputMemorySnapshot(strSavePath, strExtraFileName, nMaxRescords,
                         if ((not cDumpInfoResultsBase) and ((nil == nPattenBegin) or (nil == nPattenEnd))) then
                             local strRepString = string.gsub(strOrgString,
                                 "([\n\r])", "\\n")
+                            cOutputer("1\n")
                             cOutputer("string: \"" ..
                                 strRepString ..
                                 "\"      " ..
                                 cNameInfo[v] ..
                                 "      " .. tostring(cRefInfo[v]) .. "\n")
                         else
+                            cOutputer("2\n")
                             cOutputer(tostring(v) ..
                                 "      " ..
                                 cNameInfo[v] ..
                                 "      " .. tostring(cRefInfo[v]) .. "\n")
                         end
                     else
+                        cOutputer("3\n")
                         cOutputer(GetOriginalToStringResult(v) ..
                             "      " ..
                             cNameInfo[v] ..
@@ -865,22 +868,49 @@ local function OutputMemorySnapshot(strSavePath, strExtraFileName, nMaxRescords,
                         "string: \".*\"")
                     if ((not cDumpInfoResultsBase) and ((nil == nPattenBegin) or (nil == nPattenEnd))) then
                         local strRepString = string.gsub(strOrgString, "([\n\r])",
-                            "\\n")
-                        cOutputer("string: \"" ..
+                                "\\n")
+                                                   :gsub("(\")", "\\\"")
+                        -- cOutputer("4\n")
+                        local nameInfo = cNameInfo[v]
+                        local newNameInfo = string.gsub(nameInfo, "([\n\r])",
+                            "\\n"):gsub('(")', '\\"')
+                        cOutputer('{ "type": "string", "value": "' ..
                             strRepString ..
-                            "\"      " ..
-                            cNameInfo[v] ..
-                            "      " .. tostring(cRefInfo[v]) .. "\n")
+                            '", "nameInfo": "' ..
+                            newNameInfo ..
+                            '", "refCount": ' ..
+                            tostring(cRefInfo[v]) .. "},\n")
+
+                        -- cOutputer("string: \"" ..
+                        --     strRepString ..
+                        --     "\"      " ..
+                        --     cNameInfo[v] ..
+                        --     "      " .. tostring(cRefInfo[v]) .. "\n")
                     else
+                        cOutputer("5\n")
                         cOutputer(tostring(v) ..
                             "      " ..
                             cNameInfo[v] ..
                             "      " .. tostring(cRefInfo[v]) .. "\n")
                     end
                 else
-                    cOutputer(GetOriginalToStringResult(v) ..
-                        "      " ..
-                        cNameInfo[v] .. "      " .. tostring(cRefInfo[v]) .. "\n")
+                    local toStr = GetOriginalToStringResult(v)
+                    local split = vim.split(toStr, ":")
+                    local tp = split[1]
+                    local ptr = split[2]
+                    local nameInfo = cNameInfo[v]
+                    local newNameInfo = string.gsub(nameInfo, "([\n\r])",
+                        "\\n"):gsub('(")', '\\"')
+                    cOutputer(
+                        '{ "type": "' ..
+                        tp ..
+                        '", "value": "' ..
+                        ptr ..
+                        '", "nameInfo": "' ..
+                        newNameInfo ..
+                        '", "refCount": ' ..
+                        tostring(cRefInfo[v]) ..
+                        "}, \n")
                 end
             end
         end

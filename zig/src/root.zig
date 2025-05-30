@@ -1,11 +1,129 @@
 const std = @import("std");
+const dst = @import("dst.zig");
+const log = @import("log.zig");
+const lua = @import("lua_api/lua.zig");
+const luaL = @import("lua_api/luaL.zig");
+const Box = @import("box.zig");
+const grid = @import("grid.zig");
+const gen = @import("genlua.zig");
 const testing = std.testing;
-const box = @import("box.zig");
 
-// const booo: ?box.Box = null;
+// pub const panic: type = std.debug.FullPanic(
+//     struct {
+//         pub fn panic(
+//             msg: []const u8,
+//             first_trace_addr: ?usize,
+//         ) noreturn {
+//             defer std.process.exit(1);
+//             const logfile = try std.fs.cwd().createFile("panic.txt", .{});
+//             defer logfile.close();
+//             _ = try logfile.write(msg);
+//             _ = try logfile.write("\r\n");
+//             _ = first_trace_addr;
+//         }
+//     }.panic,
+// );
+
+pub fn panic(msg: []const u8, trace: ?*std.builtin.StackTrace, third: anytype) noreturn {
+    defer std.process.exit(1);
+    const logfile = try std.fs.cwd().createFile("panic.txt", .{});
+    defer logfile.close();
+    _ = try logfile.write("AUGGGGHHGG");
+    _ = try logfile.write("\r\n");
+    _ = try logfile.write(msg);
+    _ = try logfile.write("\r\n");
+
+    try log.write("AUGGHHGHGH PANIC!!!\n", .{});
+    try log.write("PANIC REASON: {s}\n", .{msg});
+
+    if (trace) |stack_trace| {
+        _ = try logfile.write("EVERYONE STOP WE HAVE A TRACE!!!");
+        _ = try logfile.write("\r\n");
+        std.debug.dumpStackTrace(stack_trace.*);
+    }
+    _ = third;
+    // if(trace) |t| {
+    //
+    // }
+}
+
+// pub export const decls = gen.genLuaDecls(Box, "box_");
 
 export fn add(a: i32, b: i32) i32 {
     return a + b;
+}
+
+// NOTE: array MUST end with null
+pub const regs = [_]luaL.Reg{
+    luaL.Reg.init("box_context_create", Box.lua_new_context),
+    luaL.Reg.init("box_context_delete", Box.lua_delete_context),
+    luaL.Reg.init("box_context_exists", Box.lua_context_exists),
+    luaL.Reg.init("box_context_render", Box.lua_context_render),
+    // luaL.Reg.init("box_context_highlight", Box.lua_context_highlight),
+    luaL.Reg.init("box_new_from_context", Box.lua_new_from_ctx),
+    luaL.Reg.init("box_new_from_offset", Box.lua_new_from_offset),
+    luaL.Reg.init("box_new_right_from", Box.lua_new_right),
+    luaL.Reg.init("box_append_str", Box.lua_append_str),
+    luaL.Reg.init("box_set_hl", Box.lua_set_hl),
+    luaL.Reg.init("grid_getNew", grid.lua_getNew),
+    luaL.Reg.init("grid_turnOnRange", grid.lua_turnOnRange),
+    luaL.Reg.init("grid_isEnabled", grid.lua_isEnabled),
+    luaL.Reg.init("grid_freeSection", grid.lua_freeSection),
+    .Null,
+};
+
+var list: std.ArrayListUnmanaged(luaL.Reg) = .empty;
+
+// pub const regs = gen.genLuaDecls(Box, "box_");
+
+export fn luaopen_banana_libbanana(state: *lua.State) c_int {
+    // const file = std.fs.cwd().openFile("thing.txt", .{ .mode = .write_only }) catch return 0;
+    // _ = file.write("opening :)\n") catch 0;
+    const fns = gen.genLuaDecls(Box, "box_");
+    inline for (fns) |f| {
+        // std.debug.print("{s}\n", .{f.name});
+        // _ = file.write(std.fmt.allocPrint(std.heap.page_allocator, "name {s}\n", .{f.name}) catch "asdf") catch 0;
+        const newName = std.heap.page_allocator.dupeZ(u8, f.name) catch return 0;
+        const function = luaL.Reg.init(newName, f.f);
+        list.append(
+            std.heap.page_allocator,
+            function,
+        ) catch return 0;
+    }
+    const gridFns = gen.genLuaDecls(grid, "grid_");
+    inline for (gridFns) |f| {
+        // std.debug.print("{s}\n", .{f.name});
+        // _ = file.write(std.fmt.allocPrint(std.heap.page_allocator, "name {s}\n", .{f.name}) catch "asdf") catch 0;
+        const newName = std.heap.page_allocator.dupeZ(u8, f.name) catch return 0;
+        const function = luaL.Reg.init(newName, f.f);
+        list.append(
+            std.heap.page_allocator,
+            function,
+        ) catch return 0;
+    }
+    const dstFns = gen.genLuaDecls(dst, "dst_");
+    inline for (dstFns) |f| {
+        // std.debug.print("{s}\n", .{f.name});
+        // _ = file.write(std.fmt.allocPrint(std.heap.page_allocator, "name {s}\n", .{f.name}) catch "asdf") catch 0;
+        const newName = std.heap.page_allocator.dupeZ(u8, f.name) catch return 0;
+        const function = luaL.Reg.init(newName, f.f);
+        list.append(
+            std.heap.page_allocator,
+            function,
+        ) catch return 0;
+    }
+    list.append(std.heap.page_allocator, luaL.Reg.Null) catch return 0;
+    // const alloc = std.heap.page_allocator;
+    // var arr: std.ArrayListUnmanaged(lua.CFunction) = .empty;
+    // gen.genLuaDecls(Box, "box_", &arr, alloc) catch return 0;
+    luaL.register(state, "libbanana", list.items.ptr);
+
+    Box.init_boxes();
+
+    log.init() catch return 1;
+
+    // luaL.register(state, "libbanana", &regs);
+    return 1;
 }
 
 export fn addToString(str: [*:0]u8) void {
@@ -16,83 +134,6 @@ export fn addToString(str: [*:0]u8) void {
         }
         i += 1;
     }
-}
-
-const rowLimit = 300;
-const columnLimit = 300;
-const BitSetT = std.bit_set.ArrayBitSet(usize, rowLimit * columnLimit);
-var bitSet = BitSetT.initEmpty();
-
-const BitSetSection = extern struct {
-    bitSet: BitSetT,
-};
-
-fn getPos(row: u32, column: u32) u32 {
-    return (row - 1) * columnLimit + (column - 1);
-}
-
-extern fn malloc(size: c_int) callconv(.C) *anyopaque;
-extern fn free(ptr: *anyopaque) callconv(.C) void;
-
-export fn turnOnRange(bs: *BitSetSection, rowStart: u32, colStart: u32, rowEnd: u32, colEnd: u32) callconv(.C) bool {
-    // _ = box.initRenderCycle();
-    // @compileLog(std.fmt.comptimePrint("{}", .{@sizeOf(BitSetSection) * 400}));
-    _ = bs;
-    for (rowStart..rowEnd) |r| {
-        const ogPos = getPos(@intCast(r), colStart);
-        for (0..(colEnd - colStart)) |i| {
-            bitSet.set(ogPos + i);
-        }
-    }
-    return true;
-}
-export fn getNew() callconv(.C) void {
-    bitSet.setRangeValue(.{ .start = 0, .end = rowLimit * columnLimit }, false);
-    // bitSet.setRange(0, rowLimit * columnLimit, false);
-    // const bs: *BitSetSection = @ptrCast(@alignCast(malloc(@sizeOf(BitSetSection))));
-    // const bs = c_alloc.create(BitSetSection) catch @panic("out of memory or something");
-    // bs.bitSet.setRangeValue(.{ .start = 0, .end = rowLimit * columnLimit }, false);
-    // bs.bitSet = BitSetT.initEmpty(); //0x5ad5b5d642a0
-    // return bs;
-}
-
-export fn initExisting(bs: *BitSetSection) callconv(.C) void {
-    bs.bitSet = BitSetT.initEmpty();
-}
-export fn freeSection(bs: *BitSetSection) callconv(.C) void {
-    // free(bs);
-    _ = bs;
-    // std.heap.raw_c_allocator.destroy(bitSet);
-    // std.heap.raw_c_allocator.destroy(bs);
-}
-export fn toggle(bs: *BitSetSection, row: u32, column: u32) callconv(.C) bool {
-    _ = bs;
-    const spot = getPos(row, column);
-    if (spot >= rowLimit * columnLimit) {
-        return false;
-    }
-    bitSet.toggle(spot);
-    return true;
-}
-
-export fn turnOn(bs: *BitSetSection, row: u32, column: u32) callconv(.C) bool {
-    _ = bs;
-    const spot = getPos(row, column);
-    if (spot >= rowLimit * columnLimit) {
-        return false;
-    }
-    bitSet.set(spot);
-    return true;
-}
-
-export fn isEnabled(bs: *BitSetSection, row: u32, column: u32) callconv(.C) u32 {
-    _ = bs;
-    const spot = getPos(row, column);
-    if (spot >= rowLimit * columnLimit) {
-        return 2;
-    }
-    const ret: u32 = if (bitSet.isSet(spot)) 1 else 0;
-    return ret;
 }
 
 test "basic add functionality" {

@@ -1,12 +1,30 @@
+--- TODO: The grid rendering system needs to be reworked (again) to allow for
+--- auto-size columns. the rework would be somewhat minimal (compared to what's
+--- already happened with these functions). it would just be like render the
+--- auto size ones first, then compute widths for everything else, then render
+--- everything else, then combine into one rendering area. Doing things this way
+--- would also allow more complicated values for grid-template-columns (like
+--- minmax functions or something)
+
+--- TODO: Basically we just need to first lay out all the elements (grid
+--- placement) then determine column widths in order of priority (eg static
+--- sized, then auto sized, then ..., then finally distribute to the fr)
+
 ---@module 'banana.utils.debug_flame'
 local flame = require("banana.lazyRequire")("banana.utils.debug_flame")
+---@module 'banana.ncss.unit'
+local unit = require("banana.lazyRequire")("banana.ncss.unit")
 ---@module 'banana.utils.log'
 local log = require("banana.lazyRequire")("banana.utils.log")
 local M = {}
 ---@module 'banana.box'
 local b = require("banana.lazyRequire")("banana.box")
----@module 'ffi'
-local ffi = require("banana.lazyRequire")("ffi")
+---@module 'banana.nml.render.partialRendered'
+local p = require("banana.lazyRequire")("banana.nml.render.partialRendered")
+---@module 'banana.libbananagrid'
+local so = require("banana.lazyRequire")("banana.libbanana")
+---@module 'banana.libbananabox'
+local lb = require("banana.lazyRequire")("banana.libbanana")
 -- ---@module 'banana.ncss.unit'
 -- local unit = require("banana.lazyRequire")("banana.ncss.unit")
 
@@ -34,7 +52,6 @@ local ffi = require("banana.lazyRequire")("ffi")
 ---@field name string
 ---@field claimants number[]
 ---@field prevLink Banana.Renderer.GridTemplate?
-
 
 ---@param templ Banana.Renderer.GridTemplate
 ---@param fix boolean
@@ -67,6 +84,7 @@ end
 ---@field rowSize number
 
 ---@class (exact) Banana.Renderer.GridRenderItem
+---@field ctx number
 ---@field priority number z > rows > columns (aka 1,1 z=0 first, 10,10 z=80 last)
 ---@field render Banana.Renderer.PartialRendered
 ---@field ast Banana.Ast
@@ -75,63 +93,6 @@ end
 ---@field colEnd number
 ---@field rowEnd number
 ---@field ogHeight number
-
----@class (exact) Banana.Renderer.CellClaimant
----@field render Banana.Renderer.PartialRendered?
----@field ast Banana.Ast
----@field box Banana.Box?
----@field startRow number
----@field startCol number
-
-local gridSo = nil
-
-function M.getGridSo()
-    if gridSo == nil then
-        local path = require("banana").getInstallDir() ..
-            "/zig/zig-out/lib/libbanana.so"
-        if not vim.fn.filereadable(path) then
-            vim.notify("libbanana does not exist, installing now...")
-            require("banana").installLibbanana()
-        end
-        ffi.cdef([[
-
-typedef struct {
-} BitSetSection;
-
- bool toggle(struct BitSetSection* s, uint32_t row, uint32_t column);
-
- bool turnOn(struct BitSetSection*, uint32_t row, uint32_t column);
-
- bool turnOnRange(struct BitSetSection*, uint32_t rowStart, uint32_t colStart, uint32_t rowEnd, uint32_t colEnd);
-
- uint32_t isEnabled(struct BitSetSection*, uint32_t row, uint32_t column);
-
- struct BitSetSection* getNew();
-
- void freeSection(struct BitSetSection*);
-
- void initExisting(struct BitSetSection*);
-
-
-        ]])
-        local loadSo = function ()
-            gridSo = ffi.load(require("banana").getInstallDir() ..
-                "/zig/zig-out/lib/libbanana.so")
-        end
-        local ok, _ = pcall(loadSo)
-        if not ok or gridSo == nil then
-            vim.notify("libbanana does not exist, attempting reinstall...")
-            require("banana").installLibbanana()
-            ok, _ = pcall(loadSo)
-            if not ok or gridSo == nil then
-                log.throw(
-                    "Could not find libbanana, do you have zig installed on your system?")
-                error("")
-            end
-        end
-    end
-    return gridSo
-end
 
 ---@param values Banana.Ncss.StyleValue[]
 ---@param sizeInDirection number
@@ -235,25 +196,15 @@ local function getTemplates(values, sizeInDirection, start, min, isCol, ast, gap
     end
     return ret
 end
-
---- renders an element with display:grid
 ---@param ast Banana.Ast
+---@param box Banana.Box
 ---@param parentHl Banana.Highlight?
----@param parentWidth number
----@param parentHeight number
----@param startX number
----@param startY number
 ---@param inherit Banana.Renderer.InheritedProperties
 ---@param extra Banana.Renderer.ExtraInfo
 ---@return Banana.Box, integer
-function M.render(ast, parentHl, parentWidth, parentHeight, startX,
-                  startY, inherit, extra)
-    flame.new("TagInfo:renderGridBlock")
+local function actualRender(thing, ast, box, parentHl, inherit, extra)
     local insert = table.insert
     local hl = ast:_mixHl(parentHl)
-    local so = M.getGridSo()
-    local thing = so.getNew()
-
     -- the plan is basically to arrange the grid elements in the places that
     -- they absolutely have to be (eg grid-row or grid-column specified)
     -- ("necessary elements") and determine number of needed implicit columns then render all the elements
@@ -277,10 +228,16 @@ function M.render(ast, parentHl, parentWidth, parentHeight, startX,
     ---@type (Banana.Ast|number|Banana.Ncss.StyleValue[])[]
     local colAndNonSpecEls = {}
 
+    local parentHeight = box:getMaxHeight()
+    local parentWidth = box:getMaxWidth()
+
     local rowGap = ast:_computeUnitFor("row-gap", parentHeight) or 0
     local columnGap = ast:_computeUnitFor("column-gap", parentWidth) or 0
 
     local colTemplatesDef = ast:_allStylesFor("grid-template-columns")
+
+    local startY = box:getCursorY() + box:getOffsetY()
+    local startX = box:getCursorX() + box:getOffsetX()
 
     maxCol = #colTemplatesDef
 
@@ -372,7 +329,8 @@ function M.render(ast, parentHl, parentWidth, parentHeight, startX,
         renderOrder[i] = preRender
         maxRow = math.max(maxRow, endRow - 1)
         maxCol = math.max(maxCol, endCol - 1)
-        so.turnOnRange(thing, row, col, endRow, endCol)
+        ---@diagnostic disable-next-line: param-type-mismatch
+        so.grid_turnOnRange(thing, row, col, endRow, endCol)
         ::continue::
     end
     local j = 1
@@ -416,7 +374,7 @@ function M.render(ast, parentHl, parentWidth, parentHeight, startX,
             for c = column + colSpan - 1, column, -1 do
                 for r = startRow, endRow - 1 do
                     -- lazy load in rows
-                    local enabled = so.isEnabled(thing, r, c)
+                    local enabled = so.grid_isEnabled(thing, r, c)
                     if enabled ~= 0 then
                         column = c + 1
                         shouldBreak = true
@@ -442,7 +400,7 @@ function M.render(ast, parentHl, parentWidth, parentHeight, startX,
         maxRow = math.max(endRow - 1, maxRow)
         maxCol = math.max(column + colSpan - 1, maxCol)
 
-        so.turnOnRange(thing, startRow, column, endRow,
+        so.grid_turnOnRange(thing, startRow, column, endRow,
             column + colSpan)
         j = j + 4
     end
@@ -494,7 +452,7 @@ function M.render(ast, parentHl, parentWidth, parentHeight, startX,
         while not done do
             for r = row, row + rowSpan - 1 do
                 for c = column, column + colSpan - 1 do
-                    if so.isEnabled(thing, r, c) ~= 0 then
+                    if so.grid_isEnabled(thing, r, c) ~= 0 then
                         if colDefined then
                             row = r + 1
                         else
@@ -529,7 +487,7 @@ function M.render(ast, parentHl, parentWidth, parentHeight, startX,
             ast = node,
         }
         renderOrder[i] = preRender
-        so.turnOnRange(thing, row, column, row + rowSpan,
+        so.grid_turnOnRange(thing, row, column, row + rowSpan,
             column + colSpan)
         j = j + 4
     end
@@ -546,11 +504,10 @@ function M.render(ast, parentHl, parentWidth, parentHeight, startX,
     local rows = ast:_allStylesFor("grid-template-rows")
     rowTemplates = getTemplates(rows, parentHeight, 0, maxRow, false, ast,
         rowGap)
-    so.freeSection(thing)
     local columnLimit = 300
     local rowLimit = 300
     if #columnTemplates > columnLimit then
-        -- if they have more than 5000 columns, HOW!?!?!
+        -- if they have more than 300 columns, HOW!?!?!
         log.fmt_throw("%d grid columns specified, maximum of %d", columnLimit,
             rowLimit)
     end
@@ -608,8 +565,8 @@ function M.render(ast, parentHl, parentWidth, parentHeight, startX,
             local t     = columnTemplates[c]
             actualWidth = actualWidth + t.size
         end
-        local x = columnTemplates[col].start
-        extra.useAllHeight = true
+        -- local x = columnTemplates[col].start
+        -- extra.useAllHeight = true
         local ogHeight = 0
         for r = row, row + rowSpan - 1 do
             local t = rowTemplates[r]
@@ -625,14 +582,17 @@ function M.render(ast, parentHl, parentWidth, parentHeight, startX,
         actualHeight = actualHeight + rowGap * (rowSpan - 1)
         actualWidth = actualWidth + columnGap * (colSpan - 1)
         node:_resolveUnits(actualWidth, actualHeight)
-        -- flame.new("getRendered")
-        local rendered = node.actualTag:getRendered(node, hl, actualWidth,
-            actualHeight, x, startY,
-            inherit, extra)
-        -- flame.pop()
+        local ctx = lb.box_context_create()
+        table.insert(extra.extraCtx, ctx)
+        local renderBox = b.boxFromCtx(ctx, extra.trace)
+        renderBox:setMaxWidth(actualWidth)
+        renderBox:setMaxHeight(actualHeight)
+        local rendered = node.actualTag:getRendered(node, renderBox, hl, inherit,
+            extra)
 
         ---@type Banana.Renderer.GridRenderItem
         local renderItem = {
+            ctx = ctx,
             ogHeight = ogHeight,
             priority = (columnI - 1) + (rowI - 1) * columnLimit +
                 node:_firstStyleValue("z-index", 0) * columnLimit * rowLimit,
@@ -695,7 +655,11 @@ function M.render(ast, parentHl, parentWidth, parentHeight, startX,
         end
         insert(renderList, renderItem)
     end
-    local ret = b.Box:new(parentHl)
+    local ret = box:newBelow()
+
+    --- a ctx where we can just render everything to, then render to ret
+    local stagingCtx = lb.box_context_create()
+    table.insert(extra.extraCtx, stagingCtx)
 
 
     table.sort(renderList, function (l, r) return l.priority < r.priority end)
@@ -703,7 +667,10 @@ function M.render(ast, parentHl, parentWidth, parentHeight, startX,
     for _, v in ipairs(renderList) do
         local render = v.render
         local rowTempl = rowTemplates[v.rowStart]
-        local start = getGridStart(rowTempl, true, rowGap)
+        local colTempl = columnTemplates[v.colStart]
+        local rowStart = getGridStart(rowTempl, true, rowGap)
+        local colStart = getGridStart(colTempl, true, columnGap)
+        -- print(rowStart, colStart)
         local newHeight = 0
         for r = v.rowStart, v.rowEnd do
             local t = rowTemplates[r]
@@ -713,7 +680,6 @@ function M.render(ast, parentHl, parentWidth, parentHeight, startX,
                 newHeight = newHeight + rowTemplates[r].size
             end
         end
-        v.ast:_increaseTopBound(start)
         -- ikik this doesnt include pcts,
         -- but there are so many cases to worry about because different combos
         -- of margin and height and pct and ch
@@ -722,17 +688,48 @@ function M.render(ast, parentHl, parentWidth, parentHeight, startX,
         -- height, but if you add margin pct, it's computed with respect to page
         -- height. In a word, that's all too much complexity when people SHOULD
         -- NOT be setting height/width on grid elements
-        if newHeight > render:getHeight() and v.ast:_firstStyleValue("height", { unit = "", value = 0 }).unit ~= "ch" then
-            v.ast:_increaseHeightBoundBy(newHeight - v.render:getHeight())
-            v.render:expandHeightTo(newHeight)
+        if
+            newHeight > render:getHeight()
+            and v.ast:_firstStyleValue("height", unit.newUnit("", 0)).unit ~= "ch"
+        then
+            render:setMaxHeight(newHeight)
+            render:setVerticalAlign(p.Align.left)
         end
-        ret:renderOver(render:render(),
+        render:render()
+        v.ast:_increaseTopBound(rowStart + startY)
+        v.ast:_increaseLeftBound(colStart + startX)
+        -- v.ast:_increaseHeightBoundBy(heightInc)
+        local tempBox = b.boxFromCtx(stagingCtx, extra.ctx)
+        tempBox:setHlId(box:getHl())
+        tempBox:renderOver(v.ctx,
             columnTemplates[v.colStart].start - startX,
-            start)
+            rowStart)
+        tempBox:destroy()
+        lb.box_context_delete(v.ctx)
     end
+    ret:renderOver(stagingCtx, 0, 0)
+    lb.box_context_delete(stagingCtx)
+    box:putCursorBelow(ret)
+    return box, #ast.nodes + 1
+end
 
-    flame.pop()
-    return ret, #ast.nodes + 1
+--- renders an element with display:grid
+---@param ast Banana.Ast
+---@param box Banana.Box
+---@param parentHl Banana.Highlight?
+---@param inherit Banana.Renderer.InheritedProperties
+---@param extra Banana.Renderer.ExtraInfo
+---@return Banana.Box, integer
+function M.render(ast, box, parentHl, inherit, extra)
+    -- flame.new("TagInfo:renderGridBlock")
+    local thing = so.grid_getNew()
+    -- have to be able to free the zig memory, hence the pcall
+    local errOrRet, i = actualRender(thing, ast, box, parentHl,
+        inherit, extra)
+    so.grid_freeSection(thing)
+    -- flame.pop()
+    -- if not ok then error(errOrRet) end
+    return errOrRet, i
 end
 
 return M
