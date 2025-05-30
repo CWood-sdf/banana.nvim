@@ -5,6 +5,7 @@ The currently implemented tags are:
 ## TOC
 
 - [`body`](#body)
+- [`canvas`](#canvas)
 - [`br`](#br)
 - [`div`](#div)
 - [`h1`](#h1)
@@ -30,6 +31,10 @@ for all instances there MUST be one `<body>` under the `<nml>`
 ## `br`
 
 inserts a line break
+
+## `canvas`
+
+A canvas that can be rendered to. See [canvas](Canvas) documentation for more
 
 ## `div`
 
