@@ -9,7 +9,7 @@ local function renderer(_, ast, box, _, _)
     local ctx
     ast.data = ast.data or {}
     if ast.data.__ctx == nil then
-        ast.data.__ctx = canvas.newContext(ast)
+        ast.data.__ctx = canvas.newContext(ast, box.hlgroup)
         ast.data.__ctx:resize(box:getMaxWidth(), box:getMaxHeight())
     end
     ctx = ast.data.__ctx

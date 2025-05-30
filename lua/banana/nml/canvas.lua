@@ -195,14 +195,32 @@ end
 
 ---@param ast Banana.Ast
 ---@return Banana.Nml.CanvasContext
-function M.newContext(ast)
+function M.newContext(ast, hl)
     local c = box.createContext()
+    local defaultHl = vim.api.nvim_get_hl(0, {
+        name = "NormalFloat"
+    })
+    local defaultFg = string.format("#%06x", defaultHl.fg)
+    local defaultBg = string.format("#%06x", defaultHl.bg)
+    local hlColor = box.getHl(hl) or {}
+    local fg = defaultFg
+    local bg = defaultBg
+    if hlColor.bg ~= nil and type(hlColor.bg) == "string" then
+        ---@diagnostic disable-next-line: cast-local-type
+        bg = hlColor.bg
+    end
+    if hlColor.fg ~= nil and type(hlColor.fg) == "string" then
+        ---@diagnostic disable-next-line: cast-local-type
+        fg = hlColor.fg
+    end
+    ---@cast bg string
+    ---@cast fg string
     ---@type Banana.Nml.CanvasContext
     local ctx = {
         ctx = c,
         fillChar = " ",
-        fillBg = "#ffffff",
-        fillFg = "#000000",
+        fillBg = bg,
+        fillFg = fg,
         box = box.boxFromCtx(c),
         ast = ast,
     }

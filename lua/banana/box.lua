@@ -61,15 +61,16 @@ function M.addHighlight(ctx, hl)
     return id
 end
 
+---@param hl number
 ---@return Banana.Highlight?
-function M.getHl(_, hl)
+function M.getHl(hl)
     return hls[hl]
 end
 
 ---@class (exact) Banana.Box
 ---@field ctx integer
 ---@field boxid integer
----@field private hlgroup integer
+---@field hlgroup integer
 ---@field trace number?
 local Box = {
     ctx = 0,

@@ -164,7 +164,7 @@ function Instance:_virtualRender(ast, ctx, width, height)
         end
         flame.new("stripRight")
         lb.box_context_strip_right_space(self.ctx, function (hl)
-            local style = box.getHl(self.ctx, hl)
+            local style = box.getHl(hl)
             if style ~= nil then
                 if style.link ~= nil then
                     return 0
@@ -186,7 +186,7 @@ function Instance:_virtualRender(ast, ctx, width, height)
         vim.api.nvim_buf_clear_namespace(self.DEBUG_bufNr, ns, 0, -1)
         lb.box_context_highlight(traceCtx, function (line, startCol, endCol, hl)
             pcall(function ()
-                local actualHl = box.getHl(self.ctx, hl)
+                local actualHl = box.getHl(hl)
                 if actualHl == nil then
                     return
                 end
@@ -1088,7 +1088,7 @@ function Instance:_render()
     vim.api.nvim_buf_clear_namespace(self.bufnr, 0, 0, -1)
     lb.box_context_highlight(self.ctx, function (line, startCol, endCol, hl)
         if hl == 0 then return end
-        local hlvalue = box.getHl(self.ctx, hl)
+        local hlvalue = box.getHl(hl)
         if hlvalue == nil then
             if hlvalue == nil then
                 return
