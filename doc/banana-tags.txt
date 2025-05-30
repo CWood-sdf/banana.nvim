@@ -5,6 +5,7 @@ Table of Contents                              *banana-tags-table-of-contents*
 
   - body                                                    |banana-tags-body|
   - br                                                        |banana-tags-br|
+  - canvas                                                |banana-tags-canvas|
   - div                                                      |banana-tags-div|
   - h1                                                        |banana-tags-h1|
   - head                                                    |banana-tags-head|
@@ -35,6 +36,11 @@ for all instances there MUST be one `<body>` under the `<nml>`
 BR                                                            *banana-tags-br*
 
 inserts a line break
+
+
+CANVAS                                                    *banana-tags-canvas*
+
+A canvas that can be rendered to. See canvas <Canvas> documentation for more
 
 
 DIV                                                          *banana-tags-div*

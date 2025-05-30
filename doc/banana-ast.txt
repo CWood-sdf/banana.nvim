@@ -11,6 +11,7 @@ Table of Contents                               *banana-ast-table-of-contents*
   - nextSibling                            |banana-ast-reflection-nextsibling|
   - getTagName                              |banana-ast-reflection-gettagname|
   - getRootNode                            |banana-ast-reflection-getrootnode|
+  - getContext                              |banana-ast-reflection-getcontext|
   - assertHasStyle                      |banana-ast-reflection-asserthasstyle|
   - paddingLeft                            |banana-ast-reflection-paddingleft|
   - paddingRight                          |banana-ast-reflection-paddingright|
@@ -135,6 +136,15 @@ GETROOTNODE                                *banana-ast-reflection-getrootnode*
 Returns the root node of this section of the DOM tree.
 
 - **Returns**: `Banana.Ast` - The root node.
+
+
+GETCONTEXT                                  *banana-ast-reflection-getcontext*
+
+Returns a canvas context that can be used to render. This ONLY returns a valid
+context on `<canvas>` elements, otherwise, it returns nil. See canvas rendering
+<Canvas> for more information
+
+- **Returns**: `Banana.Nml.CanvasContext` - The context
 
 
 ASSERTHASSTYLE                          *banana-ast-reflection-asserthasstyle*

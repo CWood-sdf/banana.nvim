@@ -11,6 +11,7 @@ banana-ast-reflection-clonenode	banana-ast.txt	/*banana-ast-reflection-clonenode
 banana-ast-reflection-firstchild	banana-ast.txt	/*banana-ast-reflection-firstchild*
 banana-ast-reflection-getattribute	banana-ast.txt	/*banana-ast-reflection-getattribute*
 banana-ast-reflection-getattributes	banana-ast.txt	/*banana-ast-reflection-getattributes*
+banana-ast-reflection-getcontext	banana-ast.txt	/*banana-ast-reflection-getcontext*
 banana-ast-reflection-getheight	banana-ast.txt	/*banana-ast-reflection-getheight*
 banana-ast-reflection-getrootnode	banana-ast.txt	/*banana-ast-reflection-getrootnode*
 banana-ast-reflection-gettagname	banana-ast.txt	/*banana-ast-reflection-gettagname*
@@ -146,6 +147,7 @@ banana-selectors-table-of-contents	banana-selectors.txt	/*banana-selectors-table
 banana-selectors.txt	banana-selectors.txt	/*banana-selectors.txt*
 banana-tags-body	banana-tags.txt	/*banana-tags-body*
 banana-tags-br	banana-tags.txt	/*banana-tags-br*
+banana-tags-canvas	banana-tags.txt	/*banana-tags-canvas*
 banana-tags-div	banana-tags.txt	/*banana-tags-div*
 banana-tags-h1	banana-tags.txt	/*banana-tags-h1*
 banana-tags-head	banana-tags.txt	/*banana-tags-head*
