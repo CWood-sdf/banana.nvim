@@ -42,3 +42,34 @@ Embedded lua is also very simple, banana predefines the document variable for yo
   local element = document:getElementById("asdf")
 </script>
 ```
+
+## `when` Attribute
+
+The `when` attribute allows you to control when youre scripts are ran in the document lifecycle. Currently, there are two times that a script can run: right before the first render and right after the first render. The default is right after the first render so that functions that return rendering information (eg `Ast:getWidth()`) are able to return correct values. However, a script that mutates the tree (eg with `Ast:appendChild()`) causes two renders to happen (once to gather the render information and run the scripts, and again to actually render). This can cause a significant slowdown if done too much, this is why banana provides the `when` attribute. The default value is `postrender`, however, that might not be desirable in all cases. If your script both mutates the tree and doesn't need render information, then setting `when="prerender"` can cause a rendering performance improvement.
+
+### Examples
+
+```lua
+-- a good script to set prerender on
+local el = document:createElement("div")
+-- Mutates the tree
+document:body():appendChild(el)
+-- ... and doesnt need any render information
+-- setting when="prerender" will improve performance
+```
+
+```lua
+-- a bad script to set prerender on
+local el = document:createElement("div")
+
+-- needs render information: setting when="prerender" will cause a nil error
+print(document:body():getWidth())
+```
+
+```lua
+-- setting when= will have no affect on the performance
+document:body():attachRemap("n", "K", { "hover" }, function()
+
+end, {})
+```
+

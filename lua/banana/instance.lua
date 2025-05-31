@@ -601,13 +601,22 @@ end
 ---@param rhs string|fun()
 ---@param opts vim.keymap.set.Opts
 ---@param dep Banana.Ast
-function Instance:_setRemap(mode, lhs, rhs, opts, dep)
+---@param times? number
+function Instance:_setRemap(mode, lhs, rhs, opts, dep, times)
+    times = times or 30
+    if self.bufnr == nil or not vim.api.nvim_buf_is_valid(self.bufnr) then
+        if times == 0 then
+            log.throw("Buf does not exist")
+            error("")
+        else
+            vim.defer_fn(function ()
+                self:_setRemap(mode, lhs, rhs, opts, dep, times - 1)
+            end, 20)
+            return
+        end
+    end
     if self.keymaps[mode] == nil then
         self.keymaps[mode] = {}
-    end
-    if self.bufnr == nil then
-        log.throw("Buf does not exist")
-        error("")
     end
     if self.keymaps[mode][lhs] == nil then
         self.keymaps[mode][lhs] = {}
@@ -1063,7 +1072,7 @@ function Instance:_render()
 
     startTime = vim.loop.hrtime()
 
-    if skip then
+    if skip and self.renderRequested then
         if self.DEBUG_trackRenderCycle then
             vim.notify("Rerendering bc of scripts!\n")
         end

@@ -341,18 +341,18 @@ pub const PartialRendered = struct {
             margin.side(),
             padding.side(),
         }, 0);
-        const dbg: ?*BoxContext =
-            if (comptime debug)
-                if (self.dbgCtx.asOptional()) |id|
-                    try get_context(id)
-                else
-                    null
-            else
-                null;
-        if (dbg) |d| {
-            var buffer = [_]u8{0} ** 300;
-            d.dumpComment(try std.fmt.bufPrint(&buffer, "setting max width to {}", .{box.maxWidth})) catch {};
-        }
+        // const dbg: ?*BoxContext =
+        //     if (comptime debug)
+        //         if (self.dbgCtx.asOptional()) |id|
+        //             try get_context(id)
+        //         else
+        //             null
+        //     else
+        //         null;
+        // if (dbg) |d| {
+        //     var buffer = [_]u8{0} ** 300;
+        //     d.dumpComment(try std.fmt.bufPrint(&buffer, "setting max width to {}", .{box.maxWidth})) catch {};
+        // }
         log.write("setting max width to {}\n", .{box.maxWidth}) catch {};
 
         return box;
@@ -414,15 +414,15 @@ pub const PartialRendered = struct {
     fn renderInlineBlock(self: *PartialRendered, context: *BoxContext, box: *Box, containerBox: *Box, lineHeight: u16) !u16 {
         const maxWidth = subOr(containerBox.maxWidth, containerBox.cursorX, 0);
 
-        var buffer = [_]u8{0} ** 300;
-        const dbg: ?*BoxContext =
-            if (debug)
-                if (self.dbgCtx.asOptional()) |id|
-                    try get_context(id)
-                else
-                    null
-            else
-                null;
+        // var buffer = [_]u8{0} ** 300;
+        // const dbg: ?*BoxContext =
+        //     if (debug)
+        //         if (self.dbgCtx.asOptional()) |id|
+        //             try get_context(id)
+        //         else
+        //             null
+        //     else
+        //         null;
 
         log.write("calling render block\n", .{}) catch {};
         // const containerWidth = containerBox.width;
@@ -452,9 +452,9 @@ pub const PartialRendered = struct {
         for (0..height) |i| {
             const lineI = containerBox.cursorY + containerBox.offsetY + i;
             log.write("Getting line {}\n", .{i}) catch {};
-            if (dbg) |d| {
-                d.dumpComment(try std.fmt.bufPrint(&buffer, "Capturing line {}", .{lineI})) catch {};
-            }
+            // if (dbg) |d| {
+            //     d.dumpComment(try std.fmt.bufPrint(&buffer, "Capturing line {}", .{lineI})) catch {};
+            // }
             const line = try context.getLine(@intCast(lineI));
             var actualLine: _b.Line = .init();
 
@@ -471,18 +471,18 @@ pub const PartialRendered = struct {
                 line._chars.shrinkRetainingCapacity(containerBox.cursorX + containerBox.offsetX);
                 line._hls.shrinkRetainingCapacity(containerBox.cursorX + containerBox.offsetX);
             }
-            if (dbg) |d| {
-                context.dumpTo(d, "image capture") catch {};
-            }
+            // if (dbg) |d| {
+            //     context.dumpTo(d, "image capture") catch {};
+            // }
         }
-        log.write("image grabbed\n", .{}) catch {};
+        // log.write("image grabbed\n", .{}) catch {};
 
-        if (dbg) |d| {
-            d.dumpComment("captured Image") catch {};
-            d.dumpImage(image.items) catch {};
-        }
+        // if (dbg) |d| {
+        //     d.dumpComment("captured Image") catch {};
+        //     d.dumpImage(image.items) catch {};
+        // }
         const newStartLine = containerBox.cursorY + lineHeight;
-        log.write("new start {}\n", .{newStartLine}) catch {};
+        // log.write("new start {}\n", .{newStartLine}) catch {};
 
         if (height != image.items.len) {
             return error.ImageSizeMismatch;
@@ -490,11 +490,11 @@ pub const PartialRendered = struct {
 
         for (0..height) |i| {
             const lineI = containerBox.cursorY + i + newStartLine + containerBox.offsetY;
-            log.write("lineI {}\n", .{lineI}) catch {};
-            if (dbg) |d| {
-                d.dumpComment(try std.fmt.bufPrint(&buffer, "pasting to line {}", .{lineI})) catch {};
-                context.dumpTo(d, "image paste") catch {};
-            }
+            // log.write("lineI {}\n", .{lineI}) catch {};
+            // if (dbg) |d| {
+            //     d.dumpComment(try std.fmt.bufPrint(&buffer, "pasting to line {}", .{lineI})) catch {};
+            //     context.dumpTo(d, "image paste") catch {};
+            // }
             const line = try context.getLine(@intCast(lineI));
             log.write("appendable to {}\n", .{containerBox.offsetX}) catch {};
             try line.ensureAppendableAt(context, containerBox.offsetX, containerBox.hlgroup);
@@ -527,15 +527,15 @@ pub const PartialRendered = struct {
         widthExpansion: u16,
         containerBox: *Box,
     ) !void {
-        var buffer = [_]u8{0} ** 300;
-        const dbg: ?*BoxContext =
-            if (comptime debug)
-                if (self.dbgCtx.asOptional()) |id|
-                    try get_context(id)
-                else
-                    null
-            else
-                null;
+        // var buffer = [_]u8{0} ** 300;
+        // const dbg: ?*BoxContext =
+        //     if (comptime debug)
+        //         if (self.dbgCtx.asOptional()) |id|
+        //             try get_context(id)
+        //         else
+        //             null
+        //     else
+        //         null;
 
         const padding = try self.getPadding(context);
         const margin = try self.getMargin(context);
@@ -550,14 +550,14 @@ pub const PartialRendered = struct {
                 const leftSide = l;
                 const rightSide = r;
                 try box.shiftRightwardsBy(leftSide);
-                if (dbg) |d| {
-                    const comment = try std.fmt.bufPrint(
-                        &buffer,
-                        "after right shift by {} from offset {}",
-                        .{ leftSide, box.offsetX },
-                    );
-                    context.dumpTo(d, comment) catch {};
-                }
+                // if (dbg) |d| {
+                //     const comment = try std.fmt.bufPrint(
+                //         &buffer,
+                //         "after right shift by {} from offset {}",
+                //         .{ leftSide, box.offsetX },
+                //     );
+                //     context.dumpTo(d, comment) catch {};
+                // }
                 for (box.offsetY..box.offsetY + box.height) |i| {
                     const line = try context.getLine(@intCast(i));
                     const actualInsertPos = insertPos + leftSide;
@@ -615,15 +615,15 @@ pub const PartialRendered = struct {
         box: *Box,
         containerBox: *Box,
     ) !void {
-        var buffer = [_]u8{0} ** 300;
-        const dbg: ?*BoxContext =
-            if (comptime debug)
-                if (self.dbgCtx.asOptional()) |id|
-                    try get_context(id)
-                else
-                    null
-            else
-                null;
+        // var buffer = [_]u8{0} ** 300;
+        // const dbg: ?*BoxContext =
+        //     if (comptime debug)
+        //         if (self.dbgCtx.asOptional()) |id|
+        //             try get_context(id)
+        //         else
+        //             null
+        //     else
+        //         null;
 
         const height = try self.getHeight();
         _ = box;
@@ -638,18 +638,18 @@ pub const PartialRendered = struct {
             padding.side(),
             margin.side(),
         });
-        if (dbg) |d| {
-            const str = try std.fmt.bufPrint(&buffer, "Rendering to width {}", .{width});
-            d.dumpComment(str) catch {};
-        }
+        // if (dbg) |d| {
+        //     const str = try std.fmt.bufPrint(&buffer, "Rendering to width {}", .{width});
+        //     d.dumpComment(str) catch {};
+        // }
         // const mainHeight = height - padding.vert() - margin.vert();
         // set margin and padding
         for (0..height) |i| {
             log.write("looping {}\n", .{i}) catch {};
-            if (dbg) |d| {
-                const reason = try std.fmt.bufPrint(&buffer, "rendering line index {} ({})", .{ i, offY + i });
-                context.dumpTo(d, reason) catch {};
-            }
+            // if (dbg) |d| {
+            //     const reason = try std.fmt.bufPrint(&buffer, "rendering line index {} ({})", .{ i, offY + i });
+            //     context.dumpTo(d, reason) catch {};
+            // }
             const line = try context.getLine(offY + @as(u16, @intCast(i)));
             if (i < margin.top or i >= height - margin.bottom) {
                 // TODO: Test if this is faster or not
@@ -681,34 +681,34 @@ pub const PartialRendered = struct {
                         subOr(offX + width, currentStrLen, 0),
                     );
                 }
-                if (dbg) |d| {
-                    context.dumpTo(d, "Starting middle pad") catch {};
-                }
+                // if (dbg) |d| {
+                //     context.dumpTo(d, "Starting middle pad") catch {};
+                // }
 
                 if (currentStrLen > offX) {
                     @memset(line._chars.items[offX..currentStrLen], .space);
                 }
-                if (dbg) |d| {
-                    context.dumpTo(d, "Middle pad 1") catch {};
-                }
+                // if (dbg) |d| {
+                //     context.dumpTo(d, "Middle pad 1") catch {};
+                // }
                 @memset(line._hls.items[offX .. offX + margin.left], containerBox.hlgroup);
-                if (dbg) |d| {
-                    context.dumpTo(d, "Middle pad 2") catch {};
-                }
+                // if (dbg) |d| {
+                //     context.dumpTo(d, "Middle pad 2") catch {};
+                // }
                 @memset(
                     line._hls.items[offX + margin.left .. offX + width - margin.right],
                     self.mainColor,
                 );
-                if (dbg) |d| {
-                    context.dumpTo(d, "Middle pad 3") catch {};
-                }
+                // if (dbg) |d| {
+                //     context.dumpTo(d, "Middle pad 3") catch {};
+                // }
                 @memset(
                     line._hls.items[offX + width - margin.right .. offX + width],
                     containerBox.hlgroup,
                 );
-                if (dbg) |d| {
-                    context.dumpTo(d, "Middle pad 4 (done)") catch {};
-                }
+                // if (dbg) |d| {
+                //     context.dumpTo(d, "Middle pad 4 (done)") catch {};
+                // }
             } else {
                 // margin + pad l r, middle content{
                 const currentStrLen = line.width();
