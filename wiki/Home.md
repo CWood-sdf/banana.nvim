@@ -3,7 +3,6 @@ Welcome to the banana.nvim wiki!
 > [!CAUTION]
 >
 > The wiki is still a work in progress so if you find something missing, please submit an issue with the title "wiki: YOUR_ISSUE"
-
 The main point of this wiki is to show the differences between the banana rendering implementation and the w3 spec.
 Articles will (eventually), when possible, link to relevant MDN docs pages with notes on the differences between what's in those pages and what's actually implemented in banana.
 

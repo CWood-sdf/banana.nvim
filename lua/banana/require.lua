@@ -4,7 +4,7 @@ local M = {}
 
 local baseFolder = "banana"
 
----@type { [string]: [Banana.Nml.Parser, Banana.Ast, { [string]: Banana.Component} ] }
+---@type { [string]: [Banana.Nml.Parser, Banana.Ast, { [string]: Banana.Component } ] }
 local nmlAsts = {
 
 }
@@ -44,11 +44,11 @@ function M.getComponentFrom(path, name)
 end
 
 ---@param filename string
----@return Banana.Ast, Banana.Ncss.RuleSet[], string[]
+---@return Banana.Ast, Banana.Ncss.RuleSet[], string[], string[]
 function M.nmlLoad(filename)
     if nmlAsts[filename] ~= nil and storeMode == "memo" then
         return nmlAsts[filename][2], nmlAsts[filename][1].styleSets,
-            nmlAsts[filename][1].scripts
+            nmlAsts[filename][1].preScripts, nmlAsts[filename][1].postScripts
     end
 
     local endStoreMode = storeMode
@@ -72,11 +72,11 @@ function M.nmlLoad(filename)
     end
     nmlAsts[filename] = { parser, ast, componentListToMap(components or {}) }
     storeMode = endStoreMode
-    return ast, parser.styleSets, parser.scripts
+    return ast, parser.styleSets, parser.preScripts, parser.postScripts
 end
 
 ---@param str string
----@return Banana.Ast, Banana.Ncss.RuleSet[], string[]
+---@return Banana.Ast, Banana.Ncss.RuleSet[], string[], string[]
 function M.nmlLoadString(str)
     local parser = require("banana.nml.parser").fromString(str)
     if parser == nil then
@@ -95,7 +95,7 @@ function M.nmlLoadString(str)
     for _, v in ipairs(components or {}) do
         require("banana.nml.cleanAst").cleanAst(v.ast)
     end
-    return ast, parser.styleSets, parser.scripts
+    return ast, parser.styleSets, parser.preScripts, parser.postScripts
 end
 
 --- https://stackoverflow.com/questions/1340230/check-if-directory-exists-in-lua
@@ -178,7 +178,7 @@ end
 
 ---@param file string
 ---@param ft string
----@return Banana.Ast, Banana.Ncss.RuleSet[], string[]
+---@return Banana.Ast, Banana.Ncss.RuleSet[], string[], string[]
 local function basicRequire(file, ft)
     local path = M.getPathForRequire(file, ft)
     if path == nil then
@@ -188,7 +188,7 @@ local function basicRequire(file, ft)
     return M.nmlLoad(path)
 end
 ---@param file string
----@return Banana.Ast, Banana.Ncss.RuleSet[], string[]
+---@return Banana.Ast, Banana.Ncss.RuleSet[], string[], string[]
 function M.nmlRequire(file)
     return basicRequire(file, "nml")
 end
@@ -205,7 +205,7 @@ function M.ncssLoad(filename)
 end
 
 ---@param file string
----@return Banana.Ast, Banana.Ncss.RuleSet[], string[]
+---@return Banana.Ast, Banana.Ncss.RuleSet[], string[], string[]
 function M.ncssRequire(file)
     return basicRequire(file, "ncss")
 end

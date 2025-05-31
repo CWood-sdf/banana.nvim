@@ -198,6 +198,19 @@ function M.Ast:getContext()
     return self.data.__ctx
 end
 
+---@param inst Banana.Instance
+function M.Ast:_applyInstance(inst)
+    if self.instance == nil then
+        self.instance = inst.instanceId
+        for v in self:childIter() do
+            v:_applyInstance(inst)
+        end
+    end
+    if self:_isComponent() and self.componentTree ~= nil then
+        self:_mountComponent()
+    end
+end
+
 function M.Ast:_mountComponent()
     if not self:_isComponent() then
         log.throw("Cannot mount tag '" ..
@@ -219,10 +232,13 @@ function M.Ast:_mountComponent()
         log.throw("Could not find instance")
         error()
     end
-    inst:_applyId(ast)
+    ast:_applyInstance(inst)
     inst:_loadStyleFor(component.styles, ast)
-    for _, v in ipairs(component.scripts) do
-        inst:_loadScriptFor(v, ast, {})
+    for _, v in ipairs(component.preScripts) do
+        inst:_loadPreScriptFor(v, ast, {})
+    end
+    for _, v in ipairs(component.postScripts) do
+        inst:_loadPostScriptFor(v, ast, {})
     end
     self.componentTree = ast
 end
@@ -1348,7 +1364,7 @@ function M.Ast:appendChild(node)
     node._parent = self
     table.insert(self.nodes, node)
     if self.instance ~= nil then
-        self:ownerDocument():_applyId(node)
+        node:_applyInstance(self:ownerDocument())
     end
     self:_requestRender()
 end

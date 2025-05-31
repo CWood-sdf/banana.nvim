@@ -60,7 +60,8 @@ local instances = {}
 ---@class Banana.Instance
 ---@field DEBUG_stressTest boolean
 ---@field DEBUG_dumpTree boolean
----@field DEBUG_catch? boolean
+---@field DEBUG_catch boolean
+---@field DEBUG_trackRenderCycle boolean
 ---@field DEBUG boolean
 ---@field ctx? number
 ---@field winid? number
@@ -71,7 +72,8 @@ local instances = {}
 ---@field winhl table
 ---@field ast Banana.Ast
 ---@field styleRules Banana.Ncss.RuleSet[]
----@field scripts (string|fun())[]
+---@field postScripts (string|fun())[]
+---@field preScripts (string|fun())[]
 ---@field foreignStyles { [Banana.Ast]: Banana.Ncss.RuleSet[] }
 ---@field keymaps { [string]: { [string]: (Banana.Instance.Keymap|number)[] } }
 ---@field keymapAvailIndex { [string]: { [string]: number }}
@@ -138,13 +140,7 @@ function Instance:_virtualRender(ast, ctx, width, height)
             ["list-style-type"] = "star",
         }, extra)
     end
-    local ok, err
-    if (self.DEBUG_catch == false) or (self.DEBUG == true and self.DEBUG_catch == nil) then
-        ok = true
-        renderCall()
-    else
-        ok, err = pcall(renderCall)
-    end
+    local ok, err = self:_pcall(renderCall)
     if not ok then
         vim.notify("Error during render: " .. err .. "\n")
     end
@@ -185,7 +181,7 @@ function Instance:_virtualRender(ast, ctx, width, height)
         vim.api.nvim_win_set_hl_ns(self.DEBUG_winId, ns)
         vim.api.nvim_buf_clear_namespace(self.DEBUG_bufNr, ns, 0, -1)
         lb.box_context_highlight(traceCtx, function (line, startCol, endCol, hl)
-            pcall(function ()
+            self:_pcall(function ()
                 local actualHl = box.getHl(hl)
                 if actualHl == nil then
                     return
@@ -323,6 +319,9 @@ function Instance:new()
     local id = #instances
     ---@type Banana.Instance
     local inst = {
+        DEBUG_catch = false,
+        DEBUG_trackRenderCycle = false,
+        preScripts = {},
         keymapAvailIndex = {},
         urlAsts = {},
         lastRenderScripts = false,
@@ -344,7 +343,7 @@ function Instance:new()
         ---@diagnostic disable-next-line: assign-type-mismatch
         ast = nilAst,
         styleRules = {},
-        scripts = {},
+        postScripts = {},
         -- parser = parser,
         instanceId = id,
         winhl = {
@@ -376,33 +375,39 @@ end
 ---Uses a given string in nml require format as the source of the instance
 ---@param filename string the nml file to use
 function Instance:requireNml(filename)
-    local ast, styleRules, scripts = require("banana.require").nmlRequire(
-        filename)
-    self.scripts = scripts
+    local ast, styleRules, preScripts, postScripts = require("banana.require")
+        .nmlRequire(
+            filename)
+    self.postScripts = postScripts
+    self.preScripts = preScripts
     self.styleRules = styleRules
     self.ast = ast
-    self:_applyId(ast)
+    ast:_applyInstance(self)
 end
 
 ---Uses a given filename as the source of the instance
 ---@param filename string the nml file to use
 function Instance:useFile(filename)
-    local ast, styleRules, scripts = require("banana.require").nmlLoad(
-        filename)
-    self.scripts = scripts
+    local ast, styleRules, preScripts, postScripts = require("banana.require")
+        .nmlLoad(
+            filename)
+    self.postScripts = postScripts
+    self.preScripts = preScripts
     self.styleRules = styleRules
     self.ast = ast
-    self:_applyId(ast)
+    ast:_applyInstance(self)
 end
 
 ---Uses a given nml string as the source of the instance
 ---@param nml string the nml string
 function Instance:useNml(nml)
-    local ast, styleRules, scripts = require("banana.require").nmlLoadString(nml)
-    self.scripts = scripts
+    local ast, styleRules, preScripts, postScripts = require("banana.require")
+        .nmlLoadString(nml)
+    self.postScripts = postScripts
+    self.preScripts = preScripts
     self.styleRules = styleRules
     self.ast = ast
-    self:_applyId(ast)
+    ast:_applyInstance(self)
 end
 
 function Instance:_attachAutocmds()
@@ -459,7 +464,7 @@ end
 
 ---@param e Banana.EventType
 function Instance:_fireEvent(e)
-    pcall(vim.api.nvim_exec_autocmds, "User", {
+    self:_pcall(vim.api.nvim_exec_autocmds, "User", {
         pattern = "BananaDocument" .. e,
         data = {
             documentId = self.instanceId
@@ -723,7 +728,7 @@ function Instance:_applyId(ast)
             goto continue
         end
         ---@diagnostic disable-next-line: param-type-mismatch
-        self:_applyId(ast.nodes[i])
+        ast.nodes[i]:_applyInstance(self)
         ::continue::
     end
 end
@@ -794,12 +799,19 @@ function Instance:_runScript(script, opts)
     if opts ~= nil and opts.selfNode ~= nil then
         self.ast = opts.selfNode
     end
-    local ok, e = pcall(f, opts)
+    local ok, e = self:_pcall(f, opts)
     self.ast = oldAst
     self.currentParams = oldParams
     if not ok then
         error(e)
     end
+end
+
+function Instance:_pcall(f, ...)
+    if self.DEBUG_catch == false then
+        return true, f(...)
+    end
+    return pcall(f, ...)
 end
 
 ---@return number, number
@@ -868,7 +880,7 @@ function Instance:_createWinAndBuf()
         if vim.fn.isdirectory(cwd .. "/" .. self.bufname) == 1 or vim.fn.isdirectory(self.bufname) == 1 then
             self.bufname = ""
         end
-        pcall(function ()
+        self:_pcall(function ()
             vim.api.nvim_buf_set_name(self.bufnr, self.bufname)
         end)
         for k, v in pairs(self.bufOpts) do
@@ -945,6 +957,9 @@ function Instance:_requestRender()
     if self.renderRequested then
         return
     end
+    if self.DEBUG_trackRenderCycle then
+        vim.notify("Requesting render\n")
+    end
     self.renderStart = vim.loop.hrtime()
     self.renderRequested = true
     self:_deferRender()
@@ -981,7 +996,7 @@ function Instance:_render()
     -- please dont remove this
     -- collectgarbage("stop")
     log.clearCtx()
-    log.trace("Instance:render with " .. #self.scripts .. " scripts")
+    log.trace("Instance:render with " .. #self.postScripts .. " scripts")
     local startTime = vim.loop.hrtime()
     local actualStart = startTime
     local astTime = 0
@@ -991,7 +1006,18 @@ function Instance:_render()
         flame.newIter()
     end
     flame.new("style")
+
+
     self.ast:_clearStyles()
+    for _, script in ipairs(self.preScripts) do
+        self.renderRequested = true
+        local ok, err = self:_pcall(function () self:_runScript(script, nil) end)
+        self.renderRequested = false
+        if not ok then
+            error(err)
+        end
+    end
+    self.preScripts = {}
     self:_applyStyleDeclarations(self.ast, self.styleRules)
     for ast, rules in pairs(self.foreignStyles) do
         self:_applyStyleDeclarations(ast, rules)
@@ -999,7 +1025,6 @@ function Instance:_render()
     flame.pop()
     self:body().relativeBoxes = {}
     self:body().absoluteAsts = {}
-    -- vim.notify("Rendering\n")
 
     styleTime = vim.loop.hrtime() - startTime
     startTime = vim.loop.hrtime()
@@ -1010,6 +1035,9 @@ function Instance:_render()
         self:_clearDebugWinBuf()
     end
 
+    if self.DEBUG_trackRenderCycle then
+        vim.notify("Rendering!\n")
+    end
 
     local winTime = vim.loop.hrtime() - startTime
     if self.ctx == nil then
@@ -1024,27 +1052,32 @@ function Instance:_render()
     flame.pop()
     local renderTime = vim.loop.hrtime() - startTime
     local skip = false
-    for _, script in ipairs(self.scripts) do
+    for _, script in ipairs(self.postScripts) do
         skip = true
         -- if i == 2 then
         --     break
         -- end
         self:_runScript(script, nil)
     end
-    self.scripts = {}
+    self.postScripts = {}
 
     startTime = vim.loop.hrtime()
 
     if skip then
+        if self.DEBUG_trackRenderCycle then
+            vim.notify("Rerendering bc of scripts!\n")
+        end
         lb.box_context_wipe(self.ctx)
         box.wipeContext(self.ctx)
-        self.rendering = false
-        self.renderRequested = true
-        -- collectgarbage("restart")
-        -- collectgarbage("collect")
-        self.renderRequested = false
-        self.renderStart = vim.loop.hrtime()
-        self:_render()
+        if not self.renderRequested then
+            self.rendering = false
+            self.renderRequested = true
+            -- collectgarbage("restart")
+            -- collectgarbage("collect")
+            self.renderRequested = false
+            self.renderStart = vim.loop.hrtime()
+            self:_render()
+        end
         self.renderRequested = false
         self.rendering = false
         -- self:_deferRender(function ()
@@ -1479,8 +1512,9 @@ function Instance:loadNmlTo(file, ast, remove, preserve)
     local sides = vim.split(file, "?", {
         plain = true,
     })
-    local content, rules, scripts = require("banana.require").nmlRequire(sides
-        [1])
+    local content, rules, preScripts, postScripts = require("banana.require")
+        .nmlRequire(sides
+            [1])
     if not preserve then
         content = content:clone(true)
     end
@@ -1498,8 +1532,11 @@ function Instance:loadNmlTo(file, ast, remove, preserve)
             params[halves[1]] = halves[2] or "true"
         end
     end
-    for _, script in ipairs(scripts) do
-        self:_loadScriptFor(script, content, params)
+    for _, script in ipairs(preScripts) do
+        self:_loadPreScriptFor(script, content, params)
+    end
+    for _, script in ipairs(postScripts) do
+        self:_loadPostScriptFor(script, content, params)
     end
     self:_requestRender()
 end
@@ -1513,9 +1550,22 @@ end
 ---@param script string the source code
 ---@param ast Banana.Ast the target
 ---@param params table
-function Instance:_loadScriptFor(script, ast, params)
+function Instance:_loadPostScriptFor(script, ast, params)
     ---@param opts Banana.Instance.RouteParams?
-    table.insert(self.scripts, function (opts)
+    table.insert(self.postScripts, function (opts)
+        opts = opts or {}
+        opts.params = params
+        opts.selfNode = ast
+        self:_runScript(script, opts)
+    end)
+end
+
+---@param script string the source code
+---@param ast Banana.Ast the target
+---@param params table
+function Instance:_loadPreScriptFor(script, ast, params)
+    ---@param opts Banana.Instance.RouteParams?
+    table.insert(self.preScripts, function (opts)
         opts = opts or {}
         opts.params = params
         opts.selfNode = ast
@@ -1614,14 +1664,14 @@ function Instance:createElement(name)
     local ast = require("banana.nml.ast").Ast:new(name, M.getNilAst(),
         self.ast.fromFile)
     ast.componentPath = self.ast.componentPath
-    self:_applyId(ast)
+    ast:_applyInstance(self)
     return ast
 end
 
 ---@param scripts string[]
 function Instance:_addScripts(scripts)
     for _, v in ipairs(scripts) do
-        table.insert(self.scripts, v)
+        table.insert(self.postScripts, v)
     end
 end
 

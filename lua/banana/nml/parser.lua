@@ -39,14 +39,16 @@ local ast = require("banana.nml.ast")
 ---@class (exact) Banana.Component
 ---@field ast Banana.Ast
 ---@field styles Banana.Ncss.RuleSet[]
----@field scripts string[]
+---@field preScripts string[]
+---@field postScripts string[]
 ---@field name string
 
 ---@class (exact) Banana.Nml.Parser
 ---@field lexer Banana.Lexer?
 ---@field tree TSTree?
 ---@field styleSets Banana.Ncss.RuleSet[]
----@field scripts string[]
+---@field postScripts string[]
+---@field preScripts string[]
 ---@field ncssParsers TSTree[]
 ---@field ncssInlineIndex number
 ---@field ncssBlockIndex number
@@ -56,7 +58,8 @@ local Parser = {
     lexer = nil,
     tree = nil,
     styleSets = {},
-    scripts = {},
+    preScripts = {},
+    postScripts = {},
     ncssInlineIndex = 1,
     ncssBlockIndex = 1,
 }
@@ -85,7 +88,8 @@ function Parser:new(lex, tree, ncssParsers, source)
         lexer = lex,
         tree = tree,
         styleSets = {},
-        scripts = {},
+        preScripts = {},
+        postScripts = {},
         ncssParsers = ncssParsers,
         ncssInlineIndex = 1,
         ncssBlockIndex = 1,
@@ -332,14 +336,20 @@ function Parser:parseTag(tree, parent, isSpecial)
         ret.inlineStyle = decls
     end
     local scriptStr = ""
+    local isPreRenderScript = attrs["when"] == "prerender"
+    local scriptArray = self.postScripts
+    if self.currentComponent ~= nil and isPreRenderScript then
+        scriptArray = self.currentComponent.preScripts
+    elseif self.currentComponent ~= nil then
+        scriptArray = self.currentComponent.postScripts
+    elseif isPreRenderScript then
+        scriptArray = self.preScripts
+    end
+
     if attrs["src"] ~= nil and isScript then
         local req = attrs["src"]
         scriptStr = "@" .. req
-        local tbl = self.scripts
-        if self.currentComponent ~= nil then
-            tbl = self.currentComponent.scripts
-        end
-        table.insert(tbl, scriptStr)
+        table.insert(scriptArray, scriptStr)
     end
 
     if attrs["import"] ~= nil and isTemplate then
@@ -397,7 +407,8 @@ function Parser:parseTag(tree, parent, isSpecial)
             ---@diagnostic disable-next-line: assign-type-mismatch
             ast = ret,
             styles = {},
-            scripts = {},
+            preScripts = {},
+            postScripts = {},
             name = attrs["name"]
         }
     end
@@ -454,13 +465,8 @@ function Parser:parseTag(tree, parent, isSpecial)
         elseif child:type() == M.ts_types.raw_text and isScript then
             scriptStr = self.lexer:getStrFromRange({ child:start() },
                 { child:end_() })
-            local set = self.scripts
-
-            if self.currentComponent ~= nil then
-                set = self.currentComponent.scripts
-            end
             if scriptStr ~= "" then
-                table.insert(set, scriptStr)
+                table.insert(scriptArray, scriptStr)
             end
         elseif child:type() == M.ts_types.raw_text and isStyle then
             local ncssTree = self:getNextBlockNcssParser()
@@ -602,7 +608,7 @@ function Parser:parse()
 end
 
 function Parser:reset()
-    self.scripts = {}
+    self.preScripts = {}
     self.styleSets = {}
     self.lexer.currentLine = 1
     self.lexer.currentCol = 1
