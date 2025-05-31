@@ -139,6 +139,7 @@ banana-properties.txt	banana-properties.txt	/*banana-properties.txt*
 banana-scripting-scripting	banana-scripting.txt	/*banana-scripting-scripting*
 banana-scripting-scripting-embedded	banana-scripting.txt	/*banana-scripting-scripting-embedded*
 banana-scripting-scripting-separate-files	banana-scripting.txt	/*banana-scripting-scripting-separate-files*
+banana-scripting-scripting-when-attribute	banana-scripting.txt	/*banana-scripting-scripting-when-attribute*
 banana-scripting-table-of-contents	banana-scripting.txt	/*banana-scripting-table-of-contents*
 banana-scripting.txt	banana-scripting.txt	/*banana-scripting.txt*
 banana-selectors-pseudo-classes	banana-selectors.txt	/*banana-selectors-pseudo-classes*
