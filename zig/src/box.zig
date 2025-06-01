@@ -140,9 +140,6 @@ fn codepointLen(char: u8) u8 {
     return 4;
 }
 
-// TODO: Can prolly do some data oriented stuff here: a char is one byte
-// and the first bit is 0 if ascii, 1 if an index into a large char array.
-// tho this only allows up to 128 independent multibyte chars per line
 pub const Char = packed struct(u32) {
     // the actual number
     bytes: u3,

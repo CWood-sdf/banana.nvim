@@ -179,13 +179,6 @@ function Box:newToRight()
     return ret
 end
 
--- Box.__index = flame.wrapClass(Box, "Box", false)
--- Box.__mode = "kv"
-
--- function Box:getLines()
---     return self.lines
--- end
-
 ---@param other Banana.Box
 function Box:updateCursorFrom(other)
     lb.box_update_cursor_from(self.ctx, self.boxid, other.boxid)
@@ -265,38 +258,6 @@ function Box:getMaxHeight()
     return lb.box_get_max_height(self.ctx, self.boxid)
 end
 
-function Box:insertGradientMarker()
-    -- TODO: Need this later
-
-    -- if self.hlgroup == nil then
-    --     return
-    -- end
-    --
-    -- if type(self.hlgroup.fg) == "table" or type(self.hlgroup.bg) == "table" then
-    --     for _, v in ipairs(self.lines) do
-    --         table.insert(v, 1, word("", self.hlgroup))
-    --     end
-    -- end
-    log.throw("yoo do this")
-end
-
-function Box:setGradientSize()
-    -- TODO: need later
-
-    -- if self.hlgroup == nil then
-    --     return
-    -- end
-    -- if type(self.hlgroup.fg) == "table" then
-    --     ---@diagnostic disable-next-line: param-type-mismatch
-    --     self.hlgroup.fg:setSize(self._width, self:height())
-    -- end
-    -- if type(self.hlgroup.bg) == "table" then
-    --     ---@diagnostic disable-next-line: param-type-mismatch
-    --     self.hlgroup.bg:setSize(self._width, self:height())
-    -- end
-    log.throw("yoo do this")
-end
-
 ---@param width number
 function Box:shrinkWidthTo(width)
     lb.box_shrink_width_to(self.ctx, self.boxid, width)
@@ -331,16 +292,6 @@ function Box:overlay(x, y, w, h, char, style)
     lb.box_overlay(self.ctx, self.boxid, x, y, w, h, char, style)
     self:_dumpToSelf()
 end
-
--- ---@return Banana.Box
--- function Box:clone()
---     local b = Box:new(self.hlgroup)
---     for _, v in ipairs(self.lines) do
---         table.insert(b.lines, cloneLine(v))
---     end
---     b._width = self._width
---     return b
--- end
 
 ---@return number
 function Box:getHeight()
@@ -399,13 +350,7 @@ end
 ---Appends string to the right
 ---@param str string
 function Box:appendStr(str)
-    if self.trace ~= nil then
-        lb.box_context_dump_to(self.ctx, self.trace, "appendStr pre")
-    end
     lb.box_append_str(self.ctx, self.boxid, str)
-    if self.trace ~= nil then
-        lb.box_context_dump_to(self.ctx, self.trace, "appendStr post")
-    end
     self:_dumpToSelf()
 end
 
