@@ -599,6 +599,71 @@ pub const BoxContext = struct {
         }
         return &self.partials.items[ptl];
     }
+
+    fn linesToStringArray(self: *BoxContext, out: *std.ArrayListUnmanaged(u8), join: u8) !void {
+        log.write("Creating string table\n", .{}) catch {};
+        for (self.lines.items) |*line| {
+            for (line._chars.items) |char| {
+                var chars = [_]u8{0} ** 4;
+                const bytes = try char.toBytes(&chars);
+                if (bytes != 0) {
+                    try out.appendSlice(
+                        self.alloc(),
+                        chars[0..bytes],
+                    );
+                }
+            }
+            try out.append(self.alloc(), join);
+        }
+    }
+
+    // pub fn renderToString(self: *BoxContext) ![]const u8 {
+    //     var lines: std.ArrayListUnmanaged(u8) = .empty;
+    //     // defer lines.deinit(self.alloc());
+    //
+    //     try self.linesToStringArray(&lines, '\n');
+    //
+    //     lua.push_stringslice(L, self.lines.items);
+    //     return lines.items;
+    // }
+    // pub fn renderToArray(self: *BoxContext, L: *lua.State) !void {
+    //     lua.create_table(L, self.lines.items.len, 0);
+    //     var lines: std.ArrayListUnmanaged(u8) = .empty;
+    //     defer lines.deinit(self.alloc());
+    //
+    //     try self.linesToStringArray(&lines, 0);
+    //
+    //     const simdLen = std.simd.suggestVectorLength(u8);
+    //     var startIndex = 0;
+    //     var n = 1;
+    //     while (startIndex < lines.items.len) {
+    //         var endIndex = startIndex;
+    //         while (endIndex < lines.items.len) {
+    //             const avail = lines.items.len - endIndex;
+    //             if (avail > simdLen) {
+    //                 const vec: @Vector(u8, simdLen) = lines.items[endIndex .. endIndex + simdLen];
+    //                 const i = std.simd.firstIndexOfValue(vec, 0);
+    //                 if (i) |j| {
+    //                     endIndex += j;
+    //                     break;
+    //                 } else {
+    //                     endIndex += simdLen;
+    //                 }
+    //             } else {
+    //                 endIndex += 1;
+    //                 if (endIndex >= lines.items.len or lines.items[endIndex] == 0) {
+    //                     break;
+    //                 }
+    //             }
+    //         }
+    //         if (endIndex != startIndex) {
+    //             lua.push_stringslice(L, lines.items[startIndex..endIndex]);
+    //             lua.raw_seti(L, -1, n);
+    //             n += 1;
+    //         }
+    //         startIndex = endIndex + 1;
+    //     }
+    // }
     pub fn stripRightSpace(self: *BoxContext, L: *lua.State, pos: c_int) !void {
         var bannedItems: std.ArrayListUnmanaged(Highlight) = .empty;
         defer bannedItems.deinit(self.alloc());
@@ -695,20 +760,8 @@ pub const BoxContext = struct {
         defer {
             lines.deinit(self.alloc());
         }
-        log.write("Creating string table\n", .{}) catch {};
-        for (self.lines.items) |*line| {
-            for (line._chars.items) |char| {
-                var chars = [_]u8{0} ** 4;
-                const bytes = try char.toBytes(&chars);
-                if (bytes != 0) {
-                    try lines.appendSlice(
-                        self.alloc(),
-                        chars[0..bytes],
-                    );
-                }
-            }
-            try lines.append(self.alloc(), 0);
-        }
+
+        try self.linesToStringArray(&lines, 0);
 
         var startIndex: usize = 0;
         for (lines.items, 0..) |c, i| {
@@ -1447,6 +1500,7 @@ fn dumpObjectToLua(T: type, obj: *const T, L: *lua.State) !void {
 
 const BoxExpect = ExpectStr("Banana.Box");
 
+// pub fn box_context_render_to_string(ctx: u16) ![]const u8 {}
 pub fn box_context_get_memory_usage(ctx: u16) !usize {
     const context = try get_context(ctx);
     // _ = context;

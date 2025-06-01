@@ -85,7 +85,7 @@ function M.setup()
     ---@diagnostic disable-next-line: inject-field
     parser_config.nml = {
         install_info = {
-            url = M.root("./tree-sitter-nml"),
+            url = "https://github.com/CWood-sdf/tree-sitter-nml",
             files = { "src/parser.c", "src/scanner.c" },
             branch = "main",
             generate_requires_npm = false,
@@ -96,7 +96,7 @@ function M.setup()
     ---@diagnostic disable-next-line: inject-field
     parser_config.ncss = {
         install_info = {
-            url = M.root("./tree-sitter-ncss"),
+            url = "https://github.com/CWood-sdf/tree-sitter-ncss",
             files = { "src/parser.c", "src/scanner.c" },
             branch = "main",
             generate_requires_npm = false,

@@ -104,6 +104,13 @@ pub fn push_int(L: *State, n: c_int) void {
 extern fn lua_createtable(L: *State, narr: c_int, nrec: c_int) void;
 pub const create_table = lua_createtable;
 
+extern fn lua_settable(L: *State, idx: c_int) void;
+pub const set_table = lua_settable;
+extern fn lua_rawset(L: *State, idx: c_int) void;
+pub const raw_set = lua_rawset;
+extern fn lua_rawseti(L: *State, idx: c_int, n: c_int) void;
+pub const raw_seti = lua_rawseti;
+
 pub extern fn lua_pushnil(L: *State) void;
 pub const push_nil = lua_pushnil;
 

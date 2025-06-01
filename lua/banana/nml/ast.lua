@@ -137,6 +137,7 @@ function M.Ast:new(tag, parent, source)
     return ast
 end
 
+---Returns the data associated with the ast [UNSTABLE]
 ---@param item string?
 ---@return any?
 function M.Ast:getData(item)
@@ -155,6 +156,7 @@ function M.Ast:getData(item)
     return self.data[item]
 end
 
+---Sets the data associated with the array [UNSTABLE]
 ---@param key string
 ---@param value any
 ---@overload fun(self: Banana.Ast, value: table)

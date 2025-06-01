@@ -3,7 +3,7 @@ const dst = @import("dst.zig");
 const log = @import("log.zig");
 const lua = @import("lua_api/lua.zig");
 const luaL = @import("lua_api/luaL.zig");
-const Box = @import("box.zig");
+const Box = @import("box/api.zig");
 const grid = @import("grid.zig");
 const gen = @import("genlua.zig");
 const testing = std.testing;
@@ -77,48 +77,49 @@ var list: std.ArrayListUnmanaged(luaL.Reg) = .empty;
 // pub const regs = gen.genLuaDecls(Box, "box_");
 
 export fn luaopen_banana_libbanana(state: *lua.State) c_int {
+    const alloc = std.heap.smp_allocator;
     // const file = std.fs.cwd().openFile("thing.txt", .{ .mode = .write_only }) catch return 0;
     // _ = file.write("opening :)\n") catch 0;
     const fns = gen.genLuaDecls(Box, "box_");
     inline for (fns) |f| {
         // std.debug.print("{s}\n", .{f.name});
-        // _ = file.write(std.fmt.allocPrint(std.heap.page_allocator, "name {s}\n", .{f.name}) catch "asdf") catch 0;
-        const newName = std.heap.page_allocator.dupeZ(u8, f.name) catch return 0;
+        // _ = file.write(std.fmt.allocPrint(alloc, "name {s}\n", .{f.name}) catch "asdf") catch 0;
+        const newName = alloc.dupeZ(u8, f.name) catch return 0;
         const function = luaL.Reg.init(newName, f.f);
         list.append(
-            std.heap.page_allocator,
+            alloc,
             function,
         ) catch return 0;
     }
     const gridFns = gen.genLuaDecls(grid, "grid_");
     inline for (gridFns) |f| {
         // std.debug.print("{s}\n", .{f.name});
-        // _ = file.write(std.fmt.allocPrint(std.heap.page_allocator, "name {s}\n", .{f.name}) catch "asdf") catch 0;
-        const newName = std.heap.page_allocator.dupeZ(u8, f.name) catch return 0;
+        // _ = file.write(std.fmt.allocPrint(alloc, "name {s}\n", .{f.name}) catch "asdf") catch 0;
+        const newName = alloc.dupeZ(u8, f.name) catch return 0;
         const function = luaL.Reg.init(newName, f.f);
         list.append(
-            std.heap.page_allocator,
+            alloc,
             function,
         ) catch return 0;
     }
     const dstFns = gen.genLuaDecls(dst, "dst_");
     inline for (dstFns) |f| {
         // std.debug.print("{s}\n", .{f.name});
-        // _ = file.write(std.fmt.allocPrint(std.heap.page_allocator, "name {s}\n", .{f.name}) catch "asdf") catch 0;
-        const newName = std.heap.page_allocator.dupeZ(u8, f.name) catch return 0;
+        // _ = file.write(std.fmt.allocPrint(alloc, "name {s}\n", .{f.name}) catch "asdf") catch 0;
+        const newName = alloc.dupeZ(u8, f.name) catch return 0;
         const function = luaL.Reg.init(newName, f.f);
         list.append(
-            std.heap.page_allocator,
+            alloc,
             function,
         ) catch return 0;
     }
-    list.append(std.heap.page_allocator, luaL.Reg.Null) catch return 0;
-    // const alloc = std.heap.page_allocator;
+    list.append(alloc, luaL.Reg.Null) catch return 0;
+    // const alloc = alloc;
     // var arr: std.ArrayListUnmanaged(lua.CFunction) = .empty;
     // gen.genLuaDecls(Box, "box_", &arr, alloc) catch return 0;
     luaL.register(state, "libbanana", list.items.ptr);
 
-    Box.init_boxes();
+    // Box.init_boxes();
 
     log.init() catch return 1;
 

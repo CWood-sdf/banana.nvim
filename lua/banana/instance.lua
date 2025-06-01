@@ -994,6 +994,23 @@ function Instance:getFps()
     return count / (time / 1000000000)
 end
 
+--- highlights a range of text
+---@param buf number
+---@param ns number
+---@param group string
+---@param row number
+---@param colStart number
+---@param colEnd number
+function Instance:highlightText(buf, ns, group, row, colStart, colEnd)
+    vim.api.nvim_buf_set_extmark(buf, ns,
+        row,
+        colStart,
+        {
+            end_col = colEnd,
+            hl_group = group,
+        })
+end
+
 local stressStartTime = 0
 function Instance:_render()
     if not self.isVisible then
@@ -1156,16 +1173,34 @@ function Instance:_render()
                     hl .. "_" .. col .. "_" .. line
                 vim.api.nvim_set_hl(self.highlightNs, group,
                     hlvalue)
-                vim.api.nvim_buf_set_extmark(self.bufnr, self.highlightNs,
-                    line,
-                    col,
-                    {
-                        end_col = col + 1,
-                        hl_group = group,
-                    })
+                self:highlightText(self.bufnr, self.highlightNs, group, line, col,
+                    col + 1)
                 hlvalue.fg = fgVal
                 hlvalue.bg = bgVal
             end
+        elseif hlvalue.__name ~= nil then
+            local group = hlvalue.__name or "Normal"
+            local actualHl = vim.api.nvim_get_hl(0, {
+                name = group,
+            })
+            local keysCount = #vim.tbl_keys(hlvalue)
+            -- Apparently i have to use json to detect vim.empty_dict()
+            local hlNotExists = vim.json.encode(actualHl) == "{}"
+            if type(hlvalue.fg) == "table" or type(hlvalue.bg) == "table" then
+                log.throw(
+                    "ERROR: gradients cannot be used as default fields for named highlights")
+            end
+            if hlNotExists and keysCount > 1 then
+                local name = hlvalue.__name
+                hlvalue.__name = nil
+                vim.api.nvim_set_hl(0, group, hlvalue)
+                hlvalue.__name = name
+            elseif hlNotExists then
+                group = M.defaultWinHighlight
+            end
+            self:highlightText(self.bufnr, 0, group, line,
+                startCol,
+                endCol)
         else
             local group = hls[hl]
 
@@ -1175,12 +1210,9 @@ function Instance:_render()
                 vim.api.nvim_set_hl(self.highlightNs, group,
                     hlvalue)
             end
-            vim.api.nvim_buf_set_extmark(self.bufnr, self.highlightNs, line,
+            self:highlightText(self.bufnr, self.highlightNs, group, line,
                 startCol,
-                {
-                    end_col = endCol,
-                    hl_group = group,
-                })
+                endCol)
         end
     end)
     -- self:_highlight(stuffToRender, 0)
