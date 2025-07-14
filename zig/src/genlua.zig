@@ -1,5 +1,4 @@
 const std = @import("std");
-const box = @import("box.zig");
 const log = @import("log.zig");
 const lua = @import("lua_api/lua.zig");
 const luaL = @import("lua_api/luaL.zig");

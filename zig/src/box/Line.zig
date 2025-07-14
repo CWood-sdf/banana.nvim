@@ -46,6 +46,17 @@ pub fn deinit(self: *Self, alloc: std.mem.Allocator) void {
     self._chars.deinit(alloc);
     self._hls.deinit(alloc);
 }
+
+pub fn debug_print(self: *const Self) !void {
+    var chars: [1000]u8 = [_]u8{0} ** 1000;
+    var i: u32 = 0;
+    for (self._chars.items) |char| {
+        const buf = chars[i..];
+        const w = try char.toBytes(buf);
+        i += w;
+    }
+    log.write("LINE: {s}\n", .{chars[0..i]}) catch {};
+}
 pub fn appendWordToLen(
     self: *Self,
     ctx: *BoxContext,

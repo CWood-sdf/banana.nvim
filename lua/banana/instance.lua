@@ -1166,76 +1166,89 @@ function Instance:_render()
     vim.api.nvim_win_set_hl_ns(self.winid, self.highlightNs)
     vim.api.nvim_buf_clear_namespace(self.bufnr, self.highlightNs, 0, -1)
     vim.api.nvim_buf_clear_namespace(self.bufnr, 0, 0, -1)
-    lb.box_context_highlight(self.ctx, function (line, startCol, endCol, hl)
-        if hl == 0 then return end
-        local hlvalue = box.getHl(hl)
-        if hlvalue == nil then
+    lb.box_context_highlight(self.ctx,
+        function (line, startCol, endCol, hl, visualCol, visualEndCol)
+            if hl == 0 then return end
+            local hlvalue = box.getHl(hl)
             if hlvalue == nil then
-                return
-            end
-        end
-
-        if type(hlvalue.fg) == "table" or type(hlvalue.bg) == "table" then
-            for col = startCol, endCol - 1 do
-                local fgVal = hlvalue.fg
-                local bgVal = hlvalue.bg
-
-                if type(fgVal) == "table" then
-                    ---@cast fgVal Banana.Gradient
-                    fgVal:setPos(col, line)
-                    hlvalue.fg = fgVal:nextCharColor()
+                if hlvalue == nil then
+                    return
                 end
-                if type(bgVal) == "table" then
-                    ---@cast bgVal Banana.Gradient
-                    bgVal:setPos(col, line)
-                    hlvalue.bg = bgVal:nextCharColor()
-                end
-                local group = "banana_grad_" ..
-                    hl .. "_" .. col .. "_" .. line
-                vim.api.nvim_set_hl(self.highlightNs, group,
-                    hlvalue)
-                self:highlightText(self.bufnr, self.highlightNs, group, line, col,
-                    col + 1)
-                hlvalue.fg = fgVal
-                hlvalue.bg = bgVal
             end
-        elseif hlvalue.__name ~= nil then
-            local group = hlvalue.__name or "Normal"
-            local actualHl = vim.api.nvim_get_hl(0, {
-                name = group,
-            })
-            local keysCount = #vim.tbl_keys(hlvalue)
-            -- Apparently i have to use json to detect vim.empty_dict()
-            local hlNotExists = vim.json.encode(actualHl) == "{}"
+
             if type(hlvalue.fg) == "table" or type(hlvalue.bg) == "table" then
-                log.throw(
-                    "ERROR: gradients cannot be used as default fields for named highlights")
-            end
-            if hlNotExists and keysCount > 1 then
-                local name = hlvalue.__name
-                hlvalue.__name = nil
-                vim.api.nvim_set_hl(0, group, hlvalue)
-                hlvalue.__name = name
-            elseif hlNotExists then
-                group = M.defaultWinHighlight
-            end
-            self:highlightText(self.bufnr, 0, group, line,
-                startCol,
-                endCol)
-        else
-            local group = hls[hl]
+                for col = startCol, endCol - 1 do
+                    local fgVal = hlvalue.fg
+                    local bgVal = hlvalue.bg
 
-            if group == nil then
-                group = "banana_hl_" .. hl
-                hls[hl] = group
-                vim.api.nvim_set_hl(self.highlightNs, group,
-                    hlvalue)
+                    if type(fgVal) == "table" then
+                        ---@cast fgVal Banana.Gradient
+                        local boundAst = fgVal.boundAst
+
+                        -- TODO: Turn from linear scaling over bytes to linear
+                        -- scaling over characters
+                        fgVal:setPos(boundAst.boundBox.leftX +
+                            (col - startCol) / (endCol - startCol) *
+                            (boundAst.boundBox.rightX - boundAst.boundBox.leftX),
+                            line)
+                        hlvalue.fg = fgVal:nextCharColor()
+                    end
+                    if type(bgVal) == "table" then
+                        ---@cast bgVal Banana.Gradient
+                        local boundAst = fgVal.boundAst
+                        bgVal:setPos(boundAst.boundBox.leftX +
+                            (col - startCol) / (endCol - startCol) *
+                            (boundAst.boundBox.rightX - boundAst.boundBox.leftX),
+                            line)
+                        hlvalue.bg = bgVal:nextCharColor()
+                    end
+                    local group = "banana_grad_" ..
+                        hl .. "_" .. col .. "_" .. line
+                    vim.api.nvim_set_hl(self.highlightNs, group,
+                        hlvalue)
+                    self:highlightText(self.bufnr, self.highlightNs, group, line,
+                        col,
+                        col + 1)
+                    hlvalue.fg = fgVal
+                    hlvalue.bg = bgVal
+                end
+            elseif hlvalue.__name ~= nil then
+                local group = hlvalue.__name or "Normal"
+                local actualHl = vim.api.nvim_get_hl(0, {
+                    name = group,
+                })
+                local keysCount = #vim.tbl_keys(hlvalue)
+                -- Apparently i have to use json to detect vim.empty_dict()
+                local hlNotExists = vim.json.encode(actualHl) == "{}"
+                if type(hlvalue.fg) == "table" or type(hlvalue.bg) == "table" then
+                    log.throw(
+                        "ERROR: gradients cannot be used as default fields for named highlights")
+                end
+                if hlNotExists and keysCount > 1 then
+                    local name = hlvalue.__name
+                    hlvalue.__name = nil
+                    vim.api.nvim_set_hl(0, group, hlvalue)
+                    hlvalue.__name = name
+                elseif hlNotExists then
+                    group = M.defaultWinHighlight
+                end
+                self:highlightText(self.bufnr, 0, group, line,
+                    startCol,
+                    endCol)
+            else
+                local group = hls[hl]
+
+                if group == nil then
+                    group = "banana_hl_" .. hl
+                    hls[hl] = group
+                    vim.api.nvim_set_hl(self.highlightNs, group,
+                        hlvalue)
+                end
+                self:highlightText(self.bufnr, self.highlightNs, group, line,
+                    startCol,
+                    endCol)
             end
-            self:highlightText(self.bufnr, self.highlightNs, group, line,
-                startCol,
-                endCol)
-        end
-    end)
+        end)
     -- self:_highlight(stuffToRender, 0)
     local extraLines = {}
     if self.DEBUG then

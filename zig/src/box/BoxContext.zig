@@ -394,9 +394,11 @@ pub fn highlight(self: *BoxContext, L: *lua.State, pos: c_int, startLine: u64) v
         if (line.width() == 0) {
             continue;
         }
+        var visualStart: u16 = 0;
         var startCol: u16 = 0;
         var currentHl: Highlight = line._hls.items[0];
         var byte: u16 = 0;
+        var colTrack: u16 = 0;
         for (line._hls.items, 0..) |hl, col| {
             if (currentHl != hl) {
                 if (currentHl != 0) {
@@ -405,12 +407,16 @@ pub fn highlight(self: *BoxContext, L: *lua.State, pos: c_int, startLine: u64) v
                     lua.push_int(L, @intCast(startCol));
                     lua.push_int(L, @intCast(byte));
                     lua.push_int(L, @intCast(currentHl));
-                    lua.call(L, 4, 0);
+                    lua.push_int(L, @intCast(visualStart));
+                    lua.push_int(L, @intCast(col));
+                    lua.call(L, 6, 0);
                 }
                 currentHl = hl;
                 startCol = byte;
+                visualStart = @as(u16, @intCast(col));
             }
             byte += line._chars.items[col].bytes;
+            colTrack = @as(u16, @intCast(col));
         }
         if (startCol != byte) {
             lua.push_value(L, pos);
@@ -418,7 +424,9 @@ pub fn highlight(self: *BoxContext, L: *lua.State, pos: c_int, startLine: u64) v
             lua.push_int(L, @intCast(startCol));
             lua.push_int(L, @intCast(byte));
             lua.push_int(L, @intCast(currentHl));
-            lua.call(L, 4, 0);
+            lua.push_int(L, @intCast(visualStart));
+            lua.push_int(L, @intCast(colTrack));
+            lua.call(L, 6, 0);
         }
     }
 }

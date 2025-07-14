@@ -169,6 +169,8 @@ pub fn putCursorBelow(self: *Box, other: *Box) void {
     if (target < self.offsetY) {
         return;
     }
+    // log.write("{}\n\n{}\n", .{ self, other }) catch {};
+    // defer log.write("{}\n\n{}\n", .{ self, other }) catch {};
     self.cursorY += other.height;
     self.height += other.height;
     if (other.width != self.width) {
@@ -347,6 +349,13 @@ pub fn cleanDbg(self: *Box, dbg: ?*BoxContext) !void {
                 ),
             ) catch {};
         }
+        // var array: [1000]u8 = [1]u8{0} ** 1000;
+        // var i: u32 = 0;
+        // for (line._chars.items) |char| {
+        //     const chars = array[i..];
+        //     const bytes = try char.toBytes(chars);
+        //     i += bytes;
+        // }
         if (line.widthFrom(self.offsetX) > self.width) {
             return error.LineTooBig;
         } else if (line.widthFrom(self.offsetX) < self.width) {
@@ -367,6 +376,8 @@ pub fn appendStr(self: *Box, str: []const u8) !void {
     if (self.height == self.cursorY) {
         self.height += 1;
     }
+    log.write("Starting width: {}\n", .{self.width}) catch {};
+    defer log.write("Ending width: {}\n", .{self.width}) catch {};
     while (newStr.len != 0) {
         const maxWidth = self.maxWidth;
         const line = try context.getLine(self.cursorY + self.offsetY);

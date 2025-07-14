@@ -18,7 +18,15 @@ const PrDataItem = struct {
 fn GenPrLists() type {
     const info = @typeInfo(PrDataItem).@"struct";
 
-    var fieldArrays: [info.fields.len]std.builtin.Type.StructField = undefined;
+    var fieldArrays: [info.fields.len]std.builtin.Type.StructField = [1]std.builtin.Type.StructField{
+        .{
+            .type = u8,
+            .name = "asdf",
+            .is_comptime = false,
+            .alignment = @alignOf(u8),
+            .default_value_ptr = null,
+        },
+    } ** info.fields.len;
 
     inline for (info.fields, 0..) |field, i| {
         const ArrType = std.ArrayListUnmanaged(field.type);
@@ -32,19 +40,23 @@ fn GenPrLists() type {
         fieldArrays[i] = newField;
     }
 
-    const decls: [0]std.builtin.Type.Declaration = .{};
+    const decls: [1]std.builtin.Type.Declaration = undefined;
 
     const Struct: std.builtin.Type.Struct = .{
         .fields = &fieldArrays,
         .backing_integer = null,
-        .decls = &decls,
+        .decls = decls[0..0],
         .is_tuple = false,
         .layout = .auto,
     };
 
-    return @Type(.{
+    const Tp: std.builtin.Type = .{
         .@"struct" = Struct,
-    });
+    };
+
+    // @compileLog(std.fmt.comptimePrint("{any}", .{Tp}));
+
+    return @Type(Tp);
 }
 
 fn prListsGetMemoryUsage(lists: *const GenPrLists()) usize {

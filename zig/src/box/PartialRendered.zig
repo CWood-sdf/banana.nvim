@@ -307,8 +307,9 @@ pub fn _getHeight(self: *const PartialRendered, context: *BoxContext, container:
 pub fn createBox(self: *PartialRendered) !u16 {
     const context = try self.getContext();
     const container = try self.getContainer();
+    log.write("TAG: {}\n", .{self.tag.tag}) catch {};
     var box = switch (self.tag.tag) {
-        .@"inline" => try self.createBoxInline(container),
+        .@"inline" => try self.createBoxInline(container, context),
         .block => try self.createBoxBlock(context, container),
         .inlineBlock => try self.createBoxBlockInline(context, container),
     };
@@ -323,9 +324,18 @@ pub fn createBox(self: *PartialRendered) !u16 {
 fn createBoxInline(
     self: *PartialRendered,
     containerBox: *Box,
+    context: *BoxContext,
 ) !Box {
     _ = self;
+    const line = context.getLine(containerBox.cursorY) catch null;
+    if (line) |l| {
+        l.debug_print() catch {};
+    } else {
+        log.write("No line for {}\n", .{containerBox.cursorY}) catch {};
+    }
+    log.write("Yuhh box: {}\n", .{containerBox}) catch {};
     const box = containerBox.newBoxCursored();
+    log.write("Yuhh box: {}\n", .{box}) catch {};
     // dont need to set maxWidth bc its inherited from containerBox
     // self.box.?.maxWidth = self.maxWidth - self.margin.left - self.padding.left - self.margin.right - self.padding.right;
     return box;
