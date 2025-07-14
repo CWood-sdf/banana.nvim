@@ -331,6 +331,26 @@ function M.Ast:_isComponent()
     -- return ret
 end
 
+---@param nml string
+function M.Ast:setInnerNml(nml)
+    local ast, styleRules, preScripts, postScripts = require("banana.require")
+        .nmlLoadString(nml)
+
+    local doc = self:ownerDocument()
+    for _, v in ipairs(postScripts) do
+        table.insert(doc.postScripts, v)
+    end
+    for _, v in ipairs(preScripts) do
+        table.insert(doc.preScripts, v)
+    end
+    for _, v in ipairs(styleRules) do
+        table.insert(doc.styleRules, v)
+    end
+    ast:_applyInstance(doc)
+    self:removeChildren()
+    self:appendChild(ast)
+end
+
 ---@param pad number?
 ---@return string[]
 function M.Ast:_dumpTree(pad)
