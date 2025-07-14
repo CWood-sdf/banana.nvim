@@ -1550,7 +1550,7 @@ end
 ---Removes all children from this node (including text)
 function M.Ast:removeChildren()
     local i = 1
-    while i < #self.nodes do
+    while i <= #self.nodes do
         if type(self.nodes[i]) == "string" then
             i = i + 1
         else
