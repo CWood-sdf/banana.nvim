@@ -1,4 +1,4 @@
-*banana-home.txt*          For NVIM v0.12.0          Last change: 2025 June 01
+*banana-home.txt*          For NVIM v0.12.0          Last change: 2025 July 14
 
 ==============================================================================
 Table of Contents                              *banana-home-table-of-contents*
