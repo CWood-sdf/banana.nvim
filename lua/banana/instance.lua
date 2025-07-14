@@ -826,6 +826,17 @@ function Instance:_pcall(f, ...)
     return pcall(f, ...)
 end
 
+function Instance:setTitle(str)
+    self:setBufName(str)
+    local cwd = vim.fn.getcwd()
+    if vim.fn.isdirectory(cwd .. "/" .. self.bufname) == 1 or vim.fn.isdirectory(self.bufname) == 1 then
+        self.bufname = ""
+    end
+    self:_pcall(function ()
+        vim.api.nvim_buf_set_name(self.bufnr, self.bufname)
+    end)
+end
+
 ---@return number, number
 function Instance:_createWinAndBuf()
     -- flame.new("winAndBuf")
