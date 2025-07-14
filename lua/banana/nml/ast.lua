@@ -768,7 +768,9 @@ function M.Ast:insertBefore(child, referenceNode)
     end
     if not found then
         table.insert(self.nodes, 1, child)
-        node:_postAppend()
+        if type(child) == "table" then
+            child:_postAppend()
+        end
     end
     self:_requestRender()
 end
@@ -808,8 +810,8 @@ function M.Ast:replaceChild(newChild, child)
             if type(newChild) == "table" then
                 newChild:_breakParentTies()
                 newChild._parent = self
+                newChild:_postAppend()
             end
-            newChild:_postAppend()
             return child
         end
     end
