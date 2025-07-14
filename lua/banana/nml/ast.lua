@@ -1096,8 +1096,11 @@ end
 function M.Ast:_mixHl(parentHl)
     -- flame.new("Ast:_mixHl")
     local ret = {}
-    if self.tag == "h1" then
+    if self.tag == "h1" or self.tag == "strong" then
         ret.bold = true
+    end
+    if self.tag == "em" then
+        ret.italic = true
     end
 
     if self.tag == "a" then
