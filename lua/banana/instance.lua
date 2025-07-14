@@ -577,6 +577,9 @@ end
 function Instance:_getKeymapFunction(mode, lhs)
     return function ()
         for _, remap in ipairs(self.keymaps[mode][lhs]) do
+            if type(remap) ~= "table" then
+                goto continue
+            end
             if remap.disabled then
                 goto continue
             end
