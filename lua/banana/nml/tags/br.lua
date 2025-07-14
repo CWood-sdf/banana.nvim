@@ -9,7 +9,7 @@ local function renderer(_, _, box, _, _, _)
     ---@type Banana.Box
     -- local ret = b.Box:new()
     -- ret.hlgroup = ast:_mixHl(parentHl)
-    box:appendStr(" ")
+    box:appendStr("")
     -- flame.pop()
 end
 ---@type Banana.TagInfo
