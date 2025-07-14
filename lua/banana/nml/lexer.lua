@@ -14,7 +14,6 @@ local Lexer = {
     file = "",
 }
 
-
 ---@param left integer[]
 ---@param right integer[]
 ---@return string

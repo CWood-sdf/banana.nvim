@@ -204,6 +204,7 @@ function PartialRendered:render(lineHeight)
     local gradHeight = boundBox.bottomY - boundBox.topY +
         self.ast:paddingTop() +
         self.ast:paddingBottom()
+
     if type(self.ast.hl.fg) == "table" then
         ---@type Banana.Gradient
         ---@diagnostic disable-next-line: assign-type-mismatch
@@ -217,6 +218,49 @@ function PartialRendered:render(lineHeight)
         local grad = self.ast.hl.bg
         grad:setBounds(boundBox.leftX - 1, boundBox.topY, gradWidth, gradHeight,
             self.ast)
+    end
+    local isProgress = self.ast.tag == "progress"
+    local noadjustFilled = self.ast:getAttribute("adjust-filled") == "no"
+    local noadjustEmpty = self.ast:getAttribute("adjust-empty") == "no"
+    if isProgress and not noadjustFilled then
+        local filledFg = self.ast:child(1).hl.fg
+        local filledBg = self.ast:child(1).hl.bg
+        if type(filledFg) == "table" then
+            ---@type Banana.Gradient
+            ---@diagnostic disable-next-line: assign-type-mismatch
+            local grad = filledFg
+            grad:setBounds(boundBox.leftX - 1, boundBox.topY, gradWidth,
+                gradHeight,
+                self.ast)
+        end
+        if type(filledBg) == "table" then
+            ---@type Banana.Gradient
+            ---@diagnostic disable-next-line: assign-type-mismatch
+            local grad = filledBg
+            grad:setBounds(boundBox.leftX - 1, boundBox.topY, gradWidth,
+                gradHeight,
+                self.ast)
+        end
+    end
+    if isProgress and not noadjustEmpty then
+        local filledFg = self.ast:child(2).hl.fg
+        local filledBg = self.ast:child(2).hl.bg
+        if type(filledFg) == "table" then
+            ---@type Banana.Gradient
+            ---@diagnostic disable-next-line: assign-type-mismatch
+            local grad = filledFg
+            grad:setBounds(boundBox.leftX - 1, boundBox.topY, gradWidth,
+                gradHeight,
+                self.ast)
+        end
+        if type(filledBg) == "table" then
+            ---@type Banana.Gradient
+            ---@diagnostic disable-next-line: assign-type-mismatch
+            local grad = filledBg
+            grad:setBounds(boundBox.leftX - 1, boundBox.topY, gradWidth,
+                gradHeight,
+                self.ast)
+        end
     end
 
     self:_dump()

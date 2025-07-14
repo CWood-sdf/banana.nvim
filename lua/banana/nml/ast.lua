@@ -133,6 +133,17 @@ function M.Ast:new(tag, parent, source)
     end
     setmetatable(ast, { __index = M.Ast })
 
+    if tag == "progress" and #ast.nodes == 0 then
+        local left = M.Ast:new("span", ast, "__internal")
+        -- left:_applyInstance(ast:ownerDocument())
+        left:_addClass("progress-filled")
+        local right = M.Ast:new("span", ast, "__internal")
+        -- right:_applyInstance(ast:ownerDocument())
+        right:_addClass("progress-empty")
+        ast:_appendChild(left)
+        ast:_appendChild(right)
+    end
+
 
     return ast
 end
@@ -1436,12 +1447,18 @@ function M.Ast:_increaseLeftBound(number)
         ---@diagnostic disable-next-line: assign-type-mismatch
         local grad = self.hl.fg
         grad:moveLeftBy(number, self)
+        if self._parent.tag == "progress" and self._parent:getAttribute("adjust-filled") ~= "no" then
+            grad:moveLeftBy(number, self._parent)
+        end
     end
     if type(self.hl.bg) == "table" then
         ---@type Banana.Gradient
         ---@diagnostic disable-next-line: assign-type-mismatch
         local grad = self.hl.bg
         grad:moveLeftBy(number, self)
+        if self._parent.tag == "progress" and self._parent:getAttribute("adjust-filled") ~= "no" then
+            grad:moveLeftBy(number, self._parent)
+        end
     end
 end
 
@@ -1471,12 +1488,18 @@ function M.Ast:_increaseTopBound(number)
         ---@diagnostic disable-next-line: assign-type-mismatch
         local grad = self.hl.fg
         grad:moveDownBy(number, self)
+        if self._parent.tag == "progress" and self._parent:getAttribute("adjust-filled") ~= "no" then
+            grad:moveDownBy(number, self._parent)
+        end
     end
     if type(self.hl.bg) == "table" then
         ---@type Banana.Gradient
         ---@diagnostic disable-next-line: assign-type-mismatch
         local grad = self.hl.bg
         grad:moveDownBy(number, self)
+        if self._parent.tag == "progress" and self._parent:getAttribute("adjust-filled") ~= "no" then
+            grad:moveDownBy(number, self._parent)
+        end
     end
 end
 
