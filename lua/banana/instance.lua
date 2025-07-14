@@ -1045,9 +1045,20 @@ function Instance:_render()
 
 
     self.ast:_clearStyles()
-    for _, script in ipairs(self.preScripts) do
+    local preScripts = {}
+    for _, v in ipairs(self.preScripts) do
+        table.insert(preScripts, v)
+    end
+    self.preScripts = {}
+    while #preScripts ~= 0 do
         self.renderRequested = true
+        local script = preScripts[1]
+        table.remove(preScripts, 1)
         local ok, err = self:_pcall(function () self:_runScript(script, nil) end)
+        for _, v in ipairs(self.preScripts) do
+            table.insert(preScripts, v)
+        end
+        self.preScripts = {}
         self.renderRequested = false
         if not ok then
             error(err)
