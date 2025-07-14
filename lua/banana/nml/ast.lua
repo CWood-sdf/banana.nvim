@@ -1698,7 +1698,10 @@ function M.Ast:setTextContent(str)
         str = tostring(str)
     end
     self:removeChildren()
-    self.nodes = { str }
+    self.nodes = vim.split(str, "\n")
+    for j = #self.nodes, 2, -1 do
+        table.insert(self.nodes, j, M.Ast:new("br", self, "anon"))
+    end
     self:_requestRender()
 end
 
