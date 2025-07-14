@@ -4,17 +4,21 @@ local M = {}
 ---@module 'banana.nml.tag'
 local tags = require("banana.lazyRequire")("banana.nml.tag")
 
+local keepSpaces = false
+
 ---@param str string
 ---@param clearFirst boolean
 ---@param clearLast boolean
 ---@return string, boolean
 local function formatInlineText(str, clearFirst, clearLast)
-    str = str:gsub("%s+", " ")
-    if clearFirst and str:sub(1, 1) == " " then
+    if not keepSpaces then
+        str = str:gsub("%s+", " ")
+    end
+    if clearFirst and str:sub(1, 1) == " " and not keepSpaces then
         str = str:sub(2, #str)
     end
     local lastChar = str:sub(#str, #str)
-    if clearLast and lastChar == " " then
+    if clearLast and lastChar == " " and not keepSpaces then
         str = str:sub(1, #str - 1)
     end
     lastChar = str:sub(#str, #str)
@@ -30,7 +34,7 @@ function M.formatBlockContext(ast)
     local i = 1
     local inc = true
     local clearFirst = true
-    local skip = ast.tag == "pre" or ast.tag == "slot"
+    local skip = ast.tag == "slot"
     while i <= #ast.nodes do
         local node = ast.nodes[i]
         if type(node) == "string" then
@@ -66,7 +70,12 @@ function M.formatBlockContext(ast)
         else
             ---@cast node Banana.Ast
             if node.actualTag.formatType == tags.FormatType.Block then
+                local oldSpaces = keepSpaces
+                if node.tag == "pre" then
+                    keepSpaces = true
+                end
                 M.formatBlockContext(node)
+                keepSpaces = oldSpaces
                 clearFirst = true
             elseif node.actualTag.formatType == tags.FormatType.BlockInline then
                 M.formatInlineContext(node, true, true)
