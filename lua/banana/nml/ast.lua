@@ -1666,10 +1666,10 @@ function M.Ast:getAttributeSubstitution(name)
     end
     if el:isNil() then
         v = ""
-        log.warn("Could not find attribute '" ..
-            name .. "' for template substitution")
-        vim.notify("Could not find attribute '" ..
-            name .. "' for template substitution")
+        -- log.warn("Could not find attribute '" ..
+        --     name .. "' for template substitution")
+        -- vim.notify("Could not find attribute '" ..
+        --     name .. "' for template substitution")
     else
         v = el:getAttribute(name) or ""
     end
