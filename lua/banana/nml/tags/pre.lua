@@ -8,14 +8,9 @@ local t = require("banana.lazyRequire")("banana.nml.tag")
 local function renderer(self, ast, box, parentHl,
 
                         inherit, extra)
-    local b = require("banana.box")
-    ---@type Banana.Box
-    local ret = b.Box:new()
-    ret.hlgroup = ast:_mixHl(parentHl)
-    for _, box, _ in self:blockIter(ast, box, ret.hlgroup, inherit, extra) do
-        ret:appendBoxBelow(box)
+    for _, _, _ in self:blockIter(ast, box, parentHl, inherit, extra) do
+        -- ret:appendBoxBelow(box)
     end
-    return ret
 end
 ---@type Banana.TagInfo
 local M = t.newTag(
