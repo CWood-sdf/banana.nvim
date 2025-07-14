@@ -1070,6 +1070,15 @@ function M.Ast:removeClass(c)
     end
 end
 
+function M.Ast:_addClass(c)
+    if self.classes == nil then
+        self.classes = {}
+    end
+    if not self.classes[c] then
+        self.classes[c] = true
+    end
+end
+
 ---Adds the class {c} to the node's class list
 ---@param c string the class to set
 function M.Ast:addClass(c)
