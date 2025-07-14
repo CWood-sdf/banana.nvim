@@ -899,13 +899,7 @@ function Instance:_createWinAndBuf()
         vim.api.nvim_set_option_value("modifiable", true, {
             buf = self.bufnr
         })
-        local cwd = vim.fn.getcwd()
-        if vim.fn.isdirectory(cwd .. "/" .. self.bufname) == 1 or vim.fn.isdirectory(self.bufname) == 1 then
-            self.bufname = ""
-        end
-        self:_pcall(function ()
-            vim.api.nvim_buf_set_name(self.bufnr, self.bufname)
-        end)
+        self:setTitle(self.bufname)
         for k, v in pairs(self.bufOpts) do
             vim.api.nvim_set_option_value(k, v, { buf = self.bufnr })
         end
@@ -920,6 +914,8 @@ function Instance:_createWinAndBuf()
             row = top,
             col = left,
             style = "minimal",
+            -- TODO: Allow these values to be edited
+            -- border = "rounded",
             -- zindex = 1000,
         })
         vim.api.nvim_win_set_buf(self.winid, self.bufnr)
