@@ -744,6 +744,12 @@ function M.Ast:cloneNode(deep)
     return self:clone(deep)
 end
 
+function M.Ast:_postAppend()
+    if self:_isComponent() then
+        self:_tryMountComponent()
+    end
+end
+
 ---Adds {child} to this node's child list right before {referenceNode}
 ---@param child Banana.Ast|string
 ---@param referenceNode Banana.Ast|string
@@ -762,6 +768,7 @@ function M.Ast:insertBefore(child, referenceNode)
     end
     if not found then
         table.insert(self.nodes, 1, child)
+        node:_postAppend()
     end
     self:_requestRender()
 end
@@ -802,6 +809,7 @@ function M.Ast:replaceChild(newChild, child)
                 newChild:_breakParentTies()
                 newChild._parent = self
             end
+            newChild:_postAppend()
             return child
         end
     end
@@ -1393,12 +1401,20 @@ end
 
 ---Adds {node} as a child to this node
 ---@param node Banana.Ast the node to append as a child
-function M.Ast:appendChild(node)
+function M.Ast:_appendChild(node)
+    -- TODO: Check if they are trying to put block inside of inline
     node._parent = self
     table.insert(self.nodes, node)
     if self.instance ~= nil then
         node:_applyInstance(self:ownerDocument())
     end
+    node:_postAppend()
+end
+
+---Adds {node} as a child to this node
+---@param node Banana.Ast the node to append as a child
+function M.Ast:appendChild(node)
+    self:_appendChild(node)
     self:_requestRender()
 end
 
