@@ -5,10 +5,13 @@ local t = require("banana.lazyRequire")("banana.nml.tag")
 
 ---@type Banana.Renderer
 local function renderer(self, ast, box, parentHl, inherit, extra)
+    flame.new("progress:start")
     local fillChar = ast:getAttribute("filled-char") or "="
     local emptyChar = ast:getAttribute("empty-char") or " "
     local value = tonumber(ast:getAttribute("value") or "0") or 0
     local max = tonumber(ast:getAttribute("max") or "1") or 1
+    if value < 0 then value = 0 end
+    if value > max then value = max end
     if max == 0 then max = 1 end
     local portion = value / max
     local maxWidth = box:getMaxWidth()
@@ -21,6 +24,7 @@ local function renderer(self, ast, box, parentHl, inherit, extra)
     filledSpan.nodes = { filledText }
     emptySpan.nodes = { emptyText }
     self:renderInlineEl(ast, box, parentHl, inherit, extra)
+    flame.pop()
 end
 ---@type Banana.TagInfo
 local M = t.newTag(
