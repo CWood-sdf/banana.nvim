@@ -75,6 +75,8 @@ M.Ast = {
     precedences = {},
 }
 
+local Ast__index = M.Ast -- flame.wrapClass(M.Ast, "Ast", true)
+
 ---@param tag string
 ---@param parent Banana.Ast
 ---@param source string
@@ -131,7 +133,7 @@ function M.Ast:new(tag, parent, source)
     if tag == "ol" then
         ast.listCounter = 1
     end
-    setmetatable(ast, { __index = M.Ast })
+    setmetatable(ast, { __index = Ast__index })
 
     if tag == "progress" and #ast.nodes == 0 then
         local left = M.Ast:new("span", ast, "__internal")

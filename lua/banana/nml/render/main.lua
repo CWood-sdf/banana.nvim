@@ -38,7 +38,7 @@ end
 ---@return Banana.Renderer.PartialRendered
 return function (self, ast, box, parentHl,
                  inherit, extra)
-    -- flame.new("getRendered_start")
+    flame.new("getRendered_start")
     ast.relativeBoxId = nil
     local inheritOld = {}
     -- setmetatable(inherit, { __mode = "kv" })
@@ -67,7 +67,7 @@ return function (self, ast, box, parentHl,
         for k, _ in pairs(inheritOld) do
             inherit[k] = inheritOld[k]
         end
-        -- flame.pop()
+        flame.pop()
         -- return pr
         return p.noopPartialRendered()
     end
@@ -77,7 +77,7 @@ return function (self, ast, box, parentHl,
             inherit[k] = inheritOld[k]
         end
         ast.hidden = true
-        -- flame.pop()
+        flame.pop()
         return p.noopPartialRendered()
     end
     ast.hidden = false
@@ -161,8 +161,8 @@ return function (self, ast, box, parentHl,
         -- pr:setMaxHeight(parentHeight + ast:marginTop() + ast:marginBottom())
     end
 
-    -- flame.pop()
-    -- flame.new("element render")
+    flame.pop()
+    flame.new("element render")
     extra.useAllHeight = false
     local hl = ast:_mixHl(parentHl)
     pr:setDbgCtx(extra.trace)
@@ -171,7 +171,8 @@ return function (self, ast, box, parentHl,
     pr:setMargin(ast:marginLeft(), ast:marginRight(), ast:marginTop(),
         ast:marginBottom())
     pr:setMainHl(b.addHighlight(extra.ctx, hl))
-    -- flame.new("other render")
+    flame.pop()
+    flame.new("other render")
     local contentBox = pr:getBox()
 
     if extra.trace ~= nil then
@@ -284,6 +285,6 @@ return function (self, ast, box, parentHl,
     for k, _ in pairs(inheritOld) do
         inherit[k] = inheritOld[k]
     end
-    -- flame.pop()
+    flame.pop()
     return pr
 end

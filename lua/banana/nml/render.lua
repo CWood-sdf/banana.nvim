@@ -123,8 +123,10 @@ end
 ---@param parentHl Banana.Highlight?
 ---@param inherit Banana.Renderer.InheritedProperties
 function TagInfo:renderInlineEl(ast, box, parentHl, inherit, extra)
+    flame.new("renderInlineEl")
     ---@type Banana.Box
     self:renderBlock(ast, box, ast:_mixHl(parentHl), 1, inherit, extra)
+    flame.pop()
 end
 
 --- renders an element with display:grid

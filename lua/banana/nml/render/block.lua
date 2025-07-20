@@ -22,7 +22,7 @@ local entity = require("banana.lazyRequire")("banana.nml.entity")
 ---@return integer
 return function (ast, box, parentHl, i, inherit, extra_)
     log.trace("TagInfo:renderBlock " .. ast.tag)
-    -- flame.new("renderBlock")
+    flame.new("renderBlock")
     -- local currentLine = b.Box:new(parentHl)
     local hasElements = false
     local lineHeight = 0
@@ -66,7 +66,9 @@ return function (ast, box, parentHl, i, inherit, extra_)
                 break
             end
             v:_resolveUnits(width, height)
+            flame.new("renderBlock:tag.getRendered")
             local rendered = tag:getRendered(v, box, parentHl, inherit, extra_)
+            flame.pop()
 
             lineHeight = rendered:render(lineHeight)
 
@@ -83,6 +85,6 @@ return function (ast, box, parentHl, i, inherit, extra_)
     --     extra:appendBoxBelow(currentLine, false)
     --     currentLine = extra
     -- end
-    -- flame.pop()
+    flame.pop()
     return i
 end
