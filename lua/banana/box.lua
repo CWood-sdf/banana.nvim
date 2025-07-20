@@ -50,14 +50,27 @@ function M.addHighlight(ctx, hl)
     if hl == nil then
         return 0
     end
+    flame.new("addHighlight")
+    local fg = hl.fg
+    local bg = hl.bg
+    if type(fg) == "table" then
+        hl.fg = tostring(fg)
+    end
+    if type(bg) == "table" then
+        hl.bg = tostring(bg)
+    end
     local str = vim.inspect(hl)
+    hl.fg = fg
+    hl.bg = bg
     if hlsMap[ctx + 1][str] ~= nil then
+        flame.pop()
         return hlsMap[ctx + 1][str]
     end
     local id = #hls + 1
     hls[#hls+1] = hl
     hlsMap[ctx + 1][str] = id
     table.insert(contextHls[ctx + 1], id)
+    flame.pop()
     return id
 end
 
