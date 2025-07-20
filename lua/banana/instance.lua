@@ -1050,7 +1050,14 @@ function Instance:_render()
         table.insert(preScripts, v)
     end
     self.preScripts = {}
+
+    local scriptI = 0
+
     while #preScripts ~= 0 do
+        if self.DEBUG_showPerf then
+            flame.new("PreScript_" .. scriptI)
+            scriptI = scriptI + 1
+        end
         self.renderRequested = true
         local script = preScripts[1]
         table.remove(preScripts, 1)
@@ -1060,6 +1067,9 @@ function Instance:_render()
         end
         self.preScripts = {}
         self.renderRequested = false
+        if self.DEBUG_showPerf then
+            flame.pop()
+        end
         if not ok then
             error(err)
         end
