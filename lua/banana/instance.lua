@@ -16,7 +16,7 @@ local function getEventName(v)
     return "BananaDocument" .. v
 end
 
----@alias Banana.EventType "Open"|"Leave"|"Close"|"ScriptDone"|"OpenPost"
+---@alias Banana.EventType "Open"|"Leave"|"Close"|"ScriptDone"|"OpenPost"|"NmlLoaded"
 
 ---@type { [Banana.EventType]: string }
 local events = {
@@ -25,6 +25,7 @@ local events = {
     Leave = "",
     Close = "",
     ScriptDone = "",
+    NmlLoaded = "",
 }
 for key, _ in pairs(events) do
     events[key] = getEventName(key)
@@ -81,6 +82,8 @@ local instances = {}
 ---@field renderRequested boolean
 ---@field renderStart number
 ---@field isVisible boolean
+---@field winExternallyManaged boolean
+---@field bufVarsUnset boolean
 ---@field winOpts { [string]: any }
 ---@field bufOpts { [string]: any }
 ---@field _body Banana.Ast?
@@ -319,6 +322,8 @@ function Instance:new()
     local id = #instances
     ---@type Banana.Instance
     local inst = {
+        winExternallyManaged = false,
+        bufVarsUnset = false,
         DEBUG_catch = false,
         DEBUG_trackRenderCycle = false,
         preScripts = {},
@@ -381,8 +386,8 @@ function Instance:requireNml(filename)
     self.postScripts = postScripts
     self.preScripts = preScripts
     self.styleRules = styleRules
-    self.ast = ast
-    ast:_applyInstance(self)
+    self.ast = ast:clone(true)
+    self.ast:_applyInstance(self)
 end
 
 ---Uses a given filename as the source of the instance
@@ -518,6 +523,7 @@ end
 ---@param bufnr number
 function Instance:useBuffer(bufnr)
     self.bufnr = bufnr
+    self.bufVarsUnset = true
 end
 
 ---Returns the number of the buffer
@@ -572,6 +578,7 @@ end
 ---@param winid number
 function Instance:useWindow(winid)
     self.winid = winid
+    self.winExternallyManaged = true
 end
 
 function Instance:_getKeymapFunction(mode, lhs)
@@ -896,6 +903,9 @@ function Instance:_createWinAndBuf()
 
     if self.bufnr == nil or not vim.api.nvim_buf_is_valid(self.bufnr) then
         self.bufnr = vim.api.nvim_create_buf(false, true)
+        self.bufVarsUnset = true
+    end
+    if self.bufVarsUnset then
         vim.api.nvim_set_option_value("modifiable", true, {
             buf = self.bufnr
         })
@@ -925,6 +935,9 @@ function Instance:_createWinAndBuf()
         for k, v in pairs(self.winOpts) do
             vim.api.nvim_set_option_value(k, v, { win = self.winid })
         end
+    elseif self.winExternallyManaged then
+        width = vim.api.nvim_win_get_width(self.winid)
+        height = vim.api.nvim_win_get_height(self.winid)
     else
         if width ~= vim.api.nvim_win_get_width(self.winid) then
             vim.api.nvim_win_set_width(self.winid, width)
@@ -1623,6 +1636,7 @@ function Instance:loadNmlTo(file, ast, remove, preserve)
     for _, script in ipairs(postScripts) do
         self:_loadPostScriptFor(script, content, params)
     end
+    self:_fireEvent("NmlLoaded")
     self:_requestRender()
 end
 
@@ -1825,6 +1839,11 @@ function M.listInstanceIds()
         end
     end
     return ret
+end
+
+---@param inst Banana.Instance
+function M.deleteInstance(inst)
+    instances[inst.instanceId] = {}
 end
 
 return M
