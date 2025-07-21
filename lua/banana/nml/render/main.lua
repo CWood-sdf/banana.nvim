@@ -252,7 +252,8 @@ return function (self, ast, box, parentHl,
             if v:hasStyle("left") then
                 posX = posX + v:_firstStyleValue("left").computed
             elseif v:hasStyle("right") then
-                posX = posX - v:_firstStyleValue("right").computed
+                posX = pr:getWidth() - width -
+                    v:_firstStyleValue("right").computed
             end
             if v:hasStyle("top") then
                 posY = posY + v:_firstStyleValue("top").computed
