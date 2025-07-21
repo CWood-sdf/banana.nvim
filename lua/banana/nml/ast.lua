@@ -747,7 +747,7 @@ function M.Ast:cloneNode(deep)
 end
 
 function M.Ast:_postAppend()
-    if self:_isComponent() then
+    if self:_isComponent() and self.instance ~= nil then
         self:_tryMountComponent()
     end
 end
