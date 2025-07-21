@@ -13,7 +13,7 @@ pub const Reg = extern struct {
     }
 };
 
-extern fn luaL_register(L: *lua.State, libname: [*:0]const u8, l: [*]const Reg) callconv(.C) void;
+extern fn luaL_register(L: *lua.State, libname: [*:0]const u8, l: [*]const Reg) callconv(.c) void;
 
 pub const register = luaL_register;
 

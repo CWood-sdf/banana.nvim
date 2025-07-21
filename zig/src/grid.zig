@@ -10,7 +10,7 @@ fn getPos(row: u32, column: u32) u32 {
     return (row - 1) * columnLimit + (column - 1);
 }
 
-pub fn grid_turnOnRange(bs: *BitSetT, rowStart: u32, colStart: u32, rowEnd: u32, colEnd: u32) callconv(.C) bool {
+pub fn grid_turnOnRange(bs: *BitSetT, rowStart: u32, colStart: u32, rowEnd: u32, colEnd: u32) callconv(.c) bool {
     for (rowStart..rowEnd) |r| {
         const ogPos = getPos(@intCast(r), colStart);
         for (0..(colEnd - colStart)) |i| {
@@ -20,17 +20,17 @@ pub fn grid_turnOnRange(bs: *BitSetT, rowStart: u32, colStart: u32, rowEnd: u32,
     return true;
 }
 
-pub fn grid_getNew() callconv(.C) ?*BitSetT {
+pub fn grid_getNew() callconv(.c) ?*BitSetT {
     const bitSet = std.heap.page_allocator.create(BitSetT) catch return null;
     bitSet.* = BitSetT.initEmpty();
     bitSet.setRangeValue(.{ .start = 0, .end = rowLimit * columnLimit }, false);
     return bitSet;
 }
 
-pub fn grid_freeSection(bs: *BitSetT) callconv(.C) void {
+pub fn grid_freeSection(bs: *BitSetT) callconv(.c) void {
     std.heap.page_allocator.destroy(bs);
 }
-pub fn grid_toggle(bs: *BitSetT, row: u32, column: u32) callconv(.C) bool {
+pub fn grid_toggle(bs: *BitSetT, row: u32, column: u32) callconv(.c) bool {
     const spot = getPos(row, column);
     if (spot >= rowLimit * columnLimit) {
         return false;
@@ -39,7 +39,7 @@ pub fn grid_toggle(bs: *BitSetT, row: u32, column: u32) callconv(.C) bool {
     return true;
 }
 
-pub fn grid_turnOn(bs: *BitSetT, row: u32, column: u32) callconv(.C) bool {
+pub fn grid_turnOn(bs: *BitSetT, row: u32, column: u32) callconv(.c) bool {
     const spot = getPos(row, column);
     if (spot >= rowLimit * columnLimit) {
         return false;
@@ -48,7 +48,7 @@ pub fn grid_turnOn(bs: *BitSetT, row: u32, column: u32) callconv(.C) bool {
     return true;
 }
 
-pub fn grid_isEnabled(bs: *BitSetT, row: u32, column: u32) callconv(.C) u32 {
+pub fn grid_isEnabled(bs: *BitSetT, row: u32, column: u32) callconv(.c) u32 {
     const spot = getPos(row, column);
     if (spot >= rowLimit * columnLimit) {
         return 2;

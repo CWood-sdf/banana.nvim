@@ -350,7 +350,7 @@ pub fn genLuaDecls(
             const newThing = struct {
                 pub const fInfo = fnInfo;
 
-                pub fn actualFn(L: *lua.State) callconv(.C) c_int {
+                pub fn actualFn(L: *lua.State) callconv(.c) c_int {
                     // std.debug.print("{s}\n", .{method.name});
                     const r = luaTemplate(
                         L,

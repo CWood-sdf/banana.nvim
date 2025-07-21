@@ -1,9 +1,9 @@
 const tp = @import("./types.zig");
 
 // nvim_strwidth doesnt work on slices
-pub extern fn nvim_strwidth(str: tp.String, err: *tp.Error) callconv(.C) tp.Integer;
+pub extern fn nvim_strwidth(str: tp.String, err: *tp.Error) callconv(.c) tp.Integer;
 // vim_strwidth does tho ig
-// pub extern fn vim_strwidth(str: tp.String, err: *tp.Error) callconv(.C) tp.Integer;
+// pub extern fn vim_strwidth(str: tp.String, err: *tp.Error) callconv(.c) tp.Integer;
 
 pub fn z_nvim_strwidth(str: []const u8) tp.NvimError!tp.Integer {
     var err = tp.Error{ .type = .None, .msg = @ptrFromInt(0) };

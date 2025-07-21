@@ -416,7 +416,7 @@ function Instance:useNml(nml)
 end
 
 function Instance:_attachAutocmds()
-    vim.api.nvim_create_autocmd({ "WinEnter" }, {
+    vim.api.nvim_create_autocmd({ "BufEnter" }, {
         callback = function (args)
             if args.buf == self.bufnr then
                 self.isVisible = true
@@ -500,7 +500,7 @@ end
 ---Returns true if the instance is open
 ---@return boolean
 function Instance:isOpen()
-    return self.isVisible
+    return self.isVisible or vim.api.nvim_get_current_buf() == self.bufnr
 end
 
 ---runs a lua require string as a script
@@ -1036,7 +1036,7 @@ end
 
 local stressStartTime = 0
 function Instance:_render()
-    if not self.isVisible then
+    if not self:isOpen() then
         return
     end
     local totalTime = 0
