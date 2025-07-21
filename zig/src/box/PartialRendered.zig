@@ -399,7 +399,7 @@ pub fn render(self: *PartialRendered, lineHeight: ?u16) !u16 {
             break :blk if (multiline)
                 1
             else
-                @max(lineHeight orelse return error.NoGivenLineHeight, 1);
+                @max(lineHeight orelse 1, 1);
         },
         .block => blk: {
             try self.renderBlock(context, box, containerBox, true);
