@@ -68,6 +68,7 @@ local instances = {}
 ---@field winid? number
 ---@field bufnr? number
 ---@field bufname string
+---@field bufLines string[]
 ---@field highlightNs number
 ---@field instanceId number
 ---@field winhl table
@@ -86,6 +87,7 @@ local instances = {}
 ---@field bufVarsUnset boolean
 ---@field winOpts { [string]: any }
 ---@field bufOpts { [string]: any }
+---@field shouldBubble boolean
 ---@field _body Banana.Ast?
 ---@field augroup number
 ---@field stripRight boolean
@@ -166,6 +168,9 @@ function Instance:_virtualRender(ast, ctx, width, height)
             local style = box.getHl(hl)
             if style ~= nil then
                 if style.link ~= nil then
+                    return 0
+                end
+                if style.sp ~= nil then
                     return 0
                 end
                 if style.bg ~= expectedBg and style.bg ~= nil then
@@ -322,6 +327,8 @@ function Instance:new()
     local id = #instances
     ---@type Banana.Instance
     local inst = {
+        shouldBubble = false,
+        bufLines = {},
         winExternallyManaged = false,
         bufVarsUnset = false,
         DEBUG_catch = false,
@@ -583,6 +590,7 @@ end
 
 function Instance:_getKeymapFunction(mode, lhs)
     return function ()
+        self.shouldBubble = false
         for _, remap in ipairs(self.keymaps[mode][lhs]) do
             if type(remap) ~= "table" then
                 goto continue
@@ -591,11 +599,18 @@ function Instance:_getKeymapFunction(mode, lhs)
                 goto continue
             end
             if remap.fn() then
-                break
+                if not self.shouldBubble then
+                    break
+                end
+                self.shouldBubble = false
             end
             ::continue::
         end
     end
+end
+
+function Instance:bubbleEvent()
+    self.shouldBubble = true
 end
 
 function Instance:_getFeedkeys(mode, oldRhs)
@@ -840,7 +855,9 @@ function Instance:setTitle(str)
         self.bufname = ""
     end
     self:_pcall(function ()
-        vim.api.nvim_buf_set_name(self.bufnr, self.bufname)
+        if self.bufname ~= "" then
+            vim.api.nvim_buf_set_name(self.bufnr, self.bufname)
+        end
     end)
 end
 
@@ -1180,6 +1197,7 @@ function Instance:_render()
         buf = self.bufnr
     })
     lb.box_context_render(self.ctx, self.bufnr)
+    self.bufLines = vim.api.nvim_buf_get_lines(self.bufnr, 0, -1, true)
     vim.api.nvim_set_option_value("modifiable", self.bufOpts.modifiable or false,
         {
             buf = self.bufnr
@@ -1781,11 +1799,11 @@ end
 function M.newInstance(filename, bufferName)
     log.trace("Creating instance with file " ..
         filename .. " and buffername " .. bufferName)
-    for _, v in ipairs(instances) do
-        if v.bufname == bufferName then
-            return v
-        end
-    end
+    -- for _, v in ipairs(instances) do
+    --     if v.bufname == bufferName then
+    --         return v
+    --     end
+    -- end
     local instance = Instance:new()
     instance:setBufName(bufferName)
     instance:requireNml(filename)
@@ -1809,9 +1827,9 @@ function M.getInstance(id)
         error("")
     end
     if type(id) == "string" then
-        for _, v in ipairs(instances) do
-            if v.bufname == id then return v end
-        end
+        -- for _, v in ipairs(instances) do
+        --     if v.bufname == id then return v end
+        -- end
         return nil
     end
     if instances[id] == nil then
