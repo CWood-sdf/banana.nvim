@@ -1,4 +1,4 @@
-local mainFile = "zig/src/box.zig"
+local mainFile = "zig/src/box/api.zig"
 local file = io.open(mainFile, "r")
 
 if file == nil then

@@ -660,15 +660,14 @@ vim.api.nvim_create_user_command("BananaSo", function (opts)
     else
         file = opts.fargs[1]
     end
-    local buftitle = "scratch"
-    local inst     = require("banana.instance").emptyInstance()
+    local inst = require("banana.instance").emptyInstance()
     -- inst.DEBUG_showPerf  = true
     -- inst.DEBUG_showBuild = true
     -- inst.DEBUG_stressTest = true
     -- inst.DEBUG           = true
     require("banana.require").parseReload()
     inst:useFile(file)
-    inst:setBufName(buftitle)
+    inst:setBufName("")
     inst:open()
     print("Instance id: " .. inst.instanceId)
 end, {
