@@ -2,6 +2,7 @@ const std = @import("std");
 const dst = @import("dst.zig");
 const log = @import("log.zig");
 const lua = @import("lua_api/lua.zig");
+const init = @import("setup.zig");
 const luaL = @import("lua_api/luaL.zig");
 const Box = @import("box/api.zig");
 const grid = @import("grid.zig");
@@ -24,24 +25,24 @@ const testing = std.testing;
 //     }.panic,
 // );
 
-pub fn panic(msg: []const u8, trace: ?*std.builtin.StackTrace, third: anytype) noreturn {
-    defer std.process.exit(1);
-    const logfile = try std.fs.cwd().createFile("panic.txt", .{});
-    defer logfile.close();
-    _ = try logfile.write("AUGGGGHHGG");
-    _ = try logfile.write("\r\n");
-    _ = try logfile.write(msg);
-    _ = try logfile.write("\r\n");
-
-    try log.write("AUGGHHGHGH PANIC!!!\n", .{});
-    try log.write("PANIC REASON: {s}\n", .{msg});
-
-    _ = third;
-    _ = trace;
-    // if(trace) |t| {
-    //
-    // }
-}
+// pub fn panic(msg: []const u8, trace: ?*std.builtin.StackTrace, third: anytype) noreturn {
+//     defer std.process.exit(1);
+//     const logfile = try std.fs.cwd().createFile("panic.txt", .{});
+//     defer logfile.close();
+//     _ = try logfile.write("AUGGGGHHGG");
+//     _ = try logfile.write("\r\n");
+//     _ = try logfile.write(msg);
+//     _ = try logfile.write("\r\n");
+//
+//     try log.write("AUGGHHGHGH PANIC!!!\n", .{});
+//     try log.write("PANIC REASON: {s}\n", .{msg});
+//
+//     _ = third;
+//     _ = trace;
+//     // if(trace) |t| {
+//     //
+//     // }
+// }
 
 // pub export const decls = gen.genLuaDecls(Box, "box_");
 
@@ -72,12 +73,24 @@ var list: std.ArrayListUnmanaged(luaL.Reg) = .empty;
 
 // pub const regs = gen.genLuaDecls(Box, "box_");
 
-export fn luaopen_banana_libbanana(state: *lua.State) c_int {
+export fn luaopen_banana_libbanana_zig(state: *lua.State) c_int {
     const alloc = std.heap.smp_allocator;
     // const file = std.fs.cwd().openFile("thing.txt", .{ .mode = .write_only }) catch return 0;
     // _ = file.write("opening :)\n") catch 0;
     const fns = gen.genLuaDecls(Box, "box_");
     inline for (fns) |f| {
+        // std.debug.print("{s}\n", .{f.name});
+        // _ = file.write(std.fmt.allocPrint(alloc, "name {s}\n", .{f.name}) catch "asdf") catch 0;
+        const newName = alloc.dupeZ(u8, f.name) catch return 0;
+        const function = luaL.Reg.init(newName, f.f);
+        list.append(
+            alloc,
+            function,
+        ) catch return 0;
+    }
+
+    const initFns = gen.genLuaDecls(init, "banana_");
+    inline for (initFns) |f| {
         // std.debug.print("{s}\n", .{f.name});
         // _ = file.write(std.fmt.allocPrint(alloc, "name {s}\n", .{f.name}) catch "asdf") catch 0;
         const newName = alloc.dupeZ(u8, f.name) catch return 0;
@@ -116,9 +129,6 @@ export fn luaopen_banana_libbanana(state: *lua.State) c_int {
     luaL.register(state, "libbanana", list.items.ptr);
 
     // Box.init_boxes();
-
-    log.init() catch return 1;
-
     // luaL.register(state, "libbanana", &regs);
     return 1;
 }

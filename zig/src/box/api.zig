@@ -362,7 +362,7 @@ pub fn ExpectStr(comptime str: []const u8) type {
     };
 }
 
-const HlExpect = Expect(fn (line: i16, startCol: i16, endCol: i16, hl: i16) void);
+const HlExpect = Expect(fn (line: i16, startCol: i16, endCol: i16, hl: i16, visualCol: i16, visualEndCol: i16) void);
 pub fn box_context_highlight(ctx: u16, L: HlExpect) !void {
     const context = try get_context(ctx);
     context.highlight(L.L, 2, 0);

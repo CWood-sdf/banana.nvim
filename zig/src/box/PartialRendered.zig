@@ -813,7 +813,7 @@ fn renderBlock(
     const width = mainWidth + padding.side() + margin.side();
 
     if (dbg) |d| {
-        context.dumpTo(d, "Pre height expand") catch {};
+        // context.dumpTo(d, "Pre height expand") catch {};
         d.dumpComment(
             try std.fmt.bufPrint(&buffer, "target height: {}", .{height}),
         ) catch {};
@@ -830,7 +830,7 @@ fn renderBlock(
     try box.cleanDbg(dbg);
 
     if (dbg) |d| {
-        context.dumpTo(d, "Pre side align") catch {};
+        // context.dumpTo(d, "Pre side align") catch {};
         const comment = try std.fmt.bufPrint(&buffer, "side align: {s}", .{@tagName(sideAlign)});
         d.dumpComment(comment) catch {};
     }
@@ -841,9 +841,9 @@ fn renderBlock(
         d.dumpComment(comment) catch {};
     }
 
-    if (dbg) |d| {
-        context.dumpTo(d, "about to render stuff yay") catch {};
-    }
+    // if (dbg) |d| {
+    //     context.dumpTo(d, "about to render stuff yay") catch {};
+    // }
 
     if (self.tag.margin == 1 or self.tag.padding == 1) {
         try self.renderMarginAndPadding(context, box, containerBox);
@@ -861,9 +861,9 @@ fn renderBlock(
         containerBox.cursorY += height;
         containerBox.height += height;
     }
-    if (dbg) |d| {
-        context.dumpTo(d, try std.fmt.bufPrint(&buffer, "new height: {}", .{containerBox.height})) catch {};
-    }
+    // if (dbg) |d| {
+    //     context.dumpTo(d, try std.fmt.bufPrint(&buffer, "new height: {}", .{containerBox.height})) catch {};
+    // }
 }
 
 // }
