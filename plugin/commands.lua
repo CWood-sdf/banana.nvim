@@ -674,8 +674,19 @@ end, {
     nargs = "*",
 })
 
+---@type Banana.Instance?
+local devtoolsui = nil
+
 cmdTree.createCmd({
     BananaDev = {
+        devtools = {
+            _callback = function ()
+                if devtoolsui == nil then
+                    devtoolsui = require("banana.instance").newInstance(
+                        "devtools", "")
+                end
+            end,
+        },
         runBench = {
             cmdTree.requiredParams(function ()
                 local installDir = require("banana").getInstallDir() ..
