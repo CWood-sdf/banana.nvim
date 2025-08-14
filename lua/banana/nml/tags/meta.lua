@@ -16,14 +16,14 @@ local function renderer(_, ast)
     -- flame.new("tag:meta")
     local inst = require("banana.instance").getInstance(ast.instance)
     local name, value = nil, nil
-    for k, val in pairs(ast.attributes) do
+    for k, _ in pairs(ast.attributes) do
         if name ~= nil then
             name = nil
             value = nil
             break
         end
         name = k
-        value = val
+        value = ast:getAttribute(k)
     end
     if name == nil then
         name = ast:getAttribute("name")

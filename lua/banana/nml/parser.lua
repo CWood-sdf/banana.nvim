@@ -27,14 +27,19 @@ M.ts_types = {
     attribute_name = "attribute_name",
     comment = "comment",
     quoted_attribute_value = "quoted_attribute_value",
+    bracketed_attribute_value = "bracketed_attribute_value",
     attribute_value = "attribute_value",
     self_closing_tag = "self_closing_tag"
 }
 
 local ast = require("banana.nml.ast")
 
+---@class (exact) Banana.Attributes.ScriptAttribute
+---@field fn fun(document: Banana.Instance): string?
+---@field tempval any
+
 ---@class (exact) Banana.Attributes
----@field [string] string?
+---@field [string] (string|Banana.Attributes.ScriptAttribute)?
 
 ---@class (exact) Banana.Component
 ---@field ast Banana.Ast
@@ -134,6 +139,15 @@ function Parser:parseAttribute(tree)
         end
         if val:type() == M.ts_types.attribute_value then
             value = self:getStrFromNode(val)
+        elseif val:type() == M.ts_types.bracketed_attribute_value then
+            local str = "return function(document) \n" ..
+                ---@diagnostic disable-next-line: param-type-mismatch
+                self:getStrFromNode(val:child(1)) .. " \nend"
+            local f = loadstring(str)()
+            value = {
+                fn = f,
+                tempval = nil,
+            }
         elseif val:type() == M.ts_types.quoted_attribute_value then
             val = val:child(1)
             goto top
@@ -366,7 +380,11 @@ function Parser:parseTag(tree, parent, isSpecial)
             root = parent:getRootNode()
         end
         root.componentPath = root.componentPath or {}
+        if type(attrs["import"]) ~= "string" then
+            log.throw("import attribute cannot be scripted!")
+        end
         table.insert(root.componentPath,
+            ---@diagnostic disable-next-line: param-type-mismatch
             require("banana.require").getPathForRequire(attrs["import"], "nml"))
         return nil, components
     elseif attrs["use-imports-from"] ~= nil and isTemplate then
@@ -383,6 +401,10 @@ function Parser:parseTag(tree, parent, isSpecial)
         end
 
         root.componentPath = root.componentPath or {}
+        if type(attrs["use-imports-from"]) ~= "string" then
+            log.throw("use-imports-from attribute cannot be scripted!")
+        end
+        ---@diagnostic disable-next-line: param-type-mismatch
         local componentAst = require("banana.require").nmlRequire(attrs
             ["use-imports-from"])
         for _, v in ipairs(componentAst.componentPath or {}) do
@@ -398,6 +420,10 @@ function Parser:parseTag(tree, parent, isSpecial)
             log.throw("template tags cannot be nested")
         end
         ret._parent = require("banana.instance").getNilAst()
+        if type(attrs["name"]) ~= "string" then
+            log.throw("name attribute cannot be scripted!")
+        end
+        ---@diagnostic disable-next-line: param-type-mismatch
         local g, err = M.isValidComponentName(attrs["name"])
         if not g then
             log.throw(err)
@@ -409,6 +435,7 @@ function Parser:parseTag(tree, parent, isSpecial)
             styles = {},
             preScripts = {},
             postScripts = {},
+            ---@diagnostic disable-next-line: assign-type-mismatch
             name = attrs["name"]
         }
     end

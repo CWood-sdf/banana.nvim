@@ -9,7 +9,7 @@ local log = require("banana.lazyRequire")("banana.utils.log")
 local function renderer(self, ast, box, parentHl, inherit, extra)
     -- flame.new("tag:slot")
     local lastEl = extra.componentStack[#extra.componentStack]
-    local renderable = lastEl:_getSlot(ast.attributes["name"])
+    local renderable = lastEl:_getSlot(ast:getAttribute("name"))
     if renderable:isNil() then
         for _, _, _ in self:blockIter(ast, box, parentHl, inherit, extra) do
         end

@@ -1648,6 +1648,7 @@ function Instance:loadNmlTo(file, ast, remove, preserve)
             params[halves[1]] = halves[2] or "true"
         end
     end
+    content.loadedParams = params
     for _, script in ipairs(preScripts) do
         self:_loadPreScriptFor(script, content, params)
     end

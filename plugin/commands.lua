@@ -685,6 +685,10 @@ cmdTree.createCmd({
                     devtoolsui = require("banana.instance").newInstance(
                         "devtools", "")
                 end
+                local buf = vim.api.nvim_get_current_buf()
+                devtoolsui:loadNmlTo("devtoolsui/main?buf=" .. buf,
+                    devtoolsui:body(), true, false)
+                devtoolsui:open()
             end,
         },
         runBench = {

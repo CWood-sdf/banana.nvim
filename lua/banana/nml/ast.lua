@@ -40,6 +40,7 @@ local astId = 0
 ---@field nodes (string|Banana.Ast)[] List of text and ast nodes
 ---@field tag string The name of the tag
 ---@field attributes Banana.Attributes Attributes table
+---@field loadedParams { [string]: string }?
 ---@field actualTag Banana.TagInfo The actual tag object
 ---@field private style { [string]: Banana.Ncss.StyleValue[] } List of style values
 ---@field hl Banana.Highlight The highlight value (derived at style time)
@@ -687,6 +688,17 @@ function M.Ast:_getNextListItem(styleTp)
     return ret
 end
 
+---@return { [string]: string }
+function M.Ast:_getLoadedParams()
+    if self.loadedParams ~= nil then
+        return self.loadedParams
+    end
+    if self:parent():isNil() then
+        return {}
+    end
+    return self:parent():_getLoadedParams()
+end
+
 function M.Ast:_defaultStyles()
     if self.listCounter ~= nil then
         self.listCounter = 1
@@ -706,6 +718,17 @@ function M.Ast:_defaultStyles()
         zeroUnit,
         zeroUnit,
     }
+
+    if self.instance ~= nil then
+        local doc = self:ownerDocument()
+        for _, attr in pairs(self.attributes) do
+            if type(attr) == "table" then
+                doc:_loadPreScriptFor(function (opts)
+                    attr.tempval = attr.fn(doc)
+                end, doc._body, self:_getLoadedParams())
+            end
+        end
+    end
     self.hidden = true
     self.style = {}
     self:_unlockGradients()
@@ -1048,7 +1071,9 @@ end
 ---@return boolean
 function M.Ast:hasClass(c)
     if self.classes == nil and self.attributes["class"] ~= nil then
-        local arr = vim.split(self.attributes["class"], " ")
+        local classes = self.attributes["class"] or ""
+        ---@diagnostic disable-next-line: param-type-mismatch
+        local arr = vim.split(classes.tempval or classes, " ")
         self.classes = {}
         for _, v in ipairs(arr) do
             self.classes[v] = true
@@ -1384,7 +1409,13 @@ function M.Ast:getAttribute(name)
         end
         return vim.iter(self.classes):map(function (k, _) return k end):join(" ")
     end
-    return self.attributes[name]
+    local ret = self.attributes[name]
+    if type(ret) == "table" then
+        return tostring(ret.tempval)
+    end
+
+    ---@diagnostic disable-next-line: return-type-mismatch
+    return ret
 end
 
 ---Returns true if this node has attribute {name} set

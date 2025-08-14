@@ -12,6 +12,15 @@
   (#not-lua-match? @_no_type_lang "%stype%s*=")
   (#set! injection.language "ncss"))
 
+
+((attribute
+   (bracketed_attribute_value
+     (attribute_value) @injection.content 
+   )
+ )
+ (#set! injection.language "lua")
+)
+
 ((style_element
   (start_tag
     (attribute
@@ -54,18 +63,18 @@
 ; lit-html style template interpolation
 ; <a @click=${e => console.log(e)}>
 ; <a @click="${e => console.log(e)}">
-((attribute
-  (quoted_attribute_value
-    (attribute_value) @injection.content))
-  (#lua-match? @injection.content "%${")
-  (#offset! @injection.content 0 2 0 -1)
-  (#set! injection.language "lua"))
-
-((attribute
-  (attribute_value) @injection.content)
-  (#lua-match? @injection.content "%${")
-  (#offset! @injection.content 0 2 0 -2)
-  (#set! injection.language "lua"))
+; ((attribute
+;   (quoted_attribute_value
+;     (attribute_value) @injection.content))
+;   (#lua-match? @injection.content "%${")
+;   (#offset! @injection.content 0 2 0 -1)
+;   (#set! injection.language "lua"))
+;
+; ((attribute
+;   (attribute_value) @injection.content)
+;   (#lua-match? @injection.content "%${")
+;   (#offset! @injection.content 0 2 0 -2)
+;   (#set! injection.language "lua"))
 
 ; <input pattern="[0-9]"> or <input pattern=[0-9]>
 (element
