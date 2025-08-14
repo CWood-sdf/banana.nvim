@@ -42,7 +42,13 @@ return function (ast, box, parentHl, i, inherit, extra_)
                 end
                 local en = v
                 v = entity[v]
-                if v == nil then
+                if en:sub(2, 2) == "#" then
+                    local num = tonumber(en:sub(3, #en - 1))
+                    if num == nil then
+                        error("Expected valid number for numerical entity")
+                    end
+                    v = string.char(num)
+                elseif v == nil then
                     log.throw("Unknown entity: " .. en)
                     error("")
                 end
