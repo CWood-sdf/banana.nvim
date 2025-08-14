@@ -141,9 +141,11 @@ end
 local validations = {
     ["aspect-ratio"] = singleNumber,
     ["hl-underline"] = boolValid,
+    ["hl-undercurl"] = boolValid,
     ["hl-italic"] = boolValid,
     ["hl-bold"] = boolValid,
     ["hl-fg"] = Validation:new({ [1] = { { "color" }, { "plain" } } }),
+    ["hl-sp"] = Validation:new({ [1] = { { "color" }, { "plain" } } }),
     ["hl-bg"] = Validation:new({ [1] = { { "color" }, { "plain" } } }),
     ["hl-link"] = singleStringOrPlain,
     ["hl-__name"] = singleStringOrPlain,

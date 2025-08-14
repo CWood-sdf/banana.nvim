@@ -181,14 +181,14 @@ end
 ---@return number
 function PartialRendered:render(lineHeight)
     if self.center == nil then error("Calling render when no box created") end
-    if self.trace ~= nil then
-        lb.box_context_dump_to(self.ctx, self.trace, "render pre")
-    end
+    -- if self.trace ~= nil then
+    --     lb.box_context_dump_to(self.ctx, self.trace, "render pre")
+    -- end
     -- flame.new("box_pr_render")
     local ret = lb.box_pr_render(self.ctx, self.pr, lineHeight)
     if self.trace ~= nil then
         lb.box_context_dump_to(self.ctx, self.trace, "render post")
-        lb.box_context_dump_to(self.ctx, self.trace, "render post")
+        -- lb.box_context_dump_to(self.ctx, self.trace, "render post")
     end
     -- flame.pop()
 
@@ -277,9 +277,9 @@ end
 ---@return boolean
 function PartialRendered:renderCursored(lineHeight)
     if self.center == nil then return false end
-    if self.trace ~= nil then
-        lb.box_context_dump_to(self.ctx, self.trace, "renderCursored pre")
-    end
+    -- if self.trace ~= nil then
+    --     lb.box_context_dump_to(self.ctx, self.trace, "renderCursored pre")
+    -- end
     local ret = lb.box_pr_render_cursored(self.ctx, self.pr, lineHeight)
     if self.trace ~= nil then
         lb.box_context_dump_to(self.ctx, self.trace, "renderCursored post")
