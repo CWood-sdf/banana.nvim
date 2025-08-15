@@ -4,7 +4,7 @@
       nml {
         left: 5ch;
         top: 5ch;
-        width: 50%;
+        width: calc(50% - 7ch);
         height: 40%;
       }
       .key {
@@ -40,5 +40,6 @@
     <br />
     <div id="counter">1</div>
     <script src="banana_examples.counter"></script>
+    <script src="banana.helpers.qtoclose"></script>
   </body>
 </nml>

@@ -6,4 +6,4 @@ dev.lua
 .zig-cache
 .zigd
 zig-out
-libbanana.so
+libbanana_zig.so

@@ -667,7 +667,7 @@ vim.api.nvim_create_user_command("BananaSo", function (opts)
     -- inst.DEBUG           = true
     require("banana.require").parseReload()
     inst:useFile(file)
-    inst:setBufName("")
+    inst:setTitle("")
     inst:open()
     print("Instance id: " .. inst.instanceId)
 end, {
