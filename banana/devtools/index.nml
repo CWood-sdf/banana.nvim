@@ -1,0 +1,44 @@
+<nml>
+  <head>
+    <title>devtoools</title>
+    <style>
+      nml {
+        left: 50%;
+        top: 50%;
+        width: 45%;
+        height: 45%;
+      }
+      .asdf {
+        hl-bg: red;
+      }
+      .astbody {
+        padding-left: 2ch;
+      }
+
+      .delimeter {
+        hl-link: Special;
+      }
+      .name {
+        hl-link: "@tag.nml";
+      }
+
+      .attribute {
+        hl-link: "@tag.attribute.nml";
+      }
+
+      .operator {
+        hl-link: "@operator.nml";
+      }
+
+      .string {
+        hl-link: "@string.nml";
+      }
+      ul {
+        list-style-type: "";
+      }
+    </style>
+  </head>
+  <body style="padding: 2ch 1ch">
+    <script src="banana.helpers.qtoclose"></script>
+  </body>
+</nml>

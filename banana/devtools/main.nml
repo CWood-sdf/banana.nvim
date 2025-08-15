@@ -1,0 +1,5 @@
+<div>
+    <div id="root">
+    </div>
+    <script src="banana.devtools.main" when="prerender"></script>
+</div>

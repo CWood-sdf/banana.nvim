@@ -682,11 +682,28 @@ cmdTree.createCmd({
         devtools = {
             _callback = function ()
                 if devtoolsui == nil then
-                    devtoolsui = require("banana.instance").newInstance(
-                        "devtools", "")
+                    devtoolsui = require("banana.instance")
+                        .newInstance(
+                            "devtools", "")
                 end
                 local buf = vim.api.nvim_get_current_buf()
-                devtoolsui:loadNmlTo("devtoolsui/main?buf=" .. buf,
+                ---@type Banana.Instance
+                local instance = nil
+                for _, v in ipairs(require("banana.instance")._getAllInstances()) do
+                    if v.bufnr == buf then
+                        instance = v
+                        break
+                    end
+                end
+                if instance == nil then
+                    vim.notify("Could not find instance for bufnr " .. buf)
+                    return
+                end
+                if instance.stripRight ~= false then
+                    instance.stripRight = false
+                    instance:forceRerender()
+                end
+                devtoolsui:loadNmlTo("devtools/main?id=" .. instance.instanceId,
                     devtoolsui:body(), true, false)
                 devtoolsui:open()
             end,

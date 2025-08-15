@@ -1,0 +1,85 @@
+<div>
+  <template name="Attr">
+    <style>
+      #value {
+        hl-link: String;
+      }
+    </style>
+    <span sp=" ">%sp</span><span id="name"></span>=<span id="value"></span>
+    <script>
+      local name = document:getPrimaryNode():getData("attr").name
+      document:getElementById("name"):setTextContent(name)
+      local value = document:getPrimaryNode():getData("attr").value
+      document:getElementById("value"):setTextContent('"' .. value .. '"')
+    </script>
+  </template>
+  <template name="AttrEmpty">
+    <span id="name"></span>
+    <script>
+      local name = document:getPrimaryNode():getData("attr").name
+      document:getElementById("name"):setTextContent(name)
+    </script>
+  </template>
+  <template name="Tag">
+    <style>
+      .delimeter {
+        hl-link: Special;
+      }
+      .name {
+        hl-link: "@tag.nml";
+      }
+
+      .attribute {
+        hl-link: "@tag.attribute.nml";
+      }
+
+      .operator {
+        hl-link: "@operator.nml";
+      }
+
+      .string {
+        hl-link: "@string.nml";
+      }
+      ul {
+        list-style-type: "";
+      }
+    </style>
+    <span class="delimeter">&lt;</span>
+    <span class="name">%tag-name</span>
+    <span id="attrs"></span>
+    <span class="delimeter">&gt;</span>
+    <div id="children" style="padding-left: 2ch"></div>
+    <span class="delimeter">&lt;/</span>
+    <span class="name">%tag-name</span>
+    <span class="delimeter">&gt;</span>
+    <script>
+      local names = document:getElementsByClassName("name")
+      local ast = document:getPrimaryNode():getData("ast")
+      local inst1 = require("banana.instance").getInstance(1)
+      ast = ast or inst1:body()
+      local name = ast.tag
+      for _, v in ipairs(names) do
+        v:setTextContent(name)
+      end
+      local attrs = document:getElementById("attrs")
+      for k, v in pairs(ast:getAttributes()) do
+        local attr = document:createElement("Attr")
+        attr:setData("attr", {
+          name = k,
+          value = v
+        })
+        attrs:appendChild(attr)
+      end
+      local children = document:getElementById("children")
+      for v in ast:allChildIter() do
+         if type(v) == "string" then
+          children:appendTextNode(v)
+        else
+          local tag = document:createElement("Tag")
+          tag:setData("ast", v)
+          children:appendChild(tag)
+        end
+      end
+    </script>
+  </template>
+</div>
