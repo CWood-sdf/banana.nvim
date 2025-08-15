@@ -483,7 +483,7 @@ end
 ---@param e Banana.EventType
 function Instance:_fireEvent(e)
     self:_pcall(vim.api.nvim_exec_autocmds, "User", {
-        pattern = "BananaDocument" .. e,
+        pattern = "BananaDocument_" .. self.instanceId .. "_" .. e,
         data = {
             documentId = self.instanceId
         },
@@ -562,7 +562,7 @@ function Instance:on(ev, opts)
             "Expected a string or string[] as the first parameter to Instance:on()")
     end
     if events[ev] ~= nil then
-        opts.pattern = events[ev]
+        opts.pattern = "BananaDocument_" .. self.instanceId .. "_" .. ev
         ev = "User"
     end
     if opts.command ~= nil then
