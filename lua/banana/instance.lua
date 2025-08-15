@@ -1871,6 +1871,12 @@ function M.listInstanceIds()
     return ret
 end
 
+---Returns a list of ALL instances
+---@return Banana.Instance[]
+function M._getAllInstances()
+    return instances
+end
+
 ---@param inst Banana.Instance
 function M.deleteInstance(inst)
     instances[inst.instanceId] = {}
