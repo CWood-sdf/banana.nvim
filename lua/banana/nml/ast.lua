@@ -960,6 +960,8 @@ function M.Ast:clone(deep)
     self.hl.bg = nil
     self.hl.fg = nil
     newAst.hl = vim.fn.deepcopy(self.hl)
+    newAst._astId = astId
+    astId = astId + 1
     if type(bg) == "table" then
         newAst.hl.bg = bg:getInstance(newAst)
     else
