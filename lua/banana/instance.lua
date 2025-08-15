@@ -16,7 +16,7 @@ local function getEventName(v)
     return "BananaDocument" .. v
 end
 
----@alias Banana.EventType "Open"|"Leave"|"Close"|"ScriptDone"|"OpenPost"|"NmlLoaded"
+---@alias Banana.EventType "Open"|"Leave"|"Close"|"ScriptDone"|"OpenPost"|"NmlLoaded"|"RenderDone"
 
 ---@type { [Banana.EventType]: string }
 local events = {
@@ -25,6 +25,7 @@ local events = {
     Leave = "",
     Close = "",
     ScriptDone = "",
+    RenderDone = "",
     NmlLoaded = "",
 }
 for key, _ in pairs(events) do
@@ -61,6 +62,7 @@ local instances = {}
 ---@class Banana.Instance
 ---@field DEBUG_stressTest boolean
 ---@field DEBUG_dumpTree boolean
+---@field needsRender boolean
 ---@field DEBUG_catch boolean
 ---@field DEBUG_trackRenderCycle boolean
 ---@field DEBUG boolean
@@ -327,6 +329,7 @@ function Instance:new()
     local id = #instances
     ---@type Banana.Instance
     local inst = {
+        needsRender = false,
         shouldBubble = false,
         bufLines = {},
         winExternallyManaged = false,
@@ -427,6 +430,9 @@ function Instance:_attachAutocmds()
         callback = function (args)
             if args.buf == self.bufnr then
                 self.isVisible = true
+            end
+            if self.needsRender then
+                self:_render()
             end
         end,
         group = self.augroup,
@@ -543,6 +549,7 @@ end
 ---@param opts vim.api.keyset.create_autocmd
 ---@return number|number[]
 function Instance:on(ev, opts)
+    -- TODO: This is a dumb if and shouldnt exist
     if type(ev) == "table" then
         local ret = {}
         for _, v in ipairs(ev) do
@@ -684,6 +691,7 @@ function Instance:_setRemap(mode, lhs, rhs, opts, dep, times)
     end
 end
 
+---Removes the maps for this ast and ALL descendants
 ---@param ast Banana.Ast
 function Instance:_removeMapsFor(ast)
     if ast.componentTree ~= nil then
@@ -1054,8 +1062,10 @@ end
 local stressStartTime = 0
 function Instance:_render()
     if not self:isOpen() then
+        self.needsRender = true
         return
     end
+    self.needsRender = false
     local totalTime = 0
     self.rendering = true
 
@@ -1397,6 +1407,7 @@ function Instance:_render()
     end
     self.rendering = false
     self.renderRequested = false
+    self:_fireEvent("RenderDone")
     -- collectgarbage("restart")
     collectgarbage("collect")
     collectgarbage()
