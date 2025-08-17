@@ -37,8 +37,9 @@
         list-style-type: "";
       }
     </style>
+    <template import="devtools/tag"></template>
   </head>
   <body style="padding: 2ch 1ch">
-    <script src="banana.helpers.qtoclose"></script>
+    <script src="banana.helpers.qtoclose" when="prerender"></script>
   </body>
 </nml>

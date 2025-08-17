@@ -125,6 +125,10 @@ return function (document)
 
     local root = document:getElementById("root")
 
+    -- local t = document:createElement("Tag")
+    -- t:setData("ast", instance:body())
+    -- root:appendChild(t)
+
     local start = vim.uv.hrtime()
     drawAsts(document, root, instance:body(), instance)
 
