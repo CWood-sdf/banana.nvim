@@ -457,5 +457,6 @@ function M.box_context_strip_right_space(ctx, expected_bg) end
 ---@return nil
 function M.box_render_over(ctx, box, otherCtx, left, top) end
 
-return M
 
+
+return M

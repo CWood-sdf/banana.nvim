@@ -1,4 +1,4 @@
-local gen = require("banana.docgen.gendoc")
+local gen = require("banana.wikigen.gendoc")
 
 local M = {}
 

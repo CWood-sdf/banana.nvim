@@ -48,6 +48,8 @@ local instances = {}
 
 ---@alias Banana.Line Banana.Word[]
 
+--Note: Updating this requires change to the documentation of `ast:attachRemap`
+--in ast.lua
 ---@alias Banana.Remap.Constraint "hover"|number|"line-hover"
 
 ---@class (exact) Banana.Instance.Keymap
@@ -1790,7 +1792,7 @@ end
 ---@param name string the name of the element tag
 ---@return Banana.Ast
 function Instance:createElement(name)
-    local ast = require("banana.nml.ast").Ast:new(name, M.getNilAst(),
+    local ast = require("banana.nml.ast").Ast:_new(name, M.getNilAst(),
         self.ast.fromFile)
     ast.componentPath = self.ast.componentPath
     ast:_applyInstance(self)

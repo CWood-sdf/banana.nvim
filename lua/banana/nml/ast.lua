@@ -34,6 +34,7 @@ M.padNames = { "left", "top", "right", "bottom" }
 local astId = 0
 
 ---@class Banana.Ast
+---@field isScriptRoot boolean
 ---@field _astId number just an id to keep track of things in debug
 ---@field data table? For eventual data sharing between components
 ---and (maybe) templating
@@ -82,7 +83,7 @@ local Ast__index = M.Ast -- flame.wrapClass(M.Ast, "Ast", true)
 ---@param parent Banana.Ast
 ---@param source string
 ---@return Banana.Ast
-function M.Ast:new(tag, parent, source)
+function M.Ast:_new(tag, parent, source)
     local actualTag = nil
     if zeroUnit == nil then
         zeroUnit = unit.newUnit("ch", 0, 0)
@@ -101,6 +102,7 @@ function M.Ast:new(tag, parent, source)
     end
     ---@type Banana.Ast
     local ast = {
+        isScriptRoot = false,
         hl = {},
         _astId = astId,
         inlineStyle = {},
@@ -137,10 +139,10 @@ function M.Ast:new(tag, parent, source)
     setmetatable(ast, { __index = Ast__index })
 
     if tag == "progress" and #ast.nodes == 0 then
-        local left = M.Ast:new("span", ast, "__internal")
+        local left = M.Ast:_new("span", ast, "__internal")
         -- left:_applyInstance(ast:ownerDocument())
         left:_addClass("progress-filled")
-        local right = M.Ast:new("span", ast, "__internal")
+        local right = M.Ast:_new("span", ast, "__internal")
         -- right:_applyInstance(ast:ownerDocument())
         right:_addClass("progress-empty")
         ast:_appendChild(left)
@@ -152,8 +154,11 @@ function M.Ast:new(tag, parent, source)
 end
 
 ---Returns the data associated with the ast [UNSTABLE]
----@param item string?
----@return any?
+---
+---Functionally, this is a non-string version of get/setAttribute. This is
+---intended to be used with components to pass data as parameters to them
+---@param item string? The name of the data item to get
+---@return any? the value of the data item
 function M.Ast:getData(item)
     if self.data == nil then
         if self.componentParent ~= nil then
@@ -171,16 +176,25 @@ function M.Ast:getData(item)
 end
 
 ---Sets the data associated with the array [UNSTABLE]
----@param key string
----@param value any
----@overload fun(self: Banana.Ast, value: table)
+---
+---Functionally, this is a non-string version of get/setAttribute. This is
+---intended to be used with components to pass data as parameters to them
+---@param key string The name of the data item to set
+---@param value any the value of the data item
 function M.Ast:setData(key, value)
-    if type(key) == "table" then
-        self.data = key
-        return
-    end
     self.data = self.data or {}
     self.data[key] = value
+end
+
+---@return Banana.Ast
+function M.Ast:_getScriptRoot()
+    if self.isScriptRoot then
+        return self
+    end
+    if self._parent:isNil() then
+        return self
+    end
+    return self._parent:_getScriptRoot()
 end
 
 ---@param name string
@@ -209,6 +223,11 @@ function M.Ast:_tryMountComponent()
     self:_mountComponent()
 end
 
+---Returns a canvas context that can be used to render.
+---This ONLY returns a valid context on `<canvas>` elements, otherwise, it
+---returns nil.
+---See [canvas rendering](https://github.com/CWood-sdf/banana.nvim/wiki/Canvas)
+---for more details
 ---@return Banana.Nml.CanvasContext
 function M.Ast:getContext()
     return self.data.__ctx
@@ -273,8 +292,11 @@ function M.Ast:_getSlot(name)
     return _inst.getNilAst()
 end
 
----Returns the root node of this section of the dom tree
----@return Banana.Ast
+---Returns the root node of this section of the DOM tree
+---
+---In components, this will return a the <template> tag that the component runs
+---inside, otherwise, it will return the <nml> tag
+---@return Banana.Ast The root node
 function M.Ast:getRootNode()
     if self._parent:isNil() then
         return self
@@ -282,7 +304,8 @@ function M.Ast:getRootNode()
     return self:parent():getRootNode()
 end
 
----@return string
+---Returns the name of the tag that this ast node is for (eg. 'div')
+---@return string The tag name
 function M.Ast:getTagName()
     return self.tag
 end
@@ -334,7 +357,12 @@ function M.Ast:_isComponent()
     -- return ret
 end
 
----@param nml string
+---Sets the nodelist of this ast to be equivalent to the NML string provided.
+---
+---note: due to a limitation of the current nml parser, the entire string MUST
+---be contained inside a single element (eg setInnerNml('<span>asdf <span> idk </span></span>')
+---is allowed but setInnerNml('asdf <span> idk </span>') is not)
+---@param nml string The nml string to set this ast's content to
 function M.Ast:setInnerNml(nml)
     local ast, styleRules, preScripts, postScripts = require("banana.require")
         .nmlLoadString(nml)
@@ -434,9 +462,9 @@ function M.Ast:_firstStyleComputedValue(style, default)
     return val.value.computed
 end
 
----Returns true if the style {style} is in the node's style list
+---Returns true if the style {style} (eg. 'hl-fg') is in the node's style list
 ---@param style string the style to lookup
----@return boolean
+---@return boolean True if the style is in the node's style list
 function M.Ast:hasStyle(style)
     return self.style[style] ~= nil
 end
@@ -516,48 +544,64 @@ function M.Ast:_getInitialStyles()
 end
 
 ---Returns the actual left side margin of the element (in characters)
+---
+---note: this method will return an invalid value on scripts with when="prerender"
 ---@return number
 function M.Ast:marginLeft()
     return self.margin[M.left].computed
 end
 
 ---Returns the actual right side margin of the element (in characters)
+---
+---note: this method will return an invalid value on scripts with when="prerender"
 ---@return number
 function M.Ast:marginRight()
     return self.margin[M.right].computed
 end
 
 ---Returns the actual top side margin of the element (in characters)
+---
+---note: this method will return an invalid value on scripts with when="prerender"
 ---@return number
 function M.Ast:marginTop()
     return self.margin[M.top].computed
 end
 
 ---Returns the actual bottom side margin of the element (in characters)
+---
+---note: this method will return an invalid value on scripts with when="prerender"
 ---@return number
 function M.Ast:marginBottom()
     return self.margin[M.bottom].computed
 end
 
 ---Returns the actual left side padding of the element (in characters)
+---
+---note: this method will return an invalid value on scripts with when="prerender"
 ---@return number
 function M.Ast:paddingLeft()
     return self.padding[M.left].computed
 end
 
 ---Returns the actual right side padding of the element (in characters)
+---
+---note: this method will return an invalid value on scripts with when="prerender"
 ---@return number
 function M.Ast:paddingRight()
     return self.padding[M.right].computed
 end
 
 ---Returns the actual top side padding of the element (in characters)
+---
+---note: this method will return an invalid value on scripts with when="prerender"
 ---@return number
 function M.Ast:paddingTop()
     return self.padding[M.top].computed
 end
 
 ---Returns the actual bottom side padding of the element (in characters)
+---
+---note: this method will return an invalid value on scripts with when="prerender"
 ---@return number
 function M.Ast:paddingBottom()
     return self.padding[M.bottom].computed
@@ -725,7 +769,7 @@ function M.Ast:_defaultStyles()
             if type(attr) == "table" then
                 doc:_loadPreScriptFor(function (opts)
                     attr.tempval = attr.fn(doc)
-                end, doc._body, self:_getLoadedParams())
+                end, self:_getScriptRoot(), self:_getLoadedParams())
             end
         end
     end
@@ -765,8 +809,17 @@ local function applyAstMeta(self, ast)
     end
 end
 
+---Duplicates the ast node to eg allow it to be located in two different places
+---in the tree.
+---
+---This is the same function as `ast:clone()`, but is here for dom api
+---compatibility
+---
+---note: DOES NOT clone remaps or associated scripts
+---@param deep boolean? Whether to also clone the child nodes (default true)
+---@return Banana.Ast
 function M.Ast:cloneNode(deep)
-    return self:clone(deep)
+    return self:clone(deep or true)
 end
 
 function M.Ast:_postAppend()
@@ -776,8 +829,13 @@ function M.Ast:_postAppend()
 end
 
 ---Adds {child} to this node's child list right before {referenceNode}
----@param child Banana.Ast|string
----@param referenceNode Banana.Ast|string
+---
+---note: if passing string parameters for {child}, there is the possibility that
+---the same string is located multiple times in the ast's nodelist, leading to
+---strange results. there is also the possibility that the string passed for
+---{child} is not found due to the formatting
+---@param child Banana.Ast|string The child in the nodelist to insert before
+---@param referenceNode Banana.Ast|string The node to insert into the tree
 function M.Ast:insertBefore(child, referenceNode)
     if type(child) == "table" then
         child:_breakParentTies()
@@ -800,8 +858,13 @@ function M.Ast:insertBefore(child, referenceNode)
     self:_requestRender()
 end
 
----Removes {child} from this node's child list
----@param child Banana.Ast|string
+---Removes {child} from this node's child list and then returns it
+---
+---note: if passing string parameters for {child}, there is the possibility that
+---the same string is located multiple times in the ast's nodelist, leading to
+---strange results. there is also the possibility that the string passed for
+---{child} is not found due to the formatting
+---@param child Banana.Ast|string The node to remove
 ---@return Banana.Ast|string|nil
 function M.Ast:removeChild(child)
     if type(child) == "table" then
@@ -819,9 +882,15 @@ function M.Ast:removeChild(child)
     return nil
 end
 
----Replaces {child} from this node's child list with {newChild}
----@param child Banana.Ast|string
----@param newChild Banana.Ast|string
+---Replaces {child} from this node's child list with {newChild} and then returns
+---the removed element
+---
+---note: if passing string parameters for {child}, there is the possibility that
+---the same string is located multiple times in the ast's nodelist, leading to
+---strange results. there is also the possibility that the string passed for
+---{child} is not found due to the formatting
+---@param child Banana.Ast|string The child to replace
+---@param newChild Banana.Ast|string The new child to put in place
 ---@return Banana.Ast|string|nil
 function M.Ast:replaceChild(newChild, child)
     for i, v in ipairs(self.nodes) do
@@ -843,9 +912,9 @@ function M.Ast:replaceChild(newChild, child)
     return nil
 end
 
----@param allowString false? whether to include the string nodes
----@return Banana.Ast
----@overload fun(allowString: true): Banana.Ast|string
+---Returns the first child node
+---@param allowString boolean whether to include the string nodes (default false)
+---@return Banana.Ast|string
 function M.Ast:firstChild(allowString)
     if allowString then
         return self.nodes[1] or _inst.getNilAst()
@@ -853,9 +922,9 @@ function M.Ast:firstChild(allowString)
     return self:child(1) or _inst.getNilAst()
 end
 
----@param allowString false? whether to include the string nodes
----@return Banana.Ast
----@overload fun(allowString: true): Banana.Ast|string
+---Returns the last child node
+---@param allowString boolean whether to include the string nodes (default false)
+---@return Banana.Ast|string
 function M.Ast:lastChild(allowString)
     if allowString then
         return self.nodes[#self.nodes] or _inst.getNilAst()
@@ -868,9 +937,27 @@ function M.Ast:lastChild(allowString)
     return _inst.getNilAst()
 end
 
----@param allowString false? whether to include the string nodes
----@return Banana.Ast
----@overload fun(allowString: true): Banana.Ast|string
+---Returns the node that comes after this node in the dom order
+---
+---Returns the nil ast if there is no node after this node
+---
+---```nml
+---<div>
+---  <div id="1">
+---    <div id="2">
+---    </div
+---  </div>
+---  <div id="3">
+---  </div>
+---</div>
+---```
+---
+---```lua
+---document:getElementById('1'):nextSibling() -- returns node 3
+---document:getElementById('2'):nextSibling():isNil() -- evals to true
+---```
+---@param allowString boolean whether to include the string nodes
+---@return Banana.Ast|string
 function M.Ast:nextSibling(allowString)
     local j = 0
     local parNodes = self._parent.nodes
@@ -892,6 +979,25 @@ function M.Ast:nextSibling(allowString)
     return parNodes[j] or _inst.getNilAst()
 end
 
+---Returns the node that comes before this node in the dom order.
+---
+---Returns the nil ast if there is no node before this node
+---
+---```nml
+---<div>
+---  <div id="1">
+---    <div id="2">
+---    </div
+---  </div>
+---  <div id="3">
+---  </div>
+---</div>
+---```
+---
+---```lua
+---document:getElementById('3'):previousSibling() -- returns node 1
+---document:getElementById('1'):previousSibling():isNil() -- evals to true
+---```
 ---@param allowString false? whether to include the string nodes
 ---@return Banana.Ast
 ---@overload fun(allowString: true): Banana.Ast|string
@@ -916,7 +1022,7 @@ function M.Ast:previousSibling(allowString)
     return parNodes[j] or _inst.getNilAst()
 end
 
----Returns the document owner
+---Returns the document that this ast is a part of
 ---@return Banana.Instance
 function M.Ast:ownerDocument()
     if self.instance == nil then
@@ -931,8 +1037,8 @@ function M.Ast:ownerDocument()
     return ret
 end
 
----Duplicates this node and all its children (note: does NOT copy attached events)
----@param deep boolean
+---Duplicates this node (note: does NOT copy attached events)
+---@param deep boolean Whether to clone children too or just this node
 ---@return Banana.Ast
 function M.Ast:clone(deep)
     deep = deep or false
@@ -1029,7 +1135,19 @@ function M.Ast:setAttribute(name, value)
     self:_requestRender()
 end
 
----@return string[]
+---Returns a map of all attributes and their string values
+---
+---```nml
+---<div id="1" class="class1 class2">
+---</div>
+---```
+---
+---```lua
+---document:getElementById('1'):getAttributes()
+----- returns { id="1", class="class1 class2"}
+----- or returns { id="1", class="class2 class1"}
+---```
+---@return { [string]: string}
 function M.Ast:getAttributes()
     ---@type { [string]: string }
     local ret = {}
@@ -1039,8 +1157,9 @@ function M.Ast:getAttributes()
     return ret
 end
 
----Sets the elements custom style rules to {value}
----(note: overrides any styles set with style="")
+---Sets the elements custom style rules to {value}.
+---
+---This is the same as calling setAttribute("style", value)
 ---@param value string the ncss style string to set this element's style rules to
 function M.Ast:setStyle(value)
     local parsed = require("banana.ncss.parser").parseText(value)
@@ -1123,6 +1242,7 @@ function M.Ast:addClass(c)
 end
 
 ---Toggles the class {c} to the node's class list
+---(eg calls addClass(c) if hasClass(c) is false)
 ---@param c string the class to toggle
 function M.Ast:toggleClass(c)
     self.classes = self.classes or {}
@@ -1160,13 +1280,25 @@ function M.Ast:_mixHl(parentHl)
     return ret
 end
 
----Returns the width of the node's bounding box (content+padding)
+---Returns the node's bounding box (content+padding) in characters
+---
+---note: this method will return an invalid value on scripts with when="prerender"
+---@return Banana.Ast.BoundingBox
+function M.Ast:getBoundBox()
+    return self.boundBox
+end
+
+---Returns the width of the node's bounding box (content+padding) in characters
+---
+---note: this method will return an invalid value on scripts with when="prerender"
 ---@return number
 function M.Ast:getWidth()
     return self.boundBox.rightX - self.boundBox.leftX
 end
 
----Returns the height of the node's bounding box (content+padding)
+---Returns the height of the node's bounding box (content+padding) in characters
+---
+---note: this method will return an invalid value on scripts with when="prerender"
 function M.Ast:getHeight()
     return self.boundBox.bottomY - self.boundBox.topY
 end
@@ -1279,6 +1411,11 @@ function M.Ast:_applyInlineStyleDeclarations()
 end
 
 ---Returns true if the node is a nil node
+---
+---Most functions that may or may not return an ast will return this instead of
+---nil
+---
+---A nil node throws an error if any method is called on it
 ---@return boolean
 function M.Ast:isNil()
     -- the return true is in instance.lua when the nil ast is created
@@ -1372,7 +1509,7 @@ function M.Ast:_applyStyleDeclarations(declarations, basePrec)
     end
 end
 
----removes the ast node from the dom
+---removes the ast node from the dom and deletes ALL associated keymaps
 function M.Ast:remove()
     if self._parent == nil then return end
     if self._parent == _inst.getNilAst() then
@@ -1421,13 +1558,27 @@ function M.Ast:getAttribute(name)
 end
 
 ---Returns true if this node has attribute {name} set
----@param name string
+---@param name string the attribute to search for
 ---@return boolean
 function M.Ast:hasAttribute(name)
     return self.attributes[name] ~= nil
 end
 
 ---Adds {text} to the child list of the node
+---
+---Escapes the text if it starts with an & or %
+---
+---```nml
+---<span id="1">asdf</span>
+---```
+---
+---```lua
+----- "1" renders as `asdf` right now
+---document:getElementById("1"):appendTextNode("text")
+----- "1" will now render as `asdftext`
+---document:getElementById("1"):appendTextNode("%asdf")
+----- "1" will now render as `asdftext%asdf`
+---```
 ---@param text string the text to add to the node
 function M.Ast:appendTextNode(text)
     if text:sub(1, 1) == "%" then
@@ -1442,6 +1593,18 @@ function M.Ast:appendTextNode(text)
 end
 
 ---Adds {text} to the child list of the node
+---
+---Does NOT escape the text
+---
+---```nml
+---<span id="1">asdf</span>
+---```
+---
+---```lua
+----- "1" renders as `asdf` right now
+---document:getElementById("1"):appendTextNodeNoEscape("&lt;")
+----- "1" will now render as `asdf<`
+---```
 ---@param text string the text to add to the node
 function M.Ast:appendTextNodeNoEscape(text)
     table.insert(self.nodes, text)
@@ -1460,7 +1623,12 @@ function M.Ast:_appendChild(node)
     node:_postAppend()
 end
 
----Adds {node} as a child to this node
+---Adds ast {node} as a child to this node
+---
+---note: if you add a block element (eg <div>) as a descendant of an inline
+---element (eg <span>) you will get a LineTooBig error when trying to render
+---
+---note: {node} CANNOT be a string
 ---@param node Banana.Ast the node to append as a child
 function M.Ast:appendChild(node)
     self:_appendChild(node)
@@ -1624,7 +1792,12 @@ function M.Ast:children()
     return ret
 end
 
----Returns an iterator that allows iteration over all children with indexing
+---Returns an iterator that allows iteration over all ast children with indexing
+---
+---```lua
+---for i, v in ast:childIterWithI() do
+---end
+---```
 ---@return fun(): number?, Banana.Ast?
 function M.Ast:childIterWithI()
     local i = 0
@@ -1643,8 +1816,8 @@ function M.Ast:childIterWithI()
     end
 end
 
----Returns an iterator over all the children of this node
----@return fun(): Banana.Ast?
+---Returns an iterator over all the children of this node (including text)
+---@return fun():(Banana.Ast|string)?
 function M.Ast:allChildIter()
     local i = 0
     return function ()
@@ -1656,8 +1829,8 @@ function M.Ast:allChildIter()
     end
 end
 
----Returns an iterator over all the children of this node
----@return fun(): Banana.Ast?
+---Returns an iterator over all the ast children of this node
+---@return fun():Banana.Ast?
 function M.Ast:childIter()
     local i = 0
     return function ()
@@ -1692,6 +1865,16 @@ function M.Ast:child(i)
 end
 
 ---returns what the attribute substitution (eg %attr in nml) would be for {name}
+---
+---```nml
+---<div name="idk">
+---  <span id="1">%name</span> <!-- renders as "idk" -->
+---</div>
+---```
+---
+---```lua
+---document:getElementById("1"):getAttributeSubstitution("name") -- returns "idk"
+---```
 ---@param name string the attribute to lookup
 ---@return string?
 function M.Ast:getAttributeSubstitution(name)
@@ -1726,6 +1909,9 @@ function M.Ast:getAttributeSubstitution(name)
 end
 
 ---Returns the printed text value of this element (does not include newlines)
+---
+---Note: This is currently bugged as entities (eg &amp;) and attr substitutions
+---(eg %attr) will not return their printed value
 ---@return string
 function M.Ast:getTextContent()
     -- TODO: Handle substitutions and stuff
@@ -1740,7 +1926,10 @@ function M.Ast:getTextContent()
     return ret
 end
 
----Sets the text content of this element
+---Sets the text content of this element. Removes all other children
+---
+---Replaces newlines with <br> elements (note: if newlines are passed inside an
+---inline element (eg. <span>), it will cause a LineTooBig error)
 ---@param str string the text to set this element's content to
 function M.Ast:setTextContent(str)
     if type(str) ~= "string" then
@@ -1749,13 +1938,13 @@ function M.Ast:setTextContent(str)
     self:removeChildren()
     self.nodes = vim.split(str, "\n")
     for j = #self.nodes, 2, -1 do
-        table.insert(self.nodes, j, M.Ast:new("br", self, "anon"))
+        table.insert(self.nodes, j, M.Ast:_new("br", self, "anon"))
     end
     self:_requestRender()
 end
 
 ---@param mod Banana.Remap.Constraint
----@return fun(): boolean
+---@return fun():boolean
 function M.Ast:_parseRemapMod(mod)
     if mod == "hover" then
         return function ()
@@ -1781,17 +1970,39 @@ function M.Ast:parent()
     return self._parent
 end
 
----Returns true when this node is not rendered
+---Returns true when this node is not rendered (eg the style `display: none`)
 ---@return boolean
 function M.Ast:isHidden()
     return self.hidden
 end
 
 ---Attaches the given remap to the ast
+---
+---## Explanation
+---
+---For those wondering why one should not just use `vim.keymap.set` there are a few reasons.
+---
+---1. Remap collision. `vim.keymap.set` can only set one remap per buffer which means that if you want multiple ast nodes to handle remaps differently (eg in mason when you try to install a package pressing `i` on different lines installs different packages) you have to have a central function handle everything. `attachRemap` allows "decentralized" remaps (ie each ast node can figure out how to best handle the remap)
+---2. Remap deletion. Remembering to delete remap handlers when an ast is deleted can be annoying. Using `attachRemap` does that for you
+---
+---## Constraints
+---
+---Currently, the supported constraints are "hover", "line-hover", and \<number\>.
+---
+---```lua
+----- this will only be called if the cursor is over the node (eg isHovering() is true)
+----- when the user types `<leader>w` or if the user types `1<leader>w`
+---ast:attachRemap("n", "<leader>w", { "hover", 1 }, function()
+---
+---end, {})
+---```
+---
+---Line-hover is similar to hover except that it calls the remap if the cursor is on the same
+--- line as the ast node (eg isLineHovering() is true), instead of strictly hovering over it
 ---@param mode string the mode of the keymap
 ---@param lhs string the lhs of the keymap
----@param rhs string|fun() rhs
 ---@param mods Banana.Remap.Constraint[] a list of remap constraints
+---@param rhs string|fun() callback
 ---@param opts vim.keymap.set.Opts? keymap options
 function M.Ast:attachRemap(mode, lhs, mods, rhs, opts)
     opts = opts or {}

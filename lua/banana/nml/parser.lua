@@ -231,7 +231,7 @@ function Parser:parseSelfClosingTag(tree, parent)
         error("")
     end
     local name = self.lexer:getStrFromRange({ nameEl:start() }, { nameEl:end_() })
-    local ret = ast.Ast:new(name, parent, self.source)
+    local ret = ast.Ast:_new(name, parent, self.source)
 
     local attrs, decls = self:parseAttributes(child)
     ret.inlineStyle = decls
@@ -338,7 +338,7 @@ function Parser:parseTag(tree, parent, isSpecial)
                 "Parent is nil")
             error("")
         end
-        ret = ast.Ast:new(tagNameStr, parent, self.source)
+        ret = ast.Ast:_new(tagNameStr, parent, self.source)
         if tagNameStr == "slot" and parent.actualTag.formatType ~= _tag.FormatType.Block then
             parent.actualTag.formatType = _tag.FormatType.Inline
         end
@@ -534,6 +534,7 @@ function Parser:parseTag(tree, parent, isSpecial)
         if allInline then
             self.currentComponent.ast.actualTag = _tag.makeTag("template_inline")
         end
+        self.currentComponent.ast.isScriptRoot = true
         table.insert(components, 1, self.currentComponent)
         self.currentComponent = nil
         return nil, components
@@ -630,6 +631,9 @@ function Parser:parse()
     table.remove(parsingStack, #parsingStack)
     if not ok then
         error(v)
+    end
+    if v ~= nil then
+        v.isScriptRoot = true
     end
     return v, v2
 end
