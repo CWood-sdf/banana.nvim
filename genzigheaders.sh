@@ -1,3 +1,3 @@
 #!/bin/bash
 
-nvim --headless -c "so zig/transform.lua" -c "q"
+nvim --clean --headless -c "so zig/transform.lua" -c "q"
