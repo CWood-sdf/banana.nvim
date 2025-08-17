@@ -1,60 +1,53 @@
-*banana-ast.txt*          For NVIM v0.12.0         Last change: 2025 August 15
+*banana-ast.txt*          For NVIM v0.12.0         Last change: 2025 August 17
 
 ==============================================================================
 Table of Contents                               *banana-ast-table-of-contents*
 
-1. Reflection                                          |banana-ast-reflection|
-  - ownerDocument                        |banana-ast-reflection-ownerdocument|
-  - firstChild                              |banana-ast-reflection-firstchild|
-  - lastChild                                |banana-ast-reflection-lastchild|
-  - previousSibling                    |banana-ast-reflection-previoussibling|
-  - nextSibling                            |banana-ast-reflection-nextsibling|
-  - getTagName                              |banana-ast-reflection-gettagname|
-  - getRootNode                            |banana-ast-reflection-getrootnode|
-  - getContext                              |banana-ast-reflection-getcontext|
-  - assertHasStyle                      |banana-ast-reflection-asserthasstyle|
-  - paddingLeft                            |banana-ast-reflection-paddingleft|
-  - paddingRight                          |banana-ast-reflection-paddingright|
-  - paddingTop                              |banana-ast-reflection-paddingtop|
-  - paddingBottom                        |banana-ast-reflection-paddingbottom|
-  - marginLeft                              |banana-ast-reflection-marginleft|
-  - marginRight                            |banana-ast-reflection-marginright|
-  - marginTop                                |banana-ast-reflection-margintop|
-  - marginBottom                          |banana-ast-reflection-marginbottom|
-  - hasClass                                  |banana-ast-reflection-hasclass|
-  - getWidth                                  |banana-ast-reflection-getwidth|
-  - getHeight                                |banana-ast-reflection-getheight|
-  - isNil                                        |banana-ast-reflection-isnil|
-  - getAttribute                          |banana-ast-reflection-getattribute|
-  - getAttributes                        |banana-ast-reflection-getattributes|
-  - isLineHovering                      |banana-ast-reflection-islinehovering|
-  - isHovering                              |banana-ast-reflection-ishovering|
-  - children                                  |banana-ast-reflection-children|
-  - allChildIter                          |banana-ast-reflection-allchilditer|
-  - childIterWithI                      |banana-ast-reflection-childiterwithi|
-  - childIter                                |banana-ast-reflection-childiter|
-  - child                                        |banana-ast-reflection-child|
-  - getTextContent                      |banana-ast-reflection-gettextcontent|
-  - parent                                      |banana-ast-reflection-parent|
-  - isHidden                                  |banana-ast-reflection-ishidden|
-  - cloneNode                                |banana-ast-reflection-clonenode|
-2. Setters                                                |banana-ast-setters|
-  - setAttribute                             |banana-ast-setters-setattribute|
-  - setStyle                                     |banana-ast-setters-setstyle|
-  - setStyleValue                           |banana-ast-setters-setstylevalue|
-  - removeClass                               |banana-ast-setters-removeclass|
-  - addClass                                     |banana-ast-setters-addclass|
-  - toggleClass                               |banana-ast-setters-toggleclass|
-  - remove                                         |banana-ast-setters-remove|
-  - insertBefore                             |banana-ast-setters-insertbefore|
-  - replaceChild                             |banana-ast-setters-replacechild|
-  - removeChild                               |banana-ast-setters-removechild|
-  - appendTextNode                         |banana-ast-setters-appendtextnode|
-  - appendChild                               |banana-ast-setters-appendchild|
-  - removeChildren                         |banana-ast-setters-removechildren|
-  - setTextContent                         |banana-ast-setters-settextcontent|
-3. Event handlers                                  |banana-ast-event-handlers|
-  - attachRemap                        |banana-ast-event-handlers-attachremap|
+  - getData                                               |banana-ast-getdata|
+  - setData                                               |banana-ast-setdata|
+  - getContext                                         |banana-ast-getcontext|
+  - getRootNode                                       |banana-ast-getrootnode|
+  - getTagName                                         |banana-ast-gettagname|
+  - setInnerNml                                       |banana-ast-setinnernml|
+  - hasStyle                                             |banana-ast-hasstyle|
+  - assertHasStyle                                 |banana-ast-asserthasstyle|
+  - marginLeft                                         |banana-ast-marginleft|
+  - marginRight                                       |banana-ast-marginright|
+  - marginTop                                           |banana-ast-margintop|
+  - marginBottom                                     |banana-ast-marginbottom|
+  - paddingLeft                                       |banana-ast-paddingleft|
+  - paddingRight                                     |banana-ast-paddingright|
+  - paddingTop                                         |banana-ast-paddingtop|
+  - paddingBottom                                   |banana-ast-paddingbottom|
+  - cloneNode                                           |banana-ast-clonenode|
+  - insertBefore                                     |banana-ast-insertbefore|
+  - removeChild                                       |banana-ast-removechild|
+  - replaceChild                                     |banana-ast-replacechild|
+  - firstChild                                         |banana-ast-firstchild|
+  - lastChild                                           |banana-ast-lastchild|
+  - nextSibling                                       |banana-ast-nextsibling|
+  - previousSibling                               |banana-ast-previoussibling|
+  - ownerDocument                                   |banana-ast-ownerdocument|
+  - clone                                                   |banana-ast-clone|
+  - setAttribute                                     |banana-ast-setattribute|
+  - getAttributes                                   |banana-ast-getattributes|
+  - setStyle                                             |banana-ast-setstyle|
+  - setStyleValue                                   |banana-ast-setstylevalue|
+  - hasClass                                             |banana-ast-hasclass|
+  - removeClass                                       |banana-ast-removeclass|
+  - addClass                                             |banana-ast-addclass|
+  - toggleClass                                       |banana-ast-toggleclass|
+  - getBoundBox                                       |banana-ast-getboundbox|
+  - getWidth                                             |banana-ast-getwidth|
+  - getHeight                                           |banana-ast-getheight|
+  - isNil                                                   |banana-ast-isnil|
+  - remove                                                 |banana-ast-remove|
+  - getAttribute                                     |banana-ast-getattribute|
+  - hasAttribute                                     |banana-ast-hasattribute|
+  - appendTextNode                                 |banana-ast-appendtextnode|
+  - appendTextNodeNoEscape                 |banana-ast-appendtextnodenoescape|
+  - appendChild                                       |banana-ast-appendchild|
+1. Links                                                    |banana-ast-links|
 The AST class is the second of two API surfaces that you will use for any
 interaction with the dom tree in banana (the other one being Instance).
 
@@ -66,540 +59,498 @@ a pr.
 The functions are grouped into a few categories.
 
 
-==============================================================================
-1. Reflection                                          *banana-ast-reflection*
+GETDATA                                                   *banana-ast-getdata*
 
-These are functions that provide information on the state of the tree.
+Returns the data associated with the ast [UNSTABLE]
 
+Functionally, this is a non-string version of get/setAttribute. This is
+intended to be used with components to pass data as parameters to them
 
-  [!NOTE]
-  Any function that returns information about the render state of the tree (eg
-  `getWidth()`) will not contain correct information directly after calling a
-  function that would change the render (eg `appendChild()`).
-
-OWNERDOCUMENT                            *banana-ast-reflection-ownerdocument*
-
-Returns the instance that owns this ast
-
-- **Returns**: `Banana.Instance` - The instance that owns the ast
+- **Parameters**:
+    - `item` (string?): The name of the data item to get
+- **Returns**: `any?` - the value of the data item
 
 
-FIRSTCHILD                                  *banana-ast-reflection-firstchild*
+SETDATA                                                   *banana-ast-setdata*
+
+Sets the data associated with the array [UNSTABLE]
+
+Functionally, this is a non-string version of get/setAttribute. This is
+intended to be used with components to pass data as parameters to them
+
+- **Parameters**:
+    - `key` (string): The name of the data item to set
+    - `value` (any): the value of the data item
+
+
+GETCONTEXT                                             *banana-ast-getcontext*
+
+Returns a canvas context that can be used to render. This ONLY returns a valid
+context on `<canvas>` elements, otherwise, it returns nil. See canvas rendering
+<https://github.com/CWood-sdf/banana.nvim/wiki/Canvas> for more details
+
+- **Returns**: `Banana.Nml.CanvasContext` -
+
+
+GETROOTNODE                                           *banana-ast-getrootnode*
+
+Returns the root node of this section of the DOM tree
+
+In components, this will return a the tag that the component runs inside,
+otherwise, it will return the tag
+
+- **Returns**: `Banana.Ast` - The root node
+
+
+GETTAGNAME                                             *banana-ast-gettagname*
+
+Returns the name of the tag that this ast node is for (eg. 'div')
+
+- **Returns**: `string` - The tag name
+
+
+SETINNERNML                                           *banana-ast-setinnernml*
+
+Sets the nodelist of this ast to be equivalent to the NML string provided.
+
+note: due to a limitation of the current nml parser, the entire string MUST be
+contained inside a single element (eg setInnerNml('asdf idk ') is allowed but
+setInnerNml('asdf idk ') is not)
+
+- **Parameters**:
+    - `nml` (string): The nml string to set this ast’s content to
+
+
+HASSTYLE                                                 *banana-ast-hasstyle*
+
+Returns true if the style {style} (eg. 'hl-fg') is in the node’s style list
+
+- **Parameters**:
+    - `style` (string): the style to lookup
+- **Returns**: `boolean` - True if the style is in the node’s style list
+
+
+ASSERTHASSTYLE                                     *banana-ast-asserthasstyle*
+
+Throws an error if the style {style} has not been set in the node’s style
+list
+
+- **Parameters**:
+    - `style` (string): the style to lookup
+
+
+MARGINLEFT                                             *banana-ast-marginleft*
+
+Returns the actual left side margin of the element (in characters)
+
+note: this method will return an invalid value on scripts with when="prerender"
+
+- **Returns**: `number` -
+
+
+MARGINRIGHT                                           *banana-ast-marginright*
+
+Returns the actual right side margin of the element (in characters)
+
+note: this method will return an invalid value on scripts with when="prerender"
+
+- **Returns**: `number` -
+
+
+MARGINTOP                                               *banana-ast-margintop*
+
+Returns the actual top side margin of the element (in characters)
+
+note: this method will return an invalid value on scripts with when="prerender"
+
+- **Returns**: `number` -
+
+
+MARGINBOTTOM                                         *banana-ast-marginbottom*
+
+Returns the actual bottom side margin of the element (in characters)
+
+note: this method will return an invalid value on scripts with when="prerender"
+
+- **Returns**: `number` -
+
+
+PADDINGLEFT                                           *banana-ast-paddingleft*
+
+Returns the actual left side padding of the element (in characters)
+
+note: this method will return an invalid value on scripts with when="prerender"
+
+- **Returns**: `number` -
+
+
+PADDINGRIGHT                                         *banana-ast-paddingright*
+
+Returns the actual right side padding of the element (in characters)
+
+note: this method will return an invalid value on scripts with when="prerender"
+
+- **Returns**: `number` -
+
+
+PADDINGTOP                                             *banana-ast-paddingtop*
+
+Returns the actual top side padding of the element (in characters)
+
+note: this method will return an invalid value on scripts with when="prerender"
+
+- **Returns**: `number` -
+
+
+PADDINGBOTTOM                                       *banana-ast-paddingbottom*
+
+Returns the actual bottom side padding of the element (in characters)
+
+note: this method will return an invalid value on scripts with when="prerender"
+
+- **Returns**: `number` -
+
+
+CLONENODE                                               *banana-ast-clonenode*
+
+Duplicates the ast node to eg allow it to be located in two different places in
+the tree.
+
+This is the same function as `ast:clone()`, but is here for dom api
+compatibility
+
+note: DOES NOT clone remaps or associated scripts
+
+- **Parameters**:
+    - `deep` (boolean?): Whether to also clone the child nodes (default true)
+- **Returns**: `Banana.Ast` -
+
+
+INSERTBEFORE                                         *banana-ast-insertbefore*
+
+Adds {child} to this node’s child list right before {referenceNode}
+
+note: if passing string parameters for {child}, there is the possibility that
+the same string is located multiple times in the ast’s nodelist, leading to
+strange results. there is also the possibility that the string passed for
+{child} is not found due to the formatting
+
+- **Parameters**:
+    - `child` (Banana.Ast|string): The child in the nodelist to insert before
+    - `referenceNode` (Banana.Ast|string): The node to insert into the tree
+
+
+REMOVECHILD                                           *banana-ast-removechild*
+
+Removes {child} from this node’s child list and then returns it
+
+note: if passing string parameters for {child}, there is the possibility that
+the same string is located multiple times in the ast’s nodelist, leading to
+strange results. there is also the possibility that the string passed for
+{child} is not found due to the formatting
+
+- **Parameters**:
+    - `child` (Banana.Ast|string): The node to remove
+- **Returns**: `Banana.Ast|string|nil` -
+
+
+REPLACECHILD                                         *banana-ast-replacechild*
+
+Replaces {child} from this node’s child list with {newChild} and then returns
+the removed element
+
+note: if passing string parameters for {child}, there is the possibility that
+the same string is located multiple times in the ast’s nodelist, leading to
+strange results. there is also the possibility that the string passed for
+{child} is not found due to the formatting
+
+- **Parameters**:
+    - `child` (Banana.Ast|string): The child to replace
+    - `newChild` (Banana.Ast|string): The new child to put in place
+- **Returns**: `Banana.Ast|string|nil` -
+
+
+FIRSTCHILD                                             *banana-ast-firstchild*
 
 Returns the first child node
 
 - **Parameters**:
-    - `allowString` (boolean?): Whether to consider strings as child nodes or not (default false)
-- **Returns**: `string`|`Banana.Ast` - The first child node. If `allowString` is
-    nil or false, then this function only returns `Banana.Ast`
+    - `allowString` (boolean): whether to include the string nodes (default false)
+- **Returns**: `Banana.Ast|string` -
 
 
-LASTCHILD                                    *banana-ast-reflection-lastchild*
+LASTCHILD                                               *banana-ast-lastchild*
 
 Returns the last child node
 
 - **Parameters**:
-    - `allowString` (boolean?): Whether to consider strings as child nodes or not (default false)
-- **Returns**: `string`|`Banana.Ast` - The last child node. If `allowString` is
-    nil or false, then this function only returns `Banana.Ast`
+    - `allowString` (boolean): whether to include the string nodes (default false)
+- **Returns**: `Banana.Ast|string` -
 
 
-PREVIOUSSIBLING                        *banana-ast-reflection-previoussibling*
+NEXTSIBLING                                           *banana-ast-nextsibling*
 
-Returns the node that comes before this node in the dom
+Returns the node that comes after this node in the dom order
 
-- **Parameters**:
-    - `allowString` (boolean?): Whether to consider strings as previous nodes or not (default false)
-- **Returns**: `string`|`Banana.Ast` - The previous node. If `allowString` is nil
-    or false, then this function only returns `Banana.Ast`
-
-
-NEXTSIBLING                                *banana-ast-reflection-nextsibling*
-
-Returns the node that comes after this node in the dom
-
-- **Parameters**:
-    - `allowString` (boolean?): Whether to consider strings as nodes or not (default false)
-- **Returns**: `string`|`Banana.Ast` - The next node. If `allowString` is nil or
-    false, then this function only returns `Banana.Ast`
-
-
-GETTAGNAME                                  *banana-ast-reflection-gettagname*
-
-Returns the name of the tag that the ast represents (eg. 'div')
-
-- **Returns**: `string` - the tag name
-
-
-GETROOTNODE                                *banana-ast-reflection-getrootnode*
-
-Returns the root node of this section of the DOM tree.
-
-- **Returns**: `Banana.Ast` - The root node.
-
-
-GETCONTEXT                                  *banana-ast-reflection-getcontext*
-
-Returns a canvas context that can be used to render. This ONLY returns a valid
-context on `<canvas>` elements, otherwise, it returns nil. See canvas rendering
-<Canvas> for more information
-
-- **Returns**: `Banana.Nml.CanvasContext` - The context
-
-
-ASSERTHASSTYLE                          *banana-ast-reflection-asserthasstyle*
-
-Throws an error if the specified style is not set in the node’s style list.
-
-- **Parameters**:
-    - `style` (string): The style to look up.
-
-
-PADDINGLEFT                                *banana-ast-reflection-paddingleft*
-
-Returns the left padding of the element in characters.
-
-- **Returns**: `number` - The left padding in characters.
-
-
-PADDINGRIGHT                              *banana-ast-reflection-paddingright*
-
-Returns the right padding of the element in characters.
-
-- **Returns**: `number` - The right padding in characters.
-
-
-PADDINGTOP                                  *banana-ast-reflection-paddingtop*
-
-Returns the top padding of the element in characters.
-
-- **Returns**: `number` - The top padding in characters.
-
-
-PADDINGBOTTOM                            *banana-ast-reflection-paddingbottom*
-
-Returns the bottom padding of the element in characters.
-
-- **Returns**: `number` - The bottom padding in characters.
-
-
-MARGINLEFT                                  *banana-ast-reflection-marginleft*
-
-Returns the left margin of the element in characters.
-
-- **Returns**: `number` - The left margin in characters.
-
-
-MARGINRIGHT                                *banana-ast-reflection-marginright*
-
-Returns the right margin of the element in characters.
-
-- **Returns**: `number` - The right margin in characters.
-
-
-MARGINTOP                                    *banana-ast-reflection-margintop*
-
-Returns the top margin of the element in characters.
-
-- **Returns**: `number` - The top margin in characters.
-
-
-MARGINBOTTOM                              *banana-ast-reflection-marginbottom*
-
-Returns the bottom margin of the element in characters.
-
-- **Returns**: `number` - The bottom margin in characters.
-
-
-HASCLASS                                      *banana-ast-reflection-hasclass*
-
-Checks if the node has the specified class.
-
-- **Parameters**:
-    - `c` (string): The class name.
-- **Returns**: `boolean` - `true` if the class is present, `false` otherwise.
-
-
-GETWIDTH                                      *banana-ast-reflection-getwidth*
-
-Returns the width of the node’s bounding box (content + padding).
-
-- **Returns**: `number` - The width of the bounding box.
-
-
-GETHEIGHT                                    *banana-ast-reflection-getheight*
-
-Returns the height of the node’s bounding box (content + padding).
-
-- **Returns**: `number` - The height of the bounding box.
-
-
-ISNIL                                            *banana-ast-reflection-isnil*
-
-Checks if the node is a "nil" node, meaning it represents an absence or
-non-existence in the DOM structure.
-
-- **Returns**: `boolean` - `true` if the node is a nil node, `false` otherwise.
-
-
-GETATTRIBUTE                              *banana-ast-reflection-getattribute*
-
-Gets the attribute value for the specified name, or `nil` if not found.
-
-- **Parameters**:
-    - `name` (string): The attribute name.
-- **Returns**: `string?` - The attribute value or `nil`.
-
-
-GETATTRIBUTES                            *banana-ast-reflection-getattributes*
-
-Returns a map of all attributes to their values
-
-- **Returns**: `{ [string]: string }` - A map of every attribute to its value
-
-
-ISLINEHOVERING                          *banana-ast-reflection-islinehovering*
-
-Checks if the cursor is on the same line as this node.
-
-- **Returns**: `boolean` - `true` if the cursor is on the same line, `false` otherwise.
-
-
-ISHOVERING                                  *banana-ast-reflection-ishovering*
-
-Checks if the cursor is hovering over this node.
-
-- **Returns**: `boolean` - `true` if hovering, `false` otherwise.
-
-
-CHILDREN                                      *banana-ast-reflection-children*
-
-Returns all child AST nodes of this element (excluding text nodes).
-
-- **Returns**: `Banana.Ast[]` - An array of child nodes.
-
-
-ALLCHILDITER                              *banana-ast-reflection-allchilditer*
-
-Returns an iterator that iterates over all children (including text nodes).
-
-
-EXAMPLE ~
+Returns the nil ast if there is no node after this node
 
 >nml
-    <nml>
-      <body>
-        <div> div 1</div>
-        text node
-        <div> div 2</div>
-        <div> div 3</div>
-        <script>
-          local body = document:body()
-    
-          for node in body:childIterWithI() do
-            if type(node) == "string" then
-              print(node)
-            else
-              print(node:getTextContent())
-            end
-          end
-          -- prints:
-          -- div 1
-          -- text node
-          -- div 2
-          -- div 3
-        </script>
-      </body>
-    </nml>
-<
-
-
-CHILDITERWITHI                          *banana-ast-reflection-childiterwithi*
-
-Returns an iterator that can be used to iterate over all ast children with
-their corresponding index
-
-
-EXAMPLE ~
-
->nml
-    <nml>
-      <body>
-        <div> div 1</div>
-        text node
-        <div> div 2</div>
-        <div> div 3</div>
-        <script>
-          local body = document:body()
-    
-          for i, node in body:childIterWithI() do
-            print(i .. ": " .. node:getTextContent())
-            assert(body:child(i) == node)
-          end
-          -- prints:
-          -- 1: div 1
-          -- 2: div 2
-          -- 3: div 3
-        </script>
-      </body>
-    </nml>
-<
-
-
-CHILDITER                                    *banana-ast-reflection-childiter*
-
-Returns an iterator that can be used to iterate over all ast children
-
-
-EXAMPLE ~
-
->nml
-    <nml>
-      <body>
-        <div> div 1</div>
-        <div> div 2</div>
-        <div> div 3</div>
-        <script>
-          local body = document:body()
-    
-          for node in body:childIter() do
-            print(node:getTextContent())
-          end
-          -- prints:
-          -- div 1
-          -- div 2
-          -- div 3
-        </script>
-      </body>
-    </nml>
-<
-
-
-CHILD                                            *banana-ast-reflection-child*
-
-Returns the nth non-string child of the node.
-
-- **Parameters**:
-    - `i` (number): The index of the child.
-- **Returns**: `Banana.Ast` - The child node.
-
-
-EXAMPLE ~
-
->nml
-    <body>
-      <div foo="bar" id="asdf">
-        <!-- will set the text content to 'bar' -->
-        %foo
+    <div>
+      <div id="1">
+        <div id="2">
+        </div
       </div>
-      <script>
-        local asdf = document:getElementById("asdf")
-        -- prints 'bar'
-        print(asdf:getAttributeSubstitution("foo"))
-      </script>
-    </body>
+      <div id="3">
+      </div>
+    </div>
 <
-
-
-GETTEXTCONTENT                          *banana-ast-reflection-gettextcontent*
-
-**Warning**: `getTextContent` currently only works for elements that only
-contain text/ast nodes (not attribute substitutions or character entities)
-
-Gets the printed text value of this element (excludes newlines).
-
-- **Returns**: `string` - The text content.
-
-
-PARENT                                          *banana-ast-reflection-parent*
-
-Gets the parent node of this node.
-
-- **Returns**: `Banana.Ast` - The parent node.
-
-
-ISHIDDEN                                      *banana-ast-reflection-ishidden*
-
-Checks if this node is not rendered.
-
-- **Returns**: `boolean` - `true` if not rendered, `false` otherwise.
-
-
-CLONENODE                                    *banana-ast-reflection-clonenode*
-
-Duplicates the node. Since the same node cannot be in the tree at two different
-places (that would introduce rendering weirdness), you should use clone
-sometimes
-
-- **Parameters**:
-    - `deep` (boolean): Whether to duplicate the entire subtree (children…) or just the caller node
-- **Returns**: A duplicated ast node
-
-
-==============================================================================
-2. Setters                                                *banana-ast-setters*
-
-These are functions that change the state of the tree and trigger a rerender
-
-
-SETATTRIBUTE                                 *banana-ast-setters-setattribute*
-
-Sets the attribute to the specified value.
-
-- **Parameters**:
-    - `name` (string): The attribute name.
-    - `value` (string): The new value of the attribute.
-
-
-SETSTYLE                                         *banana-ast-setters-setstyle*
-
-Sets custom style rules, overriding any styles set with `style=""`.
-
-- **Parameters**:
-    - `value` (string): The NCSS style string.
-
-
-SETSTYLEVALUE                               *banana-ast-setters-setstylevalue*
-
-Sets the style declaration to the specified value.
-
-- **Parameters**:
-    - `name` (string): The style name.
-    - `value` (string): The value to set.
-
-
-REMOVECLASS                                   *banana-ast-setters-removeclass*
-
-Removes the specified class from the node’s class list.
-
-- **Parameters**:
-    - `c` (string): The class name.
-
-
-ADDCLASS                                         *banana-ast-setters-addclass*
-
-Adds the specified class to the node’s class list.
-
-- **Parameters**:
-    - `c` (string): The class name.
-
-
-TOGGLECLASS                                   *banana-ast-setters-toggleclass*
-
-Toggles the specified class in the node’s class list.
-
-- **Parameters**:
-    - `c` (string): The class name.
-
-
-REMOVE                                             *banana-ast-setters-remove*
-
-Removes the node from the DOM and deletes all associated keymaps
-
-
-INSERTBEFORE                                 *banana-ast-setters-insertbefore*
-
-Inserts the first parameter into this ast before the reference node. See mdn
-docs <https://developer.mozilla.org/en-US/docs/Web/API/Node/insertBefore> for
-more info
-
-- **Parameters**:
-    - `child` (string|`Banana.Ast`): The node to add
-    - `referenceNode` (string|`Banana.Ast`): The node to insert before
-
-
-REPLACECHILD                                 *banana-ast-setters-replacechild*
-
-Replaces the second parameter with the first parameter in this node’s child
-list. Does nothing if `newNode` is not in this node’s child list
-
-- **Parameters**:
-    - `newNode` (string|`Banana.Ast`): The node to remove
-    - `node` (string|`Banana.Ast`): The node to replace
-- **Returns**: `string`|`Banana.Ast`|`nil` - The removed node, or nil if the node
-    is not found
-
-
-REMOVECHILD                                   *banana-ast-setters-removechild*
-
-Removes the passed node from this node’s child list then returns the new node
-
-- **Parameters**:
-    - `child` (string|`Banana.Ast`): The node to remove
-- **Returns**: `string`|`Banana.Ast`|`nil` - The removed node, or nil if the node
-    is not found
-
-
-APPENDTEXTNODE                             *banana-ast-setters-appendtextnode*
-
-Appends text to the node’s child list.
-
-- **Parameters**:
-    - `text` (string): The text to add.
-
-
-APPENDCHILD                                   *banana-ast-setters-appendchild*
-
-Appends a child node to this node.
-
-- **Parameters**:
-    - `node` (`Banana.Ast`): The child node to append.
-
-
-REMOVECHILDREN                             *banana-ast-setters-removechildren*
-
-Removes all children from the node, including text.
-
-
-SETTEXTCONTENT                             *banana-ast-setters-settextcontent*
-
-Sets the text content of this element.
-
-- **Parameters**:
-    - `str` (string): The text to set.
-
-
-==============================================================================
-3. Event handlers                                  *banana-ast-event-handlers*
-
-These are functions that register some callback that is related to the AST
-node. Calling these functions does not trigger a rerender
-
-
-ATTACHREMAP                            *banana-ast-event-handlers-attachremap*
-
-Attaches the specified remap to the AST.
-
-- **Parameters**:
-    - `mode` (string): The mode of the keymap.
-    - `lhs` (string): The left-hand side of the keymap.
-    - `mods` (`Banana.Remap.Constraint[]`): A list of remap constraints.
-    - `rhs` (string | function): The right-hand side or a function.
-    - `opts` (`vim.keymap.set.Opts?`): Keymap options.
-
-
-EXPLANATION ~
-
-For those wondering why one should not just use `vim.keymap.set` there are a
-few reasons.
-
-1. Remap collision. `vim.keymap.set` can only set one remap per buffer which means that if you want multiple ast nodes to handle remaps differently (eg in mason when you try to install a package pressing `i` on different lines installs different packages) you have to have a central function handle everything. `attachRemap` allows "decentralized" remaps (ie each ast node can figure out how to best handle the remap)
-2. Remap deletion. Remembering to delete remap handlers when an ast is deleted can be annoying. Using `attachRemap` does that for you
-
-
-CONTRAINTS ~
-
-Currently, the supported constraints are "hover", "line-hover", and <number>.
 
 >lua
-    -- this will only be called if the cursor is over the node when the user types `<leader>w` or if the user types `1<leader>w`
-    ast:attachRemap("n", "<leader>w", { "hover", 1 }, function()
-    
-    end, {})
+    document:getElementById('1'):nextSibling() -- returns node 3
+    document:getElementById('2'):nextSibling():isNil() -- evals to true
 <
 
-Line-hover is similar to hover except that it calls the remap if the cursor is
-on the same line as the ast node, instead of strictly hovering over it
+- **Parameters**:
+    - `allowString` (boolean): whether to include the string nodes
+- **Returns**: `Banana.Ast|string` -
+
+
+PREVIOUSSIBLING                                   *banana-ast-previoussibling*
+
+Returns the node that comes before this node in the dom order.
+
+Returns the nil ast if there is no node before this node
+
+>nml
+    <div>
+      <div id="1">
+        <div id="2">
+        </div
+      </div>
+      <div id="3">
+      </div>
+    </div>
+<
+
+>lua
+    document:getElementById('3'):previousSibling() -- returns node 1
+    document:getElementById('1'):previousSibling():isNil() -- evals to true
+<
+
+@overload fun(allowString: true): Banana.Ast|string
+
+- **Parameters**:
+    - `allowString` (false?): whether to include the string nodes
+- **Returns**: `Banana.Ast` -
+
+
+OWNERDOCUMENT                                       *banana-ast-ownerdocument*
+
+Returns the document that this ast is a part of
+
+- **Returns**: `Banana.Instance` -
+
+
+CLONE                                                       *banana-ast-clone*
+
+Duplicates this node (note: does NOT copy attached events)
+
+- **Parameters**:
+    - `deep` (boolean): Whether to clone children too or just this node
+- **Returns**: `Banana.Ast` -
+
+
+SETATTRIBUTE                                         *banana-ast-setattribute*
+
+Sets the attribute {name} to {value}
+
+- **Parameters**:
+    - `name` (string): the name of the attribute
+    - `value` (string): the new value of the attribute
+
+
+GETATTRIBUTES                                       *banana-ast-getattributes*
+
+Returns a map of all attributes and their string values
+
+>nml
+    <div id="1" class="class1 class2">
+    </div>
+<
+
+>lua
+    document:getElementById('1'):getAttributes()
+    -- returns { id="1", class="class1 class2"}
+    -- or returns { id="1", class="class2 class1"}
+<
+
+- **Returns**: `{` - [string]: string}
+
+
+SETSTYLE                                                 *banana-ast-setstyle*
+
+Sets the elements custom style rules to {value}.
+
+This is the same as calling setAttribute("style", value)
+
+- **Parameters**:
+    - `value` (string): the ncss style string to set this element’s style rules to
+
+
+SETSTYLEVALUE                                       *banana-ast-setstylevalue*
+
+Sets the style declaration for {name} (eg hl-bg) to be {value}
+
+- **Parameters**:
+    - `name` (string): the name of the style to set
+    - `value` (string): the string of the value
+
+
+HASCLASS                                                 *banana-ast-hasclass*
+
+Returns true if the node has class {c}
+
+- **Parameters**:
+    - `c` (string): the class to find
+- **Returns**: `boolean` -
+
+
+REMOVECLASS                                           *banana-ast-removeclass*
+
+Removes the class {c} from the node’s class list
+
+- **Parameters**:
+    - `c` (string): the class to unset
+
+
+ADDCLASS                                                 *banana-ast-addclass*
+
+Adds the class {c} to the node’s class list
+
+- **Parameters**:
+    - `c` (string): the class to set
+
+
+TOGGLECLASS                                           *banana-ast-toggleclass*
+
+Toggles the class {c} to the node’s class list (eg calls addClass(c) if
+hasClass(c) is false)
+
+- **Parameters**:
+    - `c` (string): the class to toggle
+
+
+GETBOUNDBOX                                           *banana-ast-getboundbox*
+
+Returns the node’s bounding box (content+padding) in characters
+
+note: this method will return an invalid value on scripts with when="prerender"
+
+- **Returns**: `Banana.Ast.BoundingBox` -
+
+
+GETWIDTH                                                 *banana-ast-getwidth*
+
+Returns the width of the node’s bounding box (content+padding) in characters
+
+note: this method will return an invalid value on scripts with when="prerender"
+
+- **Returns**: `number` -
+
+
+GETHEIGHT                                               *banana-ast-getheight*
+
+Returns the height of the node’s bounding box (content+padding) in characters
+
+note: this method will return an invalid value on scripts with when="prerender"
+
+
+ISNIL                                                       *banana-ast-isnil*
+
+Returns true if the node is a nil node
+
+Most functions that may or may not return an ast will return this instead of
+nil
+
+A nil node throws an error if any method is called on it
+
+- **Returns**: `boolean` -
+
+
+REMOVE                                                     *banana-ast-remove*
+
+removes the ast node from the dom and deletes ALL associated keymaps
+
+
+GETATTRIBUTE                                         *banana-ast-getattribute*
+
+Returns the attribute value for {name} or nil if not found
+
+- **Parameters**:
+    - `name` (string): the name of the attribute to get
+- **Returns**: `string?` -
+
+
+HASATTRIBUTE                                         *banana-ast-hasattribute*
+
+Returns true if this node has attribute {name} set
+
+- **Parameters**:
+    - `name` (string): the attribute to search for
+- **Returns**: `boolean` -
+
+
+APPENDTEXTNODE                                     *banana-ast-appendtextnode*
+
+Adds {text} to the child list of the node
+
+Escapes the text if it starts with an & or %
+
+>nml
+    <span id="1">asdf</span>
+<
+
+>lua
+    -- "1" renders as `asdf` right now
+    document:getElementById("1"):appendTextNode("text")
+    -- "1" will now render as `asdftext`
+    document:getElementById("1"):appendTextNode("%asdf")
+    -- "1" will now render as `asdftext%asdf`
+<
+
+- **Parameters**:
+    - `text` (string): the text to add to the node
+
+
+APPENDTEXTNODENOESCAPE                     *banana-ast-appendtextnodenoescape*
+
+Adds {text} to the child list of the node
+
+Does NOT escape the text
+
+>nml
+    <span id="1">asdf</span>
+<
+
+>lua
+    -- "1" renders as `asdf` right now
+    document:getElementById("1"):appendTextNodeNoEscape("&lt;")
+    -- "1" will now render as `asdf<`
+<
+
+- **Parameters**:
+    - `text` (string): the text to add to the node
+
+
+APPENDCHILD                                           *banana-ast-appendchild*
+
+Adds ast {node} as a child to this node
+
+note: if you add a block element (eg
+==============================================================================
+1. Links                                                    *banana-ast-links*
+
+1. *@overload*: 
 
 Generated by panvimdoc <https://github.com/kdheepak/panvimdoc>
 
