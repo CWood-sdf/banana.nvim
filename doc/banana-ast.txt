@@ -56,8 +56,6 @@ hopefully enough for the API to be usable. If there are any missing features of
 the browser API that you would really like ported to banana, submit an issue or
 a pr.
 
-The functions are grouped into a few categories.
-
 
 GETDATA                                                   *banana-ast-getdata*
 
