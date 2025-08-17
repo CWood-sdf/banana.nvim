@@ -3,8 +3,6 @@ The AST class is the second of two API surfaces that you will use for any intera
 Not all of the browser api functions are implemented, but what I have now is hopefully enough for the API to be usable.
 If there are any missing features of the browser API that you would really like ported to banana, submit an issue or a pr.
 
-The functions are grouped into a few categories.
-
 ## TOC
 
 - [`getData`](#getData)
