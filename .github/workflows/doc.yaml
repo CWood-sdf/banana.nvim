@@ -14,6 +14,16 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+      - uses: rhysd/action-setup-vim@v1
+        with:
+          neovim: true
+          version: ${{ matrix.rev }}
+      - name: Update zig bindings
+        run: |
+          ./genzigheaders.sh
+      - name: Update in-tree wiki
+        run: |
+          ./updatewiki.sh
       - name: Checkout wiki code
         uses: actions/checkout@v4
         with:
@@ -39,10 +49,6 @@ jobs:
       - name: Remove wiki
         run: |
           rm banana.nvim.wiki -rf
-      - uses: rhysd/action-setup-vim@v1
-        with:
-          neovim: true
-          version: ${{ matrix.rev }}
       - name: Generate documentation
         run: |
           sudo wget https://github.com/jgm/pandoc/releases/download/3.6.1/pandoc-3.6.1-1-amd64.deb
