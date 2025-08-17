@@ -21,6 +21,11 @@ jobs:
       - name: Update zig bindings
         run: |
           ./genzigheaders.sh
+      - uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          file_pattern: "lua"
+          repository:
+          commit_message: "chore(build): update zig bindings"
       - name: Update in-tree wiki
         run: |
           ./updatewiki.sh
