@@ -677,6 +677,18 @@ end, {
 ---@type Banana.Instance?
 local devtoolsui = nil
 
+---@return Banana.Instance?
+local function getThisInst(buf)
+    ---@type Banana.Instance
+    local instance = nil
+    for _, v in ipairs(require("banana.instance")._getAllInstances()) do
+        if v.bufnr == buf then
+            instance = v
+            return instance
+        end
+    end
+end
+
 cmdTree.createCmd({
     BananaDev = {
         devtools = {
@@ -687,14 +699,7 @@ cmdTree.createCmd({
                             "devtools", "")
                 end
                 local buf = vim.api.nvim_get_current_buf()
-                ---@type Banana.Instance
-                local instance = nil
-                for _, v in ipairs(require("banana.instance")._getAllInstances()) do
-                    if v.bufnr == buf then
-                        instance = v
-                        break
-                    end
-                end
+                local instance = getThisInst(buf)
                 if instance == nil then
                     vim.notify("Could not find instance for bufnr " .. buf)
                     return
@@ -707,6 +712,35 @@ cmdTree.createCmd({
                     devtoolsui:body(), true, false)
                 devtoolsui:open()
             end,
+        },
+        setInstVariable = {
+            _callback = function (args)
+                local buf = vim.api.nvim_get_current_buf()
+                local instance = getThisInst(buf)
+                if instance == nil then
+                    vim.notify("Could not find instance for bufnr " .. buf)
+                    return
+                end
+                local name = args.params[1][1]
+                local value = args.params[2][1]
+                local actualValue = loadstring("return " .. value)()
+                instance[name] = actualValue
+                instance:forceRerender()
+            end,
+            cmdTree.requiredParams(function ()
+                local buf = vim.api.nvim_get_current_buf()
+                local instance = getThisInst(buf)
+                if instance == nil then
+                    vim.notify("Could not find instance for bufnr " .. buf)
+                    return {}
+                end
+                local ret = {}
+                for k, _ in pairs(instance) do
+                    table.insert(ret, k)
+                end
+                return ret
+            end),
+            cmdTree.positionalParam("value", true),
         },
         runBench = {
             cmdTree.requiredParams(function ()
@@ -727,26 +761,3 @@ cmdTree.createCmd({
         },
     },
 })
-
--- vim.api.nvim_create_user_command("BananaDev", function (opts)
---     local file
---     -- vim.print(opts)
---     if #opts.fargs == 0 then
---         file = vim.api.nvim_buf_get_name(0)
---     else
---         file = opts.args[1]
---     end
---     local buftitle = "scratch"
---     local inst     = require("banana.instance").emptyInstance()
---     -- inst.DEBUG_showPerf  = true
---     -- inst.DEBUG_showBuild = true
---     -- inst.DEBUG_stressTest = true
---     -- inst.DEBUG           = true
---     require("banana.require").parseReload()
---     inst:useFile(file)
---     inst:setBufName(buftitle)
---     inst:open()
---     print("Instance id: " .. inst.instanceId)
--- end, {
---     nargs = "*",
--- })
