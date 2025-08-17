@@ -24,6 +24,11 @@ jobs:
       - name: Update in-tree wiki
         run: |
           ./updatewiki.sh
+      - uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          file_pattern: "wiki"
+          repository:
+          commit_message: "chore(build): auto-generate wiki pages"
       - name: Checkout wiki code
         uses: actions/checkout@v4
         with:
