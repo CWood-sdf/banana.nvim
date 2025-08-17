@@ -670,27 +670,3 @@ For those wondering why one should not just use `vim.keymap.set` there are a few
 
 1. Remap collision. `vim.keymap.set` can only set one remap per buffer which means that if you want multiple ast nodes to handle remaps differently (eg in mason when you try to install a package pressing `i` on different lines installs different packages) you have to have a central function handle everything. `attachRemap` allows "decentralized" remaps (ie each ast node can figure out how to best handle the remap)
 2. Remap deletion. Remembering to delete remap handlers when an ast is deleted can be annoying. Using `attachRemap` does that for you
-
-## Constraints
-
-Currently, the supported constraints are "hover", "line-hover", and \<number\>.
-
-```lua
--- this will only be called if the cursor is over the node (eg isHovering() is true)
--- when the user types `<leader>w` or if the user types `1<leader>w`
-ast:attachRemap("n", "<leader>w", { "hover", 1 }, function()
-
-end, {})
-```
-
-Line-hover is similar to hover except that it calls the remap if the cursor is on the same
- line as the ast node (eg isLineHovering() is true), instead of strictly hovering over it
-
-- **Parameters**:
-
-  - `mode` (string): the mode of the keymap
-  - `lhs` (string): the lhs of the keymap
-  - `mods` (Banana.Remap.Constraint[]): a list of remap constraints
-  - `rhs` (string|fun()): callback
-  - `opts` (vim.keymap.set.Opts?): keymap options
-

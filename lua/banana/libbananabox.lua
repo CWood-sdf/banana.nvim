@@ -1,10 +1,5 @@
 ---@meta
 
-local M = {}
-
----@alias Banana._header.BoxExpect Banana.Box
----@alias Banana._header.PartialExpect Banana.Renderer.PartialRendered
----@alias Banana._header.BoundBoxExpect Banana.Ast.BoundingBox
 ---@alias Banana._header.HlExpect fun (line: number, startCol: number, endCol: number, hl: number, visualCol: number, visualEndCol: number): nil
 ---@alias Banana._header.StripRightExpect fun (hl: number): number
 
@@ -457,6 +452,5 @@ function M.box_context_strip_right_space(ctx, expected_bg) end
 ---@return nil
 function M.box_render_over(ctx, box, otherCtx, left, top) end
 
-
-
 return M
+
