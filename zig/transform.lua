@@ -1,3 +1,10 @@
+local extraFiles = {}
+
+local function extra(str)
+    table.insert(extraFiles, str)
+    return str
+end
+
 local mainFile = "zig/src/box/api.zig"
 local file = io.open(mainFile, "r")
 
@@ -8,7 +15,7 @@ end
 local contents = file:read("*a")
 file:close()
 
-local newFileName = "zig/decls.json"
+local newFileName = extra("zig/decls.json")
 local newFile = io.open(newFileName, "w")
 if newFile == nil then
     error("Could not open new file " .. newFile)
@@ -19,7 +26,7 @@ vim.cmd("e " .. newFileName)
 vim.cmd("so zig/transform.vim")
 vim.cmd("w")
 
-local typeFileName = "zig/types.lua"
+local typeFileName = extra("zig/types.lua")
 local typeFile = io.open(typeFileName, "w")
 if typeFile == nil then
     error("Could not open type file " .. typeFile)
@@ -89,5 +96,9 @@ for _, fn in ipairs(json) do
     outfile:write(") end\n\n")
 end
 outfile:write("\n\nreturn M")
+
+for _, v in ipairs(extraFiles) do
+    vim.fn.delete(v)
+end
 
 vim.notify("wrote output to " .. outname .. "\n")
