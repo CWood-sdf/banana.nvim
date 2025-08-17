@@ -13,22 +13,23 @@ A blazingly fast html renderer that allows you to write uis for neovim in html
 
 > [!NOTE]
 >
-> Banana only works on neovim version 0.10.0 and above
+> Banana only works on neovim version 0.11.0 and above
 
 ## Why
 
-If you've ever written a UI for a neovim plugin, you know that it is not very trivial to do as soon as you want interactivity or fancy element placement
+If you've ever written a UI for neovim using `nvim_buf_set_lines` for content and `nvim_buf_add_extmark` for highlights, you know that it is not very easy to do as soon as you want something that is not easily understandable as a bunch of lines. 
+Sometimes, it is easier to think about a UI as independent boxes that can be moved around, padded, margined, etc. 
 
-Banana makes it so that instead of imperatively creating UIs (eg "put red text at this position"), you can declaratively create a UI with html (eg "put a 5x5 red box below the title")
+This is why banana exists: it allows you to express a UI as html to vastly simplify the process of everything
 
 ## Example
 
-To create a simple hello world, put the following code in a file that ends with `.nml` and run the command `:BananaSo` inside it:
+To create a simple hello world, put the following code in a file that ends with `.nml` and run the command `:BananaSo` (just like running `:so` in a lua file) inside it:
 
 ```html
 <nml>
   <head>
-    <!-- will put stuff here later -->
+    <!-- we will put stuff here later -->
   </head>
   <body>
     <div>Hello World!</div>
@@ -69,7 +70,7 @@ If you want to add a script to the page, you can add the following code to the b
 <script>
   -- its just lua code here!
   local div = document:getElementByTagName("div")[1]
-  -- makes it so that when you press K over the div, it prints a message
+  -- makes it so that when you press K with the cursor over the div, it prints a message
   div:attachRemap("n", "K", { "hover" }, function()
     print("Hovering over the div!")
   end, {})
@@ -77,10 +78,11 @@ If you want to add a script to the page, you can add the following code to the b
 </body>
 ```
 
-If you want to create a UI that can be reopened and closed, save the nml file to `<folder>/banana/<name>/<file>.nml` (where `<folder>` is somewhere in your lua path (eg `~/.config/nvim` and `~/.config/nvim/banana/thing/<file>.nml`), and run the following lua code:
+If you want to create a UI that can be reopened and closed, save the nml file to `<folder>/banana/<name>/<file>.nml` (where `<folder>` is somewhere in your lua path (eg `~/.config/nvim`)), and run the following lua code:
 
 ```lua
-local document = require("banana.instance").newInstance("thing/<file>", "Window name")
+-- NOTE: This can go multiple directories down (eg dir1/dir2/<file>)
+local document = require("banana.instance").newInstance("<name>/<file>", "Window name")
 
 document:open()
 document:close()
