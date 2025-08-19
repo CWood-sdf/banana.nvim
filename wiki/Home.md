@@ -8,7 +8,7 @@ Articles will (eventually), when possible, link to relevant MDN docs pages with 
 
 ## Goals
 
-_Currently_, the goal for banana is to implement enough of a subset of html and css such that it is possible to make anything. There are several niceties in html and css that would probably be very easy to implement right now (namely other css selector types), but my goals are to get maximize the library capabilities before rounding out the feature set. If you would like one of these features, post an issue. I will happily add a feature if you want it, but I will not work on some of these features unless asked to.
+_Currently_, the goal for banana is to implement enough of a subset of html and css such that it is possible to make anything. There are several things in html and css that would probably be very easy to implement right now (namely other css selector types), but my goals are to get maximize the library capabilities before rounding out the feature set. I will happily add a feature if you want it, but some features I probably will not work on until asked
 
 ## Getting started
 
@@ -19,16 +19,24 @@ To get started, you can either run the command `:BananaSo` while in an nml file,
 To set up an instance for usage in a plugin, use the below code:
 
 ```lua
--- the buffer name can be overriden using the <title> tag
-local document = require('banana.instance').newInstance("banana require path", "initial buffer name")
 
--- can also use
-local document = require("banana.instance").emptyInstance()
+local document = nil
+
+if document ~= nil then
+    -- the buffer name can be overriden using the <title> tag
+    -- should only create ONE instance and manage all state from that
+    document = require('banana.instance').newInstance("banana require path", "initial buffer name")
+
+    -- can also use
+    document = require("banana.instance").emptyInstance()
+end
 document:requireNml("banana require path")
 document:setBufName("initial buffer name")
 
 -- opens the window
 document:open()
+-- closes the window
+document:close()
 ```
 
 ## Banana require path/structuring plugins
@@ -54,7 +62,3 @@ local document = require('banana.instance').newInstance("pluginName", "initial b
 ```
 
 An example plugin, [banana-example](https://github.com/CWood-sdf/banana-example), exists that better shows how banana recommends plugins be layed out.
-
-> [!CAUTION]
->
-> The wiki is hosted on the main repo. If you would like to make updates, please submit a pr with the changes in the wiki/ folder
