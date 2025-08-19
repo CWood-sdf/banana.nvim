@@ -49,6 +49,8 @@ jobs:
       - name: Push to wiki
         run: |
           WIKIUPDATER=$(git log -1 --pretty=format:%an -- wiki)
+          echo "Wiki Updated By $WIKIUPDATER"
+          git status
           cd banana.nvim.wiki
           git config --local user.email "action@github.com"
           git config --local user.name "$WIKIUPDATER"
