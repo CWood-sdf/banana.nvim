@@ -48,9 +48,10 @@ jobs:
           cd ..
       - name: Push to wiki
         run: |
+          WIKIUPDATER=$(git log -1 --pretty=format:%an -- wiki)
           cd banana.nvim.wiki
           git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
+          git config --local user.name "$WIKIUPDATER"
           git add .
           MSG=$(git log -1 | tail -1)
           echo "$MSG"
