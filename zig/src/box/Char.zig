@@ -145,7 +145,7 @@ pub const Char = packed struct(u32) {
         return @bitReverse(actualRet);
     }
     pub fn canSimd(chars: []const u8) bool {
-        if (chars.len < simdLen) {
+        if (chars.len < simdLen or @intFromPtr(chars.ptr) % simdLen != 0) {
             return false;
         }
         const charsVec: @Vector(simdLen, u8) = chars[0..simdLen].*;

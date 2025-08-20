@@ -197,7 +197,7 @@ end
 ---@param search string vim regex
 ---@param extract string lua regex
 ---@return Banana.Doc.Function[]
-function M.getFns(search, extract)
+function M.getFns(search, extract, _)
     if not vim.api.nvim_buf_is_valid(buf) then
         error("no buf :(")
     end
@@ -211,8 +211,16 @@ function M.getFns(search, extract)
     local fns = {}
 
     local function nextPart()
+        vim.cmd("silent! norm gg")
         vim.cmd("/" .. search)
-        vim.cmd("silent! norm {dgg")
+        vim.cmd("silent! norm {")
+        vim.cmd("silent! norm dgg")
+        local line = vim.api.nvim_buf_get_lines(buf, 0, 1, true)[1]
+
+        if vim.regex(search):match_str(line) ~= nil then
+            vim.print("at first")
+            return
+        end
         vim.cmd("/" .. search)
     end
 
@@ -223,6 +231,7 @@ function M.getFns(search, extract)
         end
         local line = vim.fn.line(".")
         local lines = vim.api.nvim_buf_get_lines(buf, 0, line, true)
+
         lines = removeComment(lines)
 
         local fname
@@ -255,6 +264,7 @@ end
 ---@class Banana.Doc.genDocsFor.opts
 ---@field includeToc boolean?
 ---@field header string?
+---@field print boolean?
 
 ---@param fns Banana.Doc.Function[]
 ---@param file string
@@ -272,6 +282,9 @@ function M.genDocsFor(fns, file, opts)
         local hasEls = false
 
         for _, fn in ipairs(fns) do
+            if opts.print then
+                vim.print(fn)
+            end
             str = str .. "- [`" .. fn.fnName .. "`](#" .. fn.fnName .. ")\n"
             hasEls = true
         end
@@ -292,16 +305,24 @@ function M.genDocsFor(fns, file, opts)
         if #v.params ~= 0 then
             str = str .. "- **Parameters**:\n\n"
             for _, p in ipairs(v.params) do
-                str = str .. "  - `" .. p.name .. "` (" .. p.tp .. "): "
-                str = str .. p.comments .. "\n"
+                str = str .. "  - `" .. p.name .. "` (" .. p.tp .. ")"
+                if #vim.split(
+                        p.comments, " ",
+                        { trimempty = true }) ~= 0 then
+                    str = str .. ": " .. p.comments
+                end
+                str = str .. "\n"
             end
             if #v.params ~= 0 then
                 str = str .. "\n"
             end
         end
         if v.ret ~= nil then
-            str = str .. "- **Returns**: `" .. v.ret.tp .. "` - "
-            str = str .. v.ret.comments .. "\n\n"
+            str = str .. "- **Returns**: `" .. v.ret.tp .. "`"
+            if #vim.split(v.ret.comments, " ", { trimempty = true }) ~= 0 then
+                str = str .. " - " .. v.ret.comments
+            end
+            str = str .. "\n\n"
         end
     end
 

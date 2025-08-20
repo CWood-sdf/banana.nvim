@@ -9,41 +9,6 @@ const grid = @import("grid.zig");
 const gen = @import("genlua.zig");
 const testing = std.testing;
 
-// pub const panic: type = std.debug.FullPanic(
-//     struct {
-//         pub fn panic(
-//             msg: []const u8,
-//             first_trace_addr: ?usize,
-//         ) noreturn {
-//             defer std.process.exit(1);
-//             const logfile = try std.fs.cwd().createFile("panic.txt", .{});
-//             defer logfile.close();
-//             _ = try logfile.write(msg);
-//             _ = try logfile.write("\r\n");
-//             _ = first_trace_addr;
-//         }
-//     }.panic,
-// );
-
-// pub fn panic(msg: []const u8, trace: ?*std.builtin.StackTrace, third: anytype) noreturn {
-//     defer std.process.exit(1);
-//     const logfile = try std.fs.cwd().createFile("panic.txt", .{});
-//     defer logfile.close();
-//     _ = try logfile.write("AUGGGGHHGG");
-//     _ = try logfile.write("\r\n");
-//     _ = try logfile.write(msg);
-//     _ = try logfile.write("\r\n");
-//
-//     try log.write("AUGGHHGHGH PANIC!!!\n", .{});
-//     try log.write("PANIC REASON: {s}\n", .{msg});
-//
-//     _ = third;
-//     _ = trace;
-//     // if(trace) |t| {
-//     //
-//     // }
-// }
-
 // pub export const decls = gen.genLuaDecls(Box, "box_");
 
 export fn add(a: i32, b: i32) i32 {
@@ -78,6 +43,7 @@ export fn luaopen_banana_libbanana_zig(state: *lua.State) c_int {
     // const file = std.fs.cwd().openFile("thing.txt", .{ .mode = .write_only }) catch return 0;
     // _ = file.write("opening :)\n") catch 0;
     const fns = gen.genLuaDecls(Box, "box_");
+
     inline for (fns) |f| {
         // std.debug.print("{s}\n", .{f.name});
         // _ = file.write(std.fmt.allocPrint(alloc, "name {s}\n", .{f.name}) catch "asdf") catch 0;

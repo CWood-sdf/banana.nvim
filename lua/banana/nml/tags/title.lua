@@ -9,7 +9,7 @@ local function renderer(self, ast, box, _,
                         inherit, extra)
     -- flame.new("tag:title")
     local inst = require("banana.instance").getInstance(ast.instance)
-    inst:setBufName(ast:getTextContent())
+    inst:_setBufName(ast:getTextContent())
 end
 ---@type Banana.TagInfo
 local M = t.newTag(

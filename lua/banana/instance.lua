@@ -304,12 +304,12 @@ end
 
 ---Sets the name of the buffer
 ---@param str string the new buffer name
-function Instance:setBufName(str)
+function Instance:_setBufName(str)
     self.bufname = str
 end
 
 ---@return Banana.Instance
-function Instance:new()
+function Instance:_new()
     if nilAst == nil then
         nilAst = {}
         for k, v in pairs(require("banana.nml.ast").Ast) do
@@ -389,7 +389,8 @@ function Instance:_dumpMemory()
     return vim.inspect(self)
 end
 
----Uses a given string in nml require format as the source of the instance
+---Uses a given string in nml require format as the source of the instance.
+---Changes the root of the instance to this ast
 ---@param filename string the nml file to use
 function Instance:requireNml(filename)
     local ast, styleRules, preScripts, postScripts = require("banana.require")
@@ -502,6 +503,7 @@ end
 
 local n = 0
 local avg = 0
+
 ---Opens the window this instance is managing
 function Instance:open()
     self.isVisible = true
@@ -618,6 +620,7 @@ function Instance:_getKeymapFunction(mode, lhs)
     end
 end
 
+-- bubbles event
 function Instance:bubbleEvent()
     self.shouldBubble = true
 end
@@ -858,8 +861,11 @@ function Instance:_pcall(f, ...)
     return pcall(f, ...)
 end
 
+---Sets the title (the bufname) of the instance.
+---Ignores this title if there is a directory in the cwd that shares the name
+---@param str string the new title
 function Instance:setTitle(str)
-    self:setBufName(str)
+    self:_setBufName(str)
     local cwd = vim.fn.getcwd()
     if vim.fn.isdirectory(cwd .. "/" .. self.bufname) == 1 or vim.fn.isdirectory(self.bufname) == 1 then
         self.bufname = ""
@@ -1030,18 +1036,20 @@ function Instance:forceRerender()
     self:_render()
 end
 
+---Rerenders this instance for a whole second to determine the average FPS of
+---the render. Will block the main thread for that entire second.
 function Instance:getFps()
     local start = vim.uv.hrtime()
     local count = 0
     for _ = 1, 1000 do
-        if vim.uv.hrtime() - start > 1000000000 then
+        if vim.uv.hrtime() - start > 1e9 then
             break
         end
         self:_render()
         count = count + 1
     end
     local time = vim.uv.hrtime() - start
-    return count / (time / 1000000000)
+    return count / (time / 1e9)
 end
 
 --- highlights a range of text
@@ -1051,7 +1059,7 @@ end
 ---@param row number
 ---@param colStart number
 ---@param colEnd number
-function Instance:highlightText(buf, ns, group, row, colStart, colEnd)
+function Instance:_highlightText(buf, ns, group, row, colStart, colEnd)
     vim.api.nvim_buf_set_extmark(buf, ns,
         row,
         colStart,
@@ -1259,7 +1267,7 @@ function Instance:_render()
                         hl .. "_" .. col .. "_" .. line
                     vim.api.nvim_set_hl(self.highlightNs, group,
                         hlvalue)
-                    self:highlightText(self.bufnr, self.highlightNs, group, line,
+                    self:_highlightText(self.bufnr, self.highlightNs, group, line,
                         col,
                         col + 1)
                     hlvalue.fg = fgVal
@@ -1285,7 +1293,7 @@ function Instance:_render()
                 elseif hlNotExists then
                     group = M.defaultWinHighlight
                 end
-                self:highlightText(self.bufnr, 0, group, line,
+                self:_highlightText(self.bufnr, 0, group, line,
                     startCol,
                     endCol)
             else
@@ -1297,7 +1305,7 @@ function Instance:_render()
                     vim.api.nvim_set_hl(self.highlightNs, group,
                         hlvalue)
                 end
-                self:highlightText(self.bufnr, self.highlightNs, group, line,
+                self:_highlightText(self.bufnr, self.highlightNs, group, line,
                     startCol,
                     endCol)
             end
@@ -1621,14 +1629,14 @@ end
 --     flame.pop()
 -- end
 
-function Instance:_highlightText(bufnr, ns, row, col, endCol, group)
-    vim.api.nvim_buf_set_extmark(bufnr, ns, row, col, {
-        end_col = endCol,
-        hl_group = group,
-    })
-end
+-- function Instance:_highlightText(bufnr, ns, row, col, endCol, group)
+--     vim.api.nvim_buf_set_extmark(bufnr, ns, row, col, {
+--         end_col = endCol,
+--         hl_group = group,
+--     })
+-- end
 
----Loads a partial nml file at {file} to be the content of the ast
+---Loads a partial nml file at the require path specified by {file} to be the content of {ast}
 ---@param file string the file to use
 ---@param ast Banana.Ast the ast to send the content to
 ---@param remove boolean? Whether to remove all the child elements, default true
@@ -1818,8 +1826,8 @@ function M.newInstance(filename, bufferName)
     --         return v
     --     end
     -- end
-    local instance = Instance:new()
-    instance:setBufName(bufferName)
+    local instance = Instance:_new()
+    instance:_setBufName(bufferName)
     instance:requireNml(filename)
     return instance
 end
@@ -1827,7 +1835,7 @@ end
 ---Creates an instance with no associated document
 ---@return Banana.Instance
 function M.emptyInstance()
-    return Instance:new()
+    return Instance:_new()
 end
 
 ---Returns the instance with given id
