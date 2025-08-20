@@ -16,7 +16,6 @@ jobs:
       - uses: actions/checkout@v4
       - uses: mlugg/setup-zig@v1
         with:
-          mirror: "https://ziglang.org/download"
           version: 0.15.1
       - name: zig build
         run: |
