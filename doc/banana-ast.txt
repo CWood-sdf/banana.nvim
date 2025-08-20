@@ -110,8 +110,8 @@ GETROOTNODE                                           *banana-ast-getrootnode*
 
 Returns the root node of this section of the DOM tree
 
-In components, this will return a the tag that the component runs inside,
-otherwise, it will return the tag
+In components, this will return a the `<template>` tag that the component runs
+inside, otherwise, it will return the `<nml>` tag
 
 - **Returns**: `Banana.Ast` - The root node
 
@@ -128,8 +128,9 @@ SETINNERNML                                           *banana-ast-setinnernml*
 Sets the nodelist of this ast to be equivalent to the NML string provided.
 
 note: due to a limitation of the current nml parser, the entire string MUST be
-contained inside a single element (eg setInnerNml('asdf idk ') is allowed but
-setInnerNml('asdf idk ') is not)
+contained inside a single element (eg `setInnerNml('<span>asdf <span> idk
+</span></span>')` is allowed but `setInnerNml('asdf <span> idk </span>')` is
+not)
 
 - **Parameters**:
     - `nml` (string): The nml string to set this ast’s content to
@@ -398,7 +399,7 @@ Returns a map of all attributes and their string values
     -- or returns { id="1", class="class2 class1"}
 <
 
-- **Returns**: `{` - [string]: string}
+- **Returns**: `{ [string]: string}`
 
 
 SETSTYLE                                                 *banana-ast-setstyle*
@@ -651,8 +652,8 @@ GETTEXTCONTENT                                     *banana-ast-gettextcontent*
 
 Returns the printed text value of this element (does not include newlines)
 
-Note: This is currently bugged as entities (eg &) and attr substitutions (eg
-%attr) will not return their printed value
+Note: This is currently bugged as entities (eg `&amp;`) and attr substitutions
+(eg %attr) will not return their printed value
 
 - **Returns**: `string`
 
@@ -661,8 +662,8 @@ SETTEXTCONTENT                                     *banana-ast-settextcontent*
 
 Sets the text content of this element. Removes all other children
 
-Replaces newlines with elements (note: if newlines are passed inside an inline
-element (eg. ), it will cause a LineTooBig error)
+Replaces newlines with `<br>` elements (note: if newlines are passed inside an
+inline element (eg. `<span>`), it will cause a LineTooBig error)
 
 - **Parameters**:
     - `str` (string): the text to set this element’s content to
