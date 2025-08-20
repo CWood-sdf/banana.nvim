@@ -47,6 +47,22 @@ Table of Contents                               *banana-ast-table-of-contents*
   - appendTextNode                                 |banana-ast-appendtextnode|
   - appendTextNodeNoEscape                 |banana-ast-appendtextnodenoescape|
   - appendChild                                       |banana-ast-appendchild|
+  - isLineHovering                                 |banana-ast-islinehovering|
+  - isHovering                                         |banana-ast-ishovering|
+  - removeChildren                                 |banana-ast-removechildren|
+  - children                                             |banana-ast-children|
+  - childIterWithI                                 |banana-ast-childiterwithi|
+  - allChildIter                                     |banana-ast-allchilditer|
+  - childIter                                           |banana-ast-childiter|
+  - child                                                   |banana-ast-child|
+  - getAttributeSubstitution             |banana-ast-getattributesubstitution|
+  - getTextContent                                 |banana-ast-gettextcontent|
+  - setTextContent                                 |banana-ast-settextcontent|
+  - parent                                                 |banana-ast-parent|
+  - isHidden                                             |banana-ast-ishidden|
+  - attachRemap                                       |banana-ast-attachremap|
+  - Explanation                                       |banana-ast-explanation|
+  - Constraints                                       |banana-ast-constraints|
 1. Links                                                    |banana-ast-links|
 The AST class is the second of two API surfaces that you will use for any
 interaction with the dom tree in banana (the other one being Instance).
@@ -544,7 +560,165 @@ APPENDCHILD                                           *banana-ast-appendchild*
 
 Adds ast {node} as a child to this node
 
-note: if you add a block element (eg
+note: if you add a block element (eg `<div>`) as a descendant of an inline
+element (eg `<span>`) you will get a LineTooBig error when trying to render
+
+note: {node} CANNOT be a string
+
+- **Parameters**:
+    - `node` (Banana.Ast): the node to append as a child
+
+
+ISLINEHOVERING                                     *banana-ast-islinehovering*
+
+Returns true if the cursor is on the same line as this node
+
+- **Returns**: `boolean`
+
+
+ISHOVERING                                             *banana-ast-ishovering*
+
+Returns true if the cursor is hovering over this ast
+
+- **Returns**: `boolean`
+
+
+REMOVECHILDREN                                     *banana-ast-removechildren*
+
+Removes all children from this node (including text)
+
+
+CHILDREN                                                 *banana-ast-children*
+
+Returns all ast node children of this element (not text nodes)
+
+- **Returns**: `Banana.Ast[]`
+
+
+CHILDITERWITHI                                     *banana-ast-childiterwithi*
+
+Returns an iterator that allows iteration over all ast children with indexing
+
+>lua
+    for i, v in ast:childIterWithI() do
+    end
+<
+
+- **Returns**: `fun(): number?, Banana.Ast?`
+
+
+ALLCHILDITER                                         *banana-ast-allchilditer*
+
+Returns an iterator over all the children of this node (including text)
+
+- **Returns**: `fun():(Banana.Ast|string)?`
+
+
+CHILDITER                                               *banana-ast-childiter*
+
+Returns an iterator over all the ast children of this node
+
+- **Returns**: `fun():Banana.Ast?`
+
+
+CHILD                                                       *banana-ast-child*
+
+Returns the nth non-string child of this node
+
+- **Returns**: `Banana.Ast`
+
+
+GETATTRIBUTESUBSTITUTION                 *banana-ast-getattributesubstitution*
+
+returns what the attribute substitution (eg %attr in nml) would be for {name}
+
+>nml
+    <div name="idk">
+      <span id="1">%name</span> <!-- renders as "idk" -->
+    </div>
+<
+
+>lua
+    document:getElementById("1"):getAttributeSubstitution("name") -- returns "idk"
+<
+
+- **Parameters**:
+    - `name` (string): the attribute to lookup
+- **Returns**: `string?`
+
+
+GETTEXTCONTENT                                     *banana-ast-gettextcontent*
+
+Returns the printed text value of this element (does not include newlines)
+
+Note: This is currently bugged as entities (eg &) and attr substitutions (eg
+%attr) will not return their printed value
+
+- **Returns**: `string`
+
+
+SETTEXTCONTENT                                     *banana-ast-settextcontent*
+
+Sets the text content of this element. Removes all other children
+
+Replaces newlines with elements (note: if newlines are passed inside an inline
+element (eg. ), it will cause a LineTooBig error)
+
+- **Parameters**:
+    - `str` (string): the text to set this element’s content to
+
+
+PARENT                                                     *banana-ast-parent*
+
+Returns the parent node of this node
+
+- **Returns**: `Banana.Ast`
+
+
+ISHIDDEN                                                 *banana-ast-ishidden*
+
+Returns true when this node is not rendered (eg the style `display: none`)
+
+- **Returns**: `boolean`
+
+
+ATTACHREMAP                                           *banana-ast-attachremap*
+
+Attaches the given remap to the ast
+
+
+EXPLANATION                                           *banana-ast-explanation*
+
+For those wondering why one should not just use `vim.keymap.set` there are a
+few reasons.
+
+1. Remap collision. `vim.keymap.set` can only set one remap per buffer which means that if you want multiple ast nodes to handle remaps differently (eg in mason when you try to install a package pressing `i` on different lines installs different packages) you have to have a central function handle everything. `attachRemap` allows "decentralized" remaps (ie each ast node can figure out how to best handle the remap)
+2. Remap deletion. Remembering to delete remap handlers when an ast is deleted can be annoying. Using `attachRemap` does that for you
+
+
+CONSTRAINTS                                           *banana-ast-constraints*
+
+Currently, the supported constraints are "hover", "line-hover", and <number>.
+
+>lua
+    -- this will only be called if the cursor is over the node (eg isHovering() is true)
+    -- when the user types `<leader>w` or if the user types `1<leader>w`
+    ast:attachRemap("n", "<leader>w", { "hover", 1 }, function()
+    
+    end, {})
+<
+
+Line-hover is similar to hover except that it calls the remap if the cursor is
+on the same line as the ast node (eg isLineHovering() is true), instead of
+strictly hovering over it
+
+- **Parameters**:
+    - `mode` (string): the mode of the keymap
+    - `lhs` (string): the lhs of the keymap
+    - `mods` (Banana.Remap.Constraint[]): a list of remap constraints
+    - `rhs` (string|fun()): callback
+    - `opts` (vim.keymap.set.Opts?): keymap options
+
 ==============================================================================
 1. Links                                                    *banana-ast-links*
 
