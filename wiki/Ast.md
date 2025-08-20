@@ -546,8 +546,8 @@ document:getElementById("1"):appendTextNodeNoEscape("&lt;")
 
 Adds ast {node} as a child to this node
 
-note: if you add a block element (eg <div>) as a descendant of an inline
-element (eg <span>) you will get a LineTooBig error when trying to render
+note: if you add a block element (eg `<div>`) as a descendant of an inline
+element (eg `<span>`) you will get a LineTooBig error when trying to render
 
 note: {node} CANNOT be a string
 
