@@ -97,7 +97,7 @@ returns nil.
 See [canvas rendering](https://github.com/CWood-sdf/banana.nvim/wiki/Canvas)
 for more details
 
-- **Returns**: `Banana.Nml.CanvasContext` - 
+- **Returns**: `Banana.Nml.CanvasContext`
 
 ## `getRootNode`
 
@@ -150,7 +150,7 @@ Returns the actual left side margin of the element (in characters)
 
 note: this method will return an invalid value on scripts with when="prerender"
 
-- **Returns**: `number` - 
+- **Returns**: `number`
 
 ## `marginRight`
 
@@ -158,7 +158,7 @@ Returns the actual right side margin of the element (in characters)
 
 note: this method will return an invalid value on scripts with when="prerender"
 
-- **Returns**: `number` - 
+- **Returns**: `number`
 
 ## `marginTop`
 
@@ -166,7 +166,7 @@ Returns the actual top side margin of the element (in characters)
 
 note: this method will return an invalid value on scripts with when="prerender"
 
-- **Returns**: `number` - 
+- **Returns**: `number`
 
 ## `marginBottom`
 
@@ -174,7 +174,7 @@ Returns the actual bottom side margin of the element (in characters)
 
 note: this method will return an invalid value on scripts with when="prerender"
 
-- **Returns**: `number` - 
+- **Returns**: `number`
 
 ## `paddingLeft`
 
@@ -182,7 +182,7 @@ Returns the actual left side padding of the element (in characters)
 
 note: this method will return an invalid value on scripts with when="prerender"
 
-- **Returns**: `number` - 
+- **Returns**: `number`
 
 ## `paddingRight`
 
@@ -190,7 +190,7 @@ Returns the actual right side padding of the element (in characters)
 
 note: this method will return an invalid value on scripts with when="prerender"
 
-- **Returns**: `number` - 
+- **Returns**: `number`
 
 ## `paddingTop`
 
@@ -198,7 +198,7 @@ Returns the actual top side padding of the element (in characters)
 
 note: this method will return an invalid value on scripts with when="prerender"
 
-- **Returns**: `number` - 
+- **Returns**: `number`
 
 ## `paddingBottom`
 
@@ -206,7 +206,7 @@ Returns the actual bottom side padding of the element (in characters)
 
 note: this method will return an invalid value on scripts with when="prerender"
 
-- **Returns**: `number` - 
+- **Returns**: `number`
 
 ## `cloneNode`
 
@@ -222,7 +222,7 @@ note: DOES NOT clone remaps or associated scripts
 
   - `deep` (boolean?): Whether to also clone the child nodes (default true)
 
-- **Returns**: `Banana.Ast` - 
+- **Returns**: `Banana.Ast`
 
 ## `insertBefore`
 
@@ -251,7 +251,7 @@ strange results. there is also the possibility that the string passed for
 
   - `child` (Banana.Ast|string): The node to remove
 
-- **Returns**: `Banana.Ast|string|nil` - 
+- **Returns**: `Banana.Ast|string|nil`
 
 ## `replaceChild`
 
@@ -268,7 +268,7 @@ strange results. there is also the possibility that the string passed for
   - `child` (Banana.Ast|string): The child to replace
   - `newChild` (Banana.Ast|string): The new child to put in place
 
-- **Returns**: `Banana.Ast|string|nil` - 
+- **Returns**: `Banana.Ast|string|nil`
 
 ## `firstChild`
 
@@ -278,7 +278,7 @@ Returns the first child node
 
   - `allowString` (boolean): whether to include the string nodes (default false)
 
-- **Returns**: `Banana.Ast|string` - 
+- **Returns**: `Banana.Ast|string`
 
 ## `lastChild`
 
@@ -288,7 +288,7 @@ Returns the last child node
 
   - `allowString` (boolean): whether to include the string nodes (default false)
 
-- **Returns**: `Banana.Ast|string` - 
+- **Returns**: `Banana.Ast|string`
 
 ## `nextSibling`
 
@@ -316,7 +316,7 @@ document:getElementById('2'):nextSibling():isNil() -- evals to true
 
   - `allowString` (boolean): whether to include the string nodes
 
-- **Returns**: `Banana.Ast|string` - 
+- **Returns**: `Banana.Ast|string`
 
 ## `previousSibling`
 
@@ -345,13 +345,13 @@ document:getElementById('1'):previousSibling():isNil() -- evals to true
 
   - `allowString` (false?): whether to include the string nodes
 
-- **Returns**: `Banana.Ast` - 
+- **Returns**: `Banana.Ast`
 
 ## `ownerDocument`
 
 Returns the document that this ast is a part of
 
-- **Returns**: `Banana.Instance` - 
+- **Returns**: `Banana.Instance`
 
 ## `clone`
 
@@ -361,7 +361,7 @@ Duplicates this node (note: does NOT copy attached events)
 
   - `deep` (boolean): Whether to clone children too or just this node
 
-- **Returns**: `Banana.Ast` - 
+- **Returns**: `Banana.Ast`
 
 ## `setAttribute`
 
@@ -416,7 +416,7 @@ Returns true if the node has class {c}
 
   - `c` (string): the class to find
 
-- **Returns**: `boolean` - 
+- **Returns**: `boolean`
 
 ## `removeClass`
 
@@ -449,7 +449,7 @@ Returns the node's bounding box (content+padding) in characters
 
 note: this method will return an invalid value on scripts with when="prerender"
 
-- **Returns**: `Banana.Ast.BoundingBox` - 
+- **Returns**: `Banana.Ast.BoundingBox`
 
 ## `getWidth`
 
@@ -457,7 +457,7 @@ Returns the width of the node's bounding box (content+padding) in characters
 
 note: this method will return an invalid value on scripts with when="prerender"
 
-- **Returns**: `number` - 
+- **Returns**: `number`
 
 ## `getHeight`
 
@@ -474,7 +474,7 @@ nil
 
 A nil node throws an error if any method is called on it
 
-- **Returns**: `boolean` - 
+- **Returns**: `boolean`
 
 ## `remove`
 
@@ -488,7 +488,7 @@ Returns the attribute value for {name} or nil if not found
 
   - `name` (string): the name of the attribute to get
 
-- **Returns**: `string?` - 
+- **Returns**: `string?`
 
 ## `hasAttribute`
 
@@ -498,7 +498,7 @@ Returns true if this node has attribute {name} set
 
   - `name` (string): the attribute to search for
 
-- **Returns**: `boolean` - 
+- **Returns**: `boolean`
 
 ## `appendTextNode`
 
@@ -559,13 +559,13 @@ note: {node} CANNOT be a string
 
 Returns true if the cursor is on the same line as this node
 
-- **Returns**: `boolean` - 
+- **Returns**: `boolean`
 
 ## `isHovering`
 
 Returns true if the cursor is hovering over this ast
 
-- **Returns**: `boolean` - 
+- **Returns**: `boolean`
 
 ## `removeChildren`
 
@@ -575,7 +575,7 @@ Removes all children from this node (including text)
 
 Returns all ast node children of this element (not text nodes)
 
-- **Returns**: `Banana.Ast[]` - 
+- **Returns**: `Banana.Ast[]`
 
 ## `childIterWithI`
 
@@ -586,25 +586,25 @@ for i, v in ast:childIterWithI() do
 end
 ```
 
-- **Returns**: `fun(): number?, Banana.Ast?` - 
+- **Returns**: `fun(): number?, Banana.Ast?`
 
 ## `allChildIter`
 
 Returns an iterator over all the children of this node (including text)
 
-- **Returns**: `fun():(Banana.Ast|string)?` - 
+- **Returns**: `fun():(Banana.Ast|string)?`
 
 ## `childIter`
 
 Returns an iterator over all the ast children of this node
 
-- **Returns**: `fun():Banana.Ast?` - 
+- **Returns**: `fun():Banana.Ast?`
 
 ## `child`
 
 Returns the nth non-string child of this node
 
-- **Returns**: `Banana.Ast` - 
+- **Returns**: `Banana.Ast`
 
 ## `getAttributeSubstitution`
 
@@ -624,7 +624,7 @@ document:getElementById("1"):getAttributeSubstitution("name") -- returns "idk"
 
   - `name` (string): the attribute to lookup
 
-- **Returns**: `string?` - 
+- **Returns**: `string?`
 
 ## `getTextContent`
 
@@ -633,7 +633,7 @@ Returns the printed text value of this element (does not include newlines)
 Note: This is currently bugged as entities (eg &amp;) and attr substitutions
 (eg %attr) will not return their printed value
 
-- **Returns**: `string` - 
+- **Returns**: `string`
 
 ## `setTextContent`
 
@@ -650,13 +650,13 @@ inline element (eg. <span>), it will cause a LineTooBig error)
 
 Returns the parent node of this node
 
-- **Returns**: `Banana.Ast` - 
+- **Returns**: `Banana.Ast`
 
 ## `isHidden`
 
 Returns true when this node is not rendered (eg the style `display: none`)
 
-- **Returns**: `boolean` - 
+- **Returns**: `boolean`
 
 ## `attachRemap`
 
