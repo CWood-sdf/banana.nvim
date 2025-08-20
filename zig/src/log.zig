@@ -2,6 +2,8 @@ const std = @import("std");
 const debug = @import("debug.zig").debug;
 var path: [1000]u8 = @splat(0);
 var pathLen: u32 = 0;
+
+var buffer: [4096]u8 = undefined;
 pub fn init(p: []const u8) !void {
     if (p.len > path.len) {
         return error.LogPathTooBig;
@@ -25,6 +27,9 @@ pub inline fn write(comptime fmt: []const u8, extra: anytype) !void {
         defer file.close();
 
         try file.seekFromEnd(0);
-        _ = try std.fmt.format(file.writer(), fmt, extra);
+        var writer = file.writer(&buffer);
+        _ = try writer.interface.print(fmt, extra);
+        _ = try writer.interface.flush();
+        // _ = try std.fmt.format(writer.interface, fmt, extra);
     }
 }

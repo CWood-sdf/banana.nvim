@@ -129,43 +129,43 @@ pub fn push_stringslice(L: *State, str: []const u8) void {
 extern fn lua_concat(L: *State, n: c_int) callconv(.c) void;
 pub const concat = lua_concat;
 
-pub fn push_fmtstring(L: *State, comptime fmt: []const u8, tuple: anytype) c_int {
-    const writer: StackWriter = .init(L);
-    writer.prepStack();
-    std.fmt.format(writer.writer(), fmt, tuple) catch return 0;
-    return 1;
-}
+// pub fn push_fmtstring(L: *State, comptime fmt: []const u8, tuple: anytype) c_int {
+//     const writer: StackWriter = .init(L);
+//     writer.prepStack();
+//     std.fmt.format(writer.writer(), fmt, tuple) catch return 0;
+//     return 1;
+// }
 // }
 
 extern fn lua_call(L: *State, nargs: c_int, nresults: c_int) callconv(.c) void;
 pub const call = lua_call;
 
-pub const WriteError = error{};
-pub fn writeToStack(w: StackWriter, bytes: []const u8) WriteError!usize {
-    push_stringslice(w.state, bytes);
-    concat(w.state, 2);
-    return bytes.len;
-}
-const Writer = std.io.Writer(StackWriter, error{}, writeToStack);
-// essentially a writer that writes to the stack and appends
-pub const StackWriter = struct {
-    state: *State,
-    pub fn init(state: *State) StackWriter {
-        return .{
-            .state = state,
-        };
-    }
-
-    pub fn prepStack(self: StackWriter) void {
-        push_stringslice(self.state, "");
-    }
-
-    pub fn writer(self: StackWriter) Writer {
-        return .{
-            .context = self,
-        };
-    }
-};
+// pub const WriteError = error{};
+// pub fn writeToStack(w: StackWriter, bytes: []const u8) WriteError!usize {
+//     push_stringslice(w.state, bytes);
+//     concat(w.state, 2);
+//     return bytes.len;
+// }
+// const Writer = std.Io.Writer; // (StackWriter, error{}, writeToStack);
+// // essentially a writer that writes to the stack and appends
+// pub const StackWriter = struct {
+//     state: *State,
+//     pub fn init(state: *State) StackWriter {
+//         return .{
+//             .state = state,
+//         };
+//     }
+//
+//     pub fn prepStack(self: StackWriter) void {
+//         push_stringslice(self.state, "");
+//     }
+//
+//     pub fn writer(self: StackWriter) Writer {
+//         return .{
+//             .context = self,
+//         };
+//     }
+// };
 
 extern fn lua_error(L: *State) callconv(.c) noreturn;
 pub const senderror = lua_error;

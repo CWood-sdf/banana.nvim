@@ -3,6 +3,7 @@ const lua = @import("lua_api/lua.zig");
 const luaL = @import("lua_api/luaL.zig");
 const rowLimit = 300;
 const columnLimit = 300;
+
 const BitSetT = std.bit_set.ArrayBitSet(usize, rowLimit * columnLimit);
 // var bitSet = BitSetT.initEmpty();
 

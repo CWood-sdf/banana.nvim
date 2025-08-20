@@ -243,7 +243,9 @@ pub fn luaTemplate(
     // log.write("got {} args for {}\n", .{ args, i }) catch {};
 
     if (args != i) {
-        _ = lua.push_fmtstring(L, "yo you put in the wrong number of parameters to {s}. expected {}, got {}", .{ name, i, args });
+        // var buf: [1024]u8 = undefined;
+        // std.fmt.fmt
+        // _ = lua.push_fmtstring(L, "yo you put in the wrong number of parameters to {s}. expected {}, got {}", .{ name, i, args });
         _ = lua.senderror(L);
         // pushValue(L, failReturn);
         // lua.push_bool(L, false);
