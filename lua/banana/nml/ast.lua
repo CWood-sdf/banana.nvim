@@ -294,8 +294,8 @@ end
 
 ---Returns the root node of this section of the DOM tree
 ---
----In components, this will return a the <template> tag that the component runs
----inside, otherwise, it will return the <nml> tag
+---In components, this will return a the `<template>` tag that the component runs
+---inside, otherwise, it will return the `<nml>` tag
 ---@return Banana.Ast The root node
 function M.Ast:getRootNode()
     if self._parent:isNil() then
@@ -360,8 +360,8 @@ end
 ---Sets the nodelist of this ast to be equivalent to the NML string provided.
 ---
 ---note: due to a limitation of the current nml parser, the entire string MUST
----be contained inside a single element (eg setInnerNml('<span>asdf <span> idk </span></span>')
----is allowed but setInnerNml('asdf <span> idk </span>') is not)
+---be contained inside a single element (eg `setInnerNml('<span>asdf <span> idk </span></span>')`
+---is allowed but `setInnerNml('asdf <span> idk </span>')` is not)
 ---@param nml string The nml string to set this ast's content to
 function M.Ast:setInnerNml(nml)
     local ast, styleRules, preScripts, postScripts = require("banana.require")
@@ -1910,7 +1910,7 @@ end
 
 ---Returns the printed text value of this element (does not include newlines)
 ---
----Note: This is currently bugged as entities (eg &amp;) and attr substitutions
+---Note: This is currently bugged as entities (eg `&amp;`) and attr substitutions
 ---(eg %attr) will not return their printed value
 ---@return string
 function M.Ast:getTextContent()
@@ -1928,8 +1928,8 @@ end
 
 ---Sets the text content of this element. Removes all other children
 ---
----Replaces newlines with <br> elements (note: if newlines are passed inside an
----inline element (eg. <span>), it will cause a LineTooBig error)
+---Replaces newlines with `<br>` elements (note: if newlines are passed inside an
+---inline element (eg. `<span>`), it will cause a LineTooBig error)
 ---@param str string the text to set this element's content to
 function M.Ast:setTextContent(str)
     if type(str) ~= "string" then

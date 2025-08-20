@@ -84,6 +84,7 @@ local function extractType(line)
     local contChars = {
         [":"] = true,
         [","] = true,
+        ["{"] = true,
     }
 
     while contChars[word:sub(#word, #word)] do
