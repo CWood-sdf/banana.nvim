@@ -1,4 +1,4 @@
-*banana-ast.txt*          For NVIM v0.12.0         Last change: 2025 August 19
+*banana-ast.txt*          For NVIM v0.12.0         Last change: 2025 August 20
 
 ==============================================================================
 Table of Contents                               *banana-ast-table-of-contents*
@@ -87,7 +87,7 @@ Returns a canvas context that can be used to render. This ONLY returns a valid
 context on `<canvas>` elements, otherwise, it returns nil. See canvas rendering
 <https://github.com/CWood-sdf/banana.nvim/wiki/Canvas> for more details
 
-- **Returns**: `Banana.Nml.CanvasContext` -
+- **Returns**: `Banana.Nml.CanvasContext`
 
 
 GETROOTNODE                                           *banana-ast-getrootnode*
@@ -143,7 +143,7 @@ Returns the actual left side margin of the element (in characters)
 
 note: this method will return an invalid value on scripts with when="prerender"
 
-- **Returns**: `number` -
+- **Returns**: `number`
 
 
 MARGINRIGHT                                           *banana-ast-marginright*
@@ -152,7 +152,7 @@ Returns the actual right side margin of the element (in characters)
 
 note: this method will return an invalid value on scripts with when="prerender"
 
-- **Returns**: `number` -
+- **Returns**: `number`
 
 
 MARGINTOP                                               *banana-ast-margintop*
@@ -161,7 +161,7 @@ Returns the actual top side margin of the element (in characters)
 
 note: this method will return an invalid value on scripts with when="prerender"
 
-- **Returns**: `number` -
+- **Returns**: `number`
 
 
 MARGINBOTTOM                                         *banana-ast-marginbottom*
@@ -170,7 +170,7 @@ Returns the actual bottom side margin of the element (in characters)
 
 note: this method will return an invalid value on scripts with when="prerender"
 
-- **Returns**: `number` -
+- **Returns**: `number`
 
 
 PADDINGLEFT                                           *banana-ast-paddingleft*
@@ -179,7 +179,7 @@ Returns the actual left side padding of the element (in characters)
 
 note: this method will return an invalid value on scripts with when="prerender"
 
-- **Returns**: `number` -
+- **Returns**: `number`
 
 
 PADDINGRIGHT                                         *banana-ast-paddingright*
@@ -188,7 +188,7 @@ Returns the actual right side padding of the element (in characters)
 
 note: this method will return an invalid value on scripts with when="prerender"
 
-- **Returns**: `number` -
+- **Returns**: `number`
 
 
 PADDINGTOP                                             *banana-ast-paddingtop*
@@ -197,7 +197,7 @@ Returns the actual top side padding of the element (in characters)
 
 note: this method will return an invalid value on scripts with when="prerender"
 
-- **Returns**: `number` -
+- **Returns**: `number`
 
 
 PADDINGBOTTOM                                       *banana-ast-paddingbottom*
@@ -206,7 +206,7 @@ Returns the actual bottom side padding of the element (in characters)
 
 note: this method will return an invalid value on scripts with when="prerender"
 
-- **Returns**: `number` -
+- **Returns**: `number`
 
 
 CLONENODE                                               *banana-ast-clonenode*
@@ -221,7 +221,7 @@ note: DOES NOT clone remaps or associated scripts
 
 - **Parameters**:
     - `deep` (boolean?): Whether to also clone the child nodes (default true)
-- **Returns**: `Banana.Ast` -
+- **Returns**: `Banana.Ast`
 
 
 INSERTBEFORE                                         *banana-ast-insertbefore*
@@ -249,7 +249,7 @@ strange results. there is also the possibility that the string passed for
 
 - **Parameters**:
     - `child` (Banana.Ast|string): The node to remove
-- **Returns**: `Banana.Ast|string|nil` -
+- **Returns**: `Banana.Ast|string|nil`
 
 
 REPLACECHILD                                         *banana-ast-replacechild*
@@ -265,7 +265,7 @@ strange results. there is also the possibility that the string passed for
 - **Parameters**:
     - `child` (Banana.Ast|string): The child to replace
     - `newChild` (Banana.Ast|string): The new child to put in place
-- **Returns**: `Banana.Ast|string|nil` -
+- **Returns**: `Banana.Ast|string|nil`
 
 
 FIRSTCHILD                                             *banana-ast-firstchild*
@@ -274,7 +274,7 @@ Returns the first child node
 
 - **Parameters**:
     - `allowString` (boolean): whether to include the string nodes (default false)
-- **Returns**: `Banana.Ast|string` -
+- **Returns**: `Banana.Ast|string`
 
 
 LASTCHILD                                               *banana-ast-lastchild*
@@ -283,7 +283,7 @@ Returns the last child node
 
 - **Parameters**:
     - `allowString` (boolean): whether to include the string nodes (default false)
-- **Returns**: `Banana.Ast|string` -
+- **Returns**: `Banana.Ast|string`
 
 
 NEXTSIBLING                                           *banana-ast-nextsibling*
@@ -310,7 +310,7 @@ Returns the nil ast if there is no node after this node
 
 - **Parameters**:
     - `allowString` (boolean): whether to include the string nodes
-- **Returns**: `Banana.Ast|string` -
+- **Returns**: `Banana.Ast|string`
 
 
 PREVIOUSSIBLING                                   *banana-ast-previoussibling*
@@ -339,14 +339,14 @@ Returns the nil ast if there is no node before this node
 
 - **Parameters**:
     - `allowString` (false?): whether to include the string nodes
-- **Returns**: `Banana.Ast` -
+- **Returns**: `Banana.Ast`
 
 
 OWNERDOCUMENT                                       *banana-ast-ownerdocument*
 
 Returns the document that this ast is a part of
 
-- **Returns**: `Banana.Instance` -
+- **Returns**: `Banana.Instance`
 
 
 CLONE                                                       *banana-ast-clone*
@@ -355,7 +355,7 @@ Duplicates this node (note: does NOT copy attached events)
 
 - **Parameters**:
     - `deep` (boolean): Whether to clone children too or just this node
-- **Returns**: `Banana.Ast` -
+- **Returns**: `Banana.Ast`
 
 
 SETATTRIBUTE                                         *banana-ast-setattribute*
@@ -410,7 +410,7 @@ Returns true if the node has class {c}
 
 - **Parameters**:
     - `c` (string): the class to find
-- **Returns**: `boolean` -
+- **Returns**: `boolean`
 
 
 REMOVECLASS                                           *banana-ast-removeclass*
@@ -444,7 +444,7 @@ Returns the node’s bounding box (content+padding) in characters
 
 note: this method will return an invalid value on scripts with when="prerender"
 
-- **Returns**: `Banana.Ast.BoundingBox` -
+- **Returns**: `Banana.Ast.BoundingBox`
 
 
 GETWIDTH                                                 *banana-ast-getwidth*
@@ -453,7 +453,7 @@ Returns the width of the node’s bounding box (content+padding) in characters
 
 note: this method will return an invalid value on scripts with when="prerender"
 
-- **Returns**: `number` -
+- **Returns**: `number`
 
 
 GETHEIGHT                                               *banana-ast-getheight*
@@ -472,7 +472,7 @@ nil
 
 A nil node throws an error if any method is called on it
 
-- **Returns**: `boolean` -
+- **Returns**: `boolean`
 
 
 REMOVE                                                     *banana-ast-remove*
@@ -486,7 +486,7 @@ Returns the attribute value for {name} or nil if not found
 
 - **Parameters**:
     - `name` (string): the name of the attribute to get
-- **Returns**: `string?` -
+- **Returns**: `string?`
 
 
 HASATTRIBUTE                                         *banana-ast-hasattribute*
@@ -495,7 +495,7 @@ Returns true if this node has attribute {name} set
 
 - **Parameters**:
     - `name` (string): the attribute to search for
-- **Returns**: `boolean` -
+- **Returns**: `boolean`
 
 
 APPENDTEXTNODE                                     *banana-ast-appendtextnode*
