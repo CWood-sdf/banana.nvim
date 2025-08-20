@@ -13,7 +13,7 @@ Currently, banana supports the following named entities:
 
     out = out .. [[
 
-Banana also supports numerical entities (eg &#32; means space (character code 32)). Currently, only decimal numbers are supported as the number
+Banana also supports numerical entities (eg `&#32;` means space (character code 32)). Currently, only decimal numbers are supported as the number
 ]]
 
     local file = io.open("./wiki/Entities.md", "w")
