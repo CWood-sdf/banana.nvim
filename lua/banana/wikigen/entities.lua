@@ -7,7 +7,14 @@ Currently, banana supports the following named entities:
 
 ]]
 
-    for k, v in pairs(ent) do
+    local keys = {}
+    for k, _ in pairs(ent) do
+        table.insert(keys, k)
+    end
+    table.sort(keys)
+
+    for _, k in ipairs(keys) do
+        local v = ent[k]
         out = out .. "- `" .. k .. "`: `" .. v .. "`\n"
     end
 
