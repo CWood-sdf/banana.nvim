@@ -103,8 +103,8 @@ for more details
 
 Returns the root node of this section of the DOM tree
 
-In components, this will return a the <template> tag that the component runs
-inside, otherwise, it will return the <nml> tag
+In components, this will return a the `<template>` tag that the component runs
+inside, otherwise, it will return the `<nml>` tag
 
 - **Returns**: `Banana.Ast` - The root node
 
@@ -119,8 +119,8 @@ Returns the name of the tag that this ast node is for (eg. 'div')
 Sets the nodelist of this ast to be equivalent to the NML string provided.
 
 note: due to a limitation of the current nml parser, the entire string MUST
-be contained inside a single element (eg setInnerNml('<span>asdf <span> idk </span></span>')
-is allowed but setInnerNml('asdf <span> idk </span>') is not)
+be contained inside a single element (eg `setInnerNml('<span>asdf <span> idk </span></span>')`
+is allowed but `setInnerNml('asdf <span> idk </span>')` is not)
 
 - **Parameters**:
 
@@ -387,7 +387,7 @@ document:getElementById('1'):getAttributes()
 -- or returns { id="1", class="class2 class1"}
 ```
 
-- **Returns**: `{` - [string]: string}
+- **Returns**: `{ [string]: string}`
 
 ## `setStyle`
 
@@ -630,7 +630,7 @@ document:getElementById("1"):getAttributeSubstitution("name") -- returns "idk"
 
 Returns the printed text value of this element (does not include newlines)
 
-Note: This is currently bugged as entities (eg &amp;) and attr substitutions
+Note: This is currently bugged as entities (eg `&amp;`) and attr substitutions
 (eg %attr) will not return their printed value
 
 - **Returns**: `string`
@@ -639,8 +639,8 @@ Note: This is currently bugged as entities (eg &amp;) and attr substitutions
 
 Sets the text content of this element. Removes all other children
 
-Replaces newlines with <br> elements (note: if newlines are passed inside an
-inline element (eg. <span>), it will cause a LineTooBig error)
+Replaces newlines with `<br>` elements (note: if newlines are passed inside an
+inline element (eg. `<span>`), it will cause a LineTooBig error)
 
 - **Parameters**:
 
