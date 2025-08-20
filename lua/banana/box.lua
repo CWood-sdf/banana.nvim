@@ -50,6 +50,14 @@ function M.addHighlight(ctx, hl)
     if hl == nil then
         return 0
     end
+    local empty = true
+    for _, _ in pairs(hl) do
+        empty = false
+        break
+    end
+    if empty then
+        return 0
+    end
     flame.new("addHighlight")
     local fg = hl.fg
     local bg = hl.bg
