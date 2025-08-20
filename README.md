@@ -113,6 +113,8 @@ The tree's files are contained in the same location as tree.nml and tree.lua and
 > [!NOTE]
 >
 > Banana requires zig with version at least 0.15.1 to be installed on your system
+>
+> If you do not have zig 0.15.1, either pin to `9245810f9d376f7ac9799b42da16397cd8c3554e` or use [zigup](https://github.com/marler8997/zigup)
 
 Banana can be installed like this in lazy:
 
