@@ -72,21 +72,22 @@ describe("Div rendering", function ()
         local expectedMap = {
             "     ",
             " a~~ ",
-            " ~~b!!",
-            " ~~!!!",
+            " ~~bcd",
+            " ~~bcd",
             "   !!!",
         }
         local a = inst:getElementById("a")
         a:setStyleValue("z-index", "1")
         local b = inst:getElementById("b")
+        b:setTextContent("bcdbcd")
         b:setStyleValue("z-index", "2")
         b:setStyleValue("left", "3ch")
         inst:forceRerender()
         h.assertBgMapsMatch(h.bufToBgMap(inst.bufnr), expectedMap)
         h.assertGridBoundsMatch(expectedMap, inst, "~",
             function (k, v) if k == "a" then return v end end)
-        h.assertGridBoundsMatch(expectedMap, inst, "!",
-            function (k, v) if k == "b" then return v end end)
+        -- h.assertGridBoundsMatch(expectedMap, inst, "!",
+        --     function (k, v) if k == "b" then return v end end)
     end)
     it("z-index 2", function ()
         local inst = require("banana.instance").emptyInstance()

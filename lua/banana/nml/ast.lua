@@ -34,8 +34,8 @@ M.padNames = { "left", "top", "right", "bottom" }
 ---@field left number
 ---@field top number
 ---@field z number
----@field width number
----@field height number
+-- ---@field width number
+-- ---@field height number
 
 local astId = 0
 
