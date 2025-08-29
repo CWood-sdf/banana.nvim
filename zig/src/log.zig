@@ -10,7 +10,7 @@ pub fn init(p: []const u8) !void {
     }
     @memcpy(path[0..p.len], p);
     pathLen = @intCast(p.len);
-    const file = try std.fs.cwd().createFile(path[0..pathLen], .{});
+    const file = std.fs.cwd().createFile(path[0..pathLen], .{}) catch return error.FileProblem;
     defer file.close();
 }
 
@@ -21,9 +21,9 @@ pub inline fn write(comptime fmt: []const u8, extra: anytype) !void {
         if (pathLen == 0) {
             return;
         }
-        const file = try std.fs.cwd().createFile(path[0..pathLen], .{
+        const file = std.fs.cwd().createFile(path[0..pathLen], .{
             .truncate = false,
-        });
+        }) catch return error.FileProblem;
         defer file.close();
 
         try file.seekFromEnd(0);

@@ -217,6 +217,8 @@ return function (self, ast, box, parentHl,
             end
             table.insert(root.relativeBoxes, {
                 image = image,
+                width = ast:getWidth() + ast:marginLeft() + ast:marginRight(),
+                height = ast:getHeight() + ast:marginBottom() + ast:marginTop(),
                 left = ast.boundBox.leftX - ast:marginLeft() - 1,
                 top = ast.boundBox.topY - ast:marginTop() - 1,
                 z = ast:_firstStyleValue("z-index", 0)
@@ -263,6 +265,8 @@ return function (self, ast, box, parentHl,
             local actualImage = lb.box_image_clone(pr.ctx, ctx, img)
             table.insert(root.relativeBoxes, {
                 image = actualImage,
+                width = width,
+                height = height,
                 left = posX,
                 top = posY,
                 z = v:_firstStyleValue("z-index", 0)
@@ -280,6 +284,14 @@ return function (self, ast, box, parentHl,
         pr:render()
         for _, data in ipairs(ast.relativeBoxes) do
             lb.box_image_render_over(pr.ctx, data.image, data.left, data.top)
+            local newWidth = data.left + data.width - box:getOffsetX() + 1
+            local newHeight = data.top + data.height - box:getOffsetY() + 1
+            if newWidth > box:getWidth() then
+                box:setWidth(newWidth)
+            end
+            if newHeight > box:getHeight() then
+                box:setWidth(newHeight)
+            end
         end
         pr = p.noopPartialRendered()
     end

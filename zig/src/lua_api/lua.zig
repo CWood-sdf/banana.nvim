@@ -129,12 +129,14 @@ pub fn push_stringslice(L: *State, str: []const u8) void {
 extern fn lua_concat(L: *State, n: c_int) callconv(.c) void;
 pub const concat = lua_concat;
 
-// pub fn push_fmtstring(L: *State, comptime fmt: []const u8, tuple: anytype) c_int {
-//     const writer: StackWriter = .init(L);
-//     writer.prepStack();
-//     std.fmt.format(writer.writer(), fmt, tuple) catch return 0;
-//     return 1;
-// }
+pub fn push_fmtstring(L: *State, comptime fmt: []const u8, tuple: anytype) c_int {
+    var buf: [1024]u8 = undefined;
+    var writer: StackWriter = .init(L, &buf);
+    writer.prepStack();
+    writer.interface.print(fmt, tuple) catch return 0;
+    // std.fmt.format(&writer.interface, fmt, tuple) catch return 0;
+    return 1;
+}
 // }
 
 extern fn lua_call(L: *State, nargs: c_int, nresults: c_int) callconv(.c) void;
@@ -146,26 +148,53 @@ pub const call = lua_call;
 //     concat(w.state, 2);
 //     return bytes.len;
 // }
-// const Writer = std.Io.Writer; // (StackWriter, error{}, writeToStack);
+const Writer = std.Io.Writer; // (StackWriter, error{}, writeToStack);
 // // essentially a writer that writes to the stack and appends
-// pub const StackWriter = struct {
-//     state: *State,
-//     pub fn init(state: *State) StackWriter {
-//         return .{
-//             .state = state,
-//         };
-//     }
-//
-//     pub fn prepStack(self: StackWriter) void {
-//         push_stringslice(self.state, "");
-//     }
-//
-//     pub fn writer(self: StackWriter) Writer {
-//         return .{
-//             .context = self,
-//         };
-//     }
-// };
+pub const StackWriter = struct {
+    state: *State,
+    interface: std.Io.Writer,
+    pub fn init(state: *State, buffer: []u8) StackWriter {
+        return .{
+            .state = state,
+            .interface = std.Io.Writer{
+                .buffer = buffer,
+                .vtable = &.{
+                    .drain = StackWriter.drain,
+                },
+            },
+        };
+    }
+
+    pub fn drain(writer: *std.Io.Writer, data: []const []const u8, splat: usize) !usize {
+        const self: *StackWriter = @fieldParentPtr("interface", writer);
+        // add 1 bc there's implicity a string below
+        var n = data.len + splat + 1;
+        var count: usize = 0;
+        const buffered = writer.buffered();
+        if (buffered.len != 0) {
+            n += 1;
+            push_stringslice(self.state, buffered);
+            count += buffered.len;
+        }
+        for (data) |str| {
+            push_stringslice(self.state, str);
+            count += str.len;
+        }
+        if (data.len >= 1) {
+            const str = data[data.len - 1];
+            for (1..splat) |_| {
+                push_stringslice(self.state, str);
+                count += str.len;
+            }
+        }
+        concat(self.state, @intCast(n));
+        return count;
+    }
+
+    pub fn prepStack(self: StackWriter) void {
+        push_stringslice(self.state, "");
+    }
+};
 
 extern fn lua_error(L: *State) callconv(.c) noreturn;
 pub const senderror = lua_error;

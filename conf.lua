@@ -2,7 +2,7 @@ vim.keymap.set("n", "<leader>rl",
     "<cmd>Lazy reload banana.nvim<CR>",
     { desc = "plugin" })
 vim.keymap.set("n", "<leader>ra",
-    "<cmd>Lazy reload banana.nvim<CR><cmd>DeleteHiddenBuffers<CR><cmd>Lazy reload when2meet.nvim<CR>",
+    "<cmd>Lazy reload banana.nvim<CR><cmd>DeleteHiddenBuffers!<CR><cmd>Lazy reload when2meet.nvim<CR><cmd>Lazy reload pineapple<CR>",
     { desc = "plugin" })
 vim.keymap.set("n", "<leader>ri", "<cmd>TSInstallFromGrammar! nml<CR>",
     { desc = "nml treesitter" })

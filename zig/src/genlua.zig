@@ -2,6 +2,7 @@ const std = @import("std");
 const log = @import("log.zig");
 const lua = @import("lua_api/lua.zig");
 const luaL = @import("lua_api/luaL.zig");
+const Diagnostic = @import("box/diagnostic.zig").Diagnostic;
 
 pub fn luaReturn(L: *lua.State, v: anytype) c_int {
     switch (@typeInfo(@TypeOf(v))) {
@@ -245,7 +246,7 @@ pub fn luaTemplate(
     if (args != i) {
         // var buf: [1024]u8 = undefined;
         // std.fmt.fmt
-        // _ = lua.push_fmtstring(L, "yo you put in the wrong number of parameters to {s}. expected {}, got {}", .{ name, i, args });
+        _ = lua.push_fmtstring(L, "yo you put in the wrong number of parameters to {s}. expected {}, got {}", .{ name, i, args });
         _ = lua.senderror(L);
         // pushValue(L, failReturn);
         // lua.push_bool(L, false);
@@ -284,6 +285,17 @@ pub fn luaTemplate(
     const retInfo = @typeInfo(@TypeOf(ret));
     const actualRet = switch (retInfo) {
         .error_union => ret catch |e| {
+            comptime {
+                const errInfo = @typeInfo(@TypeOf(e)).error_set;
+                if (errInfo) |fields| {
+                    for (fields) |field| {
+                        if (!@hasField(Diagnostic, field.name)) {
+                            @compileLog(std.fmt.comptimePrint("Diagnostic does not have field {s}", .{field.name}));
+                            std.debug.assert(@hasField(Diagnostic, field.name));
+                        }
+                    }
+                }
+            }
             // log.write("ret is an error!\n", .{}) catch {};
             lua.push_stringslice(L, @errorName(e));
             // log.write("pushed error name\n", .{}) catch {};
