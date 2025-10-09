@@ -256,8 +256,8 @@ function M.Ast:_mountComponent()
     if not self:_isComponent() then
         log.throw(
             "Cannot mount tag '"
-            .. self.tag
-            .. "' as a component because it is not a component"
+                .. self.tag
+                .. "' as a component because it is not a component"
         )
     end
     if self.componentTree ~= nil then
@@ -646,18 +646,18 @@ end
 function M.numToRoman(num)
     local roman = {
         { 1000, "M" },
-        { 900,  "CM" },
-        { 500,  "D" },
-        { 400,  "CD" },
-        { 100,  "C" },
-        { 90,   "XC" },
-        { 50,   "L" },
-        { 40,   "XL" },
-        { 10,   "X" },
-        { 9,    "IX" },
-        { 5,    "V" },
-        { 4,    "IV" },
-        { 1,    "I" },
+        { 900, "CM" },
+        { 500, "D" },
+        { 400, "CD" },
+        { 100, "C" },
+        { 90, "XC" },
+        { 50, "L" },
+        { 40, "XL" },
+        { 10, "X" },
+        { 9, "IX" },
+        { 5, "V" },
+        { 4, "IV" },
+        { 1, "I" },
     }
     local ret = ""
     for _, v in ipairs(roman) do
@@ -803,7 +803,7 @@ function M.Ast:_defaultStyles()
         local doc = self:ownerDocument()
         for _, attr in pairs(self.attributes) do
             if type(attr) == "table" then
-                doc:_loadPreScriptFor(function (opts)
+                doc:_loadPreScriptFor(function(opts)
                     attr.tempval = attr.fn(doc)
                 end, self:_getScriptRoot(), self:_getLoadedParams())
             end
@@ -1421,13 +1421,13 @@ function M.Ast:_resolveUnits(parentWidth, parentHeight)
                 "ch",
                 math.floor(
                     self:_firstStyleComputedValue("width", 0)
-                    / self:_firstStyleValue("aspect-ratio", 1)
-                    / 2
+                        / self:_firstStyleValue("aspect-ratio", 1)
+                        / 2
                 ),
                 math.floor(
                     self:_firstStyleComputedValue("width", 0)
-                    / self:_firstStyleValue("aspect-ratio", 1)
-                    / 2
+                        / self:_firstStyleValue("aspect-ratio", 1)
+                        / 2
                 )
             ),
         }
@@ -1436,14 +1436,12 @@ function M.Ast:_resolveUnits(parentWidth, parentHeight)
         if aspectRatio == 0 then
             log.warn(
                 self.tag
-                ..
-                " element has aspect-ratio set to <= 0. Ignoring this because negative or 0 aspect ratios can cause infinite loops"
+                    .. " element has aspect-ratio set to <= 0. Ignoring this because negative or 0 aspect ratios can cause infinite loops"
             )
         else
             log.warn(
                 self.tag
-                ..
-                " element has aspect-ratio, width, and height set. aspect-ratio will do nothing because both width and height are set"
+                    .. " element has aspect-ratio, width, and height set. aspect-ratio will do nothing because both width and height are set"
             )
         end
     end
@@ -1615,10 +1613,10 @@ function M.Ast:getAttribute(name)
             return nil
         end
         return vim.iter(self.classes)
-                  :map(function (k, _)
+            :map(function(k, _)
                 return k
             end)
-                  :join(" ")
+            :join(" ")
     end
     local ret = self.attributes[name]
     if type(ret) == "table" then
@@ -1883,7 +1881,7 @@ end
 function M.Ast:childIterWithI()
     local i = 0
     local retI = 0
-    return function ()
+    return function()
         i = i + 1
         retI = retI + 1
         while type(self.nodes[i]) ~= "table" do
@@ -1901,7 +1899,7 @@ end
 ---@return fun():(Banana.Ast|string)?
 function M.Ast:allChildIter()
     local i = 0
-    return function ()
+    return function()
         --flame.new("Ast:childIter")
         i = i + 1
         --flame.pop()
@@ -1914,7 +1912,7 @@ end
 ---@return fun():Banana.Ast?
 function M.Ast:childIter()
     local i = 0
-    return function ()
+    return function()
         --flame.new("Ast:childIter")
         i = i + 1
         while type(self.nodes[i]) ~= "table" do
@@ -2028,23 +2026,23 @@ end
 ---@return fun():boolean
 function M.Ast:_parseRemapMod(mod)
     if mod == "hover" then
-        return function ()
+        return function()
             return self:isHovering()
         end
     elseif mod == "line-hover" then
-        return function ()
+        return function()
             return self:isLineHovering()
         end
     elseif type(mod) == "number" then
-        return function ()
+        return function()
             local count = vim.v.count
             return count == mod
         end
     end
     error(
         "Attempting to use ast remap mod '"
-        .. mod
-        .. "' even though it has not been defined"
+            .. mod
+            .. "' even though it has not been defined"
     )
 end
 
@@ -2105,7 +2103,7 @@ function M.Ast:attachRemap(mode, lhs, mods, rhs, opts)
     --                   :totable()
     if type(rhs) == "string" then
         local oldRhs = rhs
-        rhs = function ()
+        rhs = function()
             vim.api.nvim_feedkeys(
                 vim.api.nvim_replace_termcodes(oldRhs, true, true, true),
                 mode,
@@ -2113,7 +2111,7 @@ function M.Ast:attachRemap(mode, lhs, mods, rhs, opts)
             )
         end
     end
-    local actualRhs = function ()
+    local actualRhs = function()
         if self:isHidden() then
             return false
         end
