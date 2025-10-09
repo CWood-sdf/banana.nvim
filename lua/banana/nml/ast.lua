@@ -12,7 +12,6 @@ local _inst = require("banana.lazyRequire")("banana.instance")
 ---@module 'banana.ncss.unit'
 local unit = require("banana.lazyRequire")("banana.ncss.unit")
 
-
 ---@type Banana.Ncss.UnitValue?
 local zeroUnit = nil
 
@@ -75,10 +74,8 @@ M.Ast = {
     tag = "",
     attributes = {},
     inlineStyle = {},
-    padding = {
-    },
-    margin = {
-    },
+    padding = {},
+    margin = {},
     classes = nil,
     precedences = {},
 }
@@ -155,7 +152,6 @@ function M.Ast:_new(tag, parent, source)
         ast:_appendChild(right)
     end
 
-
     return ast
 end
 
@@ -220,12 +216,16 @@ function M.Ast:_findComponent(name)
             return req
         end
     end
-    if self._parent:isNil() then return nil end
+    if self._parent:isNil() then
+        return nil
+    end
     return self._parent:_findComponent(name)
 end
 
 function M.Ast:_tryMountComponent()
-    if self.componentTree ~= nil then return end
+    if self.componentTree ~= nil then
+        return
+    end
     self:_mountComponent()
 end
 
@@ -254,8 +254,11 @@ end
 
 function M.Ast:_mountComponent()
     if not self:_isComponent() then
-        log.throw("Cannot mount tag '" ..
-            self.tag .. "' as a component because it is not a component")
+        log.throw(
+            "Cannot mount tag '"
+            .. self.tag
+            .. "' as a component because it is not a component"
+        )
     end
     if self.componentTree ~= nil then
         log.throw("Component is already mounted")
@@ -370,8 +373,8 @@ end
 ---is allowed but `setInnerNml('asdf <span> idk </span>')` is not)
 ---@param nml string The nml string to set this ast's content to
 function M.Ast:setInnerNml(nml)
-    local ast, styleRules, preScripts, postScripts = require("banana.require")
-        .nmlLoadString(nml)
+    local ast, styleRules, preScripts, postScripts =
+        require("banana.require").nmlLoadString(nml)
 
     local doc = self:ownerDocument()
     for _, v in ipairs(postScripts) do
@@ -394,16 +397,18 @@ function M.Ast:_dumpTree(pad)
     pad = pad or 0
     local padStr = string.rep(" ", pad)
     local ret = {
-        padStr .. "<" .. self.tag
+        padStr .. "<" .. self.tag,
     }
     local id = self:getAttribute("id")
     if id ~= nil then
-        table.insert(ret, padStr .. "  id=\"" .. id .. "\"")
+        table.insert(ret, padStr .. '  id="' .. id .. '"')
     end
     ret[#ret] = ret[#ret] .. ">"
     if self.classes ~= nil and #self.classes ~= 0 then
-        table.insert(ret,
-            padStr .. "  class=\"" .. self:getAttribute("class") .. "\"")
+        table.insert(
+            ret,
+            padStr .. '  class="' .. self:getAttribute("class") .. '"'
+        )
     end
     pad = pad + 2
     for _, v in ipairs(self.nodes) do
@@ -420,7 +425,10 @@ function M.Ast:_dumpTree(pad)
             end
         end
     end
-    if #self.nodes == 0 or (type(self.nodes[1]) == "string" and #self.nodes == 1) then
+    if
+        #self.nodes == 0
+        or (type(self.nodes[1]) == "string" and #self.nodes == 1)
+    then
         ret[#ret] = ret[#ret] .. " </" .. self.tag .. "> "
     else
         table.insert(ret, padStr .. "</" .. self.tag .. "> ")
@@ -706,17 +714,39 @@ function M.Ast:_getMaxListWidth(styleTp)
             local add = math.floor((len - 888) / 1000)
             return add + 12
         end
-        if len >= 388 then return 11 + 2 end
-        if len >= 288 then return 10 + 2 end
-        if len >= 188 then return 9 + 2 end
-        if len >= 88 then return 8 + 2 end
-        if len >= 38 then return 7 + 2 end
-        if len >= 28 then return 6 + 2 end
-        if len >= 18 then return 5 + 2 end
-        if len >= 8 then return 4 + 2 end
-        if len >= 3 then return 3 + 2 end
-        if len >= 2 then return 2 + 2 end
-        if len >= 1 then return 1 + 2 end
+        if len >= 388 then
+            return 11 + 2
+        end
+        if len >= 288 then
+            return 10 + 2
+        end
+        if len >= 188 then
+            return 9 + 2
+        end
+        if len >= 88 then
+            return 8 + 2
+        end
+        if len >= 38 then
+            return 7 + 2
+        end
+        if len >= 28 then
+            return 6 + 2
+        end
+        if len >= 18 then
+            return 5 + 2
+        end
+        if len >= 8 then
+            return 4 + 2
+        end
+        if len >= 3 then
+            return 3 + 2
+        end
+        if len >= 2 then
+            return 2 + 2
+        end
+        if len >= 1 then
+            return 1 + 2
+        end
         return 0
     end
     return math.floor(math.log10(len) + 1) + 2
@@ -733,7 +763,7 @@ function M.Ast:_getNextListItem(styleTp)
     if self.listCounter == nil then
         return getListItemUl(styleTp) .. " "
     end
-    local ret        = getListItemOl(styleTp, self.listCounter) .. " "
+    local ret = getListItemOl(styleTp, self.listCounter) .. " "
     self.listCounter = self.listCounter + 1
     return ret
 end
@@ -1273,7 +1303,6 @@ function M.Ast:_mixHl(parentHl)
         ret.underline = true
     end
 
-
     for k, v in pairs(self.hl) do
         ret[k] = v
     end
@@ -1361,39 +1390,61 @@ function M.Ast:_resolveUnits(parentWidth, parentHeight)
     ---@diagnostic disable-next-line: param-type-mismatch
     local aspectRatio = math.max(self:_firstStyleValue("aspect-ratio", 0), 0)
 
-    if self.style.width == nil and self.style.height ~= nil and aspectRatio ~= 0 then
+    if
+        self.style.width == nil
+        and self.style.height ~= nil
+        and aspectRatio ~= 0
+    then
         ---@type Banana.Ncss.StyleValue
         local width = {
             type = "unit",
-            value = unit {
+            value = unit({
                 unit = "ch",
-                computed = self:_firstStyleComputedValue("height", 0) *
-                    self:_firstStyleValue("aspect-ratio", 1) * 2,
-                value = self:_firstStyleComputedValue("height", 0) *
-                    self:_firstStyleValue("aspect-ratio", 1) * 2
-            }
+                computed = self:_firstStyleComputedValue("height", 0)
+                    * self:_firstStyleValue("aspect-ratio", 1)
+                    * 2,
+                value = self:_firstStyleComputedValue("height", 0)
+                    * self:_firstStyleValue("aspect-ratio", 1)
+                    * 2,
+            }),
         }
         self.style.width = { width }
-    elseif self.style.height == nil and self.style.width ~= nil and aspectRatio ~= 0 then
+    elseif
+        self.style.height == nil
+        and self.style.width ~= nil
+        and aspectRatio ~= 0
+    then
         ---@type Banana.Ncss.StyleValue
         local height = {
             type = "unit",
             value = unit.newUnit(
                 "ch",
-                math.floor(self:_firstStyleComputedValue("width", 0) /
-                    self:_firstStyleValue("aspect-ratio", 1) / 2),
-                math.floor(self:_firstStyleComputedValue("width", 0) /
-                    self:_firstStyleValue("aspect-ratio", 1) / 2)
-            )
+                math.floor(
+                    self:_firstStyleComputedValue("width", 0)
+                    / self:_firstStyleValue("aspect-ratio", 1)
+                    / 2
+                ),
+                math.floor(
+                    self:_firstStyleComputedValue("width", 0)
+                    / self:_firstStyleValue("aspect-ratio", 1)
+                    / 2
+                )
+            ),
         }
         self.style.height = { height }
     elseif self.style["aspect-ratio"] ~= nil then
         if aspectRatio == 0 then
-            log.warn(self.tag ..
-                " element has aspect-ratio set to <= 0. Ignoring this because negative or 0 aspect ratios can cause infinite loops")
+            log.warn(
+                self.tag
+                ..
+                " element has aspect-ratio set to <= 0. Ignoring this because negative or 0 aspect ratios can cause infinite loops"
+            )
         else
-            log.warn(self.tag ..
-                " element has aspect-ratio, width, and height set. aspect-ratio will do nothing because both width and height are set")
+            log.warn(
+                self.tag
+                ..
+                " element has aspect-ratio, width, and height set. aspect-ratio will do nothing because both width and height are set"
+            )
         end
     end
     self:_computeUnitFor("top", parentHeight)
@@ -1436,7 +1487,10 @@ function M.Ast:_applyStyleDeclarations(declarations, basePrec)
         if v.important then
             prec = prec + require("banana.ncss.query").Specificity.Important
         end
-        if self.precedences[v.name] ~= nil and prec < self.precedences[v.name] then
+        if
+            self.precedences[v.name] ~= nil
+            and prec < self.precedences[v.name]
+        then
             goto continue
         end
         self.precedences[v.name] = prec
@@ -1447,7 +1501,10 @@ function M.Ast:_applyStyleDeclarations(declarations, basePrec)
             if value.type == "plain" and value.value == "inherit" then
                 goto continue
             end
-            if (name == "fg" or name == "bg") and type(self.hl[name]) == "table" then
+            if
+                (name == "fg" or name == "bg")
+                and type(self.hl[name]) == "table"
+            then
                 ---@type Banana.Gradient
                 local t = self.hl[name]
                 t:unlock()
@@ -1460,8 +1517,7 @@ function M.Ast:_applyStyleDeclarations(declarations, basePrec)
             local value = v.values[1]
             local index = M[side]
             if index == nil then
-                log.throw(
-                    "Undefined side '" .. side .. "'")
+                log.throw("Undefined side '" .. side .. "'")
                 error("")
             end
             local val = value.value
@@ -1473,8 +1529,7 @@ function M.Ast:_applyStyleDeclarations(declarations, basePrec)
             local value = v.values[1]
             local index = M[side]
             if index == nil then
-                log.throw(
-                    "Undefined side '" .. side .. "'")
+                log.throw("Undefined side '" .. side .. "'")
                 error("")
             end
             local val = value.value
@@ -1487,7 +1542,10 @@ function M.Ast:_applyStyleDeclarations(declarations, basePrec)
                 local values = v.values
                 local fromArr = values[offset % #values + 1]
                 local val = fromArr.value
-                if self.precedences[name] ~= nil and prec < self.precedences[name] then
+                if
+                    self.precedences[name] ~= nil
+                    and prec < self.precedences[name]
+                then
                     goto continue
                 end
                 self.precedences[name] = prec
@@ -1501,7 +1559,10 @@ function M.Ast:_applyStyleDeclarations(declarations, basePrec)
                 local values = v.values
                 local fromArr = values[offset % #values + 1]
                 local val = fromArr.value
-                if self.precedences[name] ~= nil and prec < self.precedences[name] then
+                if
+                    self.precedences[name] ~= nil
+                    and prec < self.precedences[name]
+                then
                     goto continue
                 end
                 self.precedences[name] = prec
@@ -1517,10 +1578,11 @@ end
 
 ---removes the ast node from the dom and deletes ALL associated keymaps
 function M.Ast:remove()
-    if self._parent == nil then return end
+    if self._parent == nil then
+        return
+    end
     if self._parent == _inst.getNilAst() then
-        log.throw(
-            "Attempting to remove the root node")
+        log.throw("Attempting to remove the root node")
         error("")
     end
     self:_breakParentTies()
@@ -1552,7 +1614,11 @@ function M.Ast:getAttribute(name)
         if self.classes == nil then
             return nil
         end
-        return vim.iter(self.classes):map(function (k, _) return k end):join(" ")
+        return vim.iter(self.classes)
+                  :map(function (k, _)
+                return k
+            end)
+                  :join(" ")
     end
     local ret = self.attributes[name]
     if type(ret) == "table" then
@@ -1645,9 +1711,7 @@ end
 ---@return boolean
 function M.Ast:isLineHovering()
     local line = vim.fn.line(".")
-    local ret =
-        line >= self.boundBox.topY
-        and line < self.boundBox.bottomY
+    local ret = line >= self.boundBox.topY and line < self.boundBox.bottomY
     return ret
 end
 
@@ -1656,8 +1720,7 @@ end
 function M.Ast:isHovering()
     local line = vim.fn.line(".")
     local col = vim.fn.col(".")
-    local ret =
-        line >= self.boundBox.topY
+    local ret = line >= self.boundBox.topY
         and line < self.boundBox.bottomY
         and col >= self.boundBox.leftX
         and col < self.boundBox.rightX
@@ -1706,7 +1769,10 @@ function M.Ast:_increaseLeftBound(number)
         ---@diagnostic disable-next-line: assign-type-mismatch
         local grad = self.hl.fg
         grad:moveLeftBy(number, self)
-        if self._parent.tag == "progress" and self._parent:getAttribute("adjust-filled") ~= "no" then
+        if
+            self._parent.tag == "progress"
+            and self._parent:getAttribute("adjust-filled") ~= "no"
+        then
             grad:moveLeftBy(number, self._parent)
         end
     end
@@ -1715,7 +1781,10 @@ function M.Ast:_increaseLeftBound(number)
         ---@diagnostic disable-next-line: assign-type-mismatch
         local grad = self.hl.bg
         grad:moveLeftBy(number, self)
-        if self._parent.tag == "progress" and self._parent:getAttribute("adjust-filled") ~= "no" then
+        if
+            self._parent.tag == "progress"
+            and self._parent:getAttribute("adjust-filled") ~= "no"
+        then
             grad:moveLeftBy(number, self._parent)
         end
     end
@@ -1747,7 +1816,10 @@ function M.Ast:_increaseTopBound(number)
         ---@diagnostic disable-next-line: assign-type-mismatch
         local grad = self.hl.fg
         grad:moveDownBy(number, self)
-        if self._parent.tag == "progress" and self._parent:getAttribute("adjust-filled") ~= "no" then
+        if
+            self._parent.tag == "progress"
+            and self._parent:getAttribute("adjust-filled") ~= "no"
+        then
             grad:moveDownBy(number, self._parent)
         end
     end
@@ -1756,7 +1828,10 @@ function M.Ast:_increaseTopBound(number)
         ---@diagnostic disable-next-line: assign-type-mismatch
         local grad = self.hl.bg
         grad:moveDownBy(number, self)
-        if self._parent.tag == "progress" and self._parent:getAttribute("adjust-filled") ~= "no" then
+        if
+            self._parent.tag == "progress"
+            and self._parent:getAttribute("adjust-filled") ~= "no"
+        then
             grad:moveDownBy(number, self._parent)
         end
     end
@@ -1966,8 +2041,11 @@ function M.Ast:_parseRemapMod(mod)
             return count == mod
         end
     end
-    error("Attempting to use ast remap mod '"
-        .. mod .. "' even though it has not been defined")
+    error(
+        "Attempting to use ast remap mod '"
+        .. mod
+        .. "' even though it has not been defined"
+    )
 end
 
 ---Returns the parent node of this node
@@ -2014,7 +2092,8 @@ function M.Ast:attachRemap(mode, lhs, mods, rhs, opts)
     opts = opts or {}
     if type(mods) ~= "table" then
         log.throw(
-            "Banana attachRemap requires the 4th parameter (before rhs) to be a table of modifiers")
+            "Banana attachRemap requires the 4th parameter (before rhs) to be a table of modifiers"
+        )
         error("")
     end
     local modFns = {}
@@ -2028,8 +2107,10 @@ function M.Ast:attachRemap(mode, lhs, mods, rhs, opts)
         local oldRhs = rhs
         rhs = function ()
             vim.api.nvim_feedkeys(
-                vim.api.nvim_replace_termcodes(oldRhs, true, true, true), mode,
-                true)
+                vim.api.nvim_replace_termcodes(oldRhs, true, true, true),
+                mode,
+                true
+            )
         end
     end
     local actualRhs = function ()
@@ -2043,10 +2124,15 @@ function M.Ast:attachRemap(mode, lhs, mods, rhs, opts)
                 break
             end
         end
-        if not works then return false end
+        if not works then
+            return false
+        end
         if type(rhs) == "string" then
             vim.api.nvim_feedkeys(
-                vim.api.nvim_replace_termcodes(rhs, true, true, true), mode, true)
+                vim.api.nvim_replace_termcodes(rhs, true, true, true),
+                mode,
+                true
+            )
         else
             rhs()
         end
