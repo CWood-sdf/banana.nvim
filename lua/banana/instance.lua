@@ -77,6 +77,7 @@ local instances = {}
 ---@field instanceId number
 ---@field winhl table
 ---@field ast Banana.Ast
+---@field renderWhenClosed boolean
 ---@field styleRules Banana.Ncss.RuleSet[]
 ---@field postScripts (string|fun())[]
 ---@field preScripts (string|fun())[]
@@ -188,8 +189,8 @@ function Instance:_virtualRender(ast, ctx, width, height)
     if extra.debug and self.DEBUG_bufNr ~= nil and traceCtx ~= nil then
         lb.box_context_render(traceCtx, self.DEBUG_bufNr)
         local hls = {}
-        local ns = vim.api.nvim_create_namespace("BANANA_DEBUG_" ..
-            self.instanceId)
+        local ns =
+            vim.api.nvim_create_namespace("BANANA_DEBUG_" .. self.instanceId)
         vim.api.nvim_win_set_hl_ns(self.DEBUG_winId, ns)
         vim.api.nvim_buf_clear_namespace(self.DEBUG_bufNr, ns, 0, -1)
         lb.box_context_highlight(traceCtx, function (line, startCol, endCol, hl)
@@ -198,7 +199,10 @@ function Instance:_virtualRender(ast, ctx, width, height)
                 if actualHl == nil then
                     return
                 end
-                if type(actualHl.fg) == "table" or type(actualHl.bg) == "table" then
+                if
+                    type(actualHl.fg) == "table"
+                    or type(actualHl.bg) == "table"
+                then
                     for col = startCol, endCol - 1 do
                         local fgVal = actualHl.fg
                         local bgVal = actualHl.bg
@@ -213,30 +217,41 @@ function Instance:_virtualRender(ast, ctx, width, height)
                             ---@cast bgVal Banana.Gradient
                             actualHl.bg = bgVal:nextCharColor()
                         end
-                        local group = "banana_hl_" ..
-                            hl .. "_grad_" .. col .. "_" .. line
-                        vim.api.nvim_set_hl(ns, group,
-                            actualHl)
+                        local group = "banana_hl_"
+                            .. hl
+                            .. "_grad_"
+                            .. col
+                            .. "_"
+                            .. line
+                        vim.api.nvim_set_hl(ns, group, actualHl)
                         actualHl.fg = fgVal
                         actualHl.bg = bgVal
                         hls[hl] = group
-                        vim.api.nvim_buf_set_extmark(self.DEBUG_bufNr, ns, line,
+                        vim.api.nvim_buf_set_extmark(
+                            self.DEBUG_bufNr,
+                            ns,
+                            line,
                             startCol,
                             {
                                 end_col = endCol,
                                 hl_group = group,
-                            })
+                            }
+                        )
                     end
                 else
                     local group = hls[hl] or ("banana_hl_" .. hl)
                     vim.api.nvim_set_hl(ns, group, actualHl)
                     hls[hl] = group
-                    vim.api.nvim_buf_set_extmark(self.DEBUG_bufNr, ns, line,
+                    vim.api.nvim_buf_set_extmark(
+                        self.DEBUG_bufNr,
+                        ns,
+                        line,
                         startCol,
                         {
                             end_col = endCol,
                             hl_group = group,
-                        })
+                        }
+                    )
                 end
             end)
         end)
@@ -250,7 +265,10 @@ end
 
 function Instance:_openDebugWin()
     -- flame.new("debugwin")
-    if self.DEBUG_bufNr == nil or not vim.api.nvim_buf_is_valid(self.DEBUG_bufNr) then
+    if
+        self.DEBUG_bufNr == nil
+        or not vim.api.nvim_buf_is_valid(self.DEBUG_bufNr)
+    then
         self.DEBUG_bufNr = vim.api.nvim_create_buf(false, true)
         -- vim.api.nvim_set_option_value("filetype", "markdown", {
         --     buf = self.DEBUG_bufNr
@@ -263,7 +281,10 @@ function Instance:_openDebugWin()
 
     -- flame.pop()
     -- flame.new("debugwin2")
-    if self.DEBUG_winId == nil or not vim.api.nvim_win_is_valid(self.DEBUG_winId) then
+    if
+        self.DEBUG_winId == nil
+        or not vim.api.nvim_win_is_valid(self.DEBUG_winId)
+    then
         local w = math.floor(self.DEBUG_winWidth or vim.o.columns / 2.5)
         self.DEBUG_winId = vim.api.nvim_open_win(self.DEBUG_bufNr, false, {
             col = vim.o.columns - w,
@@ -273,12 +294,17 @@ function Instance:_openDebugWin()
             height = math.floor(vim.o.lines / 1.2),
             style = "minimal",
         })
-        vim.api.nvim_set_option_value("signcolumn", "no",
-            { win = self.DEBUG_winId })
-        vim.api.nvim_set_option_value("number", false,
-            { win = self.DEBUG_winId })
-        vim.api.nvim_set_option_value("wrap", false,
-            { win = self.DEBUG_winId })
+        vim.api.nvim_set_option_value(
+            "signcolumn",
+            "no",
+            { win = self.DEBUG_winId }
+        )
+        vim.api.nvim_set_option_value(
+            "number",
+            false,
+            { win = self.DEBUG_winId }
+        )
+        vim.api.nvim_set_option_value("wrap", false, { win = self.DEBUG_winId })
     else
         -- vim.api.nvim_set_current_win(self.DEBUG_winId)
     end
@@ -286,7 +312,10 @@ function Instance:_openDebugWin()
 end
 
 function Instance:_clearDebugWinBuf()
-    if self.DEBUG_bufNr == nil or not vim.api.nvim_buf_is_valid(self.DEBUG_bufNr) then
+    if
+        self.DEBUG_bufNr == nil
+        or not vim.api.nvim_buf_is_valid(self.DEBUG_bufNr)
+    then
         return
     end
     vim.api.nvim_buf_set_lines(self.DEBUG_bufNr, 0, -1, false, {})
@@ -294,7 +323,10 @@ end
 
 ---@param lines string[]
 function Instance:_writeLinesToDebugWin(lines)
-    if self.DEBUG_bufNr == nil or not vim.api.nvim_buf_is_valid(self.DEBUG_bufNr) then
+    if
+        self.DEBUG_bufNr == nil
+        or not vim.api.nvim_buf_is_valid(self.DEBUG_bufNr)
+    then
         return
     end
     local l = vim.api.nvim_buf_get_lines(self.DEBUG_bufNr, 0, -1, false)
@@ -315,7 +347,9 @@ function Instance:_new()
         for k, v in pairs(require("banana.nml.ast").Ast) do
             if type(v) == "function" then
                 if k == "isNil" then
-                    nilAst["isNil"] = function () return true end
+                    nilAst["isNil"] = function ()
+                        return true
+                    end
                 else
                     nilAst[k] = function ()
                         log.throw("Calling '" .. k .. "' on the nil ast")
@@ -336,6 +370,7 @@ function Instance:_new()
         bufLines = {},
         winExternallyManaged = false,
         bufVarsUnset = false,
+        renderWhenClosed = false,
         DEBUG_catch = false,
         DEBUG_trackRenderCycle = false,
         preScripts = {},
@@ -355,7 +390,9 @@ function Instance:_new()
         renderRequested = false,
         keymaps = {},
         bufname = "Banana empty " .. id,
-        highlightNs = vim.api.nvim_create_namespace("banana_instance_hl_" .. ids),
+        highlightNs = vim.api.nvim_create_namespace(
+            "banana_instance_hl_" .. ids
+        ),
         augroup = vim.api.nvim_create_augroup("banana_instance_au_" .. ids, {}),
         ---@diagnostic disable-next-line: assign-type-mismatch
         ast = nilAst,
@@ -364,7 +401,7 @@ function Instance:_new()
         -- parser = parser,
         instanceId = id,
         winhl = {
-            link = "NormalFloat"
+            link = "NormalFloat",
         },
         astMapDeps = {},
         bufOpts = {
@@ -393,9 +430,8 @@ end
 ---Changes the root of the instance to this ast
 ---@param filename string the nml file to use
 function Instance:requireNml(filename)
-    local ast, styleRules, preScripts, postScripts = require("banana.require")
-        .nmlRequire(
-            filename)
+    local ast, styleRules, preScripts, postScripts =
+        require("banana.require").nmlRequire(filename)
     self.postScripts = postScripts
     self.preScripts = preScripts
     self.styleRules = styleRules
@@ -406,9 +442,8 @@ end
 ---Uses a given filename as the source of the instance
 ---@param filename string the nml file to use
 function Instance:useFile(filename)
-    local ast, styleRules, preScripts, postScripts = require("banana.require")
-        .nmlLoad(
-            filename)
+    local ast, styleRules, preScripts, postScripts =
+        require("banana.require").nmlLoad(filename)
     self.postScripts = postScripts
     self.preScripts = preScripts
     self.styleRules = styleRules
@@ -419,8 +454,8 @@ end
 ---Uses a given nml string as the source of the instance
 ---@param nml string the nml string
 function Instance:useNml(nml)
-    local ast, styleRules, preScripts, postScripts = require("banana.require")
-        .nmlLoadString(nml)
+    local ast, styleRules, preScripts, postScripts =
+        require("banana.require").nmlLoadString(nml)
     self.postScripts = postScripts
     self.preScripts = preScripts
     self.styleRules = styleRules
@@ -473,9 +508,10 @@ function Instance:_attachAutocmds()
     self:on("Close", {
         group = self.augroup,
         callback = function ()
-            if self.DEBUG and
-                self.DEBUG_winId ~= nil and
-                vim.api.nvim_win_is_valid(self.DEBUG_winId)
+            if
+                self.DEBUG
+                and self.DEBUG_winId ~= nil
+                and vim.api.nvim_win_is_valid(self.DEBUG_winId)
             then
                 vim.api.nvim_win_close(self.DEBUG_winId, true)
             end
@@ -488,7 +524,7 @@ function Instance:_fireEvent(e)
     self:_pcall(vim.api.nvim_exec_autocmds, "User", {
         pattern = "BananaDocument_" .. self.instanceId .. "_" .. e,
         data = {
-            documentId = self.instanceId
+            documentId = self.instanceId,
         },
     })
 end
@@ -517,6 +553,14 @@ end
 ---Returns true if the instance is open
 ---@return boolean
 function Instance:isOpen()
+    if self.renderWhenClosed then
+        local wins = vim.api.nvim_list_wins()
+        for _, win in ipairs(wins) do
+            if self.winid == win then
+                return true
+            end
+        end
+    end
     return self.isVisible or vim.api.nvim_get_current_buf() == self.bufnr
 end
 
@@ -527,12 +571,19 @@ function Instance:_runScriptAt(str, opts)
     local script = require(str)
     if type(script) == "function" then
         script(self, opts)
-    elseif type(script) == "table" and script.__banana_run ~= nil and type(script.__banana_run) == "function" then
+    elseif
+        type(script) == "table"
+        and script.__banana_run ~= nil
+        and type(script.__banana_run) == "function"
+    then
         script.__banana_run(self, opts)
     else
-        error("Return value from require('" ..
-            str ..
-            "' is not a runnable banana script (either fun(Banana.Instance, table): any or { __banana_run: fun(Banana.Instance, table): any })")
+        error(
+            "Return value from require('"
+            .. str
+            ..
+            "' is not a runnable banana script (either fun(Banana.Instance, table): any or { __banana_run: fun(Banana.Instance, table): any })"
+        )
     end
 end
 
@@ -563,7 +614,8 @@ function Instance:on(ev, opts)
     end
     if type(ev) ~= "string" then
         log.throw(
-            "Expected a string or string[] as the first parameter to Instance:on()")
+            "Expected a string or string[] as the first parameter to Instance:on()"
+        )
     end
     if events[ev] ~= nil then
         opts.pattern = "BananaDocument_" .. self.instanceId .. "_" .. ev
@@ -628,8 +680,10 @@ end
 function Instance:_getFeedkeys(mode, oldRhs)
     return function ()
         vim.api.nvim_feedkeys(
-            vim.api.nvim_replace_termcodes(oldRhs, true, true, true), mode,
-            true)
+            vim.api.nvim_replace_termcodes(oldRhs, true, true, true),
+            mode,
+            true
+        )
     end
 end
 
@@ -658,7 +712,7 @@ function Instance:_setRemap(mode, lhs, rhs, opts, dep, times)
     if self.keymaps[mode][lhs] == nil then
         self.keymaps[mode][lhs] = {}
         vim.keymap.set(mode, lhs, self:_getKeymapFunction(mode, lhs), {
-            buffer = self.bufnr
+            buffer = self.bufnr,
         })
     end
     if type(rhs) == "string" then
@@ -691,8 +745,7 @@ function Instance:_setRemap(mode, lhs, rhs, opts, dep, times)
     end
     if dep ~= self.ast and dep ~= self:body() then
         self.astMapDeps[dep] = self.astMapDeps[dep] or {}
-        table.insert(self.astMapDeps[dep],
-            { mode, lhs, nil, index })
+        table.insert(self.astMapDeps[dep], { mode, lhs, nil, index })
     end
 end
 
@@ -709,8 +762,8 @@ function Instance:_removeMapsFor(ast)
             local mode, lhs, _, id = v[1], v[2], v[3], v[4]
             -- map.disabled = true
             self.keymaps[mode][lhs][id] = 0
-            self.keymapAvailIndex[mode][lhs] = math.min(
-                self.keymapAvailIndex[mode][lhs], id)
+            self.keymapAvailIndex[mode][lhs] =
+                math.min(self.keymapAvailIndex[mode][lhs], id)
             if self.keymapAvailIndex[mode][lhs] == 0 then
                 self.keymapAvailIndex[mode][lhs] = id
             end
@@ -750,8 +803,7 @@ function Instance:body()
     local sel = require("banana.ncss.query").selectors.oneTag("body")
     local arr = sel:getMatches(self.ast)
     if #arr == 0 then
-        log.throw(
-            "Could not find a body tag in Instance:body()")
+        log.throw("Could not find a body tag in Instance:body()")
         error("")
     end
     self._body = arr[1]
@@ -794,8 +846,7 @@ end
 ---@param rules Banana.Ncss.RuleSet[]
 function Instance:_applyStyleDeclarations(ast, rules)
     if ast == nil then
-        log.throw(
-            "Ast is nil")
+        log.throw("Ast is nil")
         error("")
     end
     self:_applyInlineStyles(ast)
@@ -831,13 +882,14 @@ function Instance:_runScript(script, opts)
             self:_runScriptAt(str, o)
         end
     else
-        script = "local document = require('banana.instance').getInstance(" ..
-            self.instanceId .. ")\n" .. script
+        script = "local document = require('banana.instance').getInstance("
+            .. self.instanceId
+            .. ")\n"
+            .. script
         f = loadstring(script)
     end
     if f == nil then
-        log.throw(
-            "Could not convert script tag to runnable lua function")
+        log.throw("Could not convert script tag to runnable lua function")
         error("")
     end
     local oldParams = self.currentParams
@@ -867,7 +919,10 @@ end
 function Instance:setTitle(str)
     self:_setBufName(str)
     local cwd = vim.fn.getcwd()
-    if vim.fn.isdirectory(cwd .. "/" .. self.bufname) == 1 or vim.fn.isdirectory(self.bufname) == 1 then
+    if
+        vim.fn.isdirectory(cwd .. "/" .. self.bufname) == 1
+        or vim.fn.isdirectory(self.bufname) == 1
+    then
         self.bufname = ""
     end
     self:_pcall(function ()
@@ -901,7 +956,6 @@ function Instance:_createWinAndBuf()
         })
     end
 
-
     local containerWidth = vim.o.columns
     local containerHeight = vim.o.lines
     local width = vim.o.columns - 8 * 2
@@ -921,18 +975,18 @@ function Instance:_createWinAndBuf()
         if self.ast:hasStyle("left") then
             left = self.ast:_firstStyleComputedValue("left", 0)
         elseif self.ast:hasStyle("right") then
-            left = containerWidth - self.ast:_firstStyleComputedValue("right", 0) -
-                width
+            left = containerWidth
+                - self.ast:_firstStyleComputedValue("right", 0)
+                - width
         end
         if self.ast:hasStyle("top") then
             top = self.ast:_firstStyleComputedValue("top", 0)
         elseif self.ast:hasStyle("bottom") then
-            top = containerHeight -
-                self.ast:_firstStyleComputedValue("bottom", 0) -
-                height
+            top = containerHeight
+                - self.ast:_firstStyleComputedValue("bottom", 0)
+                - height
         end
     end
-
 
     if self.bufnr == nil or not vim.api.nvim_buf_is_valid(self.bufnr) then
         self.bufnr = vim.api.nvim_create_buf(false, true)
@@ -940,14 +994,13 @@ function Instance:_createWinAndBuf()
     end
     if self.bufVarsUnset then
         vim.api.nvim_set_option_value("modifiable", true, {
-            buf = self.bufnr
+            buf = self.bufnr,
         })
         self:setTitle(self.bufname)
         for k, v in pairs(self.bufOpts) do
             vim.api.nvim_set_option_value(k, v, { buf = self.bufnr })
         end
     end
-
 
     if self.winid == nil or not vim.api.nvim_win_is_valid(self.winid) then
         self.winid = vim.api.nvim_open_win(self.bufnr, true, {
@@ -1015,7 +1068,7 @@ function Instance:_deferRender(post)
         if post ~= nil then
             post()
         end
-    end, 5)
+    end, 10)
 end
 
 function Instance:_requestRender()
@@ -1060,13 +1113,10 @@ end
 ---@param colStart number
 ---@param colEnd number
 function Instance:_highlightText(buf, ns, group, row, colStart, colEnd)
-    vim.api.nvim_buf_set_extmark(buf, ns,
-        row,
-        colStart,
-        {
-            end_col = colEnd,
-            hl_group = group,
-        })
+    vim.api.nvim_buf_set_extmark(buf, ns, row, colStart, {
+        end_col = colEnd,
+        hl_group = group,
+    })
 end
 
 local stressStartTime = 0
@@ -1093,7 +1143,6 @@ function Instance:_render()
     end
     flame.new("style")
 
-
     self.ast:_clearStyles()
     local preScripts = {}
     for _, v in ipairs(self.preScripts) do
@@ -1111,7 +1160,9 @@ function Instance:_render()
         self.renderRequested = true
         local script = preScripts[1]
         table.remove(preScripts, 1)
-        local ok, err = self:_pcall(function () self:_runScript(script, nil) end)
+        local ok, err = self:_pcall(function ()
+            self:_runScript(script, nil)
+        end)
         for _, v in ipairs(self.preScripts) do
             table.insert(preScripts, v)
         end
@@ -1201,7 +1252,6 @@ function Instance:_render()
     --     table.insert(lines, lineStr)
     -- end
 
-
     local reductionTime = vim.loop.hrtime() - startTime
     startTime = vim.loop.hrtime()
 
@@ -1211,25 +1261,31 @@ function Instance:_render()
     local bufTime = vim.loop.hrtime() - startTime
     startTime = vim.loop.hrtime()
     vim.api.nvim_set_option_value("modifiable", true, {
-        buf = self.bufnr
+        buf = self.bufnr,
     })
     vim.api.nvim_set_option_value("buftype", "nofile", {
-        buf = self.bufnr
+        buf = self.bufnr,
     })
     lb.box_context_render(self.ctx, self.bufnr)
     self.bufLines = vim.api.nvim_buf_get_lines(self.bufnr, 0, -1, true)
-    vim.api.nvim_set_option_value("modifiable", self.bufOpts.modifiable or false,
+    vim.api.nvim_set_option_value(
+        "modifiable",
+        self.bufOpts.modifiable or false,
         {
-            buf = self.bufnr
-        })
+            buf = self.bufnr,
+        }
+    )
     local hls = {}
 
     vim.api.nvim_win_set_hl_ns(self.winid, self.highlightNs)
     vim.api.nvim_buf_clear_namespace(self.bufnr, self.highlightNs, 0, -1)
     vim.api.nvim_buf_clear_namespace(self.bufnr, 0, 0, -1)
-    lb.box_context_highlight(self.ctx,
+    lb.box_context_highlight(
+        self.ctx,
         function (line, startCol, endCol, hl, visualCol, visualEndCol)
-            if hl == 0 then return end
+            if hl == 0 then
+                return
+            end
             local hlvalue = box.getHl(hl)
             if hlvalue == nil then
                 if hlvalue == nil then
@@ -1248,28 +1304,42 @@ function Instance:_render()
 
                         -- TODO: Turn from linear scaling over bytes to linear
                         -- scaling over characters
-                        fgVal:setPos(boundAst.boundBox.leftX +
-                            (col - startCol) / (endCol - startCol) *
-                            (boundAst.boundBox.rightX - boundAst.boundBox.leftX),
-                            line)
+                        fgVal:setPos(
+                            boundAst.boundBox.leftX
+                            + (col - startCol)
+                            / (endCol - startCol)
+                            * (boundAst.boundBox.rightX - boundAst.boundBox.leftX),
+                            line
+                        )
                         hlvalue.fg = fgVal:nextCharColor()
                     end
                     if type(bgVal) == "table" then
                         ---@cast bgVal Banana.Gradient
                         local boundAst = fgVal.boundAst
-                        bgVal:setPos(boundAst.boundBox.leftX +
-                            (col - startCol) / (endCol - startCol) *
-                            (boundAst.boundBox.rightX - boundAst.boundBox.leftX),
-                            line)
+                        bgVal:setPos(
+                            boundAst.boundBox.leftX
+                            + (col - startCol)
+                            / (endCol - startCol)
+                            * (boundAst.boundBox.rightX - boundAst.boundBox.leftX),
+                            line
+                        )
                         hlvalue.bg = bgVal:nextCharColor()
                     end
-                    local group = "banana_grad_" ..
-                        hl .. "_" .. col .. "_" .. line
-                    vim.api.nvim_set_hl(self.highlightNs, group,
-                        hlvalue)
-                    self:_highlightText(self.bufnr, self.highlightNs, group, line,
+                    local group = "banana_grad_"
+                        .. hl
+                        .. "_"
+                        .. col
+                        .. "_"
+                        .. line
+                    vim.api.nvim_set_hl(self.highlightNs, group, hlvalue)
+                    self:_highlightText(
+                        self.bufnr,
+                        self.highlightNs,
+                        group,
+                        line,
                         col,
-                        col + 1)
+                        col + 1
+                    )
                     hlvalue.fg = fgVal
                     hlvalue.bg = bgVal
                 end
@@ -1281,9 +1351,13 @@ function Instance:_render()
                 local keysCount = #vim.tbl_keys(hlvalue)
                 -- Apparently i have to use json to detect vim.empty_dict()
                 local hlNotExists = vim.json.encode(actualHl) == "{}"
-                if type(hlvalue.fg) == "table" or type(hlvalue.bg) == "table" then
+                if
+                    type(hlvalue.fg) == "table"
+                    or type(hlvalue.bg) == "table"
+                then
                     log.throw(
-                        "ERROR: gradients cannot be used as default fields for named highlights")
+                        "ERROR: gradients cannot be used as default fields for named highlights"
+                    )
                 end
                 if hlNotExists and keysCount > 1 then
                     local name = hlvalue.__name
@@ -1293,36 +1367,56 @@ function Instance:_render()
                 elseif hlNotExists then
                     group = M.defaultWinHighlight
                 end
-                self:_highlightText(self.bufnr, 0, group, line,
+                self:_highlightText(
+                    self.bufnr,
+                    0,
+                    group,
+                    line,
                     startCol,
-                    endCol)
+                    endCol
+                )
             else
                 local group = hls[hl]
 
                 if group == nil then
                     group = "banana_hl_" .. hl
                     hls[hl] = group
-                    vim.api.nvim_set_hl(self.highlightNs, group,
-                        hlvalue)
+                    vim.api.nvim_set_hl(self.highlightNs, group, hlvalue)
                 end
-                self:_highlightText(self.bufnr, self.highlightNs, group, line,
+                self:_highlightText(
+                    self.bufnr,
+                    self.highlightNs,
+                    group,
+                    line,
                     startCol,
-                    endCol)
+                    endCol
+                )
             end
-        end)
+        end
+    )
     -- self:_highlight(stuffToRender, 0)
     local extraLines = {}
     if self.DEBUG then
-        table.insert(extraLines,
-            "Memory usage total: " .. lb.box_context_get_memory_usage(self.ctx))
-        table.insert(extraLines,
-            "  box usage: " .. lb.box_context_box_memory_usage(self.ctx))
-        table.insert(extraLines,
-            "  data usage: " .. lb.box_context_data_memory_usage(self.ctx))
-        table.insert(extraLines,
-            "  line usage: " .. lb.box_context_line_memory_usage(self.ctx))
-        table.insert(extraLines,
-            "  pr usage: " .. lb.box_context_pr_memory_usage(self.ctx))
+        table.insert(
+            extraLines,
+            "Memory usage total: " .. lb.box_context_get_memory_usage(self.ctx)
+        )
+        table.insert(
+            extraLines,
+            "  box usage: " .. lb.box_context_box_memory_usage(self.ctx)
+        )
+        table.insert(
+            extraLines,
+            "  data usage: " .. lb.box_context_data_memory_usage(self.ctx)
+        )
+        table.insert(
+            extraLines,
+            "  line usage: " .. lb.box_context_line_memory_usage(self.ctx)
+        )
+        table.insert(
+            extraLines,
+            "  pr usage: " .. lb.box_context_pr_memory_usage(self.ctx)
+        )
     end
     lb.box_context_wipe(self.ctx)
     box.wipeContext(self.ctx)
@@ -1330,7 +1424,6 @@ function Instance:_render()
 
     local hlTime = vim.loop.hrtime() - startTime
     totalTime = totalTime + vim.loop.hrtime() - actualStart
-
 
     if self.DEBUG_dumpTree then
         local dump = self.ast:_dumpTree()
@@ -1351,8 +1444,13 @@ function Instance:_render()
         else
             local time = ((vim.loop.hrtime() - stressStartTime) / 1e6)
             local iterTime = time / 500 - 10
-            print("Stress test took " ..
-                time .. "ms (~" .. iterTime .. "ms/cycle)")
+            print(
+                "Stress test took "
+                .. time
+                .. "ms (~"
+                .. iterTime
+                .. "ms/cycle)"
+            )
         end
     end
     if self.DEBUG_showPerf then
@@ -1395,19 +1493,21 @@ function Instance:_render()
                 str = str .. string.rep(" ", maxLen - #str)
             end
             local rep = math.floor(val[2] * 20)
-            local pct =
-                math.floor(val[2] * 1000) / 10 .. ""
+            local pct = math.floor(val[2] * 1000) / 10 .. ""
             if #pct < 4 then
                 pct = pct .. string.rep(" ", 4 - #pct)
             end
             total = total + flameMillis[val[1]]
-            local time = math.floor(flameMillis[val[1]] * 1000) / 1000 ..
-                "ms"
+            local time = math.floor(flameMillis[val[1]] * 1000) / 1000 .. "ms"
             if #time < 9 then
                 time = time .. string.rep(" ", 9 - #time)
             end
-            local chart = " " ..
-                pct .. "% (" .. time .. ") " .. string.rep("#", rep)
+            local chart = " "
+                .. pct
+                .. "% ("
+                .. time
+                .. ") "
+                .. string.rep("#", rep)
             table.insert(extraLines, str .. chart)
         end
         table.insert(extraLines, "Total: " .. total .. "ms")
@@ -1434,7 +1534,9 @@ function Instance:_dumpUrls(bufnr, ns)
         -- vim.notify(vim.inspect(v.boundBox) .. "\n")
         -- 8 14
         -- pcall(
-        vim.api.nvim_buf_set_extmark(bufnr, ns,
+        vim.api.nvim_buf_set_extmark(
+            bufnr,
+            ns,
             v.boundBox.topY - 1,
             v.boundBox.leftX - 1,
             {
@@ -1442,8 +1544,9 @@ function Instance:_dumpUrls(bufnr, ns)
                 -- subtracting 1 and 2 difference
                 end_col = v.boundBox.rightX - 1,
                 end_row = v.boundBox.bottomY - 2,
-                url = v:getAttribute("href")
-            })
+                url = v:getAttribute("href"),
+            }
+        )
     end
 end
 
@@ -1649,9 +1752,8 @@ function Instance:loadNmlTo(file, ast, remove, preserve)
     local sides = vim.split(file, "?", {
         plain = true,
     })
-    local content, rules, preScripts, postScripts = require("banana.require")
-        .nmlRequire(sides
-            [1])
+    local content, rules, preScripts, postScripts =
+        require("banana.require").nmlRequire(sides[1])
     if not preserve then
         content = content:clone(true)
     end
@@ -1736,14 +1838,12 @@ end
 ---@return Banana.Ast[]
 function Instance:getElementsByClassName(name)
     if nilAst == nil then
-        log.throw(
-            "Unreachable")
+        log.throw("Unreachable")
         error("")
     end
     local query = require("banana.ncss.query").selectors.class(name)
     if self.ast == nil then
-        log.throw(
-            "Instance hasnt parsed yet (should be unreachable)")
+        log.throw("Instance hasnt parsed yet (should be unreachable)")
         error("")
     end
     local asts = query:getMatches(self.ast)
@@ -1755,14 +1855,12 @@ end
 ---@return Banana.Ast
 function Instance:getElementById(name)
     if nilAst == nil then
-        log.throw(
-            "Unreachable")
+        log.throw("Unreachable")
         error("")
     end
     local query = require("banana.ncss.query").selectors.id(name)
     if self.ast == nil then
-        log.throw(
-            "Instance hasnt parsed yet (should be unreachable)")
+        log.throw("Instance hasnt parsed yet (should be unreachable)")
         error("")
     end
     local asts = query:getMatches(self.ast)
@@ -1778,14 +1876,12 @@ end
 ---@return Banana.Ast[]
 function Instance:getElementsByTagName(name)
     if nilAst == nil then
-        log.throw(
-            "Unreachable")
+        log.throw("Unreachable")
         error("")
     end
     local query = require("banana.ncss.query").selectors.tag(name)
     if self.ast == nil then
-        log.throw(
-            "Instance hasnt parsed yet (should be unreachable)")
+        log.throw("Instance hasnt parsed yet (should be unreachable)")
         error("")
     end
     local asts = query:getMatches(self.ast)
@@ -1800,8 +1896,11 @@ end
 ---@param name string the name of the element tag
 ---@return Banana.Ast
 function Instance:createElement(name)
-    local ast = require("banana.nml.ast").Ast:_new(name, M.getNilAst(),
-        self.ast.fromFile)
+    local ast = require("banana.nml.ast").Ast:_new(
+        name,
+        M.getNilAst(),
+        self.ast.fromFile
+    )
     ast.componentPath = self.ast.componentPath
     ast:_applyInstance(self)
     return ast
@@ -1819,8 +1918,12 @@ end
 ---@param bufferName string
 ---@return Banana.Instance
 function M.newInstance(filename, bufferName)
-    log.trace("Creating instance with file " ..
-        filename .. " and buffername " .. bufferName)
+    log.trace(
+        "Creating instance with file "
+        .. filename
+        .. " and buffername "
+        .. bufferName
+    )
     -- for _, v in ipairs(instances) do
     --     if v.bufname == bufferName then
     --         return v
@@ -1844,8 +1947,7 @@ end
 ---@return Banana.Instance?
 function M.getInstance(id)
     if id == nil then
-        log.throw(
-            "Given a nil instance id")
+        log.throw("Given a nil instance id")
         error("")
     end
     if type(id) == "string" then
@@ -1855,8 +1957,7 @@ function M.getInstance(id)
         return nil
     end
     if instances[id] == nil then
-        log.throw(
-            "Could not find instance with id " .. id)
+        log.throw("Could not find instance with id " .. id)
         error("")
     end
     return instances[id]
