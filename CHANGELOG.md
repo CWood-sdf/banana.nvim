@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/CWood-sdf/banana.nvim/compare/v0.3.0...v0.4.0) (2025-12-09)
+
+
+### Features
+
+* idk what im doing ([e3f5c6b](https://github.com/CWood-sdf/banana.nvim/commit/e3f5c6bdc37ff46666169a784a250f651599e114))
+
 ## 0.3.0 (2025-08-20)
 
 
