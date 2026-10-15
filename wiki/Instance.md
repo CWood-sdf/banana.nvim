@@ -9,7 +9,7 @@ The Instance class is the first of two API surfaces that you will use for most o
 - [`getBufnr`](#getBufnr)
 - [`getElementById`](#getElementById)
 - [`getElementsByClassName`](#getElementsByClassName)
-- [`getElementsByTag`](#getElementsByTag)
+- [`getElementsByTagName`](#getElementsByTagName)
 - [`getScriptParams`](#getScriptParams)
 - [`getPrimaryNode`](#getPrimaryNode)
 - [`isOpen`](#isOpen)
@@ -69,7 +69,7 @@ Finds elements by their class name, similar to JavaScript's `getElementsByClassN
   - `name` (string): The class name to search for.
 - **Returns**: `Banana.Ast[]` - An array of matched AST nodes.
 
-## `getElementsByTag`
+## `getElementsByTagName`
 
 Finds elements by their tag name, similar to JavaScript's `getElementsByTagName`.
 

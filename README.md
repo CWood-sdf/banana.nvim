@@ -69,7 +69,7 @@ If you want to add a script to the page, you can add the following code to the b
 <body>
 <script>
   -- its just lua code here!
-  local div = document:getElementByTagName("div")[1]
+  local div = document:getElementsByTagName("div")[1]
   -- makes it so that when you press K with the cursor over the div, it prints a message
   div:attachRemap("n", "K", { "hover" }, function()
     print("Hovering over the div!")
@@ -92,19 +92,19 @@ document:close()
 
 Currently there are four examples: a todo app, a partial clone of the lazy.nvim plugin ui, an example tree element, and a counter app.
 
-The todo's files are contained in banana/example/todo.nml and lua/banana_example/todo.lua. You can run it with `require('banana').runTodo()`
+The todo's files are contained in banana/examples/todo.nml and lua/banana_examples/todo.lua. You can run it with `require('banana').runTodo()`
 
 ![TODO](./assets/images/todo.jpg)
 
-The counter's files are contained in banana/example/counter.nml and lua/banana_example/counter.lua. You can run it with `require('banana').runCounter()`
+The counter's files are contained in banana/examples/counter.nml and lua/banana_examples/counter.lua. You can run it with `require('banana').runCounter()`
 
 ![counter](./assets/images/counter.jpg)
 
-Lazy's files are contained in banana/example/lazy/ and lua/banana_example/lazy/ and can be run with `require('banana').runLazy()`
+Lazy's files are contained in banana/examples/lazy/ and lua/banana_examples/lazy/ and can be run with `require('banana').runLazy()`
 
 ![lazy](./assets/images/lazy.jpg)
 
-The tree's files are contained in the same location as tree.nml and tree.lua and can be run with `require('banana').runTree()`
+The tree's files are contained in banana/examples/tree.nml and lua/banana_examples/tree.lua and can be run with `require('banana').runTree()`
 
 ![tree](./assets/images/tree.jpg)
 
