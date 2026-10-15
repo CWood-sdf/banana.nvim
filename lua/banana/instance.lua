@@ -1875,21 +1875,8 @@ end
 ---@param name string the tag name to search for
 ---@return Banana.Ast[]
 function Instance:getElementsByTagName(name)
-    if nilAst == nil then
-        log.throw("Unreachable")
-        error("")
-    end
     local query = require("banana.ncss.query").selectors.tag(name)
-    if self.ast == nil then
-        log.throw("Instance hasnt parsed yet (should be unreachable)")
-        error("")
-    end
-    local asts = query:getMatches(self.ast)
-    if #asts ~= 1 then
-        ---@diagnostic disable-next-line: return-type-mismatch
-        return nilAst
-    end
-    return asts
+    return query:getMatches(self.ast)
 end
 
 ---Creates an element that can be attached to the dom later
