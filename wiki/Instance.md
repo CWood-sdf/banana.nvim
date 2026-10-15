@@ -17,7 +17,7 @@ The Instance class is the first of two API surfaces that you will use for most o
 - [`on`](#on)
 - [`open`](#open)
 - [`querySelectorAll`](#querySelectorAll)
-- [`setBufName`](#setBufName)
+- [`setTitle`](#setTitle)
 - [`useBuffer`](#useBuffer)
 - [`useFile`](#useFile)
 - [`useNml`](#useNml)
@@ -167,9 +167,9 @@ Selects all elements matching the specified selector, similar to JavaScript's `q
   - `sel` (string): The selector to match elements.
 - **Returns**: `Banana.Ast[]` - An array of matched AST nodes.
 
-## `setBufName`
+## `setTitle`
 
-Sets the name of the buffer.
+Sets the name of the instance's buffer. Call this after opening the instance.
 
 - **Parameters**:
   - `str` (string): The new buffer name.
