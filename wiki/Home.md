@@ -22,16 +22,12 @@ To set up an instance for usage in a plugin, use the below code:
 
 local document = nil
 
-if document ~= nil then
+if document == nil then
     -- the buffer name can be overriden using the <title> tag
     -- should only create ONE instance and manage all state from that
     document = require('banana.instance').newInstance("banana require path", "initial buffer name")
 
-    -- can also use
-    document = require("banana.instance").emptyInstance()
 end
-document:requireNml("banana require path")
-document:setBufName("initial buffer name")
 
 -- opens the window
 document:open()

@@ -9,7 +9,7 @@ The Instance class is the first of two API surfaces that you will use for most o
 - [`getBufnr`](#getBufnr)
 - [`getElementById`](#getElementById)
 - [`getElementsByClassName`](#getElementsByClassName)
-- [`getElementsByTag`](#getElementsByTag)
+- [`getElementsByTagName`](#getElementsByTagName)
 - [`getScriptParams`](#getScriptParams)
 - [`getPrimaryNode`](#getPrimaryNode)
 - [`isOpen`](#isOpen)
@@ -17,7 +17,7 @@ The Instance class is the first of two API surfaces that you will use for most o
 - [`on`](#on)
 - [`open`](#open)
 - [`querySelectorAll`](#querySelectorAll)
-- [`setBufName`](#setBufName)
+- [`setTitle`](#setTitle)
 - [`useBuffer`](#useBuffer)
 - [`useFile`](#useFile)
 - [`useNml`](#useNml)
@@ -69,7 +69,7 @@ Finds elements by their class name, similar to JavaScript's `getElementsByClassN
   - `name` (string): The class name to search for.
 - **Returns**: `Banana.Ast[]` - An array of matched AST nodes.
 
-## `getElementsByTag`
+## `getElementsByTagName`
 
 Finds elements by their tag name, similar to JavaScript's `getElementsByTagName`.
 
@@ -167,9 +167,9 @@ Selects all elements matching the specified selector, similar to JavaScript's `q
   - `sel` (string): The selector to match elements.
 - **Returns**: `Banana.Ast[]` - An array of matched AST nodes.
 
-## `setBufName`
+## `setTitle`
 
-Sets the name of the buffer.
+Sets the name of the instance's buffer. Call this after opening the instance.
 
 - **Parameters**:
   - `str` (string): The new buffer name.
