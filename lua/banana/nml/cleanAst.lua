@@ -42,9 +42,10 @@ function M.formatBlockContext(ast)
             local clearLast = true
             if
                 nextNode ~= nil
-                and type(nextNode) ~= "string"
-                and nextNode.actualTag.formatType == tags.FormatType.Inline
-
+                and (
+                    type(nextNode) == "string"
+                    or nextNode.actualTag.formatType == tags.FormatType.Inline
+                )
             then
                 clearLast = false
             end
